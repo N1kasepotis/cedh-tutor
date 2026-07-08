@@ -1,0 +1,15 @@
+<view class="option-list">
+  <view
+    wx:for="{{options}}"
+    wx:key="code"
+    class="option {{item.selected ? 'selected' : ''}}"
+    aria-role="button"
+    data-index="{{index}}"
+    hover-class="pressable-active"
+    hover-stay-time="120"
+    bindtap="handleTap"
+  >
+    <view class="option-code mono">{{item.code}}</view>
+    <view class="option-text">{{item.text}}</view>
+  </view>
+</view>

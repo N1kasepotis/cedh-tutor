@@ -1,0 +1,97 @@
+<view class="page random">
+  <particle-background></particle-background>
+
+  <view class="content-layer random-shell">
+    <view class="random-panel surface">
+      <view class="panel-title">随机数</view>
+      <view class="range-row">
+        <input class="range-input mono" type="number" value="{{minInput}}" bindinput="changeMin" />
+        <view class="range-separator">至</view>
+        <input class="range-input mono" type="number" value="{{maxInput}}" bindinput="changeMax" />
+      </view>
+      <view class="preset-row">
+        <view
+          wx:for="{{presets}}"
+          wx:key="id"
+          class="preset-chip"
+          aria-role="button"
+          data-min="{{item.min}}"
+          data-max="{{item.max}}"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="rollPreset"
+        >{{item.label}}</view>
+      </view>
+      <view class="number-result mono">{{numberResultLabel}}</view>
+      <button class="primary-button random-button" hover-class="pressable-active" hover-stay-time="120" bindtap="rollNumber">生成随机数</button>
+    </view>
+
+    <view class="random-panel surface">
+      <view class="panel-title">先手判定</view>
+      <view class="roll-grid">
+        <view wx:for="{{rollOffRolls}}" wx:key="seat" class="roll-cell {{item.isWinner ? 'winner' : ''}}">
+          <view class="roll-seat">{{item.label}}</view>
+          <view class="roll-value mono">{{item.value}}</view>
+        </view>
+      </view>
+      <view class="roll-result {{rollOffTie ? 'tie' : ''}}">{{rollOffResultLabel}}</view>
+      <button class="primary-button random-button roll-off-button" hover-class="pressable-active" hover-stay-time="120" bindtap="rollOff">掷 4 个 D20 骰子</button>
+    </view>
+
+    <view class="random-panel sticker-panel surface">
+      <view class="panel-title">_____ Goblin 开局贴纸</view>
+
+      <view class="sticker-summary">
+        <view class="sticker-power">{{stickerRound.summary}}</view>
+        <view class="sticker-source" wx:if="{{stickerRound.best.word}}">
+          来自 {{stickerRound.best.sheetName}}
+        </view>
+        <view class="sticker-disclaimer">本功能不能代替 REL Competitive cEDH 比赛贴纸</view>
+      </view>
+
+      <view class="sticker-actions">
+        <button
+          class="primary-button random-button sticker-draw-button {{stickerAnimating ? 'drawing' : ''}}"
+          disabled="{{!canDrawStickers}}"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="drawStickers"
+        >随机抽 3 张</button>
+      </view>
+      <view class="sticker-warning" wx:if="{{!canDrawStickers}}">贴纸池至少需要 3 张</view>
+
+      <view class="sticker-results {{stickerAnimating ? 'drawing' : ''}}" wx:if="{{stickerRound.drawnSheets.length}}">
+        <view wx:for="{{stickerRound.drawnSheets}}" wx:key="id" class="sticker-result-card">
+          <view class="sticker-sheet-name">{{item.name}}</view>
+          <view class="sticker-word-list">
+            <view
+              wx:for="{{item.words}}"
+              wx:for-item="word"
+              wx:key="wordIndex"
+              class="sticker-word {{word.isBest ? 'best' : ''}}"
+            >
+              <text class="sticker-word-text">{{word.text}}</text>
+              <text class="sticker-vowel-count mono">{{word.vowelCount}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="random-panel surface tool-entry" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goCabbage">
+      <view class="tool-entry-text">
+        <view class="tool-entry-title">卷心菜对账</view>
+        <view class="tool-entry-sub">The Cabbage Merchant</view>
+      </view>
+      <view class="tool-entry-arrow">›</view>
+    </view>
+
+    <view class="random-panel surface tool-entry" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goIzzet">
+      <view class="tool-entry-text">
+        <view class="tool-entry-title">伊捷风暴</view>
+        <view class="tool-entry-sub">Krark / Ral</view>
+      </view>
+      <view class="tool-entry-arrow">›</view>
+    </view>
+  </view>
+</view>

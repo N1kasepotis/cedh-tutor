@@ -1,0 +1,71 @@
+<view class="page izzet-page">
+  <particle-background></particle-background>
+
+  <view class="content-layer tool-shell">
+    <view class="izzet-engines">
+      <view
+        wx:for="{{izzetEngineList}}"
+        wx:key="key"
+        class="izzet-engine {{item.on ? 'on' : ''}}"
+        aria-role="button"
+        data-key="{{item.key}}"
+        hover-class="pressable-active"
+        hover-stay-time="120"
+        bindtap="toggleIzzetEngine"
+      >{{item.name}}</view>
+      <view class="izzet-krark-counter" wx:if="{{izzetKrarkCount}}">
+        <text class="izzet-krark-label">Krark ×</text>
+        <view class="izzet-ctrl" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="krarkCountDown">−</view>
+        <text class="izzet-krark-val mono">{{izzetKrarkCount}}</text>
+        <view class="izzet-ctrl" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="krarkCountUp">+</view>
+      </view>
+    </view>
+
+    <view class="izzet-cast-group">
+      <button class="primary-button izzet-cast-button" hover-class="pressable-active" hover-stay-time="120" bindtap="stormCastSpell">施放瞬间/法术</button>
+      <button class="secondary-button izzet-cast-other" hover-class="pressable-active" hover-stay-time="120" bindtap="stormCastOther">施放其他咒语</button>
+    </view>
+
+    <view class="izzet-stats">
+      <view class="izzet-stat">
+        <text class="izzet-stat-label">总 storm</text>
+        <text class="izzet-stat-value mono">{{storm.storm}}</text>
+        <view class="izzet-stat-ctrls">
+          <view class="izzet-ctrl" aria-role="button" aria-label="storm 减一" data-field="storm" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
+          <view class="izzet-ctrl" aria-role="button" aria-label="storm 加一" data-field="storm" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
+        </view>
+      </view>
+      <view class="izzet-stat">
+        <text class="izzet-stat-label">瞬间/法术</text>
+        <text class="izzet-stat-value mono">{{storm.spells}}</text>
+        <view class="izzet-stat-ctrls">
+          <view class="izzet-ctrl" aria-role="button" aria-label="瞬间法术减一" data-field="spells" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
+          <view class="izzet-ctrl" aria-role="button" aria-label="瞬间法术加一" data-field="spells" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
+        </view>
+      </view>
+      <view class="izzet-stat izzet-stat-copies" wx:if="{{izzetShowCopies}}">
+        <text class="izzet-stat-label">复制</text>
+        <text class="izzet-stat-value mono">{{storm.copies}}</text>
+        <view class="izzet-stat-ctrls">
+          <view class="izzet-ctrl" aria-role="button" aria-label="复制减一" data-field="copies" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
+          <view class="izzet-ctrl" aria-role="button" aria-label="复制加一" data-field="copies" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
+        </view>
+      </view>
+      <view class="izzet-stat izzet-stat-dmg" wx:if="{{izzetShowSelfDamage}}">
+        <text class="izzet-stat-label">自伤</text>
+        <text class="izzet-stat-value mono">{{storm.selfDamage}}</text>
+        <view class="izzet-stat-ctrls">
+          <view class="izzet-ctrl" aria-role="button" aria-label="自伤减一" data-field="selfDamage" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
+          <view class="izzet-ctrl" aria-role="button" aria-label="自伤加一" data-field="selfDamage" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="izzet-flips">抛币 赢 <text class="mono">{{storm.wins}}</text>  输 <text class="mono izzet-loss">{{storm.losses}}</text></view>
+
+    <view class="izzet-footer">
+      <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="stormUndo">撤销</view>
+      <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="stormReset">新回合</view>
+    </view>
+  </view>
+</view>

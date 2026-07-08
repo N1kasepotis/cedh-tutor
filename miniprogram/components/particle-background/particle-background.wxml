@@ -1,0 +1,10 @@
+<canvas
+  wx:if="{{enabled}}"
+  id="particleCanvas"
+  type="2d"
+  class="particle-canvas"
+  bindtouchstart="handleTouchStart"
+  bindtouchmove="handleTouchMove"
+  bindtouchend="handleTouchEnd"
+  bindtouchcancel="handleTouchEnd"
+></canvas>

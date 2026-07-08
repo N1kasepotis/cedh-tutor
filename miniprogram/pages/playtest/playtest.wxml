@@ -1,0 +1,213 @@
+<view class="page playtest">
+  <view class="content-layer playtest-shell" wx:if="{{!imported}}">
+    <particle-background></particle-background>
+    <view class="import-hint">
+      <view>支持 MTGO / Moxfield / MTGso 纯文本牌表</view>
+      <view>每行「数量 卡名」；主将以 Commander 标题或空行与主牌分隔</view>
+    </view>
+    <textarea
+      class="deck-input"
+      value="{{deckText}}"
+      maxlength="-1"
+      placeholder="粘贴你想测试的套牌或组合技链条"
+      bindinput="handleDeckInput"
+    ></textarea>
+    <view class="import-warning" wx:if="{{importWarning}}">{{importWarning}}</view>
+    <button class="primary-button import-button" hover-class="pressable-active" hover-stay-time="120" bindtap="importDeck">导入并开始</button>
+    <button class="primary-button import-button" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmClearDeckText">清除现套牌</button>
+  </view>
+
+  <view class="playtest-board" wx:else>
+    <view class="board-top">
+      <view class="board-left">
+        <view class="hand-count mono">手牌 {{counts.hand}}</view>
+        <view class="life-counter">
+          <view class="life-btn" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="lifeDown">−</view>
+          <view class="life-val mono">{{life}}</view>
+          <view class="life-btn" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="lifeUp">+</view>
+        </view>
+      </view>
+      <view class="board-actions">
+        <view class="text-button board-action token-action" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="addToken">Token</view>
+        <view class="text-button board-action" wx:if="{{counts.hand}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="randomDiscard">随机弃</view>
+        <view class="text-button board-action" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmRestart">刷新</view>
+        <view class="text-button board-action" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="resetBoard">重置</view>
+      </view>
+    </view>
+
+    <view
+      class="battlefield"
+      id="battlefield"
+      aria-label="战场"
+    >
+      <view
+        wx:for="{{battlefield}}"
+        wx:key="id"
+        class="card-tile field-card {{item.tapped ? 'tapped' : ''}} {{item.token ? 'token' : ''}} {{dragId === item.id ? 'dragging' : ''}}"
+        style="left: {{item.x}}px; top: {{item.y}}px;"
+        aria-role="button"
+        aria-label="{{item.name}}"
+        data-id="{{item.id}}"
+        data-index="{{index}}"
+        catchtouchstart="fieldTouchStart"
+        catchtouchmove="fieldTouchMove"
+        catchtouchend="fieldTouchEnd"
+        bindlongpress="inspectFieldCard"
+      >
+        <image wx:if="{{item.art}}" class="card-art" src="{{item.art}}" mode="aspectFill" lazy-load="{{true}}"></image>
+        <view wx:if="{{!item.art}}" class="card-name">{{item.name}}</view>
+      </view>
+    </view>
+
+    <view class="mana-rail {{manaTotal ? '' : 'mana-dim'}}" aria-label="法力池">
+      <view class="mana-cell mana-cell-W {{manaPool.W ? '' : 'mana-zero'}}">
+        <view class="mana-symbol">W</view>
+        <view class="mana-row">
+          <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="白 减一" data-color="W" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
+          <view class="mana-badge">{{manaPool.W}}</view>
+          <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="白 加一" data-color="W" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
+        </view>
+      </view>
+      <view class="mana-cell mana-cell-U {{manaPool.U ? '' : 'mana-zero'}}">
+        <view class="mana-symbol">U</view>
+        <view class="mana-row">
+          <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="蓝 减一" data-color="U" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
+          <view class="mana-badge">{{manaPool.U}}</view>
+          <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="蓝 加一" data-color="U" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
+        </view>
+      </view>
+      <view class="mana-cell mana-cell-B {{manaPool.B ? '' : 'mana-zero'}}">
+        <view class="mana-symbol">B</view>
+        <view class="mana-row">
+          <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="黑 减一" data-color="B" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
+          <view class="mana-badge">{{manaPool.B}}</view>
+          <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="黑 加一" data-color="B" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
+        </view>
+      </view>
+      <view class="mana-cell mana-cell-R {{manaPool.R ? '' : 'mana-zero'}}">
+        <view class="mana-symbol">R</view>
+        <view class="mana-row">
+          <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="红 减一" data-color="R" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
+          <view class="mana-badge">{{manaPool.R}}</view>
+          <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="红 加一" data-color="R" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
+        </view>
+      </view>
+      <view class="mana-cell mana-cell-G {{manaPool.G ? '' : 'mana-zero'}}">
+        <view class="mana-symbol">G</view>
+        <view class="mana-row">
+          <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="绿 减一" data-color="G" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
+          <view class="mana-badge">{{manaPool.G}}</view>
+          <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="绿 加一" data-color="G" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
+        </view>
+      </view>
+      <view class="mana-cell mana-cell-C {{manaPool.C ? '' : 'mana-zero'}}">
+        <view class="mana-symbol">C</view>
+        <view class="mana-row">
+          <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="无色 减一" data-color="C" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
+          <view class="mana-badge">{{manaPool.C}}</view>
+          <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="无色 加一" data-color="C" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
+        </view>
+      </view>
+      <view class="mana-total" aria-role="button" aria-label="清空法力池" hover-class="pressable-active" hover-stay-time="120" bindtap="manaReset">
+        <view class="mana-total-num mono">{{manaTotal || '╳'}}</view>
+        <view class="mana-total-cap">总量</view>
+      </view>
+    </view>
+
+    <view class="zone-strip">
+      <view class="zone-chip {{commandPreview.mode !== 'empty' ? 'has-art' : ''}}" id="zone-command" aria-role="button" aria-label="主将区" data-zone="command" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
+        <view wx:if="{{commandPreview.mode === 'dual'}}" class="zone-art-split">
+          <image class="zone-art-half" src="{{commandPreview.left}}" mode="aspectFill" lazy-load="{{true}}"></image>
+          <image class="zone-art-half" src="{{commandPreview.right}}" mode="aspectFill" lazy-load="{{true}}"></image>
+        </view>
+        <image wx:elif="{{commandPreview.mode === 'single'}}" class="zone-top-art" src="{{commandPreview.single}}" mode="aspectFill" lazy-load="{{true}}"></image>
+        <view class="zone-label">主将区</view>
+        <view class="zone-count mono">{{counts.command}}</view>
+      </view>
+      <view class="zone-chip {{topCardArt ? 'has-art' : ''}}" id="zone-library" aria-role="button" aria-label="牌库，单击抓牌，长按查找（导师效应）" data-zone="library" hover-class="pressable-active" hover-stay-time="120" bindtap="drawOne" bindlongpress="openZone">
+        <image wx:if="{{topCardArt}}" class="zone-top-art" src="{{topCardArt}}" mode="aspectFill" lazy-load="{{true}}"></image>
+        <view class="zone-label">牌库</view>
+        <view class="zone-count mono">{{counts.library}}</view>
+      </view>
+      <view class="zone-chip {{graveyardTopArt ? 'has-art' : ''}}" id="zone-graveyard" aria-role="button" aria-label="坟场" data-zone="graveyard" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
+        <image wx:if="{{graveyardTopArt}}" class="zone-top-art" src="{{graveyardTopArt}}" mode="aspectFill" lazy-load="{{true}}"></image>
+        <view class="zone-label">坟场</view>
+        <view class="zone-count mono">{{counts.graveyard}}</view>
+      </view>
+      <view class="zone-chip {{exileTopArt ? 'has-art' : ''}}" id="zone-exile" aria-role="button" aria-label="放逐区" data-zone="exile" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
+        <image wx:if="{{exileTopArt}}" class="zone-top-art" src="{{exileTopArt}}" mode="aspectFill" lazy-load="{{true}}"></image>
+        <view class="zone-label">放逐区</view>
+        <view class="zone-count mono">{{counts.exile}}</view>
+      </view>
+    </view>
+
+    <scroll-view class="hand" id="hand" scroll-x enable-flex scroll-left="{{handScrollLeft}}" aria-label="手牌">
+      <view wx:if="{{!hand.length}}" class="hand-empty">单击牌库抓牌</view>
+      <view class="hand-track" wx:else>
+        <view
+          wx:for="{{hand}}"
+          wx:key="id"
+          class="card-tile hand-card"
+          aria-role="button"
+          aria-label="打出 {{item.name}}"
+          data-id="{{item.id}}"
+          bindtap="playFromHand"
+          bindlongpress="inspectHandCard"
+        >
+          <image wx:if="{{item.art}}" class="card-art" src="{{item.art}}" mode="aspectFill" lazy-load="{{true}}"></image>
+          <view wx:if="{{!item.art}}" class="card-name">{{item.name}}</view>
+        </view>
+      </view>
+    </scroll-view>
+
+    <view class="zone-panel-mask" wx:if="{{panelZone}}" aria-role="button" aria-label="关闭面板" bindtap="closeZone"></view>
+    <view class="zone-panel {{panelZone === 'library' ? 'zone-panel-centered' : ''}}" wx:if="{{panelZone}}">
+      <view class="zone-panel-head">
+        <view class="zone-panel-title">{{panelTitle}} · {{panelCards.length}}</view>
+        <view class="zone-panel-actions">
+          <view wx:if="{{panelZone === 'library'}}" class="text-button {{revealTop ? 'reveal-toggle-on' : ''}}" aria-role="button" bindtap="toggleRevealTop">{{revealTop ? '隐藏库顶' : '展示库顶'}}</view>
+          <view wx:if="{{panelZone === 'library'}}" class="text-button" aria-role="button" bindtap="shuffleLibrary">洗牌</view>
+          <view class="text-button" aria-role="button" bindtap="closeZone">关闭</view>
+        </view>
+      </view>
+      <input
+        wx:if="{{panelZone === 'library'}}"
+        class="panel-search"
+        value="{{panelQuery}}"
+        placeholder="输入卡名查找，如 Sol Ring"
+        confirm-type="search"
+        adjust-position="{{false}}"
+        bindinput="handlePanelSearch"
+      />
+      <scroll-view class="zone-panel-list" scroll-y>
+        <view wx:for="{{panelCards}}" wx:key="id" class="zone-panel-row">
+          <view class="zone-panel-name" aria-role="button" aria-label="查看 {{item.name}}" data-id="{{item.id}}" bindtap="inspectPanelCard">{{item.name}}</view>
+          <view class="zone-panel-move">
+            <view class="move-chip" aria-role="button" data-id="{{item.id}}" data-to="hand" bindtap="movePanelCard">手牌</view>
+            <view class="move-chip" aria-role="button" data-id="{{item.id}}" data-to="battlefield" bindtap="movePanelCard">战场</view>
+            <view class="move-chip" wx:if="{{panelZone !== 'graveyard'}}" aria-role="button" data-id="{{item.id}}" data-to="graveyard" bindtap="movePanelCard">坟场</view>
+            <view class="move-chip" wx:if="{{panelZone !== 'library' && panelZone !== 'command'}}" aria-role="button" data-id="{{item.id}}" data-to="library" bindtap="movePanelCard">库顶</view>
+            <view class="move-chip" wx:if="{{panelZone !== 'exile' && panelZone !== 'command'}}" aria-role="button" data-id="{{item.id}}" data-to="exile" bindtap="movePanelCard">放逐</view>
+          </view>
+        </view>
+      </scroll-view>
+    </view>
+
+    <view class="inspect-mask" wx:if="{{inspect}}" aria-role="button" aria-label="关闭详视" bindtap="closeInspect"></view>
+    <view class="inspect-panel" wx:if="{{inspect}}">
+      <image class="inspect-image" src="{{inspect.imageUrl}}" mode="widthFix" lazy-load="{{true}}"></image>
+      <view class="inspect-name">{{inspect.name}}</view>
+      <view class="inspect-move">
+        <view
+          wx:for="{{inspectTargets}}"
+          wx:key="zone"
+          class="move-chip"
+          aria-role="button"
+          data-to="{{item.zone}}"
+          data-position="{{item.position}}"
+          bindtap="moveInspectCard"
+        >{{item.label}}</view>
+      </view>
+    </view>
+  </view>
+</view>

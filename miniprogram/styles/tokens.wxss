@@ -1,0 +1,55 @@
+page {
+  --cedh-bg: #fffefa;
+  --cedh-bg-soft: #f8f5ee;
+  --cedh-surface: rgba(255, 254, 250, 0.68);
+  --cedh-surface-raised: rgba(255, 254, 250, 0.76);
+  --cedh-surface-muted: rgba(248, 245, 238, 0.5);
+  --cedh-input-glass: rgba(255, 254, 250, 0.6);
+  --cedh-overlay-glass: rgba(255, 254, 250, 0.82);
+  --cedh-surface-solid: rgba(255, 254, 250, 0.82);
+  --cedh-line: #e8e1d6;
+  --cedh-line-strong: #cfc4b6;
+  --cedh-text: #1c1713;
+  --cedh-text-soft: #71675e;
+  --cedh-text-faint: #aaa096;
+  --cedh-accent: #9b3a2f;
+  --cedh-accent-ink: #5f211b;
+  --cedh-accent-soft: rgba(155, 58, 47, 0.08);
+  --cedh-accent-line: rgba(155, 58, 47, 0.28);
+  --cedh-danger: #b42318;
+  --cedh-ink: #17130f;
+  --cedh-paper-wash: rgba(246, 239, 229, 0.46);
+
+  --cedh-font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+  --cedh-font-serif: "Songti SC", STSong, "Noto Serif CJK SC", SimSun, Georgia, "Times New Roman", serif;
+  --cedh-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  --cedh-text-10: 20rpx;
+  --cedh-text-12: 24rpx;
+  --cedh-text-14: 28rpx;
+  --cedh-text-16: 32rpx;
+  --cedh-text-18: 36rpx;
+  --cedh-text-20: 40rpx;
+  --cedh-text-24: 48rpx;
+  --cedh-text-30: 60rpx;
+  --cedh-text-36: 76rpx;
+
+  --cedh-space-1: 8rpx;
+  --cedh-space-2: 12rpx;
+  --cedh-space-3: 16rpx;
+  --cedh-space-4: 24rpx;
+  --cedh-space-5: 32rpx;
+  --cedh-space-6: 48rpx;
+  --cedh-space-7: 72rpx;
+  --cedh-space-8: 104rpx;
+
+  --cedh-radius-1: 6rpx;
+  --cedh-radius-2: 12rpx;
+  --cedh-radius-control: 28rpx;
+  --cedh-radius-control-sm: 24rpx;
+  --cedh-radius-pill: 999rpx;
+  --cedh-page-x: 40rpx;
+  --cedh-hairline: 1rpx solid var(--cedh-line);
+  --cedh-shadow-soft: 0 22rpx 70rpx rgba(52, 43, 34, 0.07);
+  --cedh-shadow-lift: 0 32rpx 96rpx rgba(52, 43, 34, 0.1);
+}

@@ -1,0 +1,174 @@
+@import "../../styles/themes/dark-table.wxss";
+
+/* 卷心菜绿主题（accent 覆盖为绿），全屏页版式 */
+.cabbage-page {
+  --cedh-accent: #2fa75d;
+  --cedh-accent-ink: #f3d5b6;
+  --cedh-accent-soft: rgba(47, 167, 93, 0.16);
+  --cedh-accent-line: rgba(47, 167, 93, 0.38);
+}
+
+.tool-shell {
+  display: flex;
+  flex-direction: column;
+  /* 撑满一屏可视高度并把各区块上下铺开（原来挤在顶部） */
+  min-height: calc(100vh - env(safe-area-inset-top) - env(safe-area-inset-bottom) - var(--cedh-space-7) * 2);
+  justify-content: space-between;
+  gap: var(--cedh-space-5);
+}
+
+.cabbage-engines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cedh-space-3);
+}
+
+.cabbage-engine {
+  padding: 20rpx var(--cedh-space-4);
+  color: var(--cedh-text-soft);
+  background: var(--cedh-surface-muted);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-control);
+  font-size: var(--cedh-text-14);
+  line-height: 1.3;
+  text-align: center;
+}
+
+.cabbage-engine.on {
+  color: var(--cedh-accent-ink);
+  background: var(--cedh-accent-soft);
+  border-color: var(--cedh-accent-line);
+}
+
+.cabbage-cast-button {
+  min-height: 104rpx;
+}
+
+.cabbage-mana {
+  display: flex;
+  align-items: baseline;
+  gap: var(--cedh-space-2);
+}
+
+.cabbage-mana-label {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-14);
+}
+
+/* 绿色文本 = 绿法术力；白色文本 = 泛用法术力 */
+.cabbage-green {
+  color: var(--cedh-accent);
+}
+
+.cabbage-mana .cabbage-green {
+  font-size: var(--cedh-text-36);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.cabbage-green-unit {
+  color: var(--cedh-accent);
+  font-size: var(--cedh-text-14);
+}
+
+.cabbage-hint {
+  margin-top: var(--cedh-space-3);
+  color: var(--cedh-text-faint);
+  font-size: var(--cedh-text-12);
+  line-height: 1.45;
+}
+
+.cabbage-tokens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cedh-space-4);
+}
+
+/* 固定三列网格：名 / 计数 / 控件，逐行列宽一致 → −、横置、+ 竖向对齐 */
+.cabbage-token-row {
+  display: grid;
+  grid-template-columns: 128rpx 1fr auto;
+  align-items: center;
+  gap: var(--cedh-space-3);
+}
+
+.cabbage-token-name {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-14);
+}
+
+.cabbage-token-count {
+  display: flex;
+  align-items: baseline;
+  gap: 4rpx;
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+}
+
+.cabbage-num {
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-24);
+  font-weight: 680;
+  line-height: 1;
+}
+
+.cabbage-num-sep {
+  color: var(--cedh-text-faint);
+  font-size: var(--cedh-text-16);
+}
+
+.cabbage-num-dim {
+  color: var(--cedh-text-faint);
+  font-size: var(--cedh-text-16);
+  font-weight: 560;
+}
+
+/* 横置列始终保留（无横置时用空占位），保证 −/+ 在各行对齐 */
+.cabbage-token-ctrls {
+  display: grid;
+  grid-template-columns: 68rpx 88rpx 68rpx;
+  gap: var(--cedh-space-2);
+}
+
+.cabbage-ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 68rpx;
+  color: var(--cedh-text-soft);
+  background: var(--cedh-input-glass);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-control-sm);
+  font-size: var(--cedh-text-14);
+  line-height: 1;
+}
+
+.cabbage-activate {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 84rpx;
+  padding: 0 var(--cedh-space-4);
+  color: var(--cedh-text-soft);
+  background: var(--cedh-input-glass);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-control-sm);
+  font-size: var(--cedh-text-12);
+  text-align: center;
+}
+
+.cabbage-activate.disabled {
+  color: var(--cedh-text-faint);
+  opacity: 0.6;
+}
+
+.cabbage-footer {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cabbage-footer .text-button {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-14);
+}

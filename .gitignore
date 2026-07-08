@@ -1,0 +1,23 @@
+# Dependencies (installed via npm; WeChat DevTools rebuilds miniprogram_npm/)
+node_modules/
+miniprogram_npm/
+
+# WeChat DevTools per-developer / generated settings
+project.private.config.json
+
+# Third-party reference repos — each is its own git repo, kept locally for reference
+# only and not part of the mini-program package (see README「目录结构」external/).
+external/
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+ehthumbs.db
+.idea/
+.vscode/
+*.swp
+*~
+
+# Logs / temp
+*.log
+*.tmp

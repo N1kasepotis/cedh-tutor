@@ -1,0 +1,96 @@
+/* 暗色台面主题（tracker / random / playtest / cabbage / izzet 共用）：黑底 + 羊皮纸白 + 砖红点缀。
+   页面样式只允许引用这里定义的变量；改主题色只改本文件。 */
+
+.tracker,
+.random,
+.playtest,
+.cabbage-page,
+.izzet-page {
+  min-height: 100vh;
+  overflow: visible;
+  background: linear-gradient(180deg, #070707 0%, #020202 58%, #000000 100%);
+
+  /* 全局 token 覆盖 */
+  --cedh-accent: #b24536;
+  --cedh-accent-ink: #f3d5b6;
+  --cedh-accent-soft: rgba(178, 69, 54, 0.16);
+  --cedh-accent-line: rgba(216, 183, 106, 0.48);
+  --cedh-text: #fffefa;
+  --cedh-text-soft: rgba(255, 254, 250, 0.68);
+  --cedh-text-faint: rgba(255, 254, 250, 0.46);
+  --cedh-line: rgba(255, 249, 224, 0.18);
+  --cedh-surface: rgba(255, 249, 224, 0.08);
+  --cedh-surface-raised: rgba(255, 249, 224, 0.12);
+  --cedh-surface-muted: rgba(255, 249, 224, 0.07);
+  --cedh-input-glass: rgba(255, 249, 224, 0.1);
+  --cedh-shadow-soft: 0 28rpx 72rpx rgba(0, 0, 0, 0.22);
+}
+
+/* 玻璃面板：继承 tracker .deck-card 的顶部高光效果 */
+.tracker .surface,
+.random .surface,
+.playtest .surface,
+.cabbage-page .surface,
+.izzet-page .surface {
+  box-shadow: var(--cedh-shadow-soft), inset 0 1rpx 0 rgba(255, 255, 255, 0.72);
+}
+
+.tracker {
+  color: var(--cedh-text);
+  --cedh-line-strong: rgba(255, 249, 224, 0.3);
+  --cedh-overlay-glass: rgba(14, 10, 8, 0.9);
+  --cedh-danger: #c84c44;
+
+  /* 战绩结果配色 */
+  --tracker-win: #2fa75d;
+  --tracker-win-soft: rgba(47, 167, 93, 0.13);
+  --tracker-win-line: rgba(47, 167, 93, 0.34);
+  --tracker-loss: #c84c44;
+  --tracker-loss-soft: rgba(200, 76, 68, 0.12);
+  --tracker-loss-line: rgba(200, 76, 68, 0.34);
+  --tracker-draw: #d4a72f;
+  --tracker-draw-soft: rgba(212, 167, 47, 0.15);
+  --tracker-draw-line: rgba(212, 167, 47, 0.38);
+
+  /* 座位配色（叶色系 1-4 号位） */
+  --tracker-seat-leaf-1: rgba(58, 128, 64, 0.17);
+  --tracker-seat-leaf-2: rgba(88, 158, 66, 0.14);
+  --tracker-seat-leaf-3: rgba(151, 184, 68, 0.13);
+  --tracker-seat-leaf-4: rgba(214, 185, 61, 0.13);
+  --tracker-seat-leaf-line-1: rgba(58, 128, 64, 0.36);
+  --tracker-seat-leaf-line-2: rgba(88, 158, 66, 0.3);
+  --tracker-seat-leaf-line-3: rgba(151, 184, 68, 0.28);
+  --tracker-seat-leaf-line-4: rgba(214, 185, 61, 0.28);
+  --tracker-seat-leaf-solid-1: #3a8040;
+  --tracker-seat-leaf-solid-2: #589e42;
+  --tracker-seat-leaf-solid-3: #97b844;
+  --tracker-seat-leaf-solid-4: #d6b93d;
+  --tracker-seat-leaf-text-1: #2f7436;
+  --tracker-seat-leaf-text-2: #4b8e39;
+  --tracker-seat-leaf-text-3: #7a9632;
+  --tracker-seat-leaf-text-4: #9b7d16;
+
+  /* 按钮体系（由 app.wxss 的 .primary-button / .secondary-button 消费） */
+  --cedh-btn-primary-color: #fffdf2;
+  --cedh-btn-primary-bg: linear-gradient(135deg, #2fa75d 0%, #79bf46 58%, #d6b93d 100%);
+  --cedh-btn-primary-border: 1rpx solid rgba(79, 175, 100, 0.44);
+  --cedh-btn-primary-shadow: 0 20rpx 54rpx rgba(66, 140, 50, 0.18), inset 0 1rpx 0 rgba(255, 255, 255, 0.32);
+  --cedh-btn-secondary-color: var(--cedh-text-soft);
+  --cedh-btn-secondary-bg: rgba(255, 254, 250, 0.66);
+  --cedh-btn-secondary-border: 1rpx solid rgba(177, 139, 82, 0.24);
+  --cedh-btn-secondary-shadow: 0 14rpx 34rpx rgba(54, 42, 31, 0.055), inset 0 1rpx 0 rgba(255, 255, 255, 0.62);
+}
+
+.random,
+.playtest,
+.cabbage-page,
+.izzet-page {
+  --cedh-btn-primary-color: var(--cedh-text);
+  --cedh-btn-primary-bg: var(--cedh-input-glass);
+  --cedh-btn-primary-border: var(--cedh-hairline);
+  --cedh-btn-primary-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.12), inset 0 1rpx 0 rgba(255, 255, 255, 0.14);
+  --cedh-btn-secondary-color: var(--cedh-text-soft);
+  --cedh-btn-secondary-bg: var(--cedh-surface-muted);
+  --cedh-btn-secondary-border: var(--cedh-hairline);
+  --cedh-btn-secondary-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.12), inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
+}

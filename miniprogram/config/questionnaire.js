@@ -1,0 +1,183 @@
+const dimensionLabels = {
+  speed: '快速',
+  storm: '风暴',
+  combo: '组合技',
+  combat: '战斗伤害/烫血',
+  damagePressure: '烫血压制',
+  midrange: '中速',
+  control: '控制',
+  stax: 'Stax',
+  interaction: '互动',
+  lowInteraction: '低互动',
+  highBudget: '高预算',
+  mediumBudget: '中等预算',
+  budgetFriendly: '低预算',
+  complex: '复杂决策',
+  simple: '简单直接',
+  white: '白色',
+  blue: '蓝色',
+  black: '黑色',
+  red: '红色',
+  green: '绿色',
+  colorless: '无色',
+  commanderDependent: '强依赖指挥官',
+  commanderFlexible: '中等依赖指挥官',
+  commanderIndependent: '低依赖指挥官',
+  partnerFriendly: '喜欢拍档',
+  partnerAverse: '不喜欢拍档',
+  partnerNeutral: '拍档无所谓',
+  proactive: '主动进攻',
+  lateGame: '后期运营',
+  consistency: '一致性',
+  flexibility: '灵活性',
+  competitive: '比赛强度',
+  fun: '上手乐趣',
+  value: '资源运营',
+  spellChain: '祭礼链条',
+  permanentEngine: '生物引擎',
+  artifact: '神器与珍宝引擎',
+  enchantmentEngine: '结界引擎',
+  graveyard: '坟场利用',
+  cradleReset: '盖亚的育苗地重置',
+};
+
+const questions = [
+  {
+    id: 'speed',
+    title: '套牌速度',
+    type: 'single',
+    options: [
+      { id: 'turbo', text: 'Turbo', weights: { speed: 3, proactive: 2, competitive: 1 } },
+      { id: 'midrange', text: '中速', weights: { midrange: 3, interaction: 1, value: 1 } },
+      { id: 'slowControl', text: '控制', weights: { control: 3, lateGame: 2, interaction: 1 } },
+    ],
+  },
+  {
+    id: 'winCondition',
+    title: '获胜方式',
+    type: 'single',
+    options: [
+      { id: 'combo', text: '组合技', weights: { combo: 3, consistency: 1 } },
+      { id: 'combat', text: '战斗伤害/烫血', weights: { combat: 6, damagePressure: 5, proactive: 3 } },
+      { id: 'storm', text: '风暴', weights: { storm: 4, combo: 1, complex: 1 } },
+    ],
+  },
+  {
+    id: 'interaction',
+    title: '干扰对手',
+    type: 'single',
+    options: [
+      { id: 'stax', text: 'Stax 锁控', weights: { stax: 3, control: 2 } },
+      { id: 'moderate', text: '适度互动', weights: { interaction: 3, midrange: 1, blue: 1 } },
+      { id: 'stackControl', text: '康完你的康他的', weights: { interaction: 4, control: 2, blue: 2, complex: 1 } },
+      { id: 'low', text: '各扫门前雪', weights: { lowInteraction: 3, proactive: 2, speed: 1 } },
+    ],
+  },
+  {
+    id: 'budget',
+    title: '预算',
+    type: 'single',
+    options: [
+      { id: 'high', text: '高预算无所谓', weights: { highBudget: 3, competitive: 1 } },
+      { id: 'medium', text: '中等', weights: { mediumBudget: 3, value: 1 } },
+      { id: 'low', text: '尽量低预算', weights: { budgetFriendly: 3, simple: 1 } },
+    ],
+  },
+  {
+    id: 'complexity',
+    title: '操作复杂度',
+    type: 'single',
+    options: [
+      { id: 'complex', text: '喜欢复杂决策', weights: { complex: 3, flexibility: 1 } },
+      { id: 'simple', text: '简单直接好上手', weights: { simple: 3, consistency: 1 } },
+    ],
+  },
+  {
+    id: 'colors',
+    title: '颜色偏好',
+    type: 'multiple',
+    options: [
+      { id: 'white', text: '白 W', weights: { white: 7, stax: 1 } },
+      { id: 'blue', text: '蓝 U', weights: { blue: 7, interaction: 1 } },
+      { id: 'black', text: '黑 B', weights: { black: 7, combo: 1 } },
+      { id: 'red', text: '红 R', weights: { red: 7, speed: 1 } },
+      { id: 'green', text: '绿 G', weights: { green: 7, value: 1 } },
+      { id: 'colorless', text: '无色 C', weights: { colorless: 7, value: 1 } },
+      { id: 'any', text: '无所谓', weights: { flexibility: 3 } },
+    ],
+  },
+  {
+    id: 'commanderDependency',
+    title: '指挥官依赖度',
+    type: 'single',
+    options: [
+      { id: 'high', text: '围绕指挥官运转', weights: { commanderDependent: 4 } },
+      { id: 'medium', text: '有指挥官更强，但没它也能运转', weights: { commanderFlexible: 4 } },
+      { id: 'low', text: '不想太依赖指挥官', weights: { commanderIndependent: 4 } },
+    ],
+  },
+  {
+    id: 'partnerPreference',
+    title: '是否介意拍档',
+    type: 'single',
+    options: [
+      { id: 'dislike', text: '不喜欢', weights: { partnerAverse: 5 } },
+      { id: 'like', text: '喜欢', weights: { partnerFriendly: 4 } },
+      { id: 'any', text: '无所谓', weights: { partnerNeutral: 1 } },
+    ],
+  },
+  {
+    id: 'style',
+    title: '风格',
+    type: 'single',
+    options: [
+      { id: 'proactive', text: '主动进攻', weights: { proactive: 3, speed: 1 } },
+      { id: 'lateGame', text: '后期运营', weights: { lateGame: 3, control: 1, value: 1 } },
+    ],
+  },
+  {
+    id: 'axis',
+    title: '取向',
+    type: 'single',
+    options: [
+      { id: 'linear', text: '线性游戏计划', weights: { consistency: 3, competitive: 1 } },
+      { id: 'flexibility', text: '灵活性优先', weights: { flexibility: 3, complex: 1, fun: 1 } },
+    ],
+  },
+  {
+    id: 'priority',
+    title: '看重',
+    type: 'single',
+    options: [
+      { id: 'competitive', text: '比赛强度', weights: { competitive: 3, consistency: 1 } },
+      { id: 'fun', text: '上手乐趣', weights: { fun: 3, simple: 1 } },
+    ],
+  },
+  {
+    id: 'resourceEngine',
+    title: '资源累计方式',
+    type: 'multiple',
+    multiSelectDecay: [1, 0.78, 0.6, 0.45, 0.32, 0.22],
+    options: [
+      { id: 'spellChain', text: '祭礼链条', weights: { spellChain: 6, storm: 3, speed: 2, complex: 1 } },
+      { id: 'permanentEngine', text: '生物引擎', weights: { permanentEngine: 6, value: 3, midrange: 2 } },
+      { id: 'artifact', text: '神器与珍宝引擎', weights: { artifact: 6, combo: 2, speed: 2 } },
+      { id: 'enchantmentEngine', text: '结界引擎', weights: { enchantmentEngine: 6, value: 3, midrange: 2 } },
+      { id: 'graveyard', text: '坟场利用', weights: { graveyard: 6, combo: 2, value: 2 } },
+      { id: 'cradleReset', text: '盖亚的育苗地重置', weights: { cradleReset: 6, permanentEngine: 2, value: 2 } },
+      { id: 'any', text: '无所谓', weights: { flexibility: 2 } },
+    ],
+  },
+];
+
+const matchingConfig = {
+  colorMismatchMultiplier: 0.48,
+  unselectedColorMultiplier: 0.82,
+  partnerDislikeMultiplier: 0.82,
+};
+
+module.exports = {
+  dimensionLabels,
+  matchingConfig,
+  questions,
+};

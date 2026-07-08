@@ -1,0 +1,64 @@
+<view
+  class="page home"
+  bindtouchstart="handleHomeTouchStart"
+  bindtouchmove="handleHomeTouchMove"
+  bindtouchend="handleHomeTouchEnd"
+  bindtouchcancel="handleHomeTouchEnd"
+>
+  <particle-background id="homeParticles" interactive="{{true}}"></particle-background>
+
+  <view class="content-layer home-content">
+    <view class="title display-title" aria-label="cEDH Tutor">
+      <text class="title-latin">cEDH</text>
+      <text class="title-tutor">Tutor</text>
+    </view>
+    <view class="subtitle">竞技指挥官导师</view>
+    <view class="home-actions">
+      <view class="home-button home-button-edhti" aria-role="button" aria-label="人格测试" hover-class="pressable-active" hover-stay-time="120" bindtap="goEdhti">
+        <view class="home-button-glass-stack">
+          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
+        </view>
+        <view class="home-button-text">
+          <view class="home-button-zh">人格测试</view>
+          <view class="home-button-en" aria-hidden="true">EDHTI TEST</view>
+        </view>
+      </view>
+      <view class="home-button home-button-match" aria-role="button" aria-label="火花觉醒 指挥官问卷" hover-class="pressable-active" hover-stay-time="120" bindtap="goQuiz">
+        <view class="home-button-glass-stack">
+          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
+        </view>
+        <view class="home-button-text">
+          <view class="home-button-zh">火花觉醒</view>
+          <view class="home-button-en" aria-hidden="true">SPARK ZONE</view>
+        </view>
+      </view>
+      <view class="home-button home-button-tracker" aria-role="button" aria-label="我的主将" hover-class="pressable-active" hover-stay-time="120" bindtap="goTracker">
+        <view class="home-button-glass-stack">
+          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
+        </view>
+        <view class="home-button-text">
+          <view class="home-button-zh">我的主将</view>
+          <view class="home-button-en" aria-hidden="true">COMMANDERS</view>
+        </view>
+      </view>
+      <view class="home-button home-button-random" aria-role="button" aria-label="混沌工具" hover-class="pressable-active" hover-stay-time="120" bindtap="goRandom">
+        <view class="home-button-glass-stack">
+          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
+        </view>
+        <view class="home-button-text">
+          <view class="home-button-zh">混沌工具</view>
+          <view class="home-button-en" aria-hidden="true">CHAOS TOOLS</view>
+        </view>
+      </view>
+      <view class="home-button home-button-playtest" aria-role="button" aria-label="套牌试玩" hover-class="pressable-active" hover-stay-time="120" bindtap="goPlaytest">
+        <view class="home-button-glass-stack">
+          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
+        </view>
+        <view class="home-button-text">
+          <view class="home-button-zh">套牌试玩</view>
+          <view class="home-button-en" aria-hidden="true">PLAYTEST</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

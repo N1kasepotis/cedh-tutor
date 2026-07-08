@@ -1,0 +1,128 @@
+<view class="page tracker" data-page-title="指挥官战情室">
+  <particle-background></particle-background>
+
+  <view class="content-layer tracker-shell">
+    <view class="deck-list">
+      <view wx:for="{{decks}}" wx:key="id" class="deck-card surface">
+        <view class="deck-card-head">
+          <view class="deck-name">
+            <text wx:for="{{item.displayLines}}" wx:for-item="line" wx:key="*this" class="deck-name-line">{{line}}</text>
+          </view>
+          <view class="text-button deck-delete-button" aria-role="button" aria-label="删除套牌" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="deleteDeck">删除</view>
+        </view>
+
+        <view class="selector-block" wx:if="{{!item.commander}}">
+          <input
+            class="commander-input"
+            value="{{item.query}}"
+            placeholder="输入指挥官名称，如 Yuriko"
+            data-id="{{item.id}}"
+            bindfocus="focusCommanderInput"
+            bindinput="handleCommanderInput"
+          />
+          <view class="deck-onboarding" wx:if="{{!item.matches.length}}">先搜索并选定你的主将，之后每打完一局回来记一笔</view>
+          <view wx:if="{{item.showSuggestions}}" class="suggestions">
+            <view
+              wx:for="{{item.suggestions}}"
+              wx:for-item="commander"
+              wx:key="name"
+              class="suggestion"
+              data-deck-id="{{item.id}}"
+              data-name="{{commander.name}}"
+              bindtap="selectCommander"
+            >
+              {{commander.name}}
+            </view>
+          </view>
+        </view>
+
+        <view class="stats-grid">
+          <view class="stat-cell">
+            <view class="stat-value mono">{{item.stats.winRateLabel}}</view>
+            <view class="stat-label">胜率</view>
+          </view>
+          <view class="stat-cell">
+            <view class="stat-value mono">{{item.stats.total}}</view>
+            <view class="stat-label">总场次</view>
+          </view>
+          <view class="stat-cell">
+            <view class="stat-value mono">{{item.stats.wins}} / {{item.stats.losses}} / {{item.stats.draws}}</view>
+            <view class="stat-label">胜负平</view>
+          </view>
+        </view>
+
+        <view class="chart-section">
+          <view class="chart-title">胜率曲线</view>
+          <canvas id="winrateChart-{{item.id}}" type="2d" class="chart-canvas"></canvas>
+        </view>
+        <view class="chart-section">
+          <view class="chart-title">轮次胜率</view>
+          <canvas id="seatWinrateChart-{{item.id}}" type="2d" class="chart-canvas"></canvas>
+        </view>
+
+        <view class="record-entry">
+          <view class="record-row">
+            <picker mode="date" value="{{item.pendingDate}}" data-id="{{item.id}}" bindchange="changePendingDate">
+              <view class="date-picker mono">{{item.pendingDate}}</view>
+            </picker>
+          </view>
+          <view class="record-label">结果</view>
+          <view class="result-buttons">
+            <view
+              wx:for="{{resultOptions}}"
+              wx:for-item="resultOption"
+              wx:key="id"
+              class="result-button {{resultOption.id}} {{item.pendingResult === resultOption.id ? 'selected' : ''}}"
+              aria-role="button"
+              data-id="{{item.id}}"
+              data-result="{{resultOption.id}}"
+              hover-class="pressable-active"
+              hover-stay-time="120"
+              bindtap="selectPendingResult"
+            >{{resultOption.label}}</view>
+          </view>
+          <view class="record-label">座位</view>
+          <view class="seat-buttons">
+            <view
+              wx:for="{{seatOptions}}"
+              wx:for-item="seat"
+              wx:key="id"
+              class="seat-button {{seat.id}} {{item.pendingSeat === seat.id ? 'selected' : ''}}"
+              aria-role="button"
+              data-id="{{item.id}}"
+              data-seat="{{seat.id}}"
+              hover-class="pressable-active"
+              hover-stay-time="120"
+              bindtap="selectPendingSeat"
+            >{{seat.label}}</view>
+          </view>
+          <button class="primary-button add-match-button" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="addMatch">添加对局</button>
+        </view>
+
+        <view class="match-list" wx:if="{{item.matches.length}}">
+          <view
+            wx:for="{{item.matches}}"
+            wx:for-item="match"
+            wx:key="id"
+            class="match-row"
+            data-deck-id="{{item.id}}"
+            data-match-id="{{match.id}}"
+            bindlongpress="confirmDeleteMatch"
+          >
+            <view class="match-date mono">{{match.date}}</view>
+            <view class="match-seat {{match.seatClass}}">{{match.seatLabel}}</view>
+            <view class="match-result {{match.result}}">{{match.label}}</view>
+            <button class="text-button" aria-label="删除这条对局" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmDeleteMatch">删除</button>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <button class="secondary-button add-deck-button" aria-label="添加套牌" disabled="{{!canAddDeck}}" hover-class="pressable-active" hover-stay-time="120" bindtap="addDeck">+</button>
+
+    <view class="debug-actions">
+      <view class="secondary-button debug-action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="exportData">复制战绩文本</view>
+      <view class="secondary-button debug-action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="clearData">清空数据</view>
+    </view>
+  </view>
+</view>

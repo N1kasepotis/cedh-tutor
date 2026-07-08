@@ -1,0 +1,55 @@
+/* 霓虹街机主题（EDHTI 页）：深蓝紫底 + 粉/蓝霓虹。
+   页面样式只允许引用这里定义的变量；改主题色只改本文件。 */
+
+.edhti {
+  min-height: 100vh;
+  color: #f7f4ff;
+  background: linear-gradient(180deg, #080715 0%, #090d24 48%, #03040c 100%);
+
+  /* 调色板（RGB 三元组，供 rgba(var(--x-rgb), α) 引用） */
+  --edhti-pink-rgb: 255, 123, 200;
+  --edhti-blue-rgb: 104, 199, 255;
+  --edhti-ice-rgb: 185, 232, 255;
+  --edhti-magenta-rgb: 255, 43, 214;
+  --edhti-cyan-rgb: 40, 246, 255;
+  --edhti-ink-rgb: 248, 251, 255;
+  --edhti-blue: #68c7ff;
+
+  /* 面板底色渐变 */
+  --edhti-panel-wash: linear-gradient(145deg, rgba(22, 20, 58, 0.84), rgba(10, 20, 48, 0.72));
+  --edhti-panel-wash-deep: linear-gradient(145deg, rgba(22, 20, 58, 0.84) 0%, rgba(12, 18, 52, 0.72) 52%, rgba(8, 32, 58, 0.62) 100%);
+  --edhti-commander-wash: linear-gradient(135deg, rgba(8, 12, 28, 0.94), rgba(38, 16, 58, 0.9));
+
+  /* 全局 token 覆盖 */
+  --cedh-surface: rgba(16, 18, 46, 0.72);
+  --cedh-surface-raised: rgba(18, 21, 56, 0.78);
+  --cedh-surface-muted: rgba(14, 18, 42, 0.58);
+  --cedh-input-glass: rgba(18, 21, 56, 0.68);
+  --cedh-line: rgba(185, 232, 255, 0.18);
+  --cedh-line-strong: rgba(255, 123, 200, 0.36);
+  --cedh-text: #f7f4ff;
+  --cedh-text-soft: rgba(226, 234, 255, 0.68);
+  --cedh-text-faint: rgba(226, 234, 255, 0.38);
+  --cedh-accent: #ff7bc8;
+  --cedh-accent-ink: #ffd6ef;
+  --cedh-accent-soft: rgba(255, 123, 200, 0.13);
+  --cedh-accent-line: rgba(255, 123, 200, 0.42);
+  --cedh-shadow-soft: 0 28rpx 86rpx rgba(0, 0, 0, 0.42);
+
+  /* 按钮体系（由 app.wxss 的 .primary-button / .secondary-button 消费） */
+  --cedh-btn-primary-color: #fff3fb;
+  --cedh-btn-primary-bg: linear-gradient(135deg, rgba(255, 43, 214, 0.74), rgba(104, 199, 255, 0.28) 58%, rgba(14, 16, 42, 0.96));
+  --cedh-btn-primary-border: 1rpx solid rgba(255, 123, 200, 0.46);
+  --cedh-btn-primary-shadow: 0 20rpx 54rpx rgba(255, 43, 214, 0.18), inset 0 1rpx 0 rgba(248, 251, 255, 0.22);
+  --cedh-btn-secondary-color: rgba(247, 244, 255, 0.78);
+  --cedh-btn-secondary-bg: rgba(12, 16, 44, 0.5);
+  --cedh-btn-secondary-border: 1rpx solid rgba(104, 199, 255, 0.28);
+  --cedh-btn-secondary-shadow: 0 14rpx 38rpx rgba(0, 0, 0, 0.3), inset 0 1rpx 0 rgba(248, 251, 255, 0.1);
+
+  /* 玻璃面板：顶部高光 */
+  --cedh-surface-shadow: var(--cedh-shadow-soft), inset 0 1rpx 0 rgba(248, 251, 255, 0.18);
+}
+
+.edhti .surface {
+  box-shadow: var(--cedh-surface-shadow);
+}

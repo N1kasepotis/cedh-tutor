@@ -1,0 +1,219 @@
+.home-content {
+  display: flex;
+  min-height: calc(100vh - 240rpx);
+  flex-direction: column;
+  justify-content: flex-end;
+  align-items: stretch;
+  gap: var(--cedh-space-4);
+  padding-bottom: var(--cedh-space-8);
+}
+
+.title {
+  color: var(--cedh-text);
+  font-size: 108rpx;
+  letter-spacing: -0.06em;
+  line-height: 1.08;
+}
+
+.display-title {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: baseline;
+  justify-content: center;
+  width: 552rpx;
+  box-sizing: border-box;
+  padding: 0 0 10rpx 4rpx;
+  color: var(--cedh-ink);
+  font-style: italic;
+  font-weight: 800;
+  transform: skewX(-8deg);
+  transform-origin: left center;
+  /* 统一渲染：iOS 默认亚像素抗锯齿会把重字重描得更粗，与安卓灰度抗锯齿拉开差距 */
+  -webkit-font-smoothing: antialiased;
+  text-shadow:
+    2rpx 2rpx 0 rgba(177, 139, 82, 0.22),
+    0 18rpx 40rpx rgba(95, 33, 27, 0.14);
+}
+
+/* cEDHDisplay = index.js 用 wx.loadFontFace 内嵌的 Archivo Black；系统字体只作加载前/失败兜底 */
+.title-latin {
+  font-family: "cEDHDisplay", "Arial Black", "Avenir Next Condensed", "DIN Condensed", Impact, var(--cedh-font-sans);
+  font-size: 108rpx;
+  font-weight: 900;
+  letter-spacing: -0.085em;
+  line-height: 1.05;
+}
+
+.title-tutor {
+  margin-left: 20rpx;
+  font-family: "cEDHDisplay", "Arial Black", "Avenir Next Condensed", "DIN Condensed", Impact, var(--cedh-font-sans);
+  font-size: 102rpx;
+  font-weight: 900;
+  letter-spacing: -0.07em;
+  line-height: 1.05;
+}
+
+.subtitle {
+  align-self: flex-start;
+  width: 552rpx;
+  max-width: 100%;
+  margin-top: -22rpx;
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-14);
+  font-weight: 420;
+  letter-spacing: 0.12em;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.home-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 58rpx;
+  align-items: flex-start;
+  width: calc(100% + 44rpx);
+  margin-left: -44rpx;
+  margin-top: var(--cedh-space-6);
+}
+
+.home-button {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  width: 284rpx;
+  max-width: calc(100vw - 104rpx);
+  height: 116rpx;
+  min-height: 0;
+  padding: 20rpx 36rpx 20rpx 12rpx;
+  overflow: visible;
+  color: rgba(18, 20, 21, 0.94);
+  background: transparent;
+  border: 0;
+  border-radius: var(--cedh-radius-control-sm);
+  box-shadow: none;
+  filter: none;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  line-height: 1.1;
+  transition:
+    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 220ms ease;
+  will-change: transform, opacity;
+}
+
+.home-button-glass-stack {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.home-button-glass {
+  position: absolute;
+  inset: 0;
+  border: 1rpx solid rgba(255, 249, 224, 0.72);
+  border-radius: var(--cedh-radius-control-sm);
+  background: rgba(255, 249, 224, 0.52);
+  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.84);
+  backdrop-filter: blur(20rpx);
+  -webkit-backdrop-filter: blur(20rpx);
+  clip-path: polygon(0 8%, 3% 0, 100% 0, 88% 100%, 3% 100%, 0 92%);
+  transform-origin: left top;
+}
+
+.home-button-glass-1 {
+  z-index: 5;
+  border-color: rgba(255, 249, 224, 0.76);
+  background: rgba(255, 249, 224, 0.56);
+  opacity: 0.96;
+  transform: translate3d(0, 0, 0);
+}
+
+.home-button-glass-2 {
+  z-index: 4;
+  border-color: rgba(226, 207, 172, 0.46);
+  background: rgba(248, 240, 218, 0.62);
+  opacity: 0.48;
+  transform: translate3d(-6rpx, 6rpx, 0);
+}
+
+.home-button-glass-3 {
+  z-index: 3;
+  border-color: rgba(205, 185, 151, 0.36);
+  background: rgba(238, 228, 211, 0.68);
+  opacity: 0.32;
+  transform: translate3d(-12rpx, 12rpx, 0);
+}
+
+.home-button-glass-4 {
+  z-index: 2;
+  border-color: rgba(172, 160, 142, 0.3);
+  background: rgba(224, 220, 211, 0.74);
+  opacity: 0.22;
+  transform: translate3d(-18rpx, 18rpx, 0);
+}
+
+.home-button-glass-5 {
+  z-index: 1;
+  border-color: rgba(139, 142, 136, 0.24);
+  background: rgba(211, 214, 209, 0.8);
+  opacity: 0.15;
+  transform: translate3d(-24rpx, 24rpx, 0);
+}
+
+.home-button-text {
+  position: absolute;
+  inset: 0;
+  z-index: 6;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  pointer-events: none;
+}
+
+.home-button-zh {
+  position: relative;
+  z-index: 2;
+  color: rgba(138, 64, 22, 0.9);
+  font-family: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", "PingFang SC", "Microsoft YaHei", serif;
+  font-size: var(--cedh-text-18);
+  font-style: italic;
+  font-weight: 620;
+  letter-spacing: -0.035em;
+  text-shadow:
+    1rpx 1rpx 0 rgba(92, 12, 16, 0.28),
+    -1rpx -1rpx 0 rgba(255, 224, 118, 0.32);
+}
+
+@media (max-width: 360px) {
+  .title-latin {
+    font-size: 96rpx;
+  }
+
+  .title-tutor {
+    font-size: 90rpx;
+  }
+
+  .display-title {
+    width: 100%;
+  }
+}
+
+.home-button-en {
+  position: relative;
+  z-index: 2;
+  margin-top: 8rpx;
+  color: rgba(16, 14, 12, 0.38);
+  font-family: "Arial Black", "Avenir Next Condensed", "DIN Condensed", Impact, var(--cedh-font-sans);
+  font-size: 16rpx;
+  font-style: normal;
+  font-weight: 760;
+  letter-spacing: 0.34em;
+  line-height: 1;
+  transform: none;
+  transform-origin: left center;
+}

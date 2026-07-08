@@ -1,0 +1,84 @@
+<view class="page result">
+  <particle-background></particle-background>
+
+  <view class="content-layer result-shell">
+    <block wx:if="{{hasResult}}">
+      <view class="recommend-list">
+        <view wx:for="{{recommendations}}" wx:key="name" class="recommend-card surface {{item.isTop ? 'top-match' : ''}} {{item.previewMode}}">
+          <view class="banner-art banner-art-left" wx:if="{{item.isDualPreview}}">
+            <image
+              wx:if="{{item.leftPreview.artCrop || item.leftPreview.normal}}"
+              class="banner-art-image"
+              lazy-load="{{true}}"
+              src="{{item.leftPreview.artCrop || item.leftPreview.normal}}"
+              mode="aspectFill"
+              aria-role="button"
+              aria-label="查看卡图"
+              data-url="{{item.leftPreview.normal}}"
+              bindtap="previewCardImage"
+            ></image>
+            <view wx:else class="banner-art-placeholder"></view>
+          </view>
+          <view class="banner-art banner-art-right" wx:if="{{item.isDualPreview}}">
+            <image
+              wx:if="{{item.rightPreview.artCrop || item.rightPreview.normal}}"
+              class="banner-art-image"
+              lazy-load="{{true}}"
+              src="{{item.rightPreview.artCrop || item.rightPreview.normal}}"
+              mode="aspectFill"
+              aria-role="button"
+              aria-label="查看卡图"
+              data-url="{{item.rightPreview.normal}}"
+              bindtap="previewCardImage"
+            ></image>
+            <view wx:else class="banner-art-placeholder"></view>
+          </view>
+          <view class="banner-art banner-art-center" wx:if="{{item.isSinglePreview}}">
+            <image
+              wx:if="{{item.singlePreview.artCrop || item.singlePreview.normal}}"
+              class="banner-art-image"
+              lazy-load="{{true}}"
+              src="{{item.singlePreview.artCrop || item.singlePreview.normal}}"
+              mode="aspectFill"
+              aria-role="button"
+              aria-label="查看卡图"
+              data-url="{{item.singlePreview.normal}}"
+              bindtap="previewCardImage"
+            ></image>
+            <view wx:else class="banner-art-placeholder"></view>
+          </view>
+
+          <view class="recommend-content">
+            <view class="recommend-kicker">
+              <view wx:if="{{item.isTop}}" class="top-match-badge">最强羁绊</view>
+            </view>
+            <view class="recommend-name {{item.isTop && item.displayLines.length > 1 ? 'recommend-name-stacked' : ''}}">
+              <block wx:if="{{item.isTop && item.displayLines.length > 1}}">
+                <text wx:for="{{item.displayLines}}" wx:key="*this" class="recommend-name-line">{{item}}</text>
+              </block>
+              <block wx:else>{{item.displayName}}</block>
+            </view>
+          </view>
+
+          <button class="secondary-button link-button" data-url="{{item.edhtop16Url}}" hover-class="pressable-active" hover-stay-time="120" bindtap="copyLink">复制 edhtop16 链接</button>
+        </view>
+      </view>
+
+      <view class="image-credit">图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师</view>
+
+      <view class="actions">
+        <view class="secondary-button action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="restart">重新匹配</view>
+        <view class="secondary-button action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goHome">返回首页</view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="empty surface">
+        <view class="empty-title">还没有完成问卷</view>
+        <view class="empty-text">完成问卷后会在这里显示推荐结果</view>
+        <button class="primary-button" hover-class="pressable-active" hover-stay-time="120" bindtap="restart">开始问卷</button>
+      </view>
+    </block>
+  </view>
+
+</view>

@@ -1,0 +1,603 @@
+@import "../../styles/themes/dark-table.wxss";
+
+.playtest {
+  display: flex;
+  flex-direction: column;
+  padding: calc(env(safe-area-inset-top) + var(--cedh-space-4)) var(--cedh-space-4) calc(env(safe-area-inset-bottom) + var(--cedh-space-3));
+  overflow: hidden;
+  color: var(--cedh-text);
+}
+
+/* ===== 导入态 ===== */
+.playtest-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cedh-space-4);
+  padding-top: var(--cedh-space-5);
+}
+
+.import-hint {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+  line-height: 1.6;
+}
+
+.deck-input {
+  box-sizing: border-box;
+  width: 100%;
+  min-height: 520rpx;
+  padding: var(--cedh-space-4);
+  color: var(--cedh-text);
+  background: rgba(0, 0, 0, 0.55);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
+  font-family: var(--cedh-font-mono);
+  font-size: var(--cedh-text-12);
+  line-height: 1.6;
+}
+
+.import-warning {
+  color: var(--cedh-accent);
+  font-size: var(--cedh-text-12);
+  line-height: 1.5;
+}
+
+.import-button {
+  margin-top: var(--cedh-space-2);
+}
+
+/* ===== 对局态 ===== */
+.playtest-board {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: var(--cedh-space-2);
+  min-height: 0;
+}
+
+.board-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 56rpx;
+}
+
+.board-left {
+  display: flex;
+  align-items: center;
+  gap: var(--cedh-space-3);
+}
+
+.hand-count {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+}
+
+.life-counter {
+  display: flex;
+  align-items: center;
+  gap: 4rpx;
+}
+
+.life-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40rpx;
+  height: 40rpx;
+  color: var(--cedh-text-soft);
+  background: var(--cedh-surface);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-control-sm);
+  font-size: var(--cedh-text-14);
+  line-height: 1;
+}
+
+.life-val {
+  min-width: 56rpx;
+  text-align: center;
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-14);
+  font-weight: 600;
+}
+
+.board-actions {
+  display: flex;
+  gap: var(--cedh-space-2);
+}
+
+.board-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 92rpx;
+  min-height: 44rpx;
+  padding: 0 16rpx;
+  color: var(--cedh-text-soft);
+  background: var(--cedh-surface-muted);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-control-sm);
+  font-size: var(--cedh-text-12);
+  line-height: 1;
+}
+
+.token-action {
+  color: var(--cedh-text);
+  border-color: var(--cedh-accent-line);
+}
+
+.board-action,
+.zone-chip {
+  transform: translateY(0);
+  transition:
+    transform 180ms cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 180ms ease,
+    border-color 180ms ease;
+  will-change: transform, opacity;
+}
+
+.battlefield {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--cedh-surface);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
+}
+
+.hand-empty {
+  padding: var(--cedh-space-4);
+  color: var(--cedh-text-faint);
+  font-size: var(--cedh-text-10);
+  line-height: 1.5;
+  text-align: center;
+}
+
+/* 卡牌瓦片：卡图铺底 + 底部卡名，尺寸按 63:88 卡面比例（px 便于拖动坐标计算）。
+   必须 position: relative——.card-art 是 absolute 铺满，否则会逃逸到面板级祖先上叠图。 */
+.card-tile {
+  position: relative;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 92px;
+  padding: 6rpx;
+  background: var(--cedh-surface-raised);
+  border: 1rpx solid var(--cedh-line);
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+/* 卡图铺满卡面作底，名字叠在底部暗条上；图 404 时留纯文字瓦片 */
+.card-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+.card-name {
+  position: relative;
+  z-index: 1;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--cedh-text);
+  font-size: 18rpx;
+  line-height: 1.3;
+  text-align: center;
+  word-break: break-word;
+  text-shadow:
+    0 1rpx 0 rgba(0, 0, 0, 0.9),
+    0 4rpx 10rpx rgba(0, 0, 0, 0.8);
+}
+
+.field-card.token {
+  border-style: dashed;
+  border-color: var(--cedh-accent-line);
+}
+
+.field-card {
+  position: absolute;
+}
+
+.field-card.tapped {
+  transform: rotate(90deg);
+  border-color: var(--cedh-accent-line);
+}
+
+.field-card.dragging {
+  z-index: 9;
+  border-color: var(--cedh-accent);
+}
+
+.zone-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--cedh-space-2);
+}
+
+.zone-chip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 96rpx;
+  padding: var(--cedh-space-2) 0;
+  background: var(--cedh-surface-muted);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-1);
+}
+
+.zone-chip.drop-target {
+  background: var(--cedh-accent-soft);
+  border-color: var(--cedh-accent-line);
+}
+
+/* 带卡图的区域芯片（主将区 / 牌库展示库顶 / 坟场 / 放逐区）：art 铺底，label/count 提层压黑边保可读。
+   overflow:hidden + position:relative 防 absolute 图逃逸到面板级祖先（同 .card-tile 的坑）。 */
+.zone-chip.has-art {
+  position: relative;
+  overflow: hidden;
+}
+
+.zone-top-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+
+/* 双拍档主将：左右各半铺底，呈现方式对齐主将推荐结算页的 banner 分屏 */
+.zone-art-split {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+
+.zone-art-half {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+}
+
+.zone-chip.has-art .zone-label,
+.zone-chip.has-art .zone-count {
+  position: relative;
+  z-index: 1;
+  color: var(--cedh-text);
+  text-shadow:
+    0 1rpx 0 rgba(0, 0, 0, 0.9),
+    0 4rpx 10rpx rgba(0, 0, 0, 0.8);
+}
+
+.zone-label {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-10);
+  letter-spacing: 0.08em;
+}
+
+.zone-count {
+  margin-top: 4rpx;
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-14);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.hand {
+  display: flex;
+  flex-shrink: 0;
+  height: 108px;
+  overflow: hidden;
+  white-space: nowrap;
+  background: var(--cedh-surface-muted);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
+}
+
+.hand-track {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+  height: 100%;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+
+.hand-card {
+  flex: 0 0 auto;
+  display: inline-flex;
+  margin: 8px 0 8px 8px;
+  vertical-align: top;
+}
+
+.hand-card .card-name {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  font-size: 15rpx;
+  line-height: 1.18;
+}
+
+/* ===== 法力池资源栏（战场下方横向；WUBRG 惯例横排，回收战场满宽） ===== */
+.mana-rail {
+  display: flex;
+  align-items: stretch;
+  gap: var(--cedh-space-1);
+  padding: var(--cedh-space-2) var(--cedh-space-2) 6rpx;
+  background: var(--cedh-surface-muted);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
+}
+
+.mana-rail.mana-dim {
+  opacity: 0.5;
+}
+
+.mana-cell {
+  display: flex;
+  flex: 1 1 0;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6rpx;
+}
+
+.mana-symbol {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  font-size: var(--cedh-text-14);
+  font-weight: 700;
+  line-height: 1;
+}
+
+.mana-row {
+  display: flex;
+  align-items: center;
+  gap: 2rpx;
+}
+
+.mana-ctrl {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30rpx;
+  height: 30rpx;
+  border-radius: 50%;
+  font-size: var(--cedh-text-12);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.mana-ctrl-plus {
+  color: var(--cedh-text-soft);
+  background: rgba(255, 249, 224, 0.12);
+  border: var(--cedh-hairline);
+}
+
+.mana-ctrl-minus {
+  color: var(--cedh-text-faint);
+  background: rgba(255, 249, 224, 0.05);
+  border: var(--cedh-hairline);
+}
+
+.mana-badge {
+  width: 28rpx;
+  text-align: center;
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-12);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.mana-total {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+  min-width: 60rpx;
+  /* 分隔线与末格的间距 = flex gap(space-1 8rpx) + 4rpx = 12rpx，对齐左框内边距(space-2)，
+     使「首格减号↔左框」与「末格加号↔分隔线」两侧留白相等 */
+  margin-left: 4rpx;
+  padding-left: var(--cedh-space-2);
+  border-left: var(--cedh-hairline);
+}
+
+.mana-total-num {
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-16);
+  font-weight: 650;
+  line-height: 1;
+}
+
+.mana-total-cap {
+  color: var(--cedh-text-faint);
+  font-size: var(--cedh-text-10);
+  letter-spacing: 0.08em;
+}
+
+/* 五色 + 无色圆盘 */
+.mana-cell-W .mana-symbol { background: #fcf8e8; color: #8a7640; border: 1rpx solid rgba(180, 160, 110, 0.5); }
+.mana-cell-U .mana-symbol { background: #c8ddf0; color: #1e4a7a; border: 1rpx solid rgba(90, 120, 170, 0.5); }
+.mana-cell-B .mana-symbol { background: #a090a0; color: #f0ebf0; border: 1rpx solid rgba(110, 90, 110, 0.5); }
+.mana-cell-R .mana-symbol { background: #e8a890; color: #7a2010; border: 1rpx solid rgba(200, 120, 90, 0.5); }
+.mana-cell-G .mana-symbol { background: #a8c890; color: #2a5a1a; border: 1rpx solid rgba(100, 140, 70, 0.5); }
+.mana-cell-C .mana-symbol { background: #b8b0ac; color: #504844; border: 1rpx solid rgba(140, 130, 125, 0.5); }
+
+.mana-cell.mana-zero { opacity: 0.42; }
+.mana-cell.mana-zero .mana-symbol { opacity: 0.6; }
+.mana-cell.mana-zero .mana-ctrl-minus { visibility: hidden; }
+
+/* ===== 区域面板 / 详视浮层 ===== */
+.zone-panel-mask,
+.inspect-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  background: rgba(0, 0, 0, 0.6);
+}
+
+.zone-panel {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  max-height: 62vh;
+  padding: var(--cedh-space-4) var(--cedh-space-4) calc(env(safe-area-inset-bottom) + var(--cedh-space-4));
+  background: #0c0b09;
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2) var(--cedh-radius-2) 0 0;
+}
+
+/* 牌库查找：占满屏幕大幅空间，搜索与结果不会因面板太小而局促 */
+.zone-panel-centered {
+  top: calc(env(safe-area-inset-top) + 80rpx);
+  bottom: calc(env(safe-area-inset-bottom) + 120rpx);
+  left: 16rpx;
+  right: 16rpx;
+  max-height: none;
+  padding: var(--cedh-space-4);
+  border-radius: var(--cedh-radius-2);
+}
+
+.zone-panel-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: var(--cedh-space-3);
+}
+
+.zone-panel-title {
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-14);
+  font-weight: 650;
+}
+
+.zone-panel-actions {
+  display: flex;
+  gap: var(--cedh-space-4);
+}
+
+.zone-panel-actions .text-button {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+}
+
+/* 展示库顶已开启：toggle 用 accent 高亮，区别于「洗牌 / 关闭」 */
+.zone-panel-actions .text-button.reveal-toggle-on {
+  color: var(--cedh-accent);
+}
+
+.panel-search {
+  box-sizing: border-box;
+  width: 100%;
+  height: 72rpx;
+  margin-bottom: var(--cedh-space-3);
+  padding: 0 var(--cedh-space-4);
+  color: var(--cedh-text);
+  background: var(--cedh-input-glass);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
+  font-size: var(--cedh-text-12);
+}
+
+.zone-panel-list {
+  flex: 1;
+  min-height: 0;
+}
+
+.zone-panel-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cedh-space-3);
+  min-height: 72rpx;
+  border-bottom: var(--cedh-hairline);
+}
+
+.zone-panel-name {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-12);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.zone-panel-move {
+  display: flex;
+  flex-shrink: 0;
+  gap: var(--cedh-space-2);
+}
+
+.move-chip {
+  padding: 8rpx 16rpx;
+  color: var(--cedh-text-soft);
+  background: var(--cedh-surface-muted);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-pill);
+  font-size: var(--cedh-text-10);
+  line-height: 1.2;
+}
+
+.inspect-panel {
+  position: fixed;
+  left: 50%;
+  top: 50%;
+  z-index: 21;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--cedh-space-3);
+  width: 560rpx;
+  padding: var(--cedh-space-4);
+  background: #0c0b09;
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
+  transform: translate(-50%, -50%);
+}
+
+.inspect-image {
+  width: 480rpx;
+  height: auto;
+  min-height: 300rpx;
+  border-radius: var(--cedh-radius-2);
+  background: var(--cedh-surface-muted);
+}
+
+.inspect-name {
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-12);
+  line-height: 1.4;
+  text-align: center;
+}
+
+.inspect-move {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--cedh-space-2);
+}

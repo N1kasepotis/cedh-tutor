@@ -1,0 +1,129 @@
+@import "../../styles/themes/noir-gold.wxss";
+
+.quiz-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cedh-space-6);
+}
+
+.progress-row {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--cedh-space-4);
+}
+
+.progress-text {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+  letter-spacing: 0.08em;
+}
+
+.progress-track {
+  height: 6rpx;
+  margin-top: var(--cedh-space-3);
+  overflow: hidden;
+  border-radius: var(--cedh-radius-pill);
+  background: rgba(var(--noir-gold-line-rgb), 0.16);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(140, 105, 42, 0.72), #f1d791);
+  box-shadow: 0 0 18rpx rgba(var(--noir-gold-rgb), 0.28);
+}
+
+.question-panel {
+  padding: var(--cedh-space-7) 0 var(--cedh-space-6);
+  background: transparent;
+  border-width: 1rpx 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.question-hint {
+  margin-bottom: var(--cedh-space-3);
+  color: var(--cedh-accent);
+  font-size: var(--cedh-text-10);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
+.question-title {
+  color: var(--cedh-accent-ink);
+  font-family: var(--cedh-font-serif);
+  font-size: var(--cedh-text-30);
+  font-weight: 400;
+  letter-spacing: -0.03em;
+  line-height: 1.08;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: 48rpx 1fr;
+  gap: var(--cedh-space-4);
+  align-items: center;
+  min-height: 112rpx;
+  padding: 0 var(--cedh-space-5);
+  background: var(--cedh-surface-raised);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-control);
+  box-shadow:
+    inset 0 1rpx 0 rgba(255, 244, 207, 0.08),
+    0 16rpx 44rpx rgba(0, 0, 0, 0.22);
+}
+
+.option.selected {
+  background: var(--cedh-accent-soft);
+  border-color: var(--cedh-accent-line);
+  box-shadow:
+    inset 0 0 0 1rpx rgba(var(--noir-gold-rgb), 0.18),
+    0 18rpx 48rpx rgba(0, 0, 0, 0.32);
+}
+
+.option-code {
+  color: var(--cedh-text-faint);
+  font-size: var(--cedh-text-10);
+  letter-spacing: 0.08em;
+}
+
+.option.selected .option-code {
+  color: var(--cedh-accent);
+}
+
+.option.selected .option-text {
+  color: var(--cedh-accent-ink);
+  font-weight: 620;
+}
+
+.option-text {
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-14);
+  line-height: 1.55;
+}
+
+.footer-actions {
+  display: flex;
+  align-items: stretch;
+  gap: var(--cedh-space-3);
+  width: 100%;
+  min-width: 0;
+  margin-top: var(--cedh-space-2);
+  overflow: visible;
+  padding-bottom: 10rpx;
+}
+
+.footer-button {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.footer-button.disabled {
+  color: var(--cedh-text-faint);
+  background: var(--cedh-surface-muted);
+  border-color: var(--cedh-line);
+  box-shadow: none;
+}
+

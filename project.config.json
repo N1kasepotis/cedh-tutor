@@ -1,0 +1,15 @@
+{
+  "description": "cEDH 导师 微信小程序",
+  "appid": "wx7b9be8205eb508e6",
+  "projectname": "cedh-mentor",
+  "miniprogramRoot": "miniprogram/",
+  "setting": {
+    "urlCheck": true,
+    "es6": true,
+    "postcss": true,
+    "minified": true,
+    "enhance": true
+  },
+  "compileType": "miniprogram",
+  "libVersion": "3.8.8"
+}

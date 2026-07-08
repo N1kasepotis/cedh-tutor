@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>EDHTI 海报标题导出</title>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Noto+Sans+SC:wght@900&display=swap" rel="stylesheet">
+<style>
+  body { font-family: system-ui, sans-serif; background: #14121a; color: #eee; margin: 0; padding: 24px; }
+  h1 { font-size: 17px; font-weight: 600; margin: 0 0 4px; }
+  p { font-size: 13px; color: #aaa; margin: 4px 0; line-height: 1.6; }
+  code { background: #23202b; padding: 1px 6px; border-radius: 4px; }
+  .stage { margin: 18px 0; padding: 20px; border-radius: 12px; background:
+    linear-gradient(180deg, #0B1234 0%, #07152F 35%, #142D68 72%, #050919 100%); }
+  #preview { width: 600px; max-width: 100%; height: auto; display: block; }
+  .btn { display: inline-block; padding: 11px 20px; background: #FF2BD6; color: #fff; font-size: 14px; font-weight: 700; border-radius: 8px; text-decoration: none; }
+  .spec { margin-top: 8px; font-size: 12px; color: #7bd88f; }
+</style>
+<h1>EDHTI 海报标题导出</h1>
+<p>把「Multiverse EDHTI」烤成 <b>1200×420 透明 PNG</b>，全平台像素一致。下载后放到
+   <code>miniprogram/assets/edhti-title.png</code>，EDHTI 导出图会自动改用它（缺图时回退实时文字）。</p>
+<p>字体：Archivo Black 900（等字体加载完再渲染）。</p>
+
+<div class="stage"><canvas id="preview" width="1200" height="420"></canvas></div>
+<a class="btn" id="dl" download="edhti-title.png">下载 edhti-title.png</a>
+<div class="spec">✓ 透明 PNG · 1200×420 · 锚点对齐 edhti.js 的 TITLE_BOX</div>
+
+<script>
+const MAGENTA = '#FF2BD6';
+const CYAN = '#28F6FF';
+
+// 与 miniprogram/pages/edhti/edhti.js 的 drawExportTitleLine 完全一致
+function drawTitleLine(ctx, text, x, y) {
+  ctx.globalAlpha = 0.82;
+  ctx.fillStyle = MAGENTA; ctx.fillText(text, x - 5, y - 5);
+  ctx.fillStyle = CYAN;    ctx.fillText(text, x + 5, y + 5);
+  ctx.globalAlpha = 1;
+  ctx.lineWidth = 5; ctx.strokeStyle = 'rgba(248, 251, 255, 0.78)'; ctx.strokeText(text, x, y);
+  ctx.fillStyle = '#05060B'; ctx.fillText(text, x, y);
+}
+
+async function render() {
+  const font = 'italic 900 108px "Archivo Black", "Noto Sans SC", sans-serif';
+  try {
+    await document.fonts.load('italic 900 108px "Archivo Black"', 'Multiverse');
+    await document.fonts.load('italic 900 108px "Archivo Black"', 'EDHTI');
+    await document.fonts.ready;
+  } catch (e) {}
+
+  const cv = document.getElementById('preview');
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  ctx.save();
+  ctx.scale(2, 2);          // 2× 渲染保证清晰
+  ctx.translate(10, 88);    // TITLE_BOX 锚点：局部原点 (0,0) 落在框内 (10,88)
+  ctx.textAlign = 'left';
+  ctx.textBaseline = 'alphabetic';
+  ctx.font = font;
+  ctx.lineJoin = 'round';
+  const suffixX = ctx.measureText('Multi').width;
+  drawTitleLine(ctx, 'Multiverse', 0, 0);
+  drawTitleLine(ctx, 'EDHTI', suffixX, 92);
+  ctx.restore();
+
+  document.getElementById('dl').href = cv.toDataURL('image/png');
+}
+render();
+</script>

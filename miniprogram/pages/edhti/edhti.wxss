@@ -1,0 +1,400 @@
+@import "../../styles/themes/neon-arcade.wxss";
+
+.edhti-shell {
+  display: flex;
+  flex-direction: column;
+  gap: var(--cedh-space-5);
+}
+
+.edhti-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: var(--cedh-space-4);
+}
+
+.edhti-head-count-only {
+  justify-content: flex-end;
+}
+
+.edhti-kicker,
+.question-bucket,
+.section-label {
+  color: var(--edhti-blue);
+  font-size: var(--cedh-text-10);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-shadow: 0 0 18rpx rgba(var(--edhti-blue-rgb), 0.22);
+}
+
+.edhti-title {
+  margin-top: var(--cedh-space-2);
+  color: var(--cedh-text);
+  font-family: var(--cedh-font-serif);
+  font-size: var(--cedh-text-30);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+}
+
+.edhti-count {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.progress-track {
+  height: 6rpx;
+  overflow: hidden;
+  border-radius: var(--cedh-radius-pill);
+  background: rgba(var(--edhti-ice-rgb), 0.13);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(var(--edhti-pink-rgb), 0.82), rgba(var(--edhti-blue-rgb), 0.86));
+  box-shadow: 0 0 18rpx rgba(var(--edhti-pink-rgb), 0.28);
+}
+
+.edhti-question {
+  padding: var(--cedh-space-6) var(--cedh-space-5);
+  background: var(--edhti-panel-wash);
+  border-color: rgba(var(--edhti-pink-rgb), 0.24);
+  box-shadow:
+    inset 0 1rpx 0 rgba(var(--edhti-ink-rgb), 0.1),
+    0 22rpx 58rpx rgba(0, 0, 0, 0.34);
+}
+
+.question-title {
+  margin-top: var(--cedh-space-3);
+  color: var(--cedh-accent-ink);
+  font-family: var(--cedh-font-serif);
+  font-size: var(--cedh-text-24);
+  font-weight: 400;
+  letter-spacing: -0.025em;
+  line-height: 1.18;
+}
+
+.option {
+  display: grid;
+  grid-template-columns: 48rpx 1fr;
+  gap: var(--cedh-space-4);
+  align-items: center;
+  min-height: 112rpx;
+  padding: 0 var(--cedh-space-5);
+  background: var(--cedh-surface-raised);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-control);
+  box-shadow:
+    inset 0 1rpx 0 rgba(var(--edhti-ink-rgb), 0.08),
+    0 16rpx 44rpx rgba(0, 0, 0, 0.24);
+}
+
+.option.selected {
+  background:
+    linear-gradient(135deg, rgba(var(--edhti-pink-rgb), 0.2), rgba(var(--edhti-blue-rgb), 0.12));
+  border-color: rgba(var(--edhti-pink-rgb), 0.46);
+  box-shadow:
+    inset 0 0 0 1rpx rgba(var(--edhti-blue-rgb), 0.14),
+    0 18rpx 48rpx rgba(0, 0, 0, 0.34);
+}
+
+.option-code {
+  color: var(--cedh-text-faint);
+  font-size: var(--cedh-text-10);
+  letter-spacing: 0.08em;
+}
+
+.option.selected .option-code,
+.option.selected .option-text {
+  color: var(--cedh-accent-ink);
+  font-weight: 620;
+}
+
+.option-text {
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-14);
+  line-height: 1.55;
+}
+
+/* 玩家标签上方的醒目导出块：沿用 .primary-button 的霓虹渐变（保持颜色与质感） */
+.edhti-export-hero {
+  min-height: 120rpx;
+  font-size: var(--cedh-text-16);
+  font-weight: 700;
+  letter-spacing: 0.12em;
+}
+
+.footer-actions,
+.actions {
+  display: flex;
+  align-items: stretch;
+  gap: var(--cedh-space-3);
+  width: 100%;
+  min-width: 0;
+  overflow: visible;
+  padding-bottom: 10rpx;
+}
+
+.footer-button,
+.action-button {
+  flex: 1 1 0;
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  padding: 0 var(--cedh-space-2);
+  font-size: var(--cedh-text-10);
+  white-space: nowrap;
+}
+
+.footer-button.disabled {
+  color: var(--cedh-text-faint);
+  background: var(--cedh-surface-muted);
+  border-color: var(--cedh-line);
+  box-shadow: none;
+}
+
+.edhti-result,
+.edhti-quote,
+.persona-copy,
+.persona-panel,
+.tag-panel {
+  position: relative;
+  overflow: hidden;
+  background: var(--edhti-panel-wash-deep);
+  border-color: rgba(var(--edhti-pink-rgb), 0.22);
+  box-shadow:
+    0 24rpx 66rpx rgba(0, 0, 0, 0.38),
+    inset 0 1rpx 0 rgba(var(--edhti-ink-rgb), 0.12);
+}
+
+.edhti-result {
+  padding: var(--cedh-space-6);
+  text-align: center;
+}
+
+.result-code {
+  color: var(--edhti-blue);
+  font-size: var(--cedh-text-12);
+  font-weight: 700;
+  letter-spacing: 0.28em;
+  text-shadow: 0 0 18rpx rgba(var(--edhti-blue-rgb), 0.28);
+}
+
+.result-name {
+  margin-top: var(--cedh-space-3);
+  color: var(--edhti-persona-color, var(--cedh-text));
+  font-family: var(--cedh-font-serif);
+  font-size: var(--cedh-text-36);
+  font-weight: 400;
+  letter-spacing: -0.035em;
+  line-height: 1.08;
+  text-shadow: 0 0 22rpx rgba(var(--edhti-cyan-rgb), 0.18);
+}
+
+.chip-row {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--cedh-space-2);
+  margin-top: var(--cedh-space-4);
+}
+
+.small-chip {
+  padding: 8rpx 18rpx;
+  color: var(--cedh-accent-ink);
+  font-size: var(--cedh-text-10);
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  background: linear-gradient(135deg, rgba(var(--edhti-pink-rgb), 0.12), rgba(var(--edhti-blue-rgb), 0.12));
+  border: 1rpx solid rgba(var(--edhti-blue-rgb), 0.28);
+  border-radius: 999rpx;
+}
+
+.edhti-quote {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 132rpx;
+  padding: 42rpx 48rpx;
+}
+
+.quote-text {
+  display: block;
+  position: relative;
+  z-index: 1;
+  padding: 0;
+  color: rgb(var(--edhti-pink-rgb));
+  background: linear-gradient(135deg, rgb(var(--edhti-pink-rgb)), #c86ef0);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  font-size: var(--cedh-text-14);
+  font-weight: 520;
+  letter-spacing: 0.02em;
+  line-height: 1.7;
+  text-align: center;
+}
+
+.persona-copy,
+.persona-panel,
+.tag-panel {
+  padding: var(--cedh-space-5);
+}
+
+.persona-description {
+  margin-top: var(--cedh-space-3);
+  color: var(--cedh-text);
+  font-size: var(--cedh-text-14);
+  line-height: 1.72;
+}
+
+.persona-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--cedh-space-3);
+}
+
+.commander-panel {
+  min-height: 208rpx;
+  /* 去掉 flex 垂直居中、padding 归零：让「推荐主将」子标题与其它面板一样落在左上角；
+     内边距改由内层 content 控制，避免与面板自带 padding 叠加 */
+  padding: 0;
+  background: var(--edhti-commander-wash);
+  border-color: rgba(var(--edhti-blue-rgb), 0.22);
+  box-shadow:
+    0 18rpx 48rpx rgba(0, 0, 0, 0.38),
+    inset 0 0 0 1rpx rgba(var(--edhti-pink-rgb), 0.12);
+}
+
+.commander-panel::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  pointer-events: none;
+  background:
+    linear-gradient(180deg, rgba(10, 12, 18, 0.34), rgba(10, 12, 18, 0.58)),
+    repeating-linear-gradient(
+      0deg,
+      rgba(255, 255, 255, 0.06) 0,
+      rgba(255, 255, 255, 0.06) 1rpx,
+      transparent 1rpx,
+      transparent 6rpx
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(var(--edhti-blue-rgb), 0.08) 0,
+      rgba(var(--edhti-blue-rgb), 0.08) 1rpx,
+      transparent 1rpx,
+      transparent 18rpx
+    );
+}
+
+.commander-art-panel {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 100%;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.commander-art-image {
+  width: 100%;
+  height: auto;
+  min-height: 100%;
+  opacity: 0.86;
+  filter: saturate(1.16) contrast(1.12) brightness(0.82);
+  transform: translateY(0);
+  transform-origin: center top;
+}
+
+.commander-content {
+  position: relative;
+  z-index: 2;
+}
+
+.commander-content.with-art {
+  padding: var(--cedh-space-5);
+}
+
+.commander-content.with-art .section-label,
+.commander-content.with-art .commander-cn,
+.commander-content.with-art .commander-en {
+  color: rgba(246, 252, 255, 0.96);
+  font-family: "Courier New", "Lucida Console", Consolas, Monaco, var(--cedh-font-mono), "PingFang SC", monospace;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-shadow:
+    2rpx 0 0 rgba(var(--edhti-pink-rgb), 0.42),
+    -2rpx 0 0 rgba(var(--edhti-blue-rgb), 0.4),
+    3rpx 3rpx 0 rgba(16, 28, 44, 0.78),
+    -2rpx 2rpx 0 rgba(0, 0, 0, 0.52),
+    0 8rpx 18rpx rgba(5, 10, 18, 0.42);
+}
+
+.commander-content.with-art .section-label {
+  color: rgba(var(--edhti-blue-rgb), 0.98);
+}
+
+.commander-content.with-art .commander-en {
+  color: rgba(246, 252, 255, 0.96);
+}
+
+.commander-cn {
+  margin-top: var(--cedh-space-3);
+  color: var(--cedh-text);
+  font-family: var(--cedh-font-serif);
+  font-size: var(--cedh-text-20);
+  line-height: 1.25;
+}
+
+.commander-en {
+  margin-top: var(--cedh-space-2);
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-16);
+  font-style: italic;
+  letter-spacing: 0.08em;
+  line-height: 1.35;
+}
+
+.tag-row {
+  margin-top: var(--cedh-space-4);
+}
+
+.tag-head {
+  display: flex;
+  justify-content: space-between;
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+}
+
+.tag-track {
+  height: 8rpx;
+  margin-top: var(--cedh-space-2);
+  overflow: hidden;
+  background: rgba(var(--edhti-blue-rgb), 0.12);
+  border-radius: 999rpx;
+}
+
+.tag-fill {
+  height: 100%;
+  background: linear-gradient(90deg, rgba(var(--edhti-pink-rgb), 0.78), rgba(var(--edhti-blue-rgb), 0.92));
+  border-radius: 999rpx;
+  box-shadow: 0 0 18rpx rgba(var(--edhti-blue-rgb), 0.28);
+}
+
+.export-canvas {
+  position: fixed;
+  left: -9999rpx;
+  top: 0;
+  width: 750rpx;
+  height: 1624rpx;
+  pointer-events: none;
+  opacity: 0;
+}

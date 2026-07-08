@@ -1,0 +1,84 @@
+<view class="page edhti">
+  <particle-background></particle-background>
+
+  <view class="content-layer edhti-shell">
+    <block wx:if="{{!hasResult}}">
+      <view class="edhti-head edhti-head-count-only">
+        <view class="edhti-count mono">{{progressText}}</view>
+      </view>
+
+      <view class="progress-track">
+        <view class="progress-fill" style="width: {{progressPercent}}%;"></view>
+      </view>
+
+      <view class="edhti-question surface">
+        <view class="question-bucket mono">{{currentQuestion.bucketLabel}}</view>
+        <view class="question-title">{{currentQuestion.prompt}}</view>
+      </view>
+
+      <option-list options="{{currentQuestion.answers}}" bindselect="selectAnswer"></option-list>
+
+      <view class="footer-actions">
+        <view class="secondary-button footer-button {{!canGoBack ? 'disabled' : ''}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="prevStep">上一步</view>
+        <view class="primary-button footer-button {{!canGoNext ? 'disabled' : ''}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="nextStep">{{nextButtonText}}</view>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="edhti-result surface" style="{{result.personaStyle}}">
+        <view class="result-code mono">{{result.code}}</view>
+        <view class="result-name">{{result.persona.name}}</view>
+      </view>
+
+      <view class="edhti-quote surface">
+        <text class="quote-text">“{{result.quoteText}}”</text>
+      </view>
+
+      <view class="persona-copy surface">
+        <view class="section-label mono">人格侧写</view>
+        <view class="persona-description">{{result.descriptionText}}</view>
+      </view>
+
+      <view class="persona-grid">
+        <view class="persona-panel commander-panel surface">
+          <view class="commander-art-panel" wx:if="{{result.commanderArt.artCrop || result.commanderArt.normal}}">
+            <image class="commander-art-image" src="{{result.commanderArt.artCrop || result.commanderArt.normal}}" mode="widthFix"></image>
+          </view>
+          <view class="commander-content {{result.commanderArt.artCrop || result.commanderArt.normal ? 'with-art' : ''}}">
+            <view class="section-label mono">推荐主将</view>
+            <view wx:if="{{recommendedCommander}}" class="commander-en mono">{{recommendedCommander}}</view>
+            <view wx:else class="commander-en mono">{{result.persona.commander.en}}</view>
+          </view>
+        </view>
+        <view class="persona-panel surface">
+          <view class="section-label mono">适合主题</view>
+          <view class="chip-row">
+            <view wx:for="{{result.persona.strategy}}" wx:key="*this" class="small-chip">{{item}}</view>
+          </view>
+        </view>
+      </view>
+
+      <view class="edhti-export-hero primary-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="exportImage">导出分析</view>
+
+      <view class="tag-panel surface">
+        <view class="section-label mono">玩家标签</view>
+        <view wx:for="{{result.topTags}}" wx:key="key" class="tag-row">
+          <view class="tag-head">
+            <text>{{item.label}}</text>
+            <text class="mono">{{item.value}}</text>
+          </view>
+          <view class="tag-track">
+            <view class="tag-fill" style="width: {{item.value}}%;"></view>
+          </view>
+        </view>
+      </view>
+
+      <view class="actions">
+        <view class="secondary-button action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="restart">再测一次</view>
+        <view class="secondary-button action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goHome">返回首页</view>
+      </view>
+    </block>
+  </view>
+
+  <canvas id="edhtiExportCanvas" type="2d" class="export-canvas"></canvas>
+</view>

@@ -1,0 +1,55 @@
+<view class="page cabbage-page">
+  <particle-background></particle-background>
+
+  <view class="content-layer tool-shell">
+    <view class="cabbage-engines">
+      <view
+        wx:for="{{cabbageEngineList}}"
+        wx:key="key"
+        class="cabbage-engine {{item.on ? 'on' : ''}}"
+        aria-role="button"
+        data-key="{{item.key}}"
+        hover-class="pressable-active"
+        hover-stay-time="120"
+        bindtap="toggleCabbageEngine"
+      >{{item.name}}</view>
+    </view>
+
+    <button class="primary-button cabbage-cast-button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageCast">对手施放非生物咒语</button>
+
+    <view class="cabbage-readout">
+      <view class="cabbage-mana">
+        <text class="cabbage-mana-label">现可造</text>
+        <text class="cabbage-green mono">{{cabbageMana.green}}</text>
+        <text class="cabbage-green-unit">绿</text>
+      </view>
+      <view class="cabbage-hint" wx:if="{{cabbageMana.treasure}}">Treasure 另可产 <text class="cabbage-green mono">+{{cabbageMana.treasure}}</text> 绿（横置或牺牲未横置）</view>
+    </view>
+
+    <view class="cabbage-tokens">
+      <view wx:for="{{cabbageTokens}}" wx:key="key" class="cabbage-token-row">
+        <text class="cabbage-token-name">{{item.name}}</text>
+        <view class="cabbage-token-count">
+          <text class="cabbage-num mono">{{item.u}}</text>
+          <block wx:if="{{item.showTap}}">
+            <text class="cabbage-num-sep">/</text>
+            <text class="cabbage-num-dim mono">{{item.t}}</text>
+          </block>
+        </view>
+        <view class="cabbage-token-ctrls">
+          <view class="cabbage-ctrl" aria-role="button" aria-label="删减（优先横置）" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageRemoveToken">−</view>
+          <view wx:if="{{item.showTap}}" class="cabbage-ctrl" aria-role="button" aria-label="横置" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageTapToken">横置</view>
+          <view wx:else class="cabbage-ctrl-slot"></view>
+          <view class="cabbage-ctrl" aria-role="button" aria-label="增加" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageAddToken">+</view>
+        </view>
+      </view>
+    </view>
+
+    <view class="cabbage-activate {{cabbageAvail ? '' : 'disabled'}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageActivate">横置 2 Food → +1 绿（{{cabbageAvail}}）</view>
+
+    <view class="cabbage-footer">
+      <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageUntapAll">重置横置</view>
+      <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageReset">清空</view>
+    </view>
+  </view>
+</view>

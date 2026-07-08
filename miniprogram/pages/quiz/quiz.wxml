@@ -1,0 +1,26 @@
+<view class="page quiz">
+  <particle-background></particle-background>
+
+  <view class="content-layer quiz-shell">
+    <view class="quiz-head">
+      <view class="progress-row">
+        <text class="progress-text mono">{{progressText}}</text>
+      </view>
+      <view class="progress-track">
+        <view class="progress-fill" style="width: {{progressPercent}}%;"></view>
+      </view>
+    </view>
+
+    <view class="question-panel surface">
+      <view wx:if="{{currentQuestion.type === 'multiple'}}" class="question-hint mono">可多选</view>
+      <view class="question-title">{{currentQuestion.title}}</view>
+    </view>
+
+    <option-list options="{{currentQuestion.options}}" bindselect="selectOption"></option-list>
+
+    <view class="footer-actions">
+      <view class="secondary-button footer-button {{!canGoBack ? 'disabled' : ''}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="prevStep">上一步</view>
+      <view class="primary-button footer-button {{!canGoNext ? 'disabled' : ''}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="nextStep">{{nextButtonText}}</view>
+    </view>
+  </view>
+</view>

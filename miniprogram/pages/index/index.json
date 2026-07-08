@@ -1,0 +1,6 @@
+{
+  "navigationBarTitleText": "cEDH Tutor",
+  "usingComponents": {
+    "particle-background": "/components/particle-background/particle-background"
+  }
+}

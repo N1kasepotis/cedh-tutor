@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<meta charset="utf-8">
+<title>cEDH Tutor logo 导出</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #f5f5f4; margin: 0; padding: 24px; color: #1c1c1a; }
+  h1 { font-size: 18px; font-weight: 600; margin: 0 0 4px; }
+  p { font-size: 13px; color: #666; margin: 4px 0; }
+  .primary { margin: 18px 0 24px; padding: 18px; background: #fff; border: 1px solid #e5e5e3; border-radius: 12px; display: flex; align-items: center; gap: 18px; }
+  .primary canvas { width: 96px; height: 96px; border: 1px solid #eee; border-radius: 18px; }
+  .btn { display: inline-block; padding: 10px 18px; background: #0a0a0a; color: #fff; font-size: 14px; font-weight: 600; border-radius: 8px; text-decoration: none; }
+  .spec { font-size: 12px; color: #16a34a; margin-top: 6px; }
+  .row { display: flex; gap: 16px; flex-wrap: wrap; }
+  .card { background: #fff; border: 1px solid #e5e5e3; border-radius: 12px; padding: 14px; }
+  .card h2 { font-size: 13px; font-weight: 600; margin: 0 0 8px; }
+  canvas { display: block; }
+  .card canvas { width: 88px; height: 88px; border: 1px solid #eee; border-radius: 14px; }
+  .marks canvas { width: 110px; height: auto; }
+  a.dl { display: block; margin-top: 6px; font-size: 12px; color: #0a66c2; text-decoration: none; }
+</style>
+<h1>cEDH Tutor 头像导出</h1>
+<p>微信要求：png / jpg，≤2M，建议 144×144。下方主按钮即为合规的 <b>144×144 PNG</b>（约 3 KB）。</p>
+
+<div class="primary">
+  <canvas id="hero"></canvas>
+  <div>
+    <a class="btn" id="heroDl" download="logo-144.png">下载 logo-144.png</a>
+    <div class="spec">✓ PNG · 144×144 · 远小于 2M · 白底（后台自动裁圆角）</div>
+    <p>想更清晰也可用下方 512×512，微信同样接受。</p>
+  </div>
+</div>
+
+<div class="row" id="out"></div>
+
+<script>
+const SVGS = {
+  'logo': `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="-15 -33 180 180"><rect x="-15" y="-33" width="180" height="180" fill="#FFFFFF"/><path d="M 62 43.25 A 17 17 0 1 0 62 70.75" fill="none" stroke="#0A0A0A" stroke-width="20" stroke-linecap="butt"/><path d="M 82 30 L 126 30 L 126 50 L 68 50 L 68 44 Z" fill="#0A0A0A"/><rect x="87" y="30" width="20" height="54" fill="#0A0A0A"/><path d="M 82 30 L 68 44 L 71.2 47.2 L 85.2 33.2 Z" fill="#F26A1B"/></svg>`,
+  'logo-dark': `<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="-15 -33 180 180"><rect x="-15" y="-33" width="180" height="180" fill="#0A0A0A"/><path d="M 62 43.25 A 17 17 0 1 0 62 70.75" fill="none" stroke="#FFFFFF" stroke-width="20" stroke-linecap="butt"/><path d="M 82 30 L 126 30 L 126 50 L 68 50 L 68 44 Z" fill="#FFFFFF"/><rect x="87" y="30" width="20" height="54" fill="#FFFFFF"/><path d="M 82 30 L 68 44 L 71.2 47.2 L 85.2 33.2 Z" fill="#F26A1B"/></svg>`,
+  'logo-mark': `<svg xmlns="http://www.w3.org/2000/svg" width="226" height="132" viewBox="19 24 113 66"><path d="M 62 43.25 A 17 17 0 1 0 62 70.75" fill="none" stroke="#0A0A0A" stroke-width="20" stroke-linecap="butt"/><path d="M 82 30 L 126 30 L 126 50 L 68 50 L 68 44 Z" fill="#0A0A0A"/><rect x="87" y="30" width="20" height="54" fill="#0A0A0A"/><path d="M 82 30 L 68 44 L 71.2 47.2 L 85.2 33.2 Z" fill="#F26A1B"/></svg>`,
+};
+const SIZES = { 'logo': [[144,144],[512,512]], 'logo-dark': [[144,144],[512,512]], 'logo-mark': [[452,264]] };
+
+function toPng(svg, w, h) {
+  return new Promise((resolve) => {
+    const img = new Image();
+    img.onload = () => {
+      const cv = document.createElement('canvas');
+      cv.width = w; cv.height = h;
+      cv.getContext('2d').drawImage(img, 0, 0, w, h);
+      resolve(cv);
+    };
+    img.src = 'data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg);
+  });
+}
+
+toPng(SVGS['logo'], 144, 144).then((cv) => {
+  const hero = document.getElementById('hero');
+  hero.width = 144; hero.height = 144;
+  hero.getContext('2d').drawImage(cv, 0, 0);
+  document.getElementById('heroDl').href = cv.toDataURL('image/png');
+});
+
+Object.keys(SVGS).forEach((name) => {
+  const card = document.createElement('div');
+  card.className = 'card' + (name === 'logo-mark' ? ' marks' : '');
+  card.innerHTML = '<h2>' + name + '</h2>';
+  document.getElementById('out').appendChild(card);
+  SIZES[name].forEach(([w, h], i) => {
+    toPng(SVGS[name], w, h).then((cv) => {
+      if (i === 0) { cv.style.width = name === 'logo-mark' ? '110px' : '88px'; card.insertBefore(cv, card.firstChild.nextSibling); }
+      const a = document.createElement('a');
+      a.className = 'dl';
+      a.href = cv.toDataURL('image/png');
+      a.download = name + '-' + w + '.png';
+      a.textContent = '↓ ' + name + '-' + w + '.png (' + w + '×' + h + ')';
+      card.appendChild(a);
+    });
+  });
+});
+</script>

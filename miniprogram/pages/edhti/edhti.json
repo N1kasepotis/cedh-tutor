@@ -1,0 +1,10 @@
+{
+  "navigationBarTitleText": "EDHTI",
+  "navigationBarBackgroundColor": "#080715",
+  "navigationBarTextStyle": "white",
+  "backgroundColor": "#080715",
+  "usingComponents": {
+    "particle-background": "/components/particle-background/particle-background",
+    "option-list": "/components/option-list/option-list"
+  }
+}
