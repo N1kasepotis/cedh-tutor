@@ -34,11 +34,11 @@
 - **Scryfall 卡图**：`utils/scryfall.js` 用 `?fuzzy=` + `format=image` 直连图片。`normalizeCardName` 把弯引号（Moxfield 导出）归一化为直引号，并把撇号编码为 `%27`（裸撇号会让微信 `<image>` 加载失败）。
 - **分享**：全部页面声明 `onShareAppMessage` / `onShareTimeline`，经 `utils/share.js` 调 `wx.showShareMenu`。
 
-## ✅ 上线合规（三项均已配置，保留说明备查）
+## 上线合规
 
-- **相册保存**：✅ 已在 mp 后台 `设置 → 服务内容声明 → 用户隐私保护指引` 声明「相册（写入）」并发布；EDHTI「导出分析」的 `wx.saveImageToPhotosAlbum`（隐私接口）上线可正常保存。（备查：未声明时「开发者工具能存、上线后存不了」，属隐私指引缺失而非代码 bug，画布与保存流程本身正确；如需更稳可加 `wx.getPrivacySetting` + `wx.requirePrivacyAuthorize` 兜底。）
-- **合法域名**：✅ 已配置 **request 合法域名** `https://api.scryfall.com`（`wx.request` JSON）、**downloadFile 合法域名** `https://api.scryfall.com` 与重定向目标 `https://cards.scryfall.io`（卡图经 `<image>` / 画布）。
-- **AppID**：✅ 已配置正式 AppID `wx7b9be8205eb508e6`（根目录 `project.config.json`），非游客，可正常提审。
+- **相册保存**：在 mp 后台 `设置 → 服务内容声明 → 用户隐私保护指引` 声明「相册（写入）」并发布；EDHTI「导出分析」的 `wx.saveImageToPhotosAlbum`（隐私接口）上线可正常保存。（备查：未声明时「开发者工具能存、上线后存不了」，属隐私指引缺失而非代码 bug，画布与保存流程本身正确；如需更稳可加 `wx.getPrivacySetting` + `wx.requirePrivacyAuthorize` 兜底。）
+- **合法域名**：配置 **request 合法域名** `https://api.scryfall.com`（`wx.request` JSON）、**downloadFile 合法域名** `https://api.scryfall.com` 与重定向目标 `https://cards.scryfall.io`（卡图经 `<image>` / 画布）。
+- **AppID**：配置正式 AppID （根目录 `project.config.json`），非游客，可正常提审。
 
 ## 目录结构
 
