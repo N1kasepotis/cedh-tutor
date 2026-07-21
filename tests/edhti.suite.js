@@ -223,8 +223,9 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   assert.match(scryfallJs, /function buildScryfallImageUrl/);
   assert.match(scryfallJs, /format=image/);
   assert.match(scryfallJs, /version=\$\{version \|\| 'normal'\}/);
-  assert.match(scryfallJs, /SCRYFALL_USER_AGENT = 'cEDH-Tutor\/1\.0'/);
-  assert.match(scryfallJs, /header:\s*{[\s\S]*Accept:\s*'application\/json'[\s\S]*'User-Agent':\s*SCRYFALL_USER_AGENT/);
+  // 只带 Accept；不设 User-Agent（禁止的请求头，基础库会拒绝并报 Refused to set unsafe header）
+  assert.match(scryfallJs, /header:\s*{[\s\S]*Accept:\s*'application\/json'/);
+  assert.doesNotMatch(scryfallJs, /'User-Agent'/);
   // 结果页保持同一个直连图片 URL，避免 JSON 查询回写 src 后触发二次下载。
   assert.doesNotMatch(js, /fetchCardImageUris/);
   assert.doesNotMatch(js, /loadCommanderArt/);

@@ -1,5 +1,4 @@
 const SCRYFALL_NAMED_API = 'https://api.scryfall.com/cards/named?fuzzy=';
-const SCRYFALL_USER_AGENT = 'cEDH-Tutor/1.0';
 const SCRYFALL_REQUEST_TIMEOUT_MS = 8000;
 const IMAGE_REQUEST_CACHE_LIMIT = 64;
 const MAX_CONCURRENT_IMAGE_REQUESTS = 4;
@@ -98,9 +97,9 @@ function fetchCardImageUris(cardName) {
       url: buildScryfallNamedUrl(normalizedName),
       method: 'GET',
       timeout: SCRYFALL_REQUEST_TIMEOUT_MS,
+      // 不设 User-Agent：它是禁止的请求头，wx.request 已带自身 UA，显式设置会被基础库拒绝
       header: {
         Accept: 'application/json',
-        'User-Agent': SCRYFALL_USER_AGENT,
       },
       success: (response) => {
         if (!response || response.statusCode !== 200) {

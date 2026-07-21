@@ -17,9 +17,9 @@
     "navigationBarBackgroundColor": "#FFFFFF",
     "navigationBarTextStyle": "black",
     "backgroundColor": "#FFFFFF",
-    "backgroundTextStyle": "dark"
+    "backgroundTextStyle": "dark",
+    "pageOrientation": "portrait"
   },
-  "pageOrientation": "portrait",
   "style": "v2",
   "lazyCodeLoading": "requiredComponents",
   "sitemapLocation": "sitemap.json"

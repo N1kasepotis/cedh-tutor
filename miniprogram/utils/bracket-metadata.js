@@ -3,7 +3,6 @@ const { extractStrengthFeatures } = require('./bracket-card-profile');
 
 const SCRYFALL_COLLECTION_API = 'https://api.scryfall.com/cards/collection';
 const SCRYFALL_SEARCH_API = 'https://api.scryfall.com/cards/search';
-const SCRYFALL_USER_AGENT = 'cEDH-Tutor/1.0';
 const SCRYFALL_COLLECTION_BATCH_SIZE = 75;
 const SCRYFALL_PRICE_SEARCH_BATCH_SIZE = 10;
 const SCRYFALL_COLLECTION_TIMEOUT_MS = 12000;
@@ -219,10 +218,10 @@ function requestCollectionBatch(names) {
     url: SCRYFALL_COLLECTION_API,
     method: 'POST',
     timeout: SCRYFALL_COLLECTION_TIMEOUT_MS,
+    // 不设 User-Agent：禁止的请求头，wx.request 自带 UA，显式设置会被基础库拒绝（Refused to set unsafe header）
     header: {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      'User-Agent': SCRYFALL_USER_AGENT,
     },
     data: {
       identifiers: names.map((name) => ({ name })),
@@ -249,9 +248,9 @@ function requestPriceSearchBatch(oracleIds) {
     url: buildPriceSearchUrl(oracleIds),
     method: 'GET',
     timeout: SCRYFALL_COLLECTION_TIMEOUT_MS,
+    // 不设 User-Agent（同上，禁止头）
     header: {
       Accept: 'application/json',
-      'User-Agent': SCRYFALL_USER_AGENT,
     },
   }, (payload) => {
     if (!payload || !Array.isArray(payload.data)) {

@@ -53,7 +53,8 @@ test('Scryfall collection lookup batches 75 names and preserves partial/missing 
     assert.deepEqual(first.data.identifiers[0], { name: names[0] });
     assert.equal(first.header.Accept, 'application/json');
     assert.equal(first.header['Content-Type'], 'application/json');
-    assert.equal(first.header['User-Agent'], 'cEDH-Tutor/1.0');
+    // 不设 User-Agent（禁止头，基础库会拒绝并报 Refused to set unsafe header）
+    assert.equal(first.header['User-Agent'], undefined);
 
     const returnedCards = first.data.identifiers.slice(0, 74).map((identifier, index) => ({
       name: identifier.name,
@@ -304,7 +305,7 @@ test('missing nonfoil USD prices use grouped oracle searches with cache-safe par
     assert.equal(firstSearch.method, 'GET');
     assert.equal(firstSearch.timeout, SCRYFALL_COLLECTION_TIMEOUT_MS);
     assert.equal(firstSearch.header.Accept, 'application/json');
-    assert.equal(firstSearch.header['User-Agent'], 'cEDH-Tutor/1.0');
+    assert.equal(firstSearch.header['User-Agent'], undefined);
     const decodedFirstUrl = decodeURIComponent(firstSearch.url);
     assert.match(decodedFirstUrl, /\(oracleid:oracle-price-1 or oracleid:oracle-price-2/);
     assert.match(decodedFirstUrl, /game:paper usd>0/);

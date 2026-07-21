@@ -25,6 +25,7 @@ function reasonRoleLabel(item) {
   if (item.code === 'BAND_POSITION') return '区间定位';
   if (item.kind === 'context') return '参考';
   if (item.code === 'COMPETITIVE_SIGNAL_DENSITY') return '竞技特征';
+  if (item.code === 'EXPENSIVE_POOL_PROMOTION') return '主将池升 B5';
   if (item.kind === 'rule') return `下限 B${item.minimumBracket}`;
   if (item.code === 'MANA_CURVE_SUPPORT'
     || item.code === 'CONSTRUCTION_EFFICIENCY_SUPPORT'
@@ -47,7 +48,8 @@ function buildVerdictSteps(result) {
   pushStep('结构强度', result.assignedWithoutMetrics, result.assignedWithoutMetrics > result.floorBracket);
   pushStep('数据辅助', result.assignedBeforePromotion,
     result.assignedBeforePromotion > result.assignedWithoutMetrics);
-  if (result.competitivePromoted) pushStep('竞技特征', result.assignedBracket, true);
+  if (result.competitivePromoted) pushStep('竞技特征', result.competitiveBracket, true);
+  if (result.expensivePoolPromoted) pushStep('主将池', 5, true);
   return steps;
 }
 

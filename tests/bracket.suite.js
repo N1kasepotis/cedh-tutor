@@ -627,7 +627,7 @@ test('Combo assembly mana value grades speed objectively and feeds the early-com
   assert.ok(slow.evidence.some((item) => item.code === 'COMBO_FAMILY_SCEPTER_REVERSAL'
     && item.detail.startsWith('检测到完整')
     && item.detail.includes('条件型无限法术力')
-    && item.detail.includes('法术力启动阈值 2+3')
+    && item.detail.includes('启动法术力 2+3')
     && !item.detail.includes('前期即可启动')
     && !item.detail.includes('全套法术力值合计')));
 
@@ -644,13 +644,13 @@ test('Combo assembly mana value grades speed objectively and feeds the early-com
   assert.equal(fast.assignedBracket, 4.5, '刚达竞技阈值且零余量的牌表归 B4.5，不再直接进入 B5');
   assert.ok(fast.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'));
   assert.ok(fast.evidence.some((item) => item.code === 'COMBO_FAMILY_SCEPTER_REVERSAL'
-    && item.detail.includes('法术力启动阈值 2+2')
+    && item.detail.includes('启动法术力 2+2')
     && !item.detail.includes('前期即可启动')));
 
   const offline = analyze(objectiveDeck);
   const offlineFamily = offline.detectedComboFamilies.find((family) => family.familyId === 'scepter-reversal');
   assert.equal(offlineFamily.assemblyManaValue, undefined, '无元数据时不产生装配字段');
-  assert.ok(offline.evidence.every((item) => !item.detail.includes('法术力启动阈值')), '离线路径无元数据，不显示法术力启动阈值');
+  assert.ok(offline.evidence.every((item) => !item.detail.includes('启动法术力')), '离线路径无元数据，不显示启动法术力');
   assert.ok(offline.assignedBracket < 5, '离线时该家族不因客观速度进入 B5');
 
   assert.equal(comboSpeedTier(0), 5);
@@ -694,10 +694,10 @@ test('Pattern combo assembly cost is the minimal recipe, not the sum of every re
   assert.equal(family.assemblyManaValue, 8, '装配成本取最小成套（固定件 + 每个可选组最便宜一张）');
   assert.ok(family.assemblyManaValue < 23, '不再把所有冗余可选件加进合计');
   const evidence = magda.evidence.find((item) => item.code === 'COMBO_FAMILY_MAGDA_CLOCK');
-  // 启动阈值明细：Magda 3 + Clock 4 + 最便宜矮人 1，只 3 件成套，不含冗余 → 「3+4+1」而非 23
+  // 启动法术力明细：Magda 3 + Clock 4 + 最便宜矮人 1，只 3 件成套，不含冗余 → 「3+4+1」而非 23
   assert.ok(evidence.detail.startsWith('检测到完整'));
   assert.ok(evidence.detail.includes('无限珍宝'));
-  assert.ok(evidence.detail.includes('法术力启动阈值 3+4+1'));
+  assert.ok(evidence.detail.includes('启动法术力 3+4+1'));
   assert.ok(!evidence.detail.includes('23'));
   assert.ok(!evidence.detail.includes('前期即可启动'));
 
@@ -707,7 +707,7 @@ test('Pattern combo assembly cost is the minimal recipe, not the sum of every re
   const magda2 = evaluateBracket(parsed2, { metadataResult });
   const family2 = magda2.detectedComboFamilies.find((item) => item.familyId === 'magda-clock');
   assert.equal(family2.assemblyManaValue, 9, '可选组取当前命中里最便宜的一张，随牌表变化');
-  assert.deepEqual(family2.assemblyBreakdown, [3, 4, 2], '启动阈值明细随最便宜可选件变化');
+  assert.deepEqual(family2.assemblyBreakdown, [3, 4, 2], '启动法术力明细随最便宜可选件变化');
 });
 
 test('Price never subdivides the competitive verdict once the 500 dollar budget line is removed', () => {
@@ -895,8 +895,9 @@ test('bracket report page shows verdict chain, signal overview and per-reason ro
   assert.match(pageJs, /pushStep\('规则下限', result\.floorBracket, false\)/);
   assert.match(pageJs, /pushStep\('结构强度', result\.assignedWithoutMetrics/);
   assert.match(pageJs, /pushStep\('数据辅助', result\.assignedBeforePromotion/);
-  assert.match(pageJs, /if \(result\.competitivePromoted\) pushStep\('竞技特征', result\.assignedBracket, true\)/);
-  assert.doesNotMatch(pageJs, /commanderPoolPromoted|主将池|budgetCompetitive|预算细分/);
+  assert.match(pageJs, /if \(result\.competitivePromoted\) pushStep\('竞技特征', result\.competitiveBracket, true\)/);
+  assert.match(pageJs, /if \(result\.expensivePoolPromoted\) pushStep\('主将池', 5, true\)/);
+  assert.doesNotMatch(pageJs, /commanderPoolPromoted|budgetCompetitive|预算细分/);
   assert.match(pageWxml, /class="verdict-chain" aria-label="判定链条"/);
   assert.match(pageWxml, /class="chain-step \{\{item\.changed \? 'is-raised' : ''\}\}/);
   assert.match(pageWxss, /\.chain-step\.is-raised\s*\{[^}]*rgba\(var\(--module-accent-rgb\)/);
@@ -1121,7 +1122,7 @@ test('Competitive gate recognizes non-blue and command-engine cEDH, not just the
   assert.equal(durdle.competitiveProfile, false, '缺锋利度轴（互动/组合技/密度）的主将引擎牌组不进竞技');
 });
 
-test('Commander pool membership no longer changes the assigned bracket', () => {
+test('Commander pool membership alone does not change the bracket without the expensive-fast conditions', () => {
   const partnerDeck = (commanders) => [
     'Commander',
     ...commanders.map((name) => `1 ${name}`),
@@ -1130,7 +1131,7 @@ test('Commander pool membership no longer changes the assigned bracket', () => {
     `${99 - commanders.length} Forest`,
   ];
 
-  // 曾经的主将池升档规则已删除：池内 Partners / 单主将与池外主将同样对待
+  // 主将池升档需同时满足 快速法术力 >3 + 造价 >$1500；无元数据（造价未知）时池内主将不单独升档
   const listedPartners = analyze(partnerDeck([
     'Tymna the Weaver',
     "Kraum, Ludevic's Opus",
@@ -1139,14 +1140,15 @@ test('Commander pool membership no longer changes the assigned bracket', () => {
   assert.equal(listedPartners.assignedBeforePromotion, 4);
   assert.equal(listedPartners.assignedBracket, 4);
   assert.equal(listedPartners.competitivePromoted, false);
-  assert.ok(listedPartners.evidence.every((item) => item.code !== 'QUESTIONNAIRE_COMMANDER_POOL'));
+  assert.equal(listedPartners.expensivePoolPromoted, false);
+  assert.ok(listedPartners.evidence.every((item) => item.code !== 'EXPENSIVE_POOL_PROMOTION'));
 
   const outsidePool = analyze(partnerDeck([
     'Tymna the Weaver',
     'Bear Cub',
   ]));
   assert.equal(outsidePool.assignedBracket, 4);
-  assert.equal(outsidePool.assignedBracket, listedPartners.assignedBracket, '池内外主将档位一致');
+  assert.equal(outsidePool.assignedBracket, listedPartners.assignedBracket, '缺造价数据时池内外主将档位一致');
 
   const kinnanFloor = analyze([
     'Commander',
@@ -1157,7 +1159,63 @@ test('Commander pool membership no longer changes the assigned bracket', () => {
   ]);
   assert.equal(kinnanFloor.deckCardCount, 99);
   assert.equal(kinnanFloor.assignedBracket, 4);
-  assert.equal(kinnanFloor.competitivePromoted, false);
+  assert.equal(kinnanFloor.expensivePoolPromoted, false);
+});
+
+test('Expensive fast-mana deck with a pool commander promotes B4/B4.5 to B5', () => {
+  const fastMana = ['Sol Ring', 'Mana Vault', 'Chrome Mox', 'Mox Opal', 'Mox Amber'];
+  const gameChangers = ['Ancient Tomb', 'The One Ring', 'Cyclonic Rift'];
+  const filler = Array.from({ length: 55 }, (_, i) => `Filler ${i + 1}`);
+  const recognized = [...fastMana, ...gameChangers, ...filler];
+  const buildLines = (commander) => [
+    'Commander', `1 ${commander}`, 'Deck',
+    ...recognized.map((name) => `1 ${name}`),
+    `${99 - recognized.length} Forest`,
+  ].join('\n');
+  const priceOf = (name) => {
+    if (name === 'Forest') return 0.1;
+    if (fastMana.includes(name)) return 200;
+    if (gameChangers.includes(name)) return 60;
+    return 12;
+  };
+  const metadataFor = (parsed, priceMultiplier = 1) => makeMetadata(
+    Array.from(new Set(parsed.cards.map((card) => card.name))).map((name) => ({
+      name,
+      cmc: 2,
+      usd: name === 'Forest' ? 0.1 : priceOf(name) * priceMultiplier,
+      typeLine: name === 'Forest' ? 'Basic Land — Forest' : 'Artifact',
+    })),
+  );
+
+  // Kinnan（池内）+ 6 张快速法术力 + 约 $1852（>$1500）→ 由 B4 升 B5
+  const parsed = parseBracketDeck(buildLines('Kinnan, Bonder Prodigy'));
+  const promoted = evaluateBracket(parsed, { metadataResult: metadataFor(parsed) });
+  assert.equal(promoted.competitiveBracket, 4, '结构与竞技判定先落在 B4');
+  assert.ok(promoted.expensivePoolFastMana > 3, '快速法术力需超过 3 张');
+  assert.ok(promoted.deckMetrics.priceReliable && promoted.deckMetrics.estimatedTotalUsd > 1500);
+  assert.equal(promoted.expensivePoolPromoted, true);
+  assert.equal(promoted.assignedBracket, 5);
+  const evidence = promoted.evidence.find((item) => item.code === 'EXPENSIVE_POOL_PROMOTION');
+  assert.ok(evidence && evidence.detail.includes('100 人竞技主将池')
+    && evidence.detail.includes('$1500') && evidence.detail.includes('B5'));
+  assert.match(buildBracketSummary(promoted), /主将命中现有 100 人竞技主将池[\s\S]*升到B5强度/);
+
+  // 护栏一：池外主将（Bear Cub）→ 不升档
+  const outParsed = parseBracketDeck(buildLines('Bear Cub'));
+  const outsidePool = evaluateBracket(outParsed, { metadataResult: metadataFor(outParsed) });
+  assert.equal(outsidePool.expensivePoolPromoted, false);
+  assert.equal(outsidePool.assignedBracket, 4);
+
+  // 护栏二：造价不足（每张便宜十倍 → 远低于 $1500）→ 不升档
+  const cheap = evaluateBracket(parsed, { metadataResult: metadataFor(parsed, 0.1) });
+  assert.ok(cheap.deckMetrics.estimatedTotalUsd < 1500);
+  assert.equal(cheap.expensivePoolPromoted, false);
+  assert.equal(cheap.assignedBracket, 4);
+
+  // 护栏三：无元数据（造价未知）→ 不升档
+  const noPrice = evaluateBracket(parsed);
+  assert.equal(noPrice.expensivePoolPromoted, false);
+  assert.equal(noPrice.assignedBracket, 4);
 });
 
 test('Deck metrics weight quantities, exclude lands from curve, and never price missing cards as zero', () => {
@@ -1645,7 +1703,7 @@ test('Every result carries internal version metadata, evidence, confidence bound
   assert.ok(result.evidence.length >= 1);
   assert.ok(result.evidence.every((item) => item.ruleVersion === BRACKET_MANIFEST.ruleVersion));
   assert.equal(result.versions.evaluatorVersion, BRACKET_MANIFEST.evaluatorVersion);
-  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.5.0');
+  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.6.0');
   assert.equal(BRACKET_MANIFEST.dataVersion, 'curated-en-2026-07-15-combo-families');
   assert.equal(result.versions.supportedLanguage, 'en');
   assert.equal(result.confidence, 'low');

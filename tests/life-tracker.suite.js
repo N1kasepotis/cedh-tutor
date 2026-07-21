@@ -62,6 +62,13 @@ test('life tracker requests landscape and renders a full-screen two-by-two cross
   const wxss = readPage('wxss');
 
   assert.equal(pageJson.pageOrientation, 'landscape');
+
+  // 全局 pageOrientation 只能放在 app.json 的 window 内；放顶层会被新基础库判为
+  // invalid app.json ["pageOrientation"] 并拖慢/卡住运行环境加载。
+  const appJson = JSON.parse(read('miniprogram/app.json'));
+  assert.ok(!Object.prototype.hasOwnProperty.call(appJson, 'pageOrientation'),
+    'app.json 顶层不得有 pageOrientation（应放在 window 内）');
+  assert.equal(appJson.window.pageOrientation, 'portrait');
   assert.match(wxml, /class="[^"]*life-tracker-page[^"]*"/);
   assert.match(wxml, /wx:for="\{\{players\}\}"/);
   assert.match(wxml, /class="[^"]*player-zone[^"}]*\{\{item\.orientationClass\}\}/);

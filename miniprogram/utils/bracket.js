@@ -1,4 +1,5 @@
 const { normalizeCardName } = require('./scryfall');
+const { isQuestionnaireCommanderPoolMatch } = require('./bracket-commander-pool');
 const {
   buildEfficiencyProfile,
   buildCohesionProfile,
@@ -63,6 +64,9 @@ const MANA_CURVE_MIN_NONLAND_CARDS = 20;
 const PRICE_RELIABLE_COVERAGE = 0.75;
 const PRICE_MIN_ELIGIBLE_CARDS = 20;
 const PRICE_SUPPORT_THRESHOLD_USD = 1200;
+// 高造价竞技主将升档：结构落在 B4/B4.5、快速法术力 > 此张数、可靠造价 > 此价，且主将命中 100 人竞技主将池 → B5。
+const EXPENSIVE_POOL_MIN_FAST_MANA = 3;
+const EXPENSIVE_POOL_PRICE_THRESHOLD_USD = 1500;
 // 识别密度低于此线（收录名单只覆盖不到四分之一非地牌）时，判定可能遗漏未收录的高强度变量单卡，置信度封顶「中」。
 const RECOGNITION_DENSITY_FLOOR = 0.25;
 const CURVE_BUCKET_DEFINITIONS = Object.freeze([
@@ -770,7 +774,7 @@ function metadataManaValue(name, metadataResult) {
 // 单个变体的「最小成套」装配：固定件（required / commanderRequired）全算，
 // 可选组（anyOf）取已命中里最便宜一张，计数组（atLeast）取已命中里最便宜的 count 张。
 // 无组结构的精确组合技退回全卡。任一必需件缺 cmc 时返回 null（装配未知）。
-// 返回 { total, components }，components 为按成套顺序排列的各件法术力值（用于「启动阈值 x+x」展示）。
+// 返回 { total, components }，components 为按成套顺序排列的各件法术力值（用于「启动法术力 x+x」展示）。
 function variantAssembly(variant, metadataResult) {
   const matchedKeys = new Set((variant.cards || []).map(canonicalCardKey));
   const fixed = (variant.required || []).concat(variant.commanderRequired || []);
@@ -923,7 +927,7 @@ function bandApproachToBFive(counts, combos, signals) {
   };
 }
 
-// 超出 B5 竞技阈值的余量（B4.5 与 B5 的升档门槛）。
+// 超出 B5 竞技线的余量（B4.5 与 B5 的升档门槛）。
 function bandCompetitiveSurplus(counts, combos) {
   const speedSurplus = combos.reduce((best, combo) => {
     if (Number.isInteger(combo.assemblySpeed)) {
@@ -1060,8 +1064,8 @@ function computeBandPosition({
   let summaryText;
   if (assignedBracket === 4) {
     metricText = `B5 接近度 ${percent}%`;
-    summaryText = `区间定位${label.zh}，距 B5 竞技阈值的整体接近度约 ${percent}%`;
-    evidenceText = `按 B5 竞技阈值的整体接近度计算为 ${percent}%，四项必要条件平均达成 ${conjunctMeanPercent}%，当前瓶颈是${bottleneckAxis.label}（${Math.round(bottleneckAxis.progress * 100)}%），落在 B4 区间${label.segment}`;
+    summaryText = `区间定位${label.zh}，距 B5 竞技线的整体接近度约 ${percent}%`;
+    evidenceText = `按 B5 竞技线的整体接近度计算为 ${percent}%，四项必要条件平均达成 ${conjunctMeanPercent}%，当前瓶颈是${bottleneckAxis.label}（${Math.round(bottleneckAxis.progress * 100)}%），落在 B4 区间${label.segment}`;
   } else {
     metricText = `向 B${nextBracket} 推进 ${percent}%`;
     summaryText = `区间定位${label.zh}，向 B${nextBracket} 判定门槛的推进度约 ${percent}%`;
@@ -1187,9 +1191,9 @@ function evaluateBracket(parsed, options = {}) {
 
   detectedComboFamilies.forEach((combo) => {
     const minimum = combo.hardMinimum;
-    // 法术力启动阈值：最小成套各件的法术力值明细，如 3+4+1（元数据缺失时省略此项）
+    // 启动法术力：最小成套各件的法术力值明细，如 3+4+1（元数据缺失时省略此项）
     const thresholdText = Array.isArray(combo.assemblyBreakdown) && combo.assemblyBreakdown.length
-      ? `，法术力启动阈值 ${combo.assemblyBreakdown.join('+')}`
+      ? `，启动法术力 ${combo.assemblyBreakdown.join('+')}`
       : '';
     const comboKind = minimum ? '完整双卡组合技' : '完整组合技';
     const tail = minimum ? `自动触发 B${minimum} 规则下限` : '自动上调建议档位';
@@ -1412,7 +1416,7 @@ function evaluateBracket(parsed, options = {}) {
     Math.max(floorBracket, strengthBracket, automaticBase), 4,
   );
   // 竞技升档：结构判定先落在 B4、B5 必要条件的联合接近度超过区间「偏强」线，且具备完整
-  // 竞技特征才离开 B4；再看超出竞技阈值的余量——余量越过 B5 升档线判 B5，否则归 B4.5 准竞技。
+  // 竞技特征才离开 B4；再看超出竞技线的余量——余量越过 B5 升档线判 B5，否则归 B4.5 准竞技。
   // 韧性轴色彩中立（免费反击 / Stax / 主将区引擎 / 冗余皆可），不偏向蓝色。
   const promotionCounts = bandSignalCounts(signals);
   const promotionCombos = detectedComboFamilies.concat(detectedComboPatterns);
@@ -1426,9 +1430,23 @@ function evaluateBracket(parsed, options = {}) {
   );
   const clearCompetitiveSurplus = competitiveSurplus.score
     >= BAND_POSITION_CONFIG.promotion.b5SurplusMin;
-  const assignedBracket = competitivePromoted
+  const competitiveBracket = competitivePromoted
     ? (clearCompetitiveSurplus ? 5 : 4.5)
     : assignedBeforePromotion;
+  // 高造价竞技主将升档：落在 B4/B4.5 的完整牌表，若快速法术力 >3 张、可靠造价 >$1500、
+  // 且单主将或完整 Partners 命中 100 人竞技主将池，则升为 B5——高价快攻 + 已知竞技主将的组合按 cEDH 处理。
+  const fastManaCardCount = promotionCounts.fast;
+  const expensivePoolPromoted = Boolean(
+    (competitiveBracket === 4 || competitiveBracket === 4.5)
+    && structurallyComplete
+    && !hasLegalityIssue
+    && fastManaCardCount > EXPENSIVE_POOL_MIN_FAST_MANA
+    && deckMetrics.priceReliable
+    && deckMetrics.estimatedTotalUsd !== null
+    && deckMetrics.estimatedTotalUsd > EXPENSIVE_POOL_PRICE_THRESHOLD_USD
+    && isQuestionnaireCommanderPoolMatch(parsed.commanders),
+  );
+  const assignedBracket = expensivePoolPromoted ? 5 : competitiveBracket;
   const curveInfluenced = assignedWithCurve > assignedWithoutMetrics;
   const efficiencyInfluenced = assignedWithEfficiency > assignedWithoutMetrics;
   const cohesionInfluenced = assignedWithCohesion > assignedWithoutMetrics;
@@ -1440,11 +1458,11 @@ function evaluateBracket(parsed, options = {}) {
     const surplusLinePercent = Math.round(BAND_POSITION_CONFIG.promotion.b5SurplusMin * 100);
     let competitiveDetail;
     if (!competitivePromoted) {
-      competitiveDetail = '快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技阈值，并且有早期组合技或足够集中的多轴构筑，但结构判定未落在 B4，不触发竞技升档';
+      competitiveDetail = '快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但结构判定未落在 B4，不触发竞技升档';
     } else if (clearCompetitiveSurplus) {
-      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技阈值，并且有早期组合技或足够集中的多轴构筑，超出竞技阈值的余量 ${surplusPercent}% 越过 B5 升档线（${surplusLinePercent}%）`;
+      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，超出竞技线的余量 ${surplusPercent}% 越过 B5 升档线（${surplusLinePercent}%）`;
     } else {
-      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技阈值，并且有早期组合技或足够集中的多轴构筑，但超出竞技阈值的余量约 ${surplusPercent}%，未达 B5 升档线（${surplusLinePercent}%），归入 B4.5 准竞技`;
+      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但超出竞技线的余量约 ${surplusPercent}%，未达 B5 升档线（${surplusLinePercent}%），归入 B4.5 准竞技`;
     }
     evidence.push(buildEvidence(
       'COMPETITIVE_SIGNAL_DENSITY',
@@ -1452,7 +1470,17 @@ function evaluateBracket(parsed, options = {}) {
       contributingSignals.reduce((cards, signal) => cards.concat(signal.cards), []),
       '竞技构筑特征',
       competitiveDetail,
-      competitivePromoted ? assignedBracket : 0,
+      competitivePromoted ? competitiveBracket : 0,
+    ));
+  }
+  if (expensivePoolPromoted) {
+    evidence.push(buildEvidence(
+      'EXPENSIVE_POOL_PROMOTION',
+      'strength',
+      (parsed.commanders || []).map((card) => card.name),
+      '高造价竞技主将升档',
+      `主将命中现有 100 人竞技主将池，快速法术力 ${fastManaCardCount} 张、按基本地以外的牌估算约 $${Math.round(deckMetrics.estimatedTotalUsd)}（超过 $${EXPENSIVE_POOL_PRICE_THRESHOLD_USD}），高价快攻配已知竞技主将按 cEDH 处理，由 B${competitiveBracket} 升至 B5`,
+      5,
     ));
   }
   if (!evidence.some((item) => item.kind === 'rule' || item.kind === 'strength')) {
@@ -1545,7 +1573,7 @@ function evaluateBracket(parsed, options = {}) {
   if (competitivePromoted
     && Math.abs(competitiveSurplus.score - BAND_POSITION_CONFIG.promotion.b5SurplusMin)
       <= BAND_POSITION_CONFIG.promotion.b5SurplusBand) {
-    confidenceIssues.push('超出竞技阈值的余量贴近 B5 升档线，少量高效单卡的增减可能改变 B4.5 与 B5 的细分');
+    confidenceIssues.push('超出竞技线的余量贴近 B5 升档线，少量高效单卡的增减可能改变 B4.5 与 B5 的细分');
   }
   const confidence = !structurallyComplete || recognizedTriggerKeys.size === 0
     ? 'low'
@@ -1586,9 +1614,12 @@ function evaluateBracket(parsed, options = {}) {
     assignedWithoutMetrics,
     assignedBeforePrice,
     assignedBeforePromotion,
+    competitiveBracket,
     competitiveProfile,
     competitivePromoted,
     clearCompetitiveSurplus,
+    expensivePoolPromoted,
+    expensivePoolFastMana: fastManaCardCount,
     bandFourApproachScore: bandFourApproach.score,
     competitiveSurplusScore: competitiveSurplus.score,
     floorBracket,
@@ -1748,6 +1779,22 @@ function buildBracketSummary(result, parseErrorCount = 0) {
     return finalizeBracketSummary(sentences);
   }
 
+  if (result.expensivePoolPromoted) {
+    const rules = ruleSummaryLabels(result);
+    sentences.push(rules.length
+      ? `因为检测到${joinChineseLabels(rules)}，规则下限是 B${floorBracket}`
+      : `规则下限是 B${floorBracket}`);
+    const preBracket = Number(result.competitiveBracket) || 4;
+    sentences.push(preBracket === 4.5
+      ? '牌表已具备竞技构筑特征，先落在 B4.5 准竞技'
+      : `结构判断落在 B${preBracket}`);
+    const metrics = result.deckMetrics || {};
+    sentences.push(`快速法术力有 ${Number(result.expensivePoolFastMana) || 0} 张、按基本地以外的牌估算约 $${bracketSummaryUsd(metrics.estimatedTotalUsd)}（超过 $${bracketSummaryUsd(EXPENSIVE_POOL_PRICE_THRESHOLD_USD)}），且主将命中现有 100 人竞技主将池`);
+    sentences.push('高价快攻配已知竞技主将按 cEDH 处理，因此升到B5强度');
+    pushBandPositionSentence(sentences, result);
+    return finalizeBracketSummary(sentences);
+  }
+
   if (assignedBracket === 5 || assignedBracket === 4.5) {
     const rules = ruleSummaryLabels(result);
     sentences.push(rules.length
@@ -1767,11 +1814,11 @@ function buildBracketSummary(result, parseErrorCount = 0) {
     if (assignedBracket === 4.5) {
       // 竞技特征达标但余量未越过 B5 升档线：准竞技归 B4.5
       sentences.push(Number.isFinite(surplusScore)
-        ? `不过超出竞技阈值的余量约 ${Math.round(surplusScore * 100)}%，未越过 B5 升档线，归于B4.5准竞技强度`
-        : '不过超出竞技阈值的余量未越过 B5 升档线，归于B4.5准竞技强度');
+        ? `不过超出竞技线的余量约 ${Math.round(surplusScore * 100)}%，未越过 B5 升档线，归于B4.5准竞技强度`
+        : '不过超出竞技线的余量未越过 B5 升档线，归于B4.5准竞技强度');
     } else {
       if (Number.isFinite(surplusScore)) {
-        sentences.push(`超出竞技阈值的余量约 ${Math.round(surplusScore * 100)}% 越过 B5 升档线`);
+        sentences.push(`超出竞技线的余量约 ${Math.round(surplusScore * 100)}% 越过 B5 升档线`);
       }
       sentences.push('因此归于B5强度');
     }
