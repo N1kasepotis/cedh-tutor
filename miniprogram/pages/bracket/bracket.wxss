@@ -539,6 +539,39 @@
   line-height: 1.2;
 }
 
+/* 区间定位：档位内偏弱/中等/偏强，偏强走模块 accent、偏弱降为 soft */
+.band-position {
+  display: flex;
+  align-items: baseline;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.band-position-tier {
+  font-size: var(--cedh-text-14);
+  font-weight: 650;
+  line-height: 1.2;
+}
+
+.band-position.band-low .band-position-tier {
+  color: var(--cedh-text-soft);
+}
+
+.band-position.band-mid .band-position-tier {
+  color: var(--cedh-text);
+}
+
+.band-position.band-high .band-position-tier {
+  color: rgba(var(--module-accent-rgb), 0.95);
+}
+
+.band-position-metric {
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+  letter-spacing: 0.08em;
+  line-height: 1.2;
+}
+
 .result-summary-shell {
   display: flex;
   align-items: stretch;

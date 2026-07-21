@@ -1,5 +1,4 @@
 const { normalizeCardName } = require('./scryfall');
-const { isQuestionnaireCommanderPoolMatch } = require('./bracket-commander-pool');
 const {
   buildEfficiencyProfile,
   buildCohesionProfile,
@@ -8,6 +7,7 @@ const {
 const {
   BRACKET_MANIFEST,
   BRACKET_LABELS,
+  BAND_POSITION_CONFIG,
   COMBO_SPEED_CONFIG,
   GAME_CHANGERS,
   BANNED_CARDS,
@@ -63,10 +63,6 @@ const MANA_CURVE_MIN_NONLAND_CARDS = 20;
 const PRICE_RELIABLE_COVERAGE = 0.75;
 const PRICE_MIN_ELIGIBLE_CARDS = 20;
 const PRICE_SUPPORT_THRESHOLD_USD = 1200;
-// B4.5 预算竞技：结构达到 B5 但可靠造价低于此线时细分到 4.5（官方五档之外的工具扩展档）。
-const BUDGET_CEDH_PRICE_THRESHOLD_USD = 500;
-// 造价落在预算线 ±15% 内视为边界贴近，置信度降为「中」并说明原因。
-const BUDGET_CEDH_PRICE_BAND_RATIO = 0.15;
 // 识别密度低于此线（收录名单只覆盖不到四分之一非地牌）时，判定可能遗漏未收录的高强度变量单卡，置信度封顶「中」。
 const RECOGNITION_DENSITY_FLOOR = 0.25;
 const CURVE_BUCKET_DEFINITIONS = Object.freeze([
@@ -674,6 +670,15 @@ function signalBand(signals) {
   return 1;
 }
 
+// 组装一致性：可靠地找到并拼出制胜线的能力。通用导师是经典路径，但主将区引擎（每局常驻、
+// 可反复取用）与抓牌引擎同样带来一致性——单色导师稀缺的组合技主将（如 Magda）靠主将本身
+// 而非通用导师达成一致性，因此不能用「导师 ≥3」这条蓝黑范式硬门槛一刀切。
+function consistencyReach(tutors, command, engines) {
+  return (tutors || 0) + (command >= 1 ? 2 : 0) + Math.min(engines || 0, 2);
+}
+
+// 竞技构筑门槛：把 cEDH 拆成四条与颜色/原型无关的支柱，每条都能用多种方式满足，
+// 避免只认「快速法术力 + 通用导师 + 免费反击 + 已收录双卡组合技」这一蓝黑 turbo 范式。
 function hasCompetitiveSignalDensity(signals, detectedComboFamilies, detectedComboPatterns = []) {
   const counts = Object.fromEntries(signals.map((signal) => [signal.key, signal.count]));
   const fast = counts.fastMana || 0;
@@ -695,12 +700,19 @@ function hasCompetitiveSignalDensity(signals, detectedComboFamilies, detectedCom
   ].filter(Boolean).length;
   const hasEarlyCombo = detectedComboFamilies.concat(detectedComboPatterns)
     .some(isEarlyCombo);
-  const hasCoreEfficiency = fast >= 3 && tutors >= 3 && (free >= 2 || denial >= 3);
+  // 支柱一，速度：爆发性法术力，色彩无关；也是挡住休闲牌组的硬地板（premium 快速法术力密度）。
+  const hasSpeed = fast >= 3;
+  // 支柱二，一致性：导师或主将区引擎或抓牌引擎，任一路径凑够都行。
+  const hasConsistency = consistencyReach(tutors, command, engines) >= 3;
+  // 支柱三，制胜路径：已收录早期组合技、curated 主将区引擎（本身即制胜/组合技引擎）、或极高多轴密度。
   const hasExtremeBreadth = totalSignals >= 14
     && highAxes >= 4
-    && (command >= 1 || engines >= 4 || winConditions >= 3 || denial >= 5);
+    && (command >= 1 || engines >= 3 || winConditions >= 2 || denial >= 3 || hasEarlyCombo);
+  const hasWinPath = hasEarlyCombo || command >= 1 || hasExtremeBreadth;
+  // 支柱四，锋利度：至少一条真实的抗干扰/压制/爆发轴，挡住「快速法术力 + 导师 + 好牌堆」的纯 durdle。
+  const hasEdge = free >= 2 || denial >= 2 || hasEarlyCombo || hasExtremeBreadth;
 
-  return hasCoreEfficiency && (hasEarlyCombo || hasExtremeBreadth);
+  return hasSpeed && hasConsistency && hasWinPath && hasEdge;
 }
 
 function normalizeBracketDisplayCopy(value) {
@@ -763,6 +775,250 @@ function isEarlyCombo(combo) {
   if (combo.speed === 'early') return true;
   return Number.isInteger(combo.assemblySpeed)
     && combo.assemblySpeed >= COMBO_SPEED_CONFIG.earlyMinSpeed;
+}
+
+function clamp01(value) {
+  return Math.max(0, Math.min(1, value));
+}
+
+function bandAxis(key, label, progress) {
+  return { key, label, progress: roundMetric(clamp01(progress), 4) };
+}
+
+function bandAxisSum(axes) {
+  return axes.reduce((total, axis) => total + axis.progress, 0);
+}
+
+function signalGroupLabel(key) {
+  return (SIGNAL_GROUPS[key] && SIGNAL_GROUPS[key].label) || key;
+}
+
+function bandSignalCounts(signals) {
+  const counts = Object.fromEntries((signals || []).map((signal) => [signal.key, signal.count]));
+  return {
+    fast: counts.fastMana || 0,
+    tutors: counts.efficientTutor || 0,
+    free: counts.freeInteraction || 0,
+    denial: counts.staxOrDenial || 0,
+    engines: counts.engine || 0,
+    winConditions: counts.efficientWinCondition || 0,
+    command: counts.commandZoneEngine || 0,
+  };
+}
+
+// 抗干扰韧性轴（色彩中立）：蓝系靠免费反击，其他颜色靠 Stax、主将区引擎或更深的导师／
+// 引擎冗余抵抗对手互动。取各路径最大值，使不沾蓝的 cEDH 不因免费反击少而被压档。
+const RESILIENCE_AXIS_LABEL = '抗干扰韧性';
+const CONSISTENCY_AXIS_LABEL = '组装一致性';
+function competitiveResilience(counts) {
+  return Math.max(
+    counts.free / 2,
+    counts.denial / 3,
+    counts.command >= 1 ? 0.8 : 0,
+    clamp01((counts.tutors - 3) / 3),
+    clamp01((counts.engines + counts.winConditions) / 3),
+  );
+}
+function competitiveResilienceSurplus(counts) {
+  return Math.max(
+    (counts.free - 2) / 3,
+    (counts.denial - 3) / 3,
+    counts.command >= 1 ? 0.4 : 0,
+    clamp01((counts.tutors - 4) / 3),
+    clamp01((counts.engines + counts.winConditions - 1) / 3),
+  );
+}
+
+// B5 四项必要条件的联合接近度（B4 区间定位与竞技升档门槛共用）：
+// 平均达成度取平方，表达「四项必须同时满足」的联合接近程度。
+function bandApproachToBFive(counts, combos, signals) {
+  const totalSignals = (signals || []).reduce((total, signal) => total + signal.count, 0);
+  const highAxes = [
+    counts.fast >= 3, counts.tutors >= 4, counts.free >= 2, counts.denial >= 3,
+    counts.engines >= 3, counts.winConditions >= 2, counts.command >= 1,
+  ].filter(Boolean).length;
+  const comboTrigger = combos.reduce((best, combo) => {
+    if (Number.isInteger(combo.assemblySpeed)) {
+      return Math.max(best, clamp01(combo.assemblySpeed / COMBO_SPEED_CONFIG.earlyMinSpeed));
+    }
+    if (isEarlyCombo(combo)) return Math.max(best, 1);
+    return Math.max(best, combo.matchKind === 'pattern' ? 0.35 : 0.5);
+  }, 0);
+  const breadthTrigger = (Math.min(totalSignals / 14, 1) + Math.min(highAxes / 4, 1)) / 2;
+  const axes = [
+    bandAxis('fastMana', signalGroupLabel('fastMana'), counts.fast / 3),
+    bandAxis('consistency', CONSISTENCY_AXIS_LABEL, consistencyReach(counts.tutors, counts.command, counts.engines) / 3),
+    bandAxis('resilience', RESILIENCE_AXIS_LABEL, competitiveResilience(counts)),
+    bandAxis('winTrigger', '早期组合技或多轴密度', Math.max(comboTrigger, breadthTrigger)),
+  ];
+  const mean = bandAxisSum(axes) / axes.length;
+  return {
+    axes,
+    mean,
+    score: roundMetric(clamp01(mean * mean), 4),
+    bottleneckAxis: axes.reduce((low, axis) => (axis.progress < low.progress ? axis : low), axes[0]),
+  };
+}
+
+// 超出 B5 竞技阈值的余量（B4.5 与 B5 的升档门槛）。
+function bandCompetitiveSurplus(counts, combos) {
+  const speedSurplus = combos.reduce((best, combo) => {
+    if (Number.isInteger(combo.assemblySpeed)) {
+      return Math.max(best, clamp01(combo.assemblySpeed - COMBO_SPEED_CONFIG.earlyMinSpeed));
+    }
+    return Math.max(best, combo.speed === 'early' ? 0.5 : 0);
+  }, 0);
+  const axes = [
+    bandAxis('fastMana', signalGroupLabel('fastMana'), (counts.fast - 3) / 3),
+    bandAxis('consistency', CONSISTENCY_AXIS_LABEL, (consistencyReach(counts.tutors, counts.command, counts.engines) - 3) / 3),
+    bandAxis('resilience', RESILIENCE_AXIS_LABEL, competitiveResilienceSurplus(counts)),
+    bandAxis('comboSpeed', '组合技装配速度', speedSurplus),
+  ];
+  return {
+    axes,
+    score: roundMetric(clamp01((bandAxisSum(axes) / axes.length) * BAND_POSITION_CONFIG.surplusGain), 4),
+  };
+}
+
+// 区间定位：在已判定档位内再分「偏弱 / 中等 / 偏强」。
+// 分数只复用档位判定本身的信号轴（阈值与 signalBand / hasCompetitiveSignalDensity 一一对应）：
+// B1–B3 = 向上一档判定门槛的推进度累计（accumulationSpan 归一），
+// B4 = B5 四项必要条件平均达成度的平方（联合满足的接近程度）。
+// B4.5 与 B5 暂不区分：竞技档内强弱取决于赛事 meta 表现，结构信号不足以支撑可信排序。
+// 离线路径同样可算，不依赖元数据。
+function computeBandPosition({
+  assignedBracket,
+  signals,
+  detectedComboFamilies,
+  detectedComboPatterns,
+  extraTurns,
+}) {
+  const bandCounts = bandSignalCounts(signals);
+  const fast = bandCounts.fast;
+  const tutors = bandCounts.tutors;
+  const free = bandCounts.free;
+  const denial = bandCounts.denial;
+  const engines = bandCounts.engines;
+  const winConditions = bandCounts.winConditions;
+  const command = bandCounts.command;
+  const extraTurnCount = (extraTurns || []).length;
+  const combos = (detectedComboFamilies || []).concat(detectedComboPatterns || []);
+  const config = BAND_POSITION_CONFIG;
+
+  if (assignedBracket >= 4.5) {
+    const scopeCode = assignedBracket === 5 ? 'B5' : 'B4.5';
+    return {
+      tier: null,
+      zh: '',
+      score: null,
+      percent: null,
+      metric: 'deferred',
+      nextBracket: null,
+      axes: [],
+      topAxis: null,
+      bottleneckAxis: null,
+      conjunctMeanPercent: null,
+      metricText: '',
+      summaryText: '',
+      evidenceText: `${scopeCode} 竞技档内的强弱区分取决于赛事 meta 表现（对局数据、席位胜率与常见配置对照），结构信号不足以支撑可信排序，当前版本暂不区分，待 meta 分析加入后提供`,
+      deferred: true,
+    };
+  }
+
+  let axes = [];
+  let score = 0;
+  let metric = 'progress';
+  let nextBracket = null;
+  let bottleneckAxis = null;
+  let conjunctMeanPercent = null;
+
+  if (assignedBracket <= 2) {
+    // 结构强度区间没有 B2（signalBand 只产出 1/3/4），B1 与 B2 的上一档判定门槛都是 B3。
+    nextBracket = 3;
+    axes = [
+      bandAxis('fastMana', signalGroupLabel('fastMana'), fast / 2),
+      bandAxis('efficientTutor', signalGroupLabel('efficientTutor'), tutors / 3),
+      bandAxis('freeInteraction', signalGroupLabel('freeInteraction'), free / 2),
+      bandAxis('staxOrDenial', signalGroupLabel('staxOrDenial'), denial / 2),
+      bandAxis('engine', signalGroupLabel('engine'), engines / 3),
+      bandAxis('efficientWinCondition', signalGroupLabel('efficientWinCondition'), winConditions / 2),
+      bandAxis('extraTurns', '额外回合', extraTurnCount / 2),
+    ];
+    if (command >= 1) {
+      axes.push(bandAxis(
+        'commandZonePath',
+        '主将区引擎路径',
+        (1 + Math.max(Math.min(fast, 1), Math.min(tutors / 2, 1))) / 2,
+      ));
+    }
+    score = bandAxisSum(axes) / config.accumulationSpan;
+  } else if (assignedBracket === 3) {
+    nextBracket = 4;
+    const combinedGate = (Math.min(fast / 2, 1) + Math.min(tutors / 3, 1) + Math.min(free / 2, 1)) / 3;
+    axes = [
+      bandAxis('fastMana', signalGroupLabel('fastMana'), (fast - 2) / 2),
+      bandAxis('efficientTutor', signalGroupLabel('efficientTutor'), (tutors - 3) / 2),
+      bandAxis('freeInteraction', signalGroupLabel('freeInteraction'), (free - 2) / 2),
+      bandAxis('staxOrDenial', signalGroupLabel('staxOrDenial'), (denial - 2) / 2),
+      bandAxis('combinedEfficiency', '快速法术力、高效导师与免费互动组合门槛', combinedGate),
+      bandAxis('comboFamilies', '完整组合技', (detectedComboFamilies || []).length / 2),
+      bandAxis('extraTurns', '额外回合', (extraTurnCount - 2) / 2),
+    ];
+    if (command >= 1) {
+      axes.push(bandAxis(
+        'commandZonePath',
+        '主将区引擎路径',
+        (Math.min(fast / 3, 1) + Math.min(tutors / 3, 1)) / 2,
+      ));
+    }
+    score = bandAxisSum(axes) / config.accumulationSpan;
+  } else {
+    // assignedBracket === 4（4.5 与 5 已提前返回）
+    nextBracket = 5;
+    const approach = bandApproachToBFive(bandCounts, combos, signals);
+    axes = approach.axes;
+    conjunctMeanPercent = Math.round(approach.mean * 100);
+    score = approach.score;
+    bottleneckAxis = approach.bottleneckAxis;
+  }
+
+  score = roundMetric(clamp01(score), 4);
+  const tierKey = score >= config.cuts.high ? 'high' : (score >= config.cuts.mid ? 'mid' : 'low');
+  const label = config.labels[tierKey];
+  const percent = Math.round(score * 100);
+  const topAxis = axes.reduce((best, axis) => (axis.progress > best.progress ? axis : best), axes[0]);
+  const bracketCode = `B${assignedBracket}`;
+
+  let evidenceText;
+  let metricText;
+  let summaryText;
+  if (assignedBracket === 4) {
+    metricText = `B5 接近度 ${percent}%`;
+    summaryText = `区间定位${label.zh}，距 B5 竞技阈值的整体接近度约 ${percent}%`;
+    evidenceText = `按 B5 竞技阈值的整体接近度计算为 ${percent}%，四项必要条件平均达成 ${conjunctMeanPercent}%，当前瓶颈是${bottleneckAxis.label}（${Math.round(bottleneckAxis.progress * 100)}%），落在 B4 区间${label.segment}`;
+  } else {
+    metricText = `向 B${nextBracket} 推进 ${percent}%`;
+    summaryText = `区间定位${label.zh}，向 B${nextBracket} 判定门槛的推进度约 ${percent}%`;
+    evidenceText = score === 0
+      ? `未检测到任何向 B${nextBracket} 判定门槛推进的信号轴，落在 ${bracketCode} 区间下段`
+      : `按向 B${nextBracket} 判定门槛的推进度计算为 ${percent}%，最接近的路径是${topAxis.label}（已达 ${Math.round(topAxis.progress * 100)}%），落在 ${bracketCode} 区间${label.segment}`;
+  }
+
+  return {
+    tier: tierKey,
+    zh: label.zh,
+    score,
+    percent,
+    metric,
+    nextBracket,
+    axes,
+    topAxis,
+    bottleneckAxis,
+    conjunctMeanPercent,
+    metricText,
+    summaryText,
+    evidenceText,
+  };
 }
 
 function evaluateBracket(parsed, options = {}) {
@@ -1067,75 +1323,69 @@ function evaluateBracket(parsed, options = {}) {
     && !hasLegalityIssue
     && hasCompetitiveSignalDensity(signals, detectedComboFamilies, detectedComboPatterns);
   const automaticBase = structurallyComplete ? 1 : 2;
-  const assignedWithoutMetrics = competitiveProfile
-    ? 5
-    : Math.min(Math.max(floorBracket, structuralStrengthBracket, automaticBase), 4);
-  const assignedWithCurve = competitiveProfile
-    ? 5
-    : Math.min(Math.max(floorBracket, curveSupportedStrengthBracket, automaticBase), 4);
-  const assignedWithEfficiency = competitiveProfile
-    ? 5
-    : Math.min(Math.max(floorBracket, efficiencySupportedStrengthBracket, automaticBase), 4);
-  const assignedWithCohesion = competitiveProfile
-    ? 5
-    : Math.min(Math.max(floorBracket, cohesionSupportedStrengthBracket, automaticBase), 4);
-  const assignedWithComboPotential = competitiveProfile
-    ? 5
-    : Math.min(Math.max(floorBracket, comboPotentialSupportedStrengthBracket, automaticBase), 4);
-  const assignedBeforePrice = competitiveProfile
-    ? 5
-    : Math.min(Math.max(floorBracket, metadataAdjustedStrengthBracket, automaticBase), 4);
-  const assignedBeforeCommanderPool = competitiveProfile
-    ? 5
-    : Math.min(Math.max(floorBracket, strengthBracket, automaticBase), 4);
-  const commanderPoolPromoted = Boolean(
-    assignedBeforeCommanderPool === 4
-    && structurallyComplete
-    && !hasLegalityIssue
-    && isQuestionnaireCommanderPoolMatch(parsed.commanders),
+  const assignedWithoutMetrics = Math.min(
+    Math.max(floorBracket, structuralStrengthBracket, automaticBase), 4,
   );
-  const assignedBeforeBudget = commanderPoolPromoted ? 5 : assignedBeforeCommanderPool;
-  const priceKnown = Boolean(deckMetrics.priceReliable && deckMetrics.estimatedTotalUsd !== null);
-  const budgetCompetitive = Boolean(
-    assignedBeforeBudget === 5
-    && priceKnown
-    && deckMetrics.estimatedTotalUsd < BUDGET_CEDH_PRICE_THRESHOLD_USD
+  const assignedWithCurve = Math.min(
+    Math.max(floorBracket, curveSupportedStrengthBracket, automaticBase), 4,
   );
-  const assignedBracket = budgetCompetitive ? 4.5 : assignedBeforeBudget;
+  const assignedWithEfficiency = Math.min(
+    Math.max(floorBracket, efficiencySupportedStrengthBracket, automaticBase), 4,
+  );
+  const assignedWithCohesion = Math.min(
+    Math.max(floorBracket, cohesionSupportedStrengthBracket, automaticBase), 4,
+  );
+  const assignedWithComboPotential = Math.min(
+    Math.max(floorBracket, comboPotentialSupportedStrengthBracket, automaticBase), 4,
+  );
+  const assignedBeforePrice = Math.min(
+    Math.max(floorBracket, metadataAdjustedStrengthBracket, automaticBase), 4,
+  );
+  const assignedBeforePromotion = Math.min(
+    Math.max(floorBracket, strengthBracket, automaticBase), 4,
+  );
+  // 竞技升档：结构判定先落在 B4、B5 必要条件的联合接近度超过区间「偏强」线，且具备完整
+  // 竞技特征才离开 B4；再看超出竞技阈值的余量——余量越过 B5 升档线判 B5，否则归 B4.5 准竞技。
+  // 韧性轴色彩中立（免费反击 / Stax / 主将区引擎 / 冗余皆可），不偏向蓝色。
+  const promotionCounts = bandSignalCounts(signals);
+  const promotionCombos = detectedComboFamilies.concat(detectedComboPatterns);
+  const bandFourApproach = bandApproachToBFive(promotionCounts, promotionCombos, signals);
+  const competitiveSurplus = bandCompetitiveSurplus(promotionCounts, promotionCombos);
+  const exceedsBandFourHigh = bandFourApproach.score >= BAND_POSITION_CONFIG.cuts.high;
+  const competitivePromoted = Boolean(
+    competitiveProfile
+    && assignedBeforePromotion === 4
+    && exceedsBandFourHigh,
+  );
+  const clearCompetitiveSurplus = competitiveSurplus.score
+    >= BAND_POSITION_CONFIG.promotion.b5SurplusMin;
+  const assignedBracket = competitivePromoted
+    ? (clearCompetitiveSurplus ? 5 : 4.5)
+    : assignedBeforePromotion;
   const curveInfluenced = assignedWithCurve > assignedWithoutMetrics;
   const efficiencyInfluenced = assignedWithEfficiency > assignedWithoutMetrics;
   const cohesionInfluenced = assignedWithCohesion > assignedWithoutMetrics;
   const comboPotentialInfluenced = assignedWithComboPotential > assignedWithoutMetrics;
-  const priceInfluenced = assignedBeforeCommanderPool > assignedBeforePrice;
+  const priceInfluenced = assignedBeforePromotion > assignedBeforePrice;
 
   if (competitiveProfile) {
+    const surplusPercent = Math.round(competitiveSurplus.score * 100);
+    const surplusLinePercent = Math.round(BAND_POSITION_CONFIG.promotion.b5SurplusMin * 100);
+    let competitiveDetail;
+    if (!competitivePromoted) {
+      competitiveDetail = '快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技阈值，并且有早期组合技或足够集中的多轴构筑，但结构判定未落在 B4，不触发竞技升档';
+    } else if (clearCompetitiveSurplus) {
+      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技阈值，并且有早期组合技或足够集中的多轴构筑，超出竞技阈值的余量 ${surplusPercent}% 越过 B5 升档线（${surplusLinePercent}%）`;
+    } else {
+      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技阈值，并且有早期组合技或足够集中的多轴构筑，但超出竞技阈值的余量约 ${surplusPercent}%，未达 B5 升档线（${surplusLinePercent}%），归入 B4.5 准竞技`;
+    }
     evidence.push(buildEvidence(
       'COMPETITIVE_SIGNAL_DENSITY',
       'strength',
       contributingSignals.reduce((cards, signal) => cards.concat(signal.cards), []),
       '竞技构筑特征',
-      '快速法术力、高效导师与免费互动或 Stax 同时达到竞技阈值，并且有早期组合技或足够集中的多轴构筑。',
-      5,
-    ));
-  }
-  if (commanderPoolPromoted) {
-    evidence.unshift(buildEvidence(
-      'QUESTIONNAIRE_COMMANDER_POOL',
-      'strength',
-      (parsed.commanders || []).map((card) => card.name),
-      '竞技主将池命中',
-      '牌表按其他判断先落在 B4；完整主将配置又命中现有 100 人主将池，因此按规则升至 B5。',
-      5,
-    ));
-  }
-  if (budgetCompetitive) {
-    evidence.push(buildEvidence(
-      'BUDGET_COMPETITIVE_SPLIT',
-      'strength',
-      [],
-      '预算竞技细分',
-      `牌表具备完整 B5 竞技特征，但按基本地以外的牌估算约 $${Math.round(deckMetrics.estimatedTotalUsd)}，低于 $${BUDGET_CEDH_PRICE_THRESHOLD_USD} 预算线，细分为 B4.5 预算竞技，这是官方五档之外的工具细分，不改变规则下限`,
-      0,
+      competitiveDetail,
+      competitivePromoted ? assignedBracket : 0,
     ));
   }
   if (!evidence.some((item) => item.kind === 'rule' || item.kind === 'strength')) {
@@ -1186,9 +1436,6 @@ function evaluateBracket(parsed, options = {}) {
   if (comboPotentialProfile.reliable && comboPotentialStrengthBracket >= 3) {
     recognizedTriggerCards.push(...(comboPotentialProfile.triggerCards || []));
   }
-  if (commanderPoolPromoted) {
-    recognizedTriggerCards.push(...(parsed.commanders || []).map((card) => card.name));
-  }
   const recognizedTriggerKeys = new Set(recognizedTriggerCards.map(canonicalCardKey));
   const recognitionCoverage = measureRecognitionCoverage(
     parsed.cards || [],
@@ -1228,17 +1475,32 @@ function evaluateBracket(parsed, options = {}) {
   if (softStepInfluenced) {
     confidenceIssues.push('当前档位来自数据辅助的临界上调而非硬性规则，去掉该辅助会回落一档');
   }
-  if (assignedBeforeBudget === 5 && !priceKnown) {
-    confidenceIssues.push('缺少可靠造价数据，暂无法区分 B5 与 B4.5 预算竞技');
-  } else if (assignedBeforeBudget === 5 && priceKnown
-    && Math.abs(deckMetrics.estimatedTotalUsd - BUDGET_CEDH_PRICE_THRESHOLD_USD)
-      <= BUDGET_CEDH_PRICE_THRESHOLD_USD * BUDGET_CEDH_PRICE_BAND_RATIO) {
-    confidenceIssues.push(`造价贴近 $${BUDGET_CEDH_PRICE_THRESHOLD_USD} 预算线，印次价格波动可能改变 B5 与 B4.5 的细分`);
+  if (competitivePromoted
+    && Math.abs(competitiveSurplus.score - BAND_POSITION_CONFIG.promotion.b5SurplusMin)
+      <= BAND_POSITION_CONFIG.promotion.b5SurplusBand) {
+    confidenceIssues.push('超出竞技阈值的余量贴近 B5 升档线，少量高效单卡的增减可能改变 B4.5 与 B5 的细分');
   }
   const confidence = !structurallyComplete || recognizedTriggerKeys.size === 0
     ? 'low'
     : (confidenceIssues.length ? 'medium' : 'high');
   const confidenceText = confidence === 'high' ? '高' : (confidence === 'medium' ? '中' : '低');
+  const bandPosition = computeBandPosition({
+    assignedBracket,
+    signals,
+    detectedComboFamilies,
+    detectedComboPatterns,
+    extraTurns,
+  });
+  evidence.push(buildEvidence(
+    'BAND_POSITION',
+    'context',
+    [],
+    bandPosition.deferred
+      ? `区间定位：B${assignedBracket} 暂不区分`
+      : `区间定位：B${assignedBracket} ${bandPosition.zh}`,
+    bandPosition.evidenceText,
+    0,
+  ));
   evidence.push(buildEvidence(
     'CONFIDENCE_PROFILE',
     'context',
@@ -1256,10 +1518,12 @@ function evaluateBracket(parsed, options = {}) {
     assignedBracket,
     assignedWithoutMetrics,
     assignedBeforePrice,
-    assignedBeforeCommanderPool,
-    assignedBeforeBudget,
-    commanderPoolPromoted,
-    budgetCompetitive,
+    assignedBeforePromotion,
+    competitiveProfile,
+    competitivePromoted,
+    clearCompetitiveSurplus,
+    bandFourApproachScore: bandFourApproach.score,
+    competitiveSurplusScore: competitiveSurplus.score,
     floorBracket,
     strengthBracket,
     structuralStrengthBracket,
@@ -1283,6 +1547,7 @@ function evaluateBracket(parsed, options = {}) {
     floorLabel,
     confidence,
     confidenceIssues,
+    bandPosition,
     recognitionDensity: recognitionCoverage.recognitionDensity,
     recognizedNonlandUnique: recognitionCoverage.recognizedNonlandUnique,
     nonlandUniqueCount: recognitionCoverage.nonlandUnique,
@@ -1391,11 +1656,14 @@ function finalizeBracketSummary(sentences) {
     .join('，'));
 }
 
+function pushBandPositionSentence(sentences, result) {
+  const position = result && result.bandPosition;
+  if (position && position.summaryText) sentences.push(position.summaryText);
+}
+
 function buildBracketSummary(result, parseErrorCount = 0) {
   const sentences = [];
   const assignedBracket = Number(result.assignedBracket) || 1;
-  // 分支选路用预算细分前的档位：B4.5 沿用 B5 的叙述主线，再由 budgetCompetitive 收尾。
-  const preBudgetBracket = Number(result.assignedBeforeBudget) || assignedBracket;
   const floorBracket = Number(result.floorBracket) || 1;
   const structuralStrengthBracket = Number(result.structuralStrengthBracket) || 1;
   const structurallyComplete = result.structurallyComplete === true;
@@ -1409,10 +1677,11 @@ function buildBracketSummary(result, parseErrorCount = 0) {
     sentences.push('规则下限是 B1');
     sentences.push('没有发现会抬高下限的牌，也没有检测到足以升档的组合技、额外回合或效率组件');
     sentences.push(provisionalResult ? '当前暂时归于B1强度' : '因此归于B1强度');
+    pushBandPositionSentence(sentences, result);
     return finalizeBracketSummary(sentences);
   }
 
-  if (preBudgetBracket === 5 && !result.commanderPoolPromoted) {
+  if (assignedBracket === 5 || assignedBracket === 4.5) {
     const rules = ruleSummaryLabels(result);
     sentences.push(rules.length
       ? `因为检测到${joinChineseLabels(rules)}，规则下限是 B${floorBracket}`
@@ -1427,12 +1696,19 @@ function buildBracketSummary(result, parseErrorCount = 0) {
     sentences.push(hasEarlyCombo
       ? `${densityText}，同时检测到早期组合技`
       : `${densityText}，资源引擎或其他效率轴也足够集中`);
-    if (result.budgetCompetitive) {
-      const budgetMetrics = result.deckMetrics || {};
-      sentences.push(`不过按基本地以外的牌估算约 $${bracketSummaryUsd(budgetMetrics.estimatedTotalUsd)}，低于 $${bracketSummaryUsd(BUDGET_CEDH_PRICE_THRESHOLD_USD)} 预算线，细分归于B4.5预算竞技强度`);
+    const surplusScore = Number(result.competitiveSurplusScore);
+    if (assignedBracket === 4.5) {
+      // 竞技特征达标但余量未越过 B5 升档线：准竞技归 B4.5
+      sentences.push(Number.isFinite(surplusScore)
+        ? `不过超出竞技阈值的余量约 ${Math.round(surplusScore * 100)}%，未越过 B5 升档线，归于B4.5准竞技强度`
+        : '不过超出竞技阈值的余量未越过 B5 升档线，归于B4.5准竞技强度');
     } else {
+      if (Number.isFinite(surplusScore)) {
+        sentences.push(`超出竞技阈值的余量约 ${Math.round(surplusScore * 100)}% 越过 B5 升档线`);
+      }
       sentences.push('因此归于B5强度');
     }
+    pushBandPositionSentence(sentences, result);
     return finalizeBracketSummary(sentences);
   }
 
@@ -1496,16 +1772,6 @@ function buildBracketSummary(result, parseErrorCount = 0) {
     sentences.push(`曲线、构筑效率、主题稳定性和组合技结构没有先触发升档，牌表本身已有 ${Number(result.supportingSignalAxes) || 0} 条强结构轴，按基本地以外的牌估算约 $${bracketSummaryUsd(metrics.estimatedTotalUsd)}，超过 $${bracketSummaryUsd(PRICE_SUPPORT_THRESHOLD_USD)} 的辅助线，因此从 B3 上调到 B4`);
   }
 
-  if (result.commanderPoolPromoted) {
-    sentences.push('在上述判断后，这副牌先落在 B4，主将配置命中现有 100 人主将池，因此按规则升到 B5');
-    if (result.budgetCompetitive) {
-      sentences.push(`不过按基本地以外的牌估算约 $${bracketSummaryUsd(metrics.estimatedTotalUsd)}，低于 $${bracketSummaryUsd(BUDGET_CEDH_PRICE_THRESHOLD_USD)} 预算线，细分归于B4.5预算竞技强度`);
-    } else {
-      sentences.push('最终归于B5强度');
-    }
-    return finalizeBracketSummary(sentences);
-  }
-
   const metricInfluenced = result.curveInfluenced
     || result.efficiencyInfluenced
     || result.cohesionInfluenced
@@ -1519,6 +1785,7 @@ function buildBracketSummary(result, parseErrorCount = 0) {
   } else {
     sentences.push(`因此归于B${assignedBracket}强度`);
   }
+  pushBandPositionSentence(sentences, result);
   return finalizeBracketSummary(sentences);
 }
 
@@ -1539,6 +1806,7 @@ module.exports = {
   comboSpeedTier,
   resolveComboAssembly,
   isEarlyCombo,
+  computeBandPosition,
   resolveContextualWinConditions,
   buildDeckMetrics,
   evaluateBracket,

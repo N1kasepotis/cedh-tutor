@@ -9,8 +9,27 @@ const BRACKET_MANIFEST = Object.freeze({
   schemaVersion: 1,
   ruleVersion: 'commander-brackets-2026-02-09',
   dataVersion: 'curated-en-2026-07-15-combo-families',
-  evaluatorVersion: '2.0.0',
+  evaluatorVersion: '2.4.0',
   supportedLanguage: 'en',
+});
+
+// 区间定位：档位内部再分「偏弱 / 中等 / 偏强」（B4.5 与 B5 竞技档暂不区分，待赛事 meta 分析加入）。
+// 位置分数复用档位判定使用的同一批信号轴，不引入新的主观打分：
+// B1–B3 取向上一档判定门槛的推进度按 accumulationSpan 归一（约两个门槛宽度的总推进 = 区间顶部），
+// B4 取 B5 四项必要条件平均达成度的平方（联合满足的接近程度）。
+// 切点经确定性阶梯牌表校准：同档牌表沿区间扫描时三个标签占比大致均衡，不出现单一偏向垄断。
+// promotion 同时是档位判定门槛：结构判定只有超过 B4 偏强（联合接近度 ≥ cuts.high）才可能离开 B4；
+// 达到竞技特征后余量 ≥ b5SurplusMin 才判 B5，否则归 B4.5 准竞技；余量落在 ±b5SurplusBand 内时置信度说明贴线。
+const BAND_POSITION_CONFIG = Object.freeze({
+  labels: Object.freeze({
+    low: Object.freeze({ key: 'low', zh: '偏弱', segment: '下段' }),
+    mid: Object.freeze({ key: 'mid', zh: '中等', segment: '中段' }),
+    high: Object.freeze({ key: 'high', zh: '偏强', segment: '上段' }),
+  }),
+  cuts: Object.freeze({ mid: 0.3, high: 0.6 }),
+  accumulationSpan: 2.2,
+  surplusGain: 1.2,
+  promotion: Object.freeze({ b5SurplusMin: 0.6, b5SurplusBand: 0.08 }),
 });
 
 // 组合技速度分档（方法论借鉴开源的 Commander Spellbook estimate-bracket）：
@@ -32,8 +51,8 @@ const BRACKET_LABELS = Object.freeze({
   2: { name: 'Core', zh: '核心', turn: '通常至少 8 回合取胜' },
   3: { name: 'Upgraded', zh: '强化', turn: '通常至少 6 回合取胜' },
   4: { name: 'Optimized', zh: '优化', turn: '通常至少 4 回合取胜' },
-  // 预算档缺少昂贵的快速法术力，起手爆发不到 cEDH 的水平，因此不写「任意回合」
-  4.5: { name: 'Budget cEDH', zh: '预算竞技', turn: '通常至少 3 回合取胜' },
+  // 准竞技（余量未越线的入门竞技结构或预算构筑）起手爆发不到成熟 cEDH 的水平，因此不写「任意回合」
+  4.5: { name: 'Fringe cEDH', zh: '准竞技', turn: '通常至少 3 回合取胜' },
   5: { name: 'cEDH', zh: '竞技', turn: '可能在任意回合结束' },
 });
 
@@ -224,11 +243,16 @@ const SIGNAL_GROUPS = Object.freeze({
     ]),
   }),
   freeInteraction: Object.freeze({
+    // 免费互动含全色系的额外费用/免疫费互动，避免评估偏向蓝色：
+    // 蓝 Force of Will / Force of Negation / Fierce Guardianship / Mental Misstep，
+    // 白 Solitude / Flawless Maneuver，红 Fury / Deflecting Swat，
+    // 黑 Grief / Deadly Rollick，绿 Endurance / Force of Vigor / Obscuring Haze。
     label: '免费互动',
     cards: Object.freeze([
       'Force of Will', 'Fierce Guardianship', 'Force of Negation', 'Pact of Negation',
       'Mental Misstep', 'Mindbreak Trap', 'Deadly Rollick', 'Deflecting Swat',
       'Flawless Maneuver', 'Subtlety', 'Endurance', 'Grief',
+      'Solitude', 'Fury', 'Force of Vigor', 'Obscuring Haze', 'Force of Despair',
     ]),
   }),
   staxOrDenial: Object.freeze({
@@ -364,6 +388,7 @@ const CARD_ALIASES = Object.freeze({
 module.exports = {
   BRACKET_MANIFEST,
   BRACKET_LABELS,
+  BAND_POSITION_CONFIG,
   COMBO_SPEED_CONFIG,
   GAME_CHANGERS,
   BANNED_CARDS,

@@ -53,8 +53,8 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     wxml.matchAll(/class="home-colophon-item[^"]*">([^<]+)<\/text>/g),
     (match) => match[1],
   );
-  assert.deepEqual(colophonItems, ['MADE BY CPP123', 'MIT LICENSE', 'SCRYFALL API']);
-  colophonItems.forEach((item) => assert.match(item, /^[A-Z0-9 ]+$/));
+  assert.deepEqual(colophonItems, ['MADE BY CPP123 / 345', 'MIT LICENSE', 'SCRYFALL API']);
+  colophonItems.forEach((item) => assert.match(item, /^[A-Z0-9 /]+$/));
 
   assert.deepEqual(
     Array.from(wxml.matchAll(/class="home-button-en">([^<]+)<\/text>/g), (match) => match[1]),

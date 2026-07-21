@@ -637,7 +637,8 @@ test('Combo assembly mana value grades speed objectively and feeds the early-com
   const fastFamily = fast.detectedComboFamilies.find((family) => family.familyId === 'scepter-reversal');
   assert.equal(fastFamily.assemblyManaValue, 4);
   assert.equal(fastFamily.assemblySpeed, 4);
-  assert.equal(fast.assignedBracket, 5, '合计 ≤4 费的完整组合技构成客观早期组合技，联动竞技特征进入 B5');
+  assert.equal(fast.competitivePromoted, true, '合计 ≤4 费的客观早期组合技联动竞技特征触发升档');
+  assert.equal(fast.assignedBracket, 4.5, '刚达竞技阈值且零余量的牌表归 B4.5，不再直接进入 B5');
   assert.ok(fast.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'));
   assert.ok(fast.evidence.some((item) => item.detail.includes('全套法术力值合计 4，前期即可启动')));
 
@@ -658,25 +659,33 @@ test('Combo assembly mana value grades speed objectively and feeds the early-com
   assert.equal(isEarlyCombo({ speed: 'setup', assemblySpeed: 3 }), false);
 });
 
-test('Budget cEDH split assigns B4.5 below the 500 dollar line and confidence explains bracket boundaries', () => {
-  const budgetLines = [
+test('Price never subdivides the competitive verdict once the 500 dollar budget line is removed', () => {
+  // 越过 B5 升档线的完整竞技结构：快速法术力 6、高效导师 6、免费互动 4
+  const cedhLines = [
     'Commander',
     '1 Kinnan, Bonder Prodigy',
     'Deck',
     '1 Chrome Mox',
     '1 Mox Diamond',
     '1 Mana Vault',
+    '1 Dark Ritual',
+    '1 Cabal Ritual',
+    '1 Lotus Petal',
     '1 Demonic Tutor',
     '1 Vampiric Tutor',
     '1 Mystical Tutor',
     '1 Demonic Consultation',
+    '1 Diabolic Intent',
+    '1 Wishclaw Talisman',
     '1 Force of Will',
     '1 Fierce Guardianship',
+    '1 Pact of Negation',
+    '1 Mental Misstep',
     "1 Thassa's Oracle",
-    '89 Midrange Filler',
+    '82 Midrange Filler',
   ];
   const parsedNames = Array.from(new Set(
-    parseBracketDeck(budgetLines.join('\n')).cards.map((card) => card.name),
+    parseBracketDeck(cedhLines.join('\n')).cards.map((card) => card.name),
   ));
   const priceMetadata = (usd) => makeMetadata(parsedNames.map((name) => ({
     name,
@@ -685,35 +694,142 @@ test('Budget cEDH split assigns B4.5 below the 500 dollar line and confidence ex
     typeLine: 'Creature',
   })));
 
-  const budget = analyze(budgetLines, { metadataResult: priceMetadata(3) });
-  assert.equal(budget.assignedBeforeBudget, 5);
-  assert.equal(budget.budgetCompetitive, true);
-  assert.equal(budget.assignedBracket, 4.5);
-  assert.equal(budget.label.name, 'Budget cEDH');
-  assert.equal(budget.label.zh, '预算竞技');
-  assert.equal(budget.floorBracket, 4, '预算细分不改变规则下限');
-  assert.ok(budget.evidence.some((item) => item.code === 'BUDGET_COMPETITIVE_SPLIT'
-    && item.detail.includes('$500')
-    && item.detail.includes('B4.5')));
-  assert.match(buildBracketSummary(budget), /细分归于B4\.5预算竞技强度/);
+  // 极便宜的完整竞技牌表仍是 B5——预算线已删除，造价不再细分档位
+  const cheap = analyze(cedhLines, { metadataResult: priceMetadata(1) });
+  assert.equal(cheap.assignedBracket, 5, '$1/张的竞技牌表不再因低造价降为 B4.5');
+  assert.equal(cheap.competitivePromoted, true);
+  assert.equal(cheap.clearCompetitiveSurplus, true);
+  assert.ok(cheap.evidence.every((item) => item.code !== 'BUDGET_COMPETITIVE_SPLIT'));
+  assert.ok(cheap.confidenceIssues.every((issue) => !issue.includes('预算线')));
 
-  const boundary = analyze(budgetLines, { metadataResult: priceMetadata(5) });
-  assert.equal(boundary.assignedBracket, 5, '恰在预算线上不细分');
-  assert.equal(boundary.budgetCompetitive, false);
-  assert.equal(boundary.confidence, 'medium');
-  assert.ok(boundary.confidenceIssues.some((issue) => issue.includes('预算线')));
-
-  const rich = analyze(budgetLines, { metadataResult: priceMetadata(10) });
+  // 昂贵版本同样 B5，造价对档位无影响
+  const rich = analyze(cedhLines, { metadataResult: priceMetadata(200) });
   assert.equal(rich.assignedBracket, 5);
-  assert.ok(rich.confidenceIssues.every((issue) => !issue.includes('预算线')));
   assert.ok(rich.evidence.every((item) => item.code !== 'BUDGET_COMPETITIVE_SPLIT'));
 
-  const noPrice = analyze(budgetLines);
-  assert.equal(noPrice.assignedBracket, 5, '无可靠造价时保持 B5 而非乱猜');
-  assert.equal(noPrice.confidence, 'medium');
-  assert.ok(noPrice.confidenceIssues.some((issue) => issue.includes('无法区分 B5 与 B4.5')));
-  assert.ok(noPrice.evidence.some((item) => item.code === 'CONFIDENCE_PROFILE'
-    && item.title === '判定置信度：中'));
+  // 无造价数据也不再产生预算相关的置信度悬置
+  const noPrice = analyze(cedhLines);
+  assert.equal(noPrice.assignedBracket, 5);
+  assert.ok(noPrice.confidenceIssues.every((issue) => !issue.includes('预算') && !issue.includes('无法区分 B5 与 B4.5')));
+});
+
+test('Band position splits every bracket into balanced 偏弱/中等/偏强 with axis-backed evidence', () => {
+  const completeDeck = (extras) => [
+    ...Array.from({ length: 99 - extras.length }, () => '1 Forest'),
+    ...extras.map((name) => `1 ${name}`),
+    '',
+    '1 Bear Cub',
+  ];
+  const runLadder = (label, expectedBracket, steps) => {
+    const results = steps.map((extras) => analyze(completeDeck(extras)));
+    results.forEach((result, index) => {
+      assert.equal(result.assignedBracket, expectedBracket,
+        `${label} 第 ${index} 步应停留在 B${expectedBracket}`);
+    });
+    const scores = results.map((result) => result.bandPosition.score);
+    scores.forEach((score, index) => {
+      if (index > 0) assert.ok(score >= scores[index - 1], `${label} 位置分数应随强度单调不降`);
+    });
+    return results.map((result) => result.bandPosition.tier);
+  };
+  const assertBalanced = (label, tiers) => {
+    const counts = { low: 0, mid: 0, high: 0 };
+    tiers.forEach((tier) => { counts[tier] += 1; });
+    ['low', 'mid', 'high'].forEach((tier) => {
+      assert.ok(counts[tier] >= 1, `${label} 缺少 ${tier} 标签：${tiers.join(',')}`);
+    });
+    const maximumShare = Math.max(counts.low, counts.mid, counts.high) / tiers.length;
+    assert.ok(maximumShare <= 0.6, `${label} 单一偏向占比 ${maximumShare} 超过 60%：${tiers.join(',')}`);
+  };
+
+  // B1：向 B3 门槛推进（全部非 Game Changers、不成组合技）
+  const b1Tiers = runLadder('B1', 1, [
+    [],
+    ['Mystic Remora'],
+    ['Mystic Remora', 'Sylvan Library'],
+    ['Mystic Remora', 'Sylvan Library', 'Sol Ring'],
+    ['Mystic Remora', 'Sylvan Library', 'Sol Ring', 'Diabolic Intent'],
+    ['Mystic Remora', 'Sylvan Library', 'Sol Ring', 'Diabolic Intent', 'Tainted Pact'],
+  ]);
+  assert.deepEqual(b1Tiers, ['low', 'low', 'mid', 'mid', 'high', 'high']);
+  assertBalanced('B1', b1Tiers);
+
+  // B3：入档仅靠 2 张快速法术力，逐步逼近 B4 的多条门槛
+  const b3Base = ['Sol Ring', 'Lotus Petal'];
+  const b3Tiers = runLadder('B3', 3, [
+    b3Base,
+    [...b3Base, 'Diabolic Intent'],
+    [...b3Base, 'Diabolic Intent', 'Wishclaw Talisman'],
+    [...b3Base, 'Diabolic Intent', 'Wishclaw Talisman', 'Mox Amber'],
+    [...b3Base, 'Diabolic Intent', 'Wishclaw Talisman', 'Mox Amber', 'Spellseeker'],
+    [...b3Base, 'Diabolic Intent', 'Wishclaw Talisman', 'Mox Amber', 'Spellseeker', 'Pact of Negation'],
+    [...b3Base, 'Diabolic Intent', 'Wishclaw Talisman', 'Mox Amber', 'Spellseeker', 'Pact of Negation', 'Null Rod', 'Static Orb', 'Trinisphere'],
+  ]);
+  assert.deepEqual(b3Tiers, ['low', 'low', 'low', 'mid', 'mid', 'high', 'high']);
+  assertBalanced('B3', b3Tiers);
+
+  // B4：按 B5 四项必要条件的联合接近程度衡量
+  const b4Base = ['Sol Ring', 'Lotus Petal', 'Mox Amber', 'Mox Opal'];
+  const b4Tiers = runLadder('B4', 4, [
+    b4Base,
+    [...b4Base, 'Diabolic Intent', 'Wishclaw Talisman'],
+    [...b4Base, 'Diabolic Intent', 'Wishclaw Talisman', 'Spellseeker'],
+    [...b4Base, 'Diabolic Intent', 'Wishclaw Talisman', 'Spellseeker', 'Pact of Negation'],
+    [...b4Base, 'Diabolic Intent', 'Wishclaw Talisman', 'Spellseeker', 'Pact of Negation', 'Mental Misstep'],
+    [...b4Base, 'Diabolic Intent', 'Wishclaw Talisman', 'Spellseeker', 'Pact of Negation', 'Mental Misstep', 'Null Rod', 'Static Orb', 'Trinisphere'],
+  ]);
+  assert.deepEqual(b4Tiers, ['low', 'low', 'mid', 'mid', 'high', 'high']);
+  assertBalanced('B4', b4Tiers);
+
+  // B4.5 与 B5 竞技档不做区间定位：档内强弱取决于赛事 meta，结构信号不足以排序
+  const competitiveCore = ['Sol Ring', 'Lotus Petal', 'Mox Amber', 'Demonic Consultation', 'Diabolic Intent',
+    'Wishclaw Talisman', 'Pact of Negation', 'Mental Misstep', "Thassa's Oracle"];
+  const b45Deck = analyze(completeDeck(competitiveCore));
+  assert.equal(b45Deck.assignedBracket, 4.5);
+  assert.equal(b45Deck.bandPosition.deferred, true);
+  assert.equal(b45Deck.bandPosition.tier, null);
+  assert.ok(b45Deck.evidence.some((item) => item.code === 'BAND_POSITION'
+    && item.title === '区间定位：B4.5 暂不区分'
+    && item.detail.includes('meta')));
+  assert.ok(!buildBracketSummary(b45Deck).includes('区间定位'));
+
+  const b5Deck = analyze(completeDeck([...competitiveCore, 'Mox Opal', 'Dark Ritual', 'Spellseeker',
+    'Deadly Rollick', 'Cabal Ritual', 'Neoform']));
+  assert.equal(b5Deck.assignedBracket, 5);
+  assert.equal(b5Deck.bandPosition.deferred, true);
+  assert.equal(b5Deck.bandPosition.tier, null);
+  assert.ok(b5Deck.evidence.some((item) => item.code === 'BAND_POSITION'
+    && item.title === '区间定位：B5 暂不区分'
+    && item.detail.includes('meta')));
+  assert.ok(!buildBracketSummary(b5Deck).includes('区间定位'));
+
+  // B2：额外回合下限入档也有区间区分
+  const b2Low = analyze(completeDeck(['Time Warp']));
+  assert.equal(b2Low.assignedBracket, 2);
+  assert.equal(b2Low.bandPosition.tier, 'low');
+  const b2High = analyze(completeDeck(['Time Warp', 'Sol Ring', 'Diabolic Intent', 'Wishclaw Talisman', 'Pact of Negation']));
+  assert.equal(b2High.assignedBracket, 2);
+  assert.equal(b2High.bandPosition.tier, 'high');
+
+  // 规则下限锁定的 B4（炸地）结构远未达标 → 偏弱，且证据点名瓶颈轴
+  const denialFloor = analyze(['Deck', '1 Armageddon']);
+  assert.equal(denialFloor.assignedBracket, 4);
+  assert.equal(denialFloor.bandPosition.tier, 'low');
+  const denialEvidence = denialFloor.evidence.find((item) => item.code === 'BAND_POSITION');
+  assert.ok(denialEvidence.detail.includes('四项必要条件平均达成')
+    && denialEvidence.detail.includes('瓶颈'));
+
+  // 证据、摘要与顺序：区间定位紧邻置信度之前，摘要末尾带推进度说明
+  const positioned = analyze(completeDeck(['Sol Ring', 'Lotus Petal', 'Diabolic Intent', 'Wishclaw Talisman', 'Mox Amber']));
+  assert.equal(positioned.assignedBracket, 3);
+  const codes = positioned.evidence.map((item) => item.code);
+  assert.equal(codes[codes.length - 1], 'CONFIDENCE_PROFILE');
+  assert.equal(codes[codes.length - 2], 'BAND_POSITION');
+  const positionedEvidence = positioned.evidence.find((item) => item.code === 'BAND_POSITION');
+  assert.match(positionedEvidence.title, /^区间定位：B3 (偏弱|中等|偏强)$/);
+  assert.ok(positionedEvidence.detail.includes('向 B4 判定门槛的推进度')
+    && positionedEvidence.detail.includes('最接近的路径是'));
+  assert.match(buildBracketSummary(positioned), /区间定位(偏弱|中等|偏强)，向 B4 判定门槛的推进度约 \d+%$/);
 });
 
 test('bracket report page shows verdict chain, signal overview and per-reason roles', () => {
@@ -721,13 +837,13 @@ test('bracket report page shows verdict chain, signal overview and per-reason ro
   const pageWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.wxml'), 'utf8');
   const pageWxss = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.wxss'), 'utf8');
 
-  // 判定链条：下限 → 结构 → 数据辅助 →（主将池 / 预算细分），复合推导可视化
+  // 判定链条：下限 → 结构 → 数据辅助 → 竞技特征（B4.5 准竞技 / B5 竞技），复合推导可视化
   assert.match(pageJs, /function buildVerdictSteps\(result\)/);
   assert.match(pageJs, /pushStep\('规则下限', result\.floorBracket, false\)/);
   assert.match(pageJs, /pushStep\('结构强度', result\.assignedWithoutMetrics/);
-  assert.match(pageJs, /pushStep\('数据辅助', result\.assignedBeforeCommanderPool/);
-  assert.match(pageJs, /if \(result\.commanderPoolPromoted\) pushStep\('主将池', 5, true\)/);
-  assert.match(pageJs, /if \(result\.budgetCompetitive\) pushStep\('预算细分', result\.assignedBracket, true\)/);
+  assert.match(pageJs, /pushStep\('数据辅助', result\.assignedBeforePromotion/);
+  assert.match(pageJs, /if \(result\.competitivePromoted\) pushStep\('竞技特征', result\.assignedBracket, true\)/);
+  assert.doesNotMatch(pageJs, /commanderPoolPromoted|主将池|budgetCompetitive|预算细分/);
   assert.match(pageWxml, /class="verdict-chain" aria-label="判定链条"/);
   assert.match(pageWxml, /class="chain-step \{\{item\.changed \? 'is-raised' : ''\}\}/);
   assert.match(pageWxss, /\.chain-step\.is-raised\s*\{[^}]*rgba\(var\(--module-accent-rgb\)/);
@@ -738,15 +854,26 @@ test('bracket report page shows verdict chain, signal overview and per-reason ro
   assert.match(pageWxml, /class="signal-overview" wx:if="\{\{result\.signalOverview\.length\}\}"/);
   assert.match(pageWxml, /class="signal-chip"[\s\S]*\{\{item\.label\}\}[\s\S]*×\{\{item\.count\}\}/);
 
-  // 每条依据的作用标签：下限 / 强度带 / 辅助上调 / 特殊升降档 / 参考
+  // 每条依据的作用标签：下限 / 强度区间 / 辅助上调 / 特殊升降档 / 参考
   assert.match(pageJs, /function reasonRoleLabel\(item\)/);
-  assert.match(pageJs, /return 'B5 竞技特征'/);
-  assert.match(pageJs, /return 'B4→B5'/);
-  assert.match(pageJs, /return 'B5→B4\.5'/);
+  assert.match(pageJs, /return '竞技特征'/);
   assert.match(pageJs, /return `下限 B\$\{item\.minimumBracket\}`/);
   assert.match(pageJs, /return '辅助上调'/);
+  assert.match(pageJs, /强度区间 B/);
+  assert.doesNotMatch(pageJs, /强度带|B5→B4\.5|BUDGET_COMPETITIVE/);
   assert.match(pageWxml, /class="reason-role mono">\{\{item\.roleLabel\}\}/);
   assert.match(pageWxss, /\.reason-role\s*\{[^}]*white-space:\s*nowrap/);
+
+  // 区间定位：hero 档位下方的偏弱/中等/偏强 + 度量文字，证据条对应角色标签
+  // B4.5 与 B5 竞技档 deferred → bandPositioned 为假 → 不渲染区间定位行
+  assert.match(pageJs, /return '区间定位'/);
+  assert.match(pageJs, /const bandPositioned = Boolean\(bandPosition && !bandPosition\.deferred && bandPosition\.tier\)/);
+  assert.match(pageJs, /bandPositionClass: bandPositioned \? `band-\$\{bandPosition\.tier\}` : ''/);
+  assert.match(pageWxml, /class="band-position \{\{result\.bandPositionClass\}\}" wx:if="\{\{result\.bandPositionZh\}\}"/);
+  assert.match(pageWxml, /class="band-position-tier">\{\{result\.bandPositionZh\}\}/);
+  assert.match(pageWxml, /class="band-position-metric mono">\{\{result\.bandPositionMetricText\}\}/);
+  assert.match(pageWxss, /\.band-position\.band-high \.band-position-tier\s*\{[^}]*rgba\(var\(--module-accent-rgb\), 0\.95\)/);
+  assert.match(pageWxss, /\.band-position\.band-low \.band-position-tier\s*\{[^}]*var\(--cedh-text-soft\)/);
 });
 
 test('Mass land denial creates a deterministic B4 floor', () => {
@@ -815,10 +942,29 @@ test('B1 and B5 are inferred conservatively without a declared environment', () 
     "1 Thassa's Oracle",
     '89 Forest',
   ];
+  // 竞技升档收紧：刚达竞技阈值（零余量附近）的牌表归 B4.5，不再直接进入 B5
   const competitive = analyze(competitiveDeck);
-  assert.equal(competitive.assignedBracket, 5);
-  assert.equal(competitive.commanderPoolPromoted, false, 'an existing competitive B5 is not relabeled as a pool promotion');
-  assert.ok(competitive.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'));
+  assert.equal(competitive.competitiveProfile, true);
+  assert.equal(competitive.competitivePromoted, true);
+  assert.equal(competitive.assignedBracket, 4.5, '入门竞技结构余量不足 B5 升档线，归 B4.5');
+  assert.ok(competitive.competitiveSurplusScore < 0.6);
+  assert.ok(competitive.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'
+    && item.detail.includes('未达 B5 升档线')));
+
+  // 快速法术力、高效导师与免费互动都超出阈值时余量越线，才归 B5
+  const stackedDeck = competitiveDeck
+    .filter((line) => line !== '89 Forest')
+    .concat([
+      '1 Dark Ritual', '1 Cabal Ritual', '1 Lotus Petal',
+      '1 Diabolic Intent', '1 Wishclaw Talisman',
+      '1 Pact of Negation', '1 Mental Misstep',
+      '82 Forest',
+    ]);
+  const stacked = analyze(stackedDeck);
+  assert.equal(stacked.assignedBracket, 5, '余量越过 B5 升档线的完整竞技结构才判 B5');
+  assert.ok(stacked.competitiveSurplusScore >= 0.6);
+  assert.ok(stacked.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'
+    && item.detail.includes('越过 B5 升档线')));
 
   const dataHeavyCompetitiveDeck = competitiveDeck
     .map((line) => (line === '89 Forest' ? '89 Midrange Filler' : line));
@@ -829,24 +975,18 @@ test('B1 and B5 are inferred conservatively without a declared environment', () 
   const competitiveWithMetadata = analyze(dataHeavyCompetitiveDeck, {
     metadataResult: deliberatelySlowAndExpensive,
   });
-  assert.equal(competitiveWithMetadata.assignedBracket, 5, 'curve and price must not create or cancel B5');
+  assert.equal(competitiveWithMetadata.assignedBracket, 4.5, 'curve and price must not create or cancel the competitive verdict');
   assert.equal(competitiveWithMetadata.priceInfluenced, false);
 
+  // 100 人主将池不再改变档位：池内主将 + B4 结构保持 B4
   const oneAxisShort = competitiveDeck
     .filter((line) => line !== '1 Chrome Mox')
     .concat('1 Llanowar Elves');
-  const poolPromoted = analyze(oneAxisShort);
-  assert.equal(poolPromoted.assignedBeforeCommanderPool, 4);
-  assert.equal(poolPromoted.assignedBracket, 5);
-  assert.equal(poolPromoted.commanderPoolPromoted, true);
-  assert.equal(poolPromoted.evidence[0].code, 'QUESTIONNAIRE_COMMANDER_POOL');
-
-  const outsidePool = analyze(oneAxisShort.map((line) => (
-    line === '1 Kinnan, Bonder Prodigy' ? '1 Bear Cub' : line
-  )));
-  assert.equal(outsidePool.assignedBeforeCommanderPool, 4);
-  assert.equal(outsidePool.assignedBracket, 4);
-  assert.equal(outsidePool.commanderPoolPromoted, false);
+  const poolCommander = analyze(oneAxisShort);
+  assert.equal(poolCommander.assignedBeforePromotion, 4);
+  assert.equal(poolCommander.competitivePromoted, false);
+  assert.equal(poolCommander.assignedBracket, 4, '主将池成员不再触发任何升档');
+  assert.ok(poolCommander.evidence.every((item) => item.code !== 'QUESTIONNAIRE_COMMANDER_POOL'));
 
   const poolB3 = analyze([
     'Commander',
@@ -855,21 +995,80 @@ test('B1 and B5 are inferred conservatively without a declared environment', () 
     '1 Sol Ring',
     '98 Forest',
   ]);
-  assert.equal(poolB3.assignedBracket, 3, 'pool membership never promotes a deck that is below B4');
-  assert.equal(poolB3.commanderPoolPromoted, false);
+  assert.equal(poolB3.assignedBracket, 3);
+  assert.equal(poolB3.competitivePromoted, false);
 
   const banned = competitiveDeck
     .map((line) => (line === '1 Mana Vault' ? '1 Mana Crypt' : line));
   assert.equal(analyze(banned).assignedBracket, 4);
   assert.equal(analyze(banned).legalityStatus, 'needs-fix');
-  assert.equal(analyze(banned).commanderPoolPromoted, false);
+  assert.equal(analyze(banned).competitivePromoted, false);
 
   const assignments = ['exhibition', 'general', 'cedh']
     .map((intent) => analyze(lowSignalDeck, { intent }).assignedBracket);
   assert.deepEqual(assignments, [1, 1, 1], 'legacy intent input must not change automatic assignment');
 });
 
-test('B4 pool promotion matches exact Partner configurations and DFC fronts only', () => {
+test('Competitive gate recognizes non-blue and command-engine cEDH, not just the blue-black turbo shape', () => {
+  const build = (commander, recognized, land = 'Mountain') => [
+    'Commander',
+    `1 ${commander}`,
+    'Deck',
+    ...recognized.map((name) => `1 ${name}`),
+    `${99 - recognized.length} ${land}`,
+  ].join('\n');
+
+  // Magda：单红组合技主将，通用导师稀缺（只有 Gamble / Wishclaw），但主将区引擎 + 早期组合技
+  // → 曾被「导师 ≥3」硬门槛压回 B4，现在按组装一致性（主将区引擎抵导师）进入 B5
+  const magda = analyzeBracketDeck(build('Magda, Brazen Outlaw', [
+    'Sol Ring', 'Mana Vault', 'Grim Monolith', 'Chrome Mox', 'Mox Opal', 'Mox Amber',
+    'Lotus Petal', 'Ancient Tomb', 'Jeweled Amulet', 'Simian Spirit Guide',
+    'Gamble', 'Wishclaw Talisman',
+    'Deflecting Swat', 'Fury', 'Mindbreak Trap',
+    'Magda, Brazen Outlaw', 'Clock of Omens', 'Universal Automaton', 'Metallic Mimic', 'Adaptive Automaton',
+  ])).result;
+  const magdaTutors = (magda.signals.find((s) => s.key === 'efficientTutor') || { count: 0 }).count;
+  assert.ok(magdaTutors < 3, 'Magda 牌表通用导师应低于旧硬门槛');
+  assert.equal(magda.competitiveProfile, true, '主将区引擎 + 早期组合技应满足竞技门槛');
+  assert.equal(magda.assignedBracket, 5, '单色组合技主将不应因缺通用导师而被压回 B4');
+
+  // Rakdos 引擎牌组：无已收录组合技、无主将区引擎，但极高多轴密度（引擎 3）应满足制胜路径
+  const engineBreadth = analyzeBracketDeck(build('Rowan, Scion of War', [
+    'Sol Ring', 'Mana Vault', 'Chrome Mox', 'Mox Opal', 'Mox Amber', 'Lotus Petal', 'Dark Ritual', 'Cabal Ritual',
+    'Demonic Tutor', 'Vampiric Tutor', 'Imperial Seal', 'Gamble', 'Diabolic Intent',
+    'Deflecting Swat', 'Deadly Rollick', 'Fury', 'Grief',
+    'Necropotence', "Bolas's Citadel", 'Ad Nauseam',
+  ], 'Swamp')).result;
+  assert.equal(engineBreadth.competitiveProfile, true, '20 信号 / 4 高轴 / 引擎 3 应满足极高多轴密度制胜路径');
+  assert.equal(engineBreadth.assignedBracket, 5);
+
+  // 护栏一 · 速度地板：休闲主将区引擎（快速法术力不足）不进竞技
+  const casual = analyzeBracketDeck(build('Korvold, Fae-Cursed King', [
+    'Sol Ring', 'Arcane Signet', 'Demonic Tutor', 'Deadly Rollick', 'Cultivate', 'Rampant Growth',
+  ], 'Swamp')).result;
+  assert.equal(casual.competitiveProfile, false, '快速法术力不足 3 的休闲主将牌组被速度地板挡住');
+  assert.ok(casual.assignedBracket <= 4);
+
+  // 护栏二 · 制胜路径：快速好牌堆但无组合技 / 无主将区引擎 / 未达极高密度 → 停在 B4
+  const toothless = analyzeBracketDeck([
+    'Commander', '1 Bear Cub', 'Deck',
+    '1 Sol Ring', '1 Mana Vault', '1 Chrome Mox',
+    '1 Demonic Tutor', '1 Vampiric Tutor', '1 Mystical Tutor',
+    '1 Rhystic Study', '1 Mystic Remora',
+    '1 Force of Will', '1 Fierce Guardianship',
+    '89 Island',
+  ].join('\n')).result;
+  assert.equal(toothless.competitiveProfile, false, '无制胜路径的快速好牌堆不应升为竞技');
+  assert.equal(toothless.assignedBracket, 4);
+
+  // 护栏三 · 锋利度：主将区引擎但零互动 / 零组合技 / 无密度的纯 durdle 不进竞技
+  const durdle = analyzeBracketDeck(build('Najeela, the Blade-Blossom', [
+    'Sol Ring', 'Mana Vault', 'Chrome Mox', 'Demonic Tutor', 'Llanowar Elves', 'Birds of Paradise',
+  ], 'Forest')).result;
+  assert.equal(durdle.competitiveProfile, false, '缺锋利度轴（互动/组合技/密度）的主将引擎牌组不进竞技');
+});
+
+test('Commander pool membership no longer changes the assigned bracket', () => {
   const partnerDeck = (commanders) => [
     'Commander',
     ...commanders.map((name) => `1 ${name}`),
@@ -878,36 +1077,34 @@ test('B4 pool promotion matches exact Partner configurations and DFC fronts only
     `${99 - commanders.length} Forest`,
   ];
 
+  // 曾经的主将池升档规则已删除：池内 Partners / 单主将与池外主将同样对待
   const listedPartners = analyze(partnerDeck([
     'Tymna the Weaver',
     "Kraum, Ludevic's Opus",
   ]));
   assert.equal(listedPartners.deckCardCount, 100);
-  assert.equal(listedPartners.assignedBeforeCommanderPool, 4);
-  assert.equal(listedPartners.assignedBracket, 5);
-  assert.equal(listedPartners.commanderPoolPromoted, true);
+  assert.equal(listedPartners.assignedBeforePromotion, 4);
+  assert.equal(listedPartners.assignedBracket, 4);
+  assert.equal(listedPartners.competitivePromoted, false);
+  assert.ok(listedPartners.evidence.every((item) => item.code !== 'QUESTIONNAIRE_COMMANDER_POOL'));
 
-  const wrongPartner = analyze(partnerDeck([
+  const outsidePool = analyze(partnerDeck([
     'Tymna the Weaver',
     'Bear Cub',
   ]));
-  assert.equal(wrongPartner.assignedBracket, 4);
-  assert.equal(wrongPartner.commanderPoolPromoted, false);
+  assert.equal(outsidePool.assignedBracket, 4);
+  assert.equal(outsidePool.assignedBracket, listedPartners.assignedBracket, '池内外主将档位一致');
 
-  const ralFront = analyze(partnerDeck(['Ral, Monsoon Mage']));
-  assert.equal(ralFront.assignedBracket, 5, 'a DFC pool entry may be imported by its front face');
-  assert.equal(ralFront.commanderPoolPromoted, true);
-
-  const incomplete = analyze([
+  const kinnanFloor = analyze([
     'Commander',
     '1 Kinnan, Bonder Prodigy',
     'Deck',
     '1 Armageddon',
     '97 Forest',
   ]);
-  assert.equal(incomplete.deckCardCount, 99);
-  assert.equal(incomplete.assignedBracket, 4);
-  assert.equal(incomplete.commanderPoolPromoted, false);
+  assert.equal(kinnanFloor.deckCardCount, 99);
+  assert.equal(kinnanFloor.assignedBracket, 4);
+  assert.equal(kinnanFloor.competitivePromoted, false);
 });
 
 test('Deck metrics weight quantities, exclude lands from curve, and never price missing cards as zero', () => {
@@ -1111,12 +1308,13 @@ test('Early mana, low-cost interaction, and card flow support one tier without s
   assert.ok(supported.confidenceIssues.some((issue) => issue.includes('临界上调')));
   assert.ok(supported.evidence.some((item) => item.code === 'CONFIDENCE_PROFILE' && item.title === '判定置信度：中'));
 
+  // 主将池升档规则已删除：换上池内主将后档位不变
   const poolSupported = analyze(efficientDeck.map((line) => (
     line === '1 Bear Cub' ? '1 Kinnan, Bonder Prodigy' : line
   )), { metadataResult });
-  assert.equal(poolSupported.assignedBeforeCommanderPool, 4);
-  assert.equal(poolSupported.assignedBracket, 5);
-  assert.equal(poolSupported.commanderPoolPromoted, true);
+  assert.equal(poolSupported.assignedBeforePromotion, 4);
+  assert.equal(poolSupported.assignedBracket, 4);
+  assert.equal(poolSupported.competitivePromoted, false);
 
   const noStructuralSignals = efficientDeck
     .filter((line) => line !== '1 Sol Ring' && line !== '1 Lotus Petal')
@@ -1394,7 +1592,7 @@ test('Every result carries internal version metadata, evidence, confidence bound
   assert.ok(result.evidence.length >= 1);
   assert.ok(result.evidence.every((item) => item.ruleVersion === BRACKET_MANIFEST.ruleVersion));
   assert.equal(result.versions.evaluatorVersion, BRACKET_MANIFEST.evaluatorVersion);
-  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.0.0');
+  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.4.0');
   assert.equal(BRACKET_MANIFEST.dataVersion, 'curated-en-2026-07-15-combo-families');
   assert.equal(result.versions.supportedLanguage, 'en');
   assert.equal(result.confidence, 'low');
@@ -1418,8 +1616,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
     assignedBracket: 3,
     assignedWithoutMetrics: 3,
     assignedBeforePrice: 3,
-    assignedBeforeCommanderPool: 3,
-    commanderPoolPromoted: false,
+    assignedBeforePromotion: 3,
     floorBracket: 1,
     structuralStrengthBracket: 3,
     structurallyComplete: true,
@@ -1456,7 +1653,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
   const metadataSummary = buildBracketSummary({
     ...base,
     assignedBracket: 4,
-    assignedBeforeCommanderPool: 4,
+    assignedBeforePromotion: 4,
     curveInfluenced: true,
     efficiencyInfluenced: true,
   });
@@ -1469,7 +1666,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
   const priceSummary = buildBracketSummary({
     ...base,
     assignedBracket: 4,
-    assignedBeforeCommanderPool: 4,
+    assignedBeforePromotion: 4,
     priceInfluenced: true,
   });
   assert.match(priceSummary, /曲线、构筑效率、主题稳定性和组合技结构没有先触发升档/);
@@ -1477,22 +1674,27 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
   assert.doesNotMatch(priceSummary, /覆盖 91%|72 张计价牌/);
   assert.match(priceSummary, /基本地以外的牌估算约 \$1,500[\s\S]*\$1,200 的辅助线/);
 
-  const poolSummary = buildBracketSummary({
+  // 竞技阈值达标但余量未越过 B5 升档线：B4.5 准竞技专属叙述
+  const thresholdSummary = buildBracketSummary({
     ...base,
-    assignedBracket: 5,
-    assignedBeforeCommanderPool: 4,
-    commanderPoolPromoted: true,
-    curveInfluenced: true,
+    assignedBracket: 4.5,
+    competitiveSurplusScore: 0.25,
+    signals: [
+      { key: 'fastMana', label: '快速法术力', count: 3 },
+      { key: 'efficientTutor', label: '高效导师', count: 3 },
+      { key: 'freeInteraction', label: '免费互动', count: 2 },
+    ],
+    detectedCombos: [{ speed: 'early' }],
   });
-  assert.ok(poolSummary.indexOf('基础构筑判断推到 B3') < poolSummary.indexOf('先落在 B4'));
-  assert.match(poolSummary, /100 人主将池[\s\S]*升到 B5[\s\S]*最终归于B5强度/);
-  assert.doesNotMatch(poolSummary, /牌表完整|禁牌/);
+  assert.match(thresholdSummary, /已经达到竞技构筑所需的密度[\s\S]*早期组合技/);
+  assert.match(thresholdSummary, /余量约 25%[\s\S]*未越过 B5 升档线[\s\S]*归于B4\.5准竞技强度/);
+  assert.doesNotMatch(thresholdSummary, /主将池|预算线/);
 
   const competitiveSummary = buildBracketSummary({
     ...base,
     assignedBracket: 5,
     assignedWithoutMetrics: 5,
-    assignedBeforeCommanderPool: 5,
+    assignedBeforePromotion: 5,
     signals: [
       { key: 'fastMana', label: '快速法术力', count: 3 },
       { key: 'efficientTutor', label: '高效导师', count: 3 },
@@ -1507,7 +1709,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
     ...base,
     assignedBracket: 2,
     assignedWithoutMetrics: 2,
-    assignedBeforeCommanderPool: 2,
+    assignedBeforePromotion: 2,
     structuralStrengthBracket: 1,
     structurallyComplete: false,
     deckCardCount: 99,
@@ -1521,7 +1723,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
     ...base,
     assignedBracket: 4,
     assignedWithoutMetrics: 4,
-    assignedBeforeCommanderPool: 4,
+    assignedBeforePromotion: 4,
     floorBracket: 4,
     structuralStrengthBracket: 1,
     legalityStatus: 'needs-fix',
@@ -1536,7 +1738,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
     ...base,
     assignedBracket: 1,
     assignedWithoutMetrics: 1,
-    assignedBeforeCommanderPool: 1,
+    assignedBeforePromotion: 1,
     structuralStrengthBracket: 1,
     signals: [],
   });
@@ -1546,7 +1748,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
   const allSummaries = [
     metadataSummary,
     priceSummary,
-    poolSummary,
+    thresholdSummary,
     competitiveSummary,
     incompleteSummary,
     legalitySummary,
@@ -1693,7 +1895,7 @@ test('Bracket page and two home entries are wired without creating a Meta page',
     [1, 2, 3, 4].map((bracket) => BRACKET_LABELS[bracket].turn),
     ['通常至少 9 回合取胜', '通常至少 8 回合取胜', '通常至少 6 回合取胜', '通常至少 4 回合取胜'],
   );
-  // 预算竞技缺少昂贵快速法术力，起手爆发达不到 cEDH：只有 B5 能写「任意回合」
+  // 准竞技缺少昂贵快速法术力或足够余量，起手爆发达不到成熟 cEDH：只有 B5 能写「任意回合」
   assert.equal(BRACKET_LABELS[4.5].turn, '通常至少 3 回合取胜');
   assert.equal(BRACKET_LABELS[5].turn, '可能在任意回合结束');
   assert.notEqual(BRACKET_LABELS[4.5].turn, BRACKET_LABELS[5].turn);

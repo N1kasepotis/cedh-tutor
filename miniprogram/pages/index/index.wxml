@@ -86,7 +86,7 @@
     </view>
 
     <view class="home-colophon" aria-label="版次与授权信息">
-      <text class="home-colophon-item">MADE BY CPP123</text>
+      <text class="home-colophon-item">MADE BY CPP123 / 345</text>
       <text class="home-colophon-item home-colophon-center">MIT LICENSE</text>
       <text class="home-colophon-item home-colophon-right">SCRYFALL API</text>
     </view>

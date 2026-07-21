@@ -19,13 +19,12 @@ function formatUsd(value) {
   return `$${String(Math.round(Number(value))).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
 }
 
-// 每条依据在判定链条中的角色：下限 / 强度带 / 辅助上调 / 特殊升降档 / 参考
+// 每条依据在判定链条中的角色：下限 / 强度区间 / 辅助上调 / 特殊升降档 / 参考
 function reasonRoleLabel(item) {
   if (item.code === 'CONFIDENCE_PROFILE') return '置信度';
+  if (item.code === 'BAND_POSITION') return '区间定位';
   if (item.kind === 'context') return '参考';
-  if (item.code === 'COMPETITIVE_SIGNAL_DENSITY') return 'B5 竞技特征';
-  if (item.code === 'QUESTIONNAIRE_COMMANDER_POOL') return 'B4→B5';
-  if (item.code === 'BUDGET_COMPETITIVE_SPLIT') return 'B5→B4.5';
+  if (item.code === 'COMPETITIVE_SIGNAL_DENSITY') return '竞技特征';
   if (item.kind === 'rule') return `下限 B${item.minimumBracket}`;
   if (item.code === 'MANA_CURVE_SUPPORT'
     || item.code === 'CONSTRUCTION_EFFICIENCY_SUPPORT'
@@ -33,10 +32,10 @@ function reasonRoleLabel(item) {
     || item.code === 'UNLISTED_COMBO_STRUCTURE') return '辅助上调';
   if (item.code === 'DECK_PRICE_SUPPORT') return 'B3→B4';
   if (item.code.indexOf('AUTO_') === 0) return '基线';
-  return item.minimumBracket >= 3 ? `强度带 B${item.minimumBracket}` : '强度信号';
+  return item.minimumBracket >= 3 ? `强度区间 B${item.minimumBracket}` : '强度信号';
 }
 
-// 判定链条：下限 → 结构强度 → 数据辅助 → （竞技特征已含在结构里）→ 主将池 / 预算细分
+// 判定链条：下限 → 结构强度 → 数据辅助 → 竞技特征（B4.5 准竞技 / B5 竞技）
 function buildVerdictSteps(result) {
   const steps = [];
   const pushStep = (label, bracket, changed) => steps.push({
@@ -46,10 +45,9 @@ function buildVerdictSteps(result) {
   });
   pushStep('规则下限', result.floorBracket, false);
   pushStep('结构强度', result.assignedWithoutMetrics, result.assignedWithoutMetrics > result.floorBracket);
-  pushStep('数据辅助', result.assignedBeforeCommanderPool,
-    result.assignedBeforeCommanderPool > result.assignedWithoutMetrics);
-  if (result.commanderPoolPromoted) pushStep('主将池', 5, true);
-  if (result.budgetCompetitive) pushStep('预算细分', result.assignedBracket, true);
+  pushStep('数据辅助', result.assignedBeforePromotion,
+    result.assignedBeforePromotion > result.assignedWithoutMetrics);
+  if (result.competitivePromoted) pushStep('竞技特征', result.assignedBracket, true);
   return steps;
 }
 
@@ -136,9 +134,15 @@ function decorateResult(result, commanders) {
   ];
 
   const summary = normalizeBracketPageCopy(buildBracketSummary(result, parseErrorRows.length));
+  const bandPosition = result.bandPosition || null;
+  // B4.5 与 B5 竞技档不做区间定位（bandPosition.deferred）：不渲染档位下方的偏弱/中等/偏强行
+  const bandPositioned = Boolean(bandPosition && !bandPosition.deferred && bandPosition.tier);
 
   return {
     ...result,
+    bandPositionZh: bandPositioned ? bandPosition.zh : '',
+    bandPositionClass: bandPositioned ? `band-${bandPosition.tier}` : '',
+    bandPositionMetricText: bandPositioned ? bandPosition.metricText : '',
     bracketCode: `B${result.assignedBracket}`,
     // 小数档位（B4.5）不能直接进 CSS 类名，点号替换为连字符
     tierClass: `bracket-tier-${String(result.assignedBracket).replace('.', '-')}`,
