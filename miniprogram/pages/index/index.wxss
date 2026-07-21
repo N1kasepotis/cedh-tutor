@@ -56,10 +56,8 @@ page {
   text-align: center;
   text-transform: uppercase;
   word-spacing: 1px;
-  /* 全页唯一投影：极细 double shadow（近处白高光 + 远处暗黄阴影），给题词一点分量 */
-  text-shadow:
-    0.5px 0.5px 0 rgba(255, 255, 255, 0.6),
-    1px 1px 0 rgba(122, 100, 16, 0.5);
+  /* 全页唯一投影：极细单层暗黄阴影，给题词一点分量 */
+  text-shadow: 1px 1px 0 rgba(122, 100, 16, 0.5);
 }
 
 /* 工业注释风小字：完整句子成段，只用字母数字与空格，无冒号斜杠句号 */

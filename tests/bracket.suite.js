@@ -625,8 +625,11 @@ test('Combo assembly mana value grades speed objectively and feeds the early-com
   assert.equal(slowFamily.assemblySpeed, 3);
   assert.ok(slow.assignedBracket < 5, '合计 5 费（速度 3）不构成早期组合技，不应触发 B5');
   assert.ok(slow.evidence.some((item) => item.code === 'COMBO_FAMILY_SCEPTER_REVERSAL'
-    && item.detail.includes('全套法术力值合计 5')
-    && !item.detail.includes('前期即可启动')));
+    && item.detail.startsWith('检测到完整')
+    && item.detail.includes('条件型无限法术力')
+    && item.detail.includes('法术力启动阈值 2+3')
+    && !item.detail.includes('前期即可启动')
+    && !item.detail.includes('全套法术力值合计')));
 
   const fast = analyze(objectiveDeck, {
     metadataResult: makeMetadata([
@@ -640,12 +643,14 @@ test('Combo assembly mana value grades speed objectively and feeds the early-com
   assert.equal(fast.competitivePromoted, true, '合计 ≤4 费的客观早期组合技联动竞技特征触发升档');
   assert.equal(fast.assignedBracket, 4.5, '刚达竞技阈值且零余量的牌表归 B4.5，不再直接进入 B5');
   assert.ok(fast.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'));
-  assert.ok(fast.evidence.some((item) => item.detail.includes('全套法术力值合计 4，前期即可启动')));
+  assert.ok(fast.evidence.some((item) => item.code === 'COMBO_FAMILY_SCEPTER_REVERSAL'
+    && item.detail.includes('法术力启动阈值 2+2')
+    && !item.detail.includes('前期即可启动')));
 
   const offline = analyze(objectiveDeck);
   const offlineFamily = offline.detectedComboFamilies.find((family) => family.familyId === 'scepter-reversal');
   assert.equal(offlineFamily.assemblyManaValue, undefined, '无元数据时不产生装配字段');
-  assert.ok(offline.evidence.every((item) => !item.detail.includes('全套法术力值合计')), '离线路径证据文案保持逐字不变');
+  assert.ok(offline.evidence.every((item) => !item.detail.includes('法术力启动阈值')), '离线路径无元数据，不显示法术力启动阈值');
   assert.ok(offline.assignedBracket < 5, '离线时该家族不因客观速度进入 B5');
 
   assert.equal(comboSpeedTier(0), 5);
@@ -657,6 +662,52 @@ test('Combo assembly mana value grades speed objectively and feeds the early-com
   assert.equal(isEarlyCombo({ speed: 'early' }), true, '人工标注仍是离线兜底');
   assert.equal(isEarlyCombo({ speed: 'setup', assemblySpeed: 4 }), true);
   assert.equal(isEarlyCombo({ speed: 'setup', assemblySpeed: 3 }), false);
+});
+
+test('Pattern combo assembly cost is the minimal recipe, not the sum of every redundant option', () => {
+  // Magda + Clock of Omens 只需 3 张成套（Magda + Clock + 一件神器生物），
+  // 牌表里的 7 个可选神器矮人是冗余，不应把它们全部加进装配成本（旧 bug 得 23）
+  const dwarves = ['Universal Automaton', 'Metallic Mimic', 'Adaptive Automaton',
+    'Roaming Throne', 'Barkform Harvester', 'Three Tree Mascot', 'Mirror of the Forebears'];
+  const lines = [
+    'Commander', '1 Magda, Brazen Outlaw', 'Deck',
+    '1 Clock of Omens', ...dwarves.map((name) => `1 ${name}`),
+    `${99 - dwarves.length - 1} Mountain`,
+  ];
+  const parsed = parseBracketDeck(lines.join('\n'));
+  const manaValues = {
+    'magda, brazen outlaw': 3, 'clock of omens': 4, 'universal automaton': 1,
+    'metallic mimic': 2, 'adaptive automaton': 3, 'roaming throne': 4,
+    'barkform harvester': 4, 'three tree mascot': 2, 'mirror of the forebears': 3,
+  };
+  const metadataResult = makeMetadata(Array.from(new Set(parsed.cards.map((card) => card.name)))
+    .map((name) => ({
+      name,
+      cmc: Object.prototype.hasOwnProperty.call(manaValues, name.toLowerCase())
+        ? manaValues[name.toLowerCase()] : 5,
+      typeLine: 'Artifact',
+    })));
+  const magda = evaluateBracket(parsed, { metadataResult });
+  const family = magda.detectedComboFamilies.find((item) => item.familyId === 'magda-clock');
+  assert.ok(family, 'Magda + Clock 家族应被识别');
+  // Magda 3 + Clock 4 + 最便宜的神器矮人 Universal Automaton 1 = 8，绝非 3+4+全部矮人 = 23
+  assert.equal(family.assemblyManaValue, 8, '装配成本取最小成套（固定件 + 每个可选组最便宜一张）');
+  assert.ok(family.assemblyManaValue < 23, '不再把所有冗余可选件加进合计');
+  const evidence = magda.evidence.find((item) => item.code === 'COMBO_FAMILY_MAGDA_CLOCK');
+  // 启动阈值明细：Magda 3 + Clock 4 + 最便宜矮人 1，只 3 件成套，不含冗余 → 「3+4+1」而非 23
+  assert.ok(evidence.detail.startsWith('检测到完整'));
+  assert.ok(evidence.detail.includes('无限珍宝'));
+  assert.ok(evidence.detail.includes('法术力启动阈值 3+4+1'));
+  assert.ok(!evidence.detail.includes('23'));
+  assert.ok(!evidence.detail.includes('前期即可启动'));
+
+  // 换掉 Universal Automaton（1 费）后，剩下最便宜的可选件是 Three Tree Mascot（2 费）→ 3+4+2 = 9
+  const lines2 = lines.filter((line) => line !== '1 Universal Automaton');
+  const parsed2 = parseBracketDeck(lines2.join('\n'));
+  const magda2 = evaluateBracket(parsed2, { metadataResult });
+  const family2 = magda2.detectedComboFamilies.find((item) => item.familyId === 'magda-clock');
+  assert.equal(family2.assemblyManaValue, 9, '可选组取当前命中里最便宜的一张，随牌表变化');
+  assert.deepEqual(family2.assemblyBreakdown, [3, 4, 2], '启动阈值明细随最便宜可选件变化');
 });
 
 test('Price never subdivides the competitive verdict once the 500 dollar budget line is removed', () => {
@@ -781,16 +832,18 @@ test('Band position splits every bracket into balanced 偏弱/中等/偏强 with
   assert.deepEqual(b4Tiers, ['low', 'low', 'mid', 'mid', 'high', 'high']);
   assertBalanced('B4', b4Tiers);
 
-  // B4.5 与 B5 竞技档不做区间定位：档内强弱取决于赛事 meta，结构信号不足以排序
+  // B4.5 与 B5 竞技档都不做区间定位。B4.5 无对应 meta，一句带过不赘述（不提 meta）；B5 说明待 meta 分析
   const competitiveCore = ['Sol Ring', 'Lotus Petal', 'Mox Amber', 'Demonic Consultation', 'Diabolic Intent',
     'Wishclaw Talisman', 'Pact of Negation', 'Mental Misstep', "Thassa's Oracle"];
   const b45Deck = analyze(completeDeck(competitiveCore));
   assert.equal(b45Deck.assignedBracket, 4.5);
   assert.equal(b45Deck.bandPosition.deferred, true);
   assert.equal(b45Deck.bandPosition.tier, null);
-  assert.ok(b45Deck.evidence.some((item) => item.code === 'BAND_POSITION'
-    && item.title === '区间定位：B4.5 暂不区分'
-    && item.detail.includes('meta')));
+  const b45Band = b45Deck.evidence.find((item) => item.code === 'BAND_POSITION');
+  assert.equal(b45Band.title, '区间定位：B4.5 暂不区分');
+  assert.ok(b45Band.detail.includes('准竞技') && b45Band.detail.includes('不再细分'));
+  assert.ok(!b45Band.detail.includes('meta'), 'B4.5 无对应 meta，不赘述 meta 分析');
+  assert.ok(b45Band.detail.length < 40, 'B4.5 区间定位说明保持一句带过');
   assert.ok(!buildBracketSummary(b45Deck).includes('区间定位'));
 
   const b5Deck = analyze(completeDeck([...competitiveCore, 'Mox Opal', 'Dark Ritual', 'Spellseeker',
@@ -1592,7 +1645,7 @@ test('Every result carries internal version metadata, evidence, confidence bound
   assert.ok(result.evidence.length >= 1);
   assert.ok(result.evidence.every((item) => item.ruleVersion === BRACKET_MANIFEST.ruleVersion));
   assert.equal(result.versions.evaluatorVersion, BRACKET_MANIFEST.evaluatorVersion);
-  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.4.0');
+  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.5.0');
   assert.equal(BRACKET_MANIFEST.dataVersion, 'curated-en-2026-07-15-combo-families');
   assert.equal(result.versions.supportedLanguage, 'en');
   assert.equal(result.confidence, 'low');

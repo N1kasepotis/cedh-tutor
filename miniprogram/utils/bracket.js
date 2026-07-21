@@ -614,7 +614,18 @@ function collapseComboFamilies(detectedCombos) {
     existing.hardMinimum = Math.max(existing.hardMinimum, comboHardMinimum(combo));
     existing.cards = uniqueCardNames(existing.cards.concat(combo.cards || []));
     existing.matchedVariantIds.push(combo.id);
-    existing.matchedVariants.push({ id: combo.id, cards: (combo.cards || []).slice() });
+    // 保留可选/计数组结构，供装配成本按「最小成套」而非「全部命中」计算
+    existing.matchedVariants.push({
+      id: combo.id,
+      cards: (combo.cards || []).slice(),
+      required: (combo.required || []).slice(),
+      commanderRequired: (combo.commanderRequired || []).slice(),
+      anyOfGroups: (combo.anyOfGroups || []).map((group) => group.slice()),
+      atLeastGroups: (combo.atLeastGroups || []).map((group) => ({
+        cards: (group.cards || []).slice(),
+        count: Number(group.count) || 1,
+      })),
+    });
     families.set(familyId, existing);
   });
   return Array.from(families.values()).sort((a, b) => {
@@ -748,26 +759,78 @@ function comboSpeedTier(manaValue) {
   return tier ? tier.speed : COMBO_SPEED_CONFIG.fallbackSpeed;
 }
 
-// 已确认家族的客观装配成本：逐变体求全套 cmc 合计，取可完整覆盖变体中的最快一线；
-// 任一牌缺 cmc 的变体不计入，全部缺失时不添加字段（保持元数据缺失路径逐字节不变）。
+function metadataManaValue(name, metadataResult) {
+  const metadata = metadataForCard({ name }, metadataResult);
+  const manaValue = metadata && metadata.cmc !== null && metadata.cmc !== undefined && metadata.cmc !== ''
+    ? Number(metadata.cmc)
+    : NaN;
+  return Number.isFinite(manaValue) && manaValue >= 0 ? manaValue : null;
+}
+
+// 单个变体的「最小成套」装配：固定件（required / commanderRequired）全算，
+// 可选组（anyOf）取已命中里最便宜一张，计数组（atLeast）取已命中里最便宜的 count 张。
+// 无组结构的精确组合技退回全卡。任一必需件缺 cmc 时返回 null（装配未知）。
+// 返回 { total, components }，components 为按成套顺序排列的各件法术力值（用于「启动阈值 x+x」展示）。
+function variantAssembly(variant, metadataResult) {
+  const matchedKeys = new Set((variant.cards || []).map(canonicalCardKey));
+  const fixed = (variant.required || []).concat(variant.commanderRequired || []);
+  const anyOfGroups = variant.anyOfGroups || [];
+  const atLeastGroups = variant.atLeastGroups || [];
+  const hasStructure = fixed.length || anyOfGroups.length || atLeastGroups.length;
+  const components = [];
+
+  if (!hasStructure) {
+    if (!(variant.cards || []).length) return null;
+    for (let i = 0; i < variant.cards.length; i += 1) {
+      const manaValue = metadataManaValue(variant.cards[i], metadataResult);
+      if (manaValue === null) return null;
+      components.push(manaValue);
+    }
+    return { total: components.reduce((sum, mv) => sum + mv, 0), components };
+  }
+
+  for (let i = 0; i < fixed.length; i += 1) {
+    const manaValue = metadataManaValue(fixed[i], metadataResult);
+    if (manaValue === null) return null;
+    components.push(manaValue);
+  }
+  for (let i = 0; i < anyOfGroups.length; i += 1) {
+    const matchedValues = (anyOfGroups[i] || [])
+      .filter((name) => matchedKeys.has(canonicalCardKey(name)))
+      .map((name) => metadataManaValue(name, metadataResult))
+      .filter((manaValue) => manaValue !== null);
+    if (!matchedValues.length) return null;
+    components.push(Math.min(...matchedValues));
+  }
+  for (let i = 0; i < atLeastGroups.length; i += 1) {
+    const need = Number(atLeastGroups[i].count) || 1;
+    const matchedValues = (atLeastGroups[i].cards || [])
+      .filter((name) => matchedKeys.has(canonicalCardKey(name)))
+      .map((name) => metadataManaValue(name, metadataResult))
+      .filter((manaValue) => manaValue !== null)
+      .sort((a, b) => a - b);
+    if (matchedValues.length < need) return null;
+    for (let j = 0; j < need; j += 1) components.push(matchedValues[j]);
+  }
+  return { total: components.reduce((sum, mv) => sum + mv, 0), components };
+}
+
+// 已确认家族的客观装配成本：逐变体求最小成套，取可完整覆盖变体中的最快一线（total 最小）；
+// 任一变体覆盖不全（缺 cmc）则跳过，全部缺失时不添加字段（保持元数据缺失路径逐字节不变）。
 function resolveComboAssembly(family, metadataResult) {
   if (!metadataResult) return family;
-  let fastest = null;
+  let best = null;
   (family.matchedVariants || []).forEach((variant) => {
-    let total = 0;
-    let covered = (variant.cards || []).length > 0;
-    (variant.cards || []).forEach((name) => {
-      const metadata = metadataForCard({ name }, metadataResult);
-      const manaValue = metadata && metadata.cmc !== null && metadata.cmc !== undefined && metadata.cmc !== ''
-        ? Number(metadata.cmc)
-        : NaN;
-      if (!Number.isFinite(manaValue) || manaValue < 0) covered = false;
-      else total += manaValue;
-    });
-    if (covered && (fastest === null || total < fastest)) fastest = total;
+    const assembly = variantAssembly(variant, metadataResult);
+    if (assembly && (best === null || assembly.total < best.total)) best = assembly;
   });
-  if (fastest === null) return family;
-  return { ...family, assemblyManaValue: fastest, assemblySpeed: comboSpeedTier(fastest) };
+  if (best === null) return family;
+  return {
+    ...family,
+    assemblyManaValue: best.total,
+    assemblySpeed: comboSpeedTier(best.total),
+    assemblyBreakdown: best.components.slice(),
+  };
 }
 
 // 「早期组合技」双轨判定：人工 speed 标注（离线兜底）或客观速度档达标（元数据可用时）。
@@ -906,7 +969,10 @@ function computeBandPosition({
   const config = BAND_POSITION_CONFIG;
 
   if (assignedBracket >= 4.5) {
-    const scopeCode = assignedBracket === 5 ? 'B5' : 'B4.5';
+    // B5 是有真实赛事 meta 的竞技档，说明为何暂不细分；B4.5 准竞技是工具过渡档、无对应 meta，一句带过不赘述。
+    const evidenceText = assignedBracket === 5
+      ? 'B5 竞技档内的强弱区分取决于赛事 meta 表现（对局数据、席位胜率与常见配置对照），结构信号不足以支撑可信排序，当前版本暂不区分，待 meta 分析加入后提供'
+      : 'B4.5 准竞技是 B4 与 cEDH 之间的工具过渡档，档内不再细分强弱';
     return {
       tier: null,
       zh: '',
@@ -920,7 +986,7 @@ function computeBandPosition({
       conjunctMeanPercent: null,
       metricText: '',
       summaryText: '',
-      evidenceText: `${scopeCode} 竞技档内的强弱区分取决于赛事 meta 表现（对局数据、席位胜率与常见配置对照），结构信号不足以支撑可信排序，当前版本暂不区分，待 meta 分析加入后提供`,
+      evidenceText,
       deferred: true,
     };
   }
@@ -1121,12 +1187,13 @@ function evaluateBracket(parsed, options = {}) {
 
   detectedComboFamilies.forEach((combo) => {
     const minimum = combo.hardMinimum;
-    const assemblyText = Number.isInteger(combo.assemblyManaValue)
-      ? `，全套法术力值合计 ${combo.assemblyManaValue}${isEarlyCombo(combo) ? '，前期即可启动' : ''}`
+    // 法术力启动阈值：最小成套各件的法术力值明细，如 3+4+1（元数据缺失时省略此项）
+    const thresholdText = Array.isArray(combo.assemblyBreakdown) && combo.assemblyBreakdown.length
+      ? `，法术力启动阈值 ${combo.assemblyBreakdown.join('+')}`
       : '';
-    const detail = minimum
-      ? `${combo.result}，检测到完整双卡组合技${assemblyText}，自动触发 B${minimum} 规则下限`
-      : `${combo.result}，检测到完整组合技${assemblyText}，自动上调建议档位`;
+    const comboKind = minimum ? '完整双卡组合技' : '完整组合技';
+    const tail = minimum ? `自动触发 B${minimum} 规则下限` : '自动上调建议档位';
+    const detail = `检测到${comboKind}，${combo.result}${thresholdText}，${tail}`;
     if (minimum) floorBracket = Math.max(floorBracket, minimum);
     evidence.push(buildEvidence(
       `COMBO_FAMILY_${combo.familyId.toUpperCase().replace(/-/g, '_')}`,

@@ -61,9 +61,9 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     wxml.matchAll(/class="home-colophon-item[^"]*">([^<]+)<\/text>/g),
     (match) => match[1],
   );
-  // 首列用 XML 实体 &amp; 转义 & （WXML 为 XML 解析，裸 & 不合规），渲染为 BY CPP123&345
-  assert.deepEqual(colophonItems, ['BY CPP123&amp;345', 'MIT LICENSE', 'SCRYFALL API']);
-  colophonItems.forEach((item) => assert.match(item.replace(/&amp;/g, '&'), /^[A-Z0-9 /&]+$/));
+  // 首列分隔符用 +（普通字符，WXML 解析无歧义，避免 & 的实体/转义问题）
+  assert.deepEqual(colophonItems, ['BY CPP123 + 345', 'MIT LICENSE', 'SCRYFALL API']);
+  colophonItems.forEach((item) => assert.match(item, /^[A-Z0-9 +]+$/));
 
   assert.deepEqual(
     Array.from(wxml.matchAll(/class="home-button-en">([^<]+)<\/text>/g), (match) => match[1]),
@@ -162,10 +162,10 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     new Set(colorLiterals),
     new Set([
       '#D0F03C', '#FFFFFF', '#0A0A0A', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.55)',
-      // 底部题词 double shadow 专用：白高光 + 暗黄阴影
-      'RGBA(255,255,255,0.6)', 'RGBA(122,100,16,0.5)',
+      // 底部题词单层阴影专用暗黄
+      'RGBA(122,100,16,0.5)',
     ]),
-    '首页色板：底色三色 + 半透明黑双档（0.35 装饰 / 0.55 信息）+ 题词投影白/暗黄',
+    '首页色板：底色三色 + 半透明黑双档（0.35 装饰 / 0.55 信息）+ 题词投影暗黄',
   );
   // 信息性文字（编号/英文副标题/imprint）0.55 达 ≈4.4:1；装饰注释保持 0.35
   assert.match(wxss, /\.home-button-index\s*{[^}]*color:\s*rgba\(0,0,0,0\.55\)/);
@@ -202,13 +202,14 @@ test('home uses licensed embedded display and pixel fonts with device-safe fallb
   assert.match(wxss, /\.home-title-zh\s*{[\s\S]*font-size:\s*18px[\s\S]*letter-spacing:\s*4px/);
   assert.match(wxss, /\.home-button-zh\s*{[\s\S]*font-weight:\s*400[\s\S]*letter-spacing:\s*4px/);
   assert.match(wxss, /\.home-button-zh\s*{[^}]*font-size:\s*20px/);
-  // 全页唯一投影在底部题词（暗黄/白色极细 double shadow）；主标题与其余文字仍纯白无投影，旧橙色双影配色不得复现
+  // 全页唯一投影在底部题词（暗黄极细单层阴影）；主标题与其余文字仍纯白无投影，旧橙色双影配色不得复现
   assert.doesNotMatch(wxss, /#8A7200|#F26A1B|#8F3A05/);
   assert.equal((wxss.match(/text-shadow/g) || []).length, 1);
   const epigraphRule = (wxss.match(/\.home-epigraph\s*{([^}]*)}/) || [])[1] || '';
   assert.match(epigraphRule, /text-shadow:/);
-  assert.match(epigraphRule, /rgba\(255,\s*255,\s*255/);
   assert.match(epigraphRule, /rgba\(122,\s*100,\s*16/);
+  // 单层：证据行只有一处 rgba() 出现在 text-shadow 声明里
+  assert.equal((epigraphRule.match(/text-shadow:[^;]*/)[0].match(/rgba\(/g) || []).length, 1, '题词投影为单层');
   const titleBrandRule = (wxss.match(/\.home-title-brand\s*{([^}]*)}/) || [])[1] || '';
   assert.doesNotMatch(titleBrandRule, /text-shadow/);
   const chineseTextRules = Array.from(
