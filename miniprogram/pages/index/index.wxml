@@ -85,8 +85,10 @@
       </view>
     </view>
 
+    <text class="home-epigraph">PLAY TO WIN | PLAY FOR THE GAME</text>
+
     <view class="home-colophon" aria-label="版次与授权信息">
-      <text class="home-colophon-item">MADE BY CPP123 / 345</text>
+      <text class="home-colophon-item">BY CPP123&amp;345</text>
       <text class="home-colophon-item home-colophon-center">MIT LICENSE</text>
       <text class="home-colophon-item home-colophon-right">SCRYFALL API</text>
     </view>

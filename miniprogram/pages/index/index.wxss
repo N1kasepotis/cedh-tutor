@@ -38,6 +38,30 @@ page {
   overflow: hidden;
 }
 
+/* 底部中置格言：坐落 credits 之上，与工业注释同款 7px Courier、居中，作为全页 cEDH 精神题词。
+   flex:0 0 auto 只占自身高度，垂直空间由上方 home-actions（flex 伸缩）吸收，避免矮屏溢出。 */
+.home-epigraph {
+  box-sizing: border-box;
+  display: block;
+  width: 100%;
+  flex: 0 0 auto;
+  padding: 16rpx 40rpx 0;
+  color: rgba(0,0,0,0.35);
+  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
+  font-size: 7px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.7px;
+  line-height: 1.35;
+  text-align: center;
+  text-transform: uppercase;
+  word-spacing: 1px;
+  /* 全页唯一投影：极细 double shadow（近处白高光 + 远处暗黄阴影），给题词一点分量 */
+  text-shadow:
+    0.5px 0.5px 0 rgba(255, 255, 255, 0.6),
+    1px 1px 0 rgba(122, 100, 16, 0.5);
+}
+
 /* 工业注释风小字：完整句子成段，只用字母数字与空格，无冒号斜杠句号 */
 .home-format-notes {
   display: flex;
