@@ -28,7 +28,7 @@
 
 .progress-fill {
   height: 100%;
-  background: linear-gradient(90deg, rgba(140, 105, 42, 0.72), #f1d791);
+  background: linear-gradient(90deg, rgba(var(--noir-gold-rgb), 0.58), #f0cda4);
   box-shadow: 0 0 18rpx rgba(var(--noir-gold-rgb), 0.28);
 }
 
@@ -126,4 +126,3 @@
   border-color: var(--cedh-line);
   box-shadow: none;
 }
-

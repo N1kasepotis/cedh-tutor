@@ -2,6 +2,8 @@
 
 /* 卷心菜绿主题（accent 覆盖为绿），全屏页版式 */
 .cabbage-page {
+  /* 仪表微标签等 rgba(var(--module-accent-rgb)) 消费方依赖此定义；缺失会整条声明失效回退暗色 */
+  --module-accent-rgb: 47, 167, 93;
   --cedh-accent: #2fa75d;
   --cedh-accent-ink: #f3d5b6;
   --cedh-accent-soft: rgba(47, 167, 93, 0.16);
@@ -47,21 +49,27 @@
 .cabbage-mana {
   display: flex;
   align-items: baseline;
-  gap: var(--cedh-space-2);
+  gap: var(--cedh-space-3);
 }
 
+/* 技术仪表微标签 */
 .cabbage-mana-label {
-  color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-14);
+  color: rgba(var(--module-accent-rgb), 0.95);
+  font-family: var(--cedh-font-mono);
+  font-size: var(--cedh-text-12);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
 }
 
 /* 绿色文本 = 绿法术力；白色文本 = 泛用法术力 */
 .cabbage-green {
   color: var(--cedh-accent);
+  font-variant-numeric: tabular-nums;
 }
 
 .cabbage-mana .cabbage-green {
-  font-size: var(--cedh-text-36);
+  font-size: 92rpx;
   font-weight: 650;
   line-height: 1;
 }
@@ -73,7 +81,7 @@
 
 .cabbage-hint {
   margin-top: var(--cedh-space-3);
-  color: var(--cedh-text-faint);
+  color: var(--cedh-text-soft);
   font-size: var(--cedh-text-12);
   line-height: 1.45;
 }
@@ -118,7 +126,7 @@
 }
 
 .cabbage-num-dim {
-  color: var(--cedh-text-faint);
+  color: var(--cedh-text-soft);
   font-size: var(--cedh-text-16);
   font-weight: 560;
 }
@@ -164,8 +172,17 @@
 }
 
 .cabbage-footer {
-  display: flex;
-  justify-content: space-between;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+}
+
+.cabbage-footer .text-button:last-child {
+  justify-self: end;
+}
+
+.cabbage-footer-center {
+  justify-self: center;
 }
 
 .cabbage-footer .text-button {

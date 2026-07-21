@@ -119,6 +119,59 @@ test('scryfall 模块构造 URL 并解析单双面卡图', () => {
   assert.deepEqual(extractCardImageUris(null), { artCrop: '', normal: '', large: '' });
 });
 
+test('scryfall 请求设置超时、复用并发请求且失败后允许重试', async () => {
+  const originalWx = global.wx;
+  const requests = [];
+  global.wx = {
+    request(options) {
+      requests.push(options);
+    },
+  };
+
+  try {
+    const {
+      SCRYFALL_REQUEST_TIMEOUT_MS,
+      MAX_CONCURRENT_IMAGE_REQUESTS,
+      fetchCardImageUris,
+    } = require('../miniprogram/utils/scryfall');
+    assert.equal(MAX_CONCURRENT_IMAGE_REQUESTS, 4);
+
+    const first = fetchCardImageUris('Concurrent Test Card');
+    const second = fetchCardImageUris('Concurrent Test Card');
+    assert.equal(first, second);
+    assert.equal(requests.length, 1);
+    assert.equal(requests[0].timeout, SCRYFALL_REQUEST_TIMEOUT_MS);
+
+    requests[0].success({
+      statusCode: 200,
+      data: { image_uris: { normal: 'normal.jpg' } },
+    });
+    assert.equal((await first).normal, 'normal.jpg');
+
+    const failed = fetchCardImageUris('Retry Test Card');
+    requests[1].fail({ errMsg: 'timeout' });
+    await assert.rejects(failed, /Scryfall request failed/);
+
+    const retry = fetchCardImageUris('Retry Test Card');
+    assert.equal(requests.length, 3);
+    requests[2].success({ statusCode: 503, data: {} });
+    await assert.rejects(retry, /503/);
+
+    const requestBaseline = requests.length;
+    const batch = Array.from({ length: 5 }, (_, index) => fetchCardImageUris(`Queue Test Card ${index}`));
+    assert.equal(requests.length, requestBaseline + MAX_CONCURRENT_IMAGE_REQUESTS);
+    requests[requestBaseline].success({ statusCode: 200, data: { image_uris: { normal: 'first.jpg' } } });
+    await batch[0];
+    assert.equal(requests.length, requestBaseline + 5);
+    for (let index = requestBaseline + 1; index < requestBaseline + 5; index += 1) {
+      requests[index].success({ statusCode: 200, data: { image_uris: { normal: `${index}.jpg` } } });
+    }
+    await Promise.all(batch);
+  } finally {
+    global.wx = originalWx;
+  }
+});
+
 test('commander-meta 按配置阈值推导标签', () => {
   const { deriveCommanderMetaTags } = require('../miniprogram/utils/commander-meta');
   const { metaTagConfig } = require('../miniprogram/config/recommendation-rules');

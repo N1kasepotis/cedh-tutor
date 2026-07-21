@@ -1,4 +1,4 @@
-/* 黑金主题（quiz / result 共用）：纯黑底 + 鎏金。
+/* 火花橙金主题（quiz / result 共用）：纯黑底 + 主页火花觉醒色。
    页面样式只允许引用这里定义的变量；改主题色只改本文件。 */
 
 .quiz,
@@ -7,10 +7,10 @@
   color: #f5ead1;
 
   /* 调色板（RGB 三元组，供 rgba(var(--x-rgb), α) 引用） */
-  --noir-gold-rgb: 216, 183, 106;
-  --noir-gold-line-rgb: 218, 187, 113;
-  --noir-candle-rgb: 255, 241, 194;
-  --noir-aged-gold-rgb: 230, 210, 163;
+  --noir-gold-rgb: 230, 155, 82;
+  --noir-gold-line-rgb: 230, 155, 82;
+  --noir-candle-rgb: 255, 224, 188;
+  --noir-aged-gold-rgb: 240, 190, 138;
   --noir-parchment-rgb: 245, 234, 209;
 
   /* 全局 token 覆盖 */
@@ -18,37 +18,37 @@
   --cedh-surface-raised: rgba(13, 13, 12, 0.76);
   --cedh-surface-muted: rgba(18, 17, 15, 0.56);
   --cedh-input-glass: rgba(14, 14, 13, 0.64);
-  --cedh-line: rgba(218, 187, 113, 0.22);
-  --cedh-line-strong: rgba(218, 187, 113, 0.42);
+  --cedh-line: rgba(230, 155, 82, 0.22);
+  --cedh-line-strong: rgba(230, 155, 82, 0.42);
   --cedh-text: #f5ead1;
   --cedh-text-soft: rgba(245, 234, 209, 0.68);
-  --cedh-text-faint: rgba(245, 234, 209, 0.38);
-  --cedh-accent: #d8b76a;
-  --cedh-accent-ink: #f2d98f;
-  --cedh-accent-soft: rgba(216, 183, 106, 0.13);
-  --cedh-accent-line: rgba(216, 183, 106, 0.44);
+  --cedh-text-faint: rgba(245, 234, 209, 0.46);
+  --cedh-accent: #e69b52;
+  --cedh-accent-ink: #f0cda4;
+  --cedh-accent-soft: rgba(230, 155, 82, 0.13);
+  --cedh-accent-line: rgba(230, 155, 82, 0.44);
   --cedh-shadow-soft: 0 28rpx 86rpx rgba(0, 0, 0, 0.36);
 
   /* 按钮体系（由 app.wxss 的 .primary-button / .secondary-button 消费） */
   --cedh-btn-primary-color: #f6e6b3;
   --cedh-btn-primary-bg: linear-gradient(135deg, #000000 0%, #080806 58%, #11100b 100%);
-  --cedh-btn-primary-border: 1rpx solid rgba(216, 183, 106, 0.46);
+  --cedh-btn-primary-border: 1rpx solid rgba(230, 155, 82, 0.46);
   --cedh-btn-primary-shadow: 0 20rpx 54rpx rgba(0, 0, 0, 0.42), inset 0 1rpx 0 rgba(255, 241, 194, 0.18);
   --cedh-btn-secondary-color: rgba(245, 234, 209, 0.78);
   --cedh-btn-secondary-bg: rgba(0, 0, 0, 0.34);
-  --cedh-btn-secondary-border: 1rpx solid rgba(216, 183, 106, 0.28);
+  --cedh-btn-secondary-border: 1rpx solid rgba(230, 155, 82, 0.28);
   --cedh-btn-secondary-shadow: 0 14rpx 38rpx rgba(0, 0, 0, 0.28), inset 0 1rpx 0 rgba(255, 241, 194, 0.1);
 }
 
 /* quiz 与 result 的底色停点/描边各有历史像素微差；ui.suite 已锁定这些值，属有意保留 */
 .quiz {
   background: linear-gradient(180deg, #070707 0%, #020202 58%, #000000 100%);
-  --cedh-line: rgba(218, 187, 113, 0.22);
-  --cedh-line-strong: rgba(218, 187, 113, 0.42);
+  --cedh-line: rgba(230, 155, 82, 0.22);
+  --cedh-line-strong: rgba(230, 155, 82, 0.42);
 }
 
 .result {
   background: linear-gradient(180deg, #070707 0%, #020202 56%, #000000 100%);
-  --cedh-line: rgba(218, 187, 113, 0.24);
-  --cedh-line-strong: rgba(218, 187, 113, 0.44);
+  --cedh-line: rgba(230, 155, 82, 0.24);
+  --cedh-line-strong: rgba(230, 155, 82, 0.44);
 }

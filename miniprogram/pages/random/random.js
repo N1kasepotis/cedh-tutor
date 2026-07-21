@@ -10,6 +10,7 @@ const {
   normalizeStickerSheets,
 } = require('../../utils/stickers');
 const { enableShareMenu } = require('../../utils/share');
+const { readStorage, writeStorage } = require('../../utils/storage');
 
 const stickerStorageKey = stickerConfig.storageKey;
 
@@ -108,20 +109,23 @@ Page({
   },
 
   loadStickerPool() {
-    let stored;
-    try {
-      stored = wx.getStorageSync(stickerStorageKey);
-    } catch (e) {
-      stored = null;
-    }
-    this.applyStickerPool(normalizeStickerSheets(stored, stickerSheets), false);
+    const stored = readStorage(stickerStorageKey, {
+      schemaVersion: 1,
+      defaultValue: stickerSheets,
+      validate: Array.isArray,
+    });
+    this.applyStickerPool(normalizeStickerSheets(stored.value, stickerSheets), false);
   },
 
   applyStickerPool(pool, shouldPersist = true) {
     const normalized = normalizeStickerSheets(pool, stickerSheets);
 
     if (shouldPersist) {
-      wx.setStorageSync(stickerStorageKey, normalized);
+      const stored = writeStorage(stickerStorageKey, normalized, {
+        schemaVersion: 1,
+        validate: Array.isArray,
+      });
+      if (!stored.ok) wx.showToast({ title: '贴纸设置保存失败', icon: 'none' });
     }
 
     this.setData({
@@ -136,13 +140,20 @@ Page({
       return;
     }
 
+    if (this.stickerDrawTimer) clearTimeout(this.stickerDrawTimer);
     this.setData({ stickerAnimating: true });
-    setTimeout(() => {
+    this.stickerDrawTimer = setTimeout(() => {
+      this.stickerDrawTimer = null;
       this.setData({
         stickerRound: buildStickerRound(this.data.stickerPool, Math.random, stickerConfig.drawCount),
         stickerAnimating: false,
       });
     }, 220);
+  },
+
+  onUnload() {
+    if (this.stickerDrawTimer) clearTimeout(this.stickerDrawTimer);
+    this.stickerDrawTimer = null;
   },
 
   // 独立全屏计数器入口（进入即锁定全屏、开启常亮、引擎每次进入重置）

@@ -1,5 +1,10 @@
 @import "../../styles/themes/noir-gold.wxss";
 
+/* 卡图点按反馈：只调透明度，不位移不缩放 */
+.art-tap-active {
+  opacity: 0.78;
+}
+
 .result-shell {
   display: flex;
   flex-direction: column;

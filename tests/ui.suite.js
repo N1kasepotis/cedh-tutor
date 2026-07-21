@@ -24,179 +24,251 @@ const { performanceConfig } = require('../miniprogram/config/performance');
 
 const root = path.join(__dirname, '..');
 
-test('home page only shows the required landing content', () => {
+test('home is a single-screen acid index with the eight existing actions', () => {
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
   const js = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.js'), 'utf8');
+  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
   const shareUtil = fs.readFileSync(path.join(root, 'miniprogram/utils/share.js'), 'utf8');
   const pageJson = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.json'), 'utf8'));
   const appJson = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/app.json'), 'utf8'));
 
-  assert.match(wxml, /cEDH Tutor/);
-  assert.doesNotMatch(wxml, /cEDH 导师/);
-  assert.equal(pageJson.navigationBarTitleText, 'cEDH Tutor');
-  assert.equal(appJson.window.navigationBarTitleText, 'cEDH Tutor');
-  assert.match(wxml, /竞技指挥官导师/);
-  assert.doesNotMatch(wxml, /竞技指挥官小助手/);
-  assert.doesNotMatch(wxml, /一个竞技指挥官小助手/);
-  assert.doesNotMatch(wxml, /你的竞技指挥官小助手/);
-  assert.doesNotMatch(wxml, /开始匹配/);
-  assert.match(wxml, /火花觉醒/);
-  assert.match(wxml, /人格测试/);
-  assert.doesNotMatch(wxml, /人格测试 EDHTI/);
-  assert.match(wxml, /EDHTI TEST/);
-  assert.match(wxml, /SPARK ZONE/);
-  assert.doesNotMatch(wxml, /PERSONALITY TEST/);
-  assert.match(wxml, /我的主将/);
-  assert.doesNotMatch(wxml, /我的指挥官/);
-  assert.match(wxml, /COMMANDERS/);
-  assert.doesNotMatch(wxml, /随机工具/);
-  assert.match(wxml, /混沌工具/);
-  assert.match(wxml, /CHAOS TOOLS/);
-  assert.doesNotMatch(wxml, /EDHTI Test|START MATCHING|MY COMMANDERS|RANDOMIZATION|RANDOM TOOLS/);
-  assert.doesNotMatch(wxml, /→|arrow|glass-crack/);
-  assert.match(wxml, /home-button-en/);
-  assert.match(wxml, /home-button-edhti/);
-  assert.match(wxml, /home-button-match/);
-  assert.match(wxml, /home-button-tracker/);
-  assert.match(wxml, /home-button-random/);
-  assert.doesNotMatch(wxml, /<button[^>]*home-button/);
-  assert.doesNotMatch(wxml, /class="(?:primary|secondary)-button home-button/);
-  assert.ok(
-    wxml.indexOf('home-button-edhti') < wxml.indexOf('home-button-match'),
-    'EDHTI entry should appear above the commander quiz entry',
+  assert.match(wxml, /class="home-title-brand">cEDH Tutor<\/text>/);
+  assert.match(wxml, /class="home-title-zh">竞技指挥官导师<\/text>/);
+  // 工业注释风小字：EDH 与 cEDH 两段、每段三个完整句子，只用大写字母数字与空格（无冒号斜杠句号）
+  const formatNotes = Array.from(
+    wxml.matchAll(/class="home-format-note[^"]*">([^<]+)<\/text>/g),
+    (match) => match[1],
   );
-  assert.match(js, /goEdhti/);
-  assert.match(js, /goTracker/);
-  assert.match(js, /goRandom/);
-  assert.match(js, /enableShareMenu\(\)/);
-  assert.match(shareUtil, /wx\.showShareMenu\s*\(/);
-  assert.match(shareUtil, /menus:\s*\[\s*'shareAppMessage'\s*,\s*'shareTimeline'\s*\]/);
-  assert.match(js, /onShareAppMessage\s*\(\)\s*{[\s\S]*title:\s*'cEDH Tutor · 竞技指挥官导师'/);
-  assert.match(js, /onShareTimeline\s*\(\)\s*{[\s\S]*title:\s*'cEDH Tutor · 竞技指挥官导师'/);
+  assert.equal(formatNotes.length, 9);
+  assert.match(formatNotes[0], /^RULE 903 DEFINES EDH AS MULTIPLAYER COMMANDER$/);
+  assert.match(formatNotes[3], /^CEDH PLAYS THE SAME RULES AT FULL POWER$/);
+  assert.match(formatNotes[6], /^EVERY SEAT PLAYS TO WIN AND NO ONE APOLOGIZES$/);
+  formatNotes.forEach((note) => assert.match(note, /^[A-Z0-9 ]+$/));
+  // 单行纪律：每句 ≤46 字符，7px Courier 在最窄机型也不折行，防止注释块撑破 45vh 压进目录
+  formatNotes.forEach((note) => assert.ok(note.length <= 46, `注释句需单行（≤46 字符）：${note}`));
+  assert.equal((wxml.match(/home-format-para/g) || []).length, 2);
+  assert.doesNotMatch(wxml, /home-reminder|home-button-leader/);
+  assert.doesNotMatch(wxml, /开源共学|OPEN SOURCE COMMONS|·|home-button-separator/);
+  const colophonItems = Array.from(
+    wxml.matchAll(/class="home-colophon-item[^"]*">([^<]+)<\/text>/g),
+    (match) => match[1],
+  );
+  assert.deepEqual(colophonItems, ['MADE BY CPP123', 'MIT LICENSE', 'SCRYFALL API']);
+  colophonItems.forEach((item) => assert.match(item, /^[A-Z0-9 ]+$/));
 
-  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
-  const homeButtonStyles = wxss.slice(wxss.indexOf('.home-button {'));
-  const homeButtonBlock = wxss.match(/\.home-button\s*{[\s\S]*?\n}/)[0];
-  const homeButtonGlassBlock = wxss.match(/\.home-button-glass\s*{[\s\S]*?\n}/)[0];
-  const homeButtonTextBlock = wxss.match(/\.home-button-text\s*{[\s\S]*?\n}/)[0];
-  const homeButtonZhStyles = wxss.slice(
-    wxss.indexOf('.home-button-zh {'),
-    wxss.indexOf('.home-button-en {'),
+  assert.deepEqual(
+    Array.from(wxml.matchAll(/class="home-button-en">([^<]+)<\/text>/g), (match) => match[1]),
+    [
+      'EDHTI PROFILE',
+      'COMMANDER FINDER',
+      'BRACKET ANALYSIS',
+      'DECK SANDBOX',
+      'LIFE COUNTER',
+      'CHAOS TOOLKIT',
+      'COMMANDER LOG',
+      'META TIER LIST',
+    ],
   );
-  assert.match(js, /glassLayers:\s*\[1,\s*2,\s*3,\s*4,\s*5\]/);
-  assert.match(wxss, /\.home-actions\s*{[\s\S]*align-items:\s*flex-start/);
-  assert.match(wxss, /\.home-actions\s*{[\s\S]*gap:\s*58rpx/);
-  assert.match(wxss, /\.home-actions\s*{[\s\S]*margin-left:\s*-44rpx/);
-  assert.match(wxss, /\.home-actions\s*{[\s\S]*width:\s*calc\(100% \+ 44rpx\)/);
-  assert.match(wxss, /\.home-button\s*{[\s\S]*align-items:\s*flex-start/);
-  assert.match(wxss, /\.display-title\s*{[\s\S]*width:\s*552rpx/);
-  assert.match(wxss, /\.display-title\s*{[\s\S]*justify-content:\s*center/);
-  assert.match(wxss, /\.subtitle\s*{[\s\S]*width:\s*552rpx/);
-  assert.match(wxss, /\.subtitle\s*{[\s\S]*text-align:\s*center/);
-  assert.match(wxss, /\.subtitle\s*{[\s\S]*margin-top:\s*-22rpx/);
-  assert.match(wxss, /\.home-button\s*{[\s\S]*width:\s*284rpx/);
-  assert.match(wxss, /\.home-button\s*{[\s\S]*height:\s*116rpx/);
-  assert.match(wxss, /\.home-button\s*{[\s\S]*padding:\s*20rpx 36rpx 20rpx 12rpx/);
-  assert.match(wxss, /\.home-button\s*{[\s\S]*background:\s*transparent/);
-  assert.match(wxss, /\.home-button\s*{[\s\S]*box-shadow:\s*none/);
-  assert.match(wxss, /\.home-button\s*{[\s\S]*border-radius:\s*var\(--cedh-radius-control-sm\)/);
-  assert.match(wxml, /home-button-glass-stack/);
-  assert.match(wxml, /wx:for="\{\{glassLayers\}\}"/);
-  assert.match(wxml, /home-button-glass-\{\{item\}\}/);
-  assert.match(wxml, /home-button-text/);
-  assert.match(wxss, /\.home-button-glass\s*{[\s\S]*backdrop-filter:\s*blur\(20rpx\)/);
-  assert.match(wxss, /\.home-button-glass\s*{[\s\S]*clip-path:\s*polygon\(0 8%,\s*3% 0,\s*100% 0,\s*88% 100%,\s*3% 100%,\s*0 92%\)/);
-  assert.match(wxss, /\.home-button-glass\s*{[\s\S]*background:\s*rgba\(255,\s*249,\s*224,\s*0\.52\)/);
-  assert.match(homeButtonGlassBlock, /box-shadow:\s*inset 0 1rpx 0 rgba\(255,\s*255,\s*255,\s*0\.84\)/);
-  assert.doesNotMatch(homeButtonGlassBlock, /linear-gradient|inset 0 -/);
-  assert.doesNotMatch(wxss, /\.home-button-glass::after/);
-  assert.doesNotMatch(wxss, /repeating-linear-gradient\(106deg|radial-gradient\(circle/);
-  assert.match(homeButtonTextBlock, /position:\s*absolute/);
-  assert.match(homeButtonTextBlock, /inset:\s*0/);
-  assert.match(homeButtonTextBlock, /align-items:\s*center/);
-  assert.match(homeButtonTextBlock, /justify-content:\s*center/);
-  assert.match(homeButtonTextBlock, /text-align:\s*center/);
-  assert.match(wxss, /\.home-button-glass-1\s*{[\s\S]*opacity:\s*0\.96/);
-  assert.match(wxss, /\.home-button-glass-1\s*{[\s\S]*background:\s*rgba\(255,\s*249,\s*224,\s*0\.56\)/);
-  assert.match(wxss, /\.home-button-glass-2\s*{[\s\S]*background:\s*rgba\(248,\s*240,\s*218,\s*0\.62\)/);
-  assert.match(wxss, /\.home-button-glass-3\s*{[\s\S]*background:\s*rgba\(238,\s*228,\s*211,\s*0\.68\)/);
-  assert.match(wxss, /\.home-button-glass-4\s*{[\s\S]*background:\s*rgba\(224,\s*220,\s*211,\s*0\.74\)/);
-  assert.match(wxss, /\.home-button-glass-5\s*{[\s\S]*background:\s*rgba\(211,\s*214,\s*209,\s*0\.8\)/);
-  assert.match(wxss, /\.home-button-glass-2\s*{[\s\S]*transform:\s*translate3d\(-6rpx,\s*6rpx,\s*0\)/);
-  assert.match(wxss, /\.home-button-glass-3\s*{[\s\S]*transform:\s*translate3d\(-12rpx,\s*12rpx,\s*0\)/);
-  assert.match(wxss, /\.home-button-glass-4\s*{[\s\S]*transform:\s*translate3d\(-18rpx,\s*18rpx,\s*0\)/);
-  assert.match(wxss, /\.home-button-glass-5\s*{[\s\S]*transform:\s*translate3d\(-24rpx,\s*24rpx,\s*0\)/);
-  assert.doesNotMatch(wxss, /\.home-button-random\s*{[\s\S]*rgba\(22,\s*16,\s*15,\s*0\.92\)/);
-  assert.doesNotMatch(wxss, /\.home-button-random\s*{[\s\S]*rgba\(102,\s*31,\s*27,\s*0\.76\)/);
-  assert.doesNotMatch(wxss, /\.home-button::before/);
-  assert.doesNotMatch(wxss, /\.home-button::after/);
-  assert.doesNotMatch(wxss, /rgba\(214,\s*179,\s*64,\s*0\.88\)/);
-  assert.doesNotMatch(wxss, /rotate\(12deg\)/);
-  assert.doesNotMatch(homeButtonBlock, /linear-gradient|clip-path|drop-shadow|backdrop-filter:\s*blur/);
-  assert.match(wxss, /\.home-button-zh\s*{[\s\S]*font-family:[\s\S]*Source Han Serif SC[\s\S]*Noto Serif CJK SC[\s\S]*Songti SC/);
-  assert.match(wxss, /\.home-button-zh\s*{[\s\S]*font-size:\s*var\(--cedh-text-18\)/);
-  assert.match(wxss, /\.home-button-zh\s*{[\s\S]*font-weight:\s*620/);
-  assert.doesNotMatch(homeButtonZhStyles, /font-weight:\s*900/);
-  assert.match(wxss, /\.home-button-zh\s*{[\s\S]*color:\s*rgba\(138,\s*64,\s*22,\s*0\.9\)/);
-  assert.doesNotMatch(homeButtonZhStyles, /background-image:/);
-  assert.doesNotMatch(homeButtonZhStyles, /-webkit-background-clip:\s*text/);
-  assert.doesNotMatch(homeButtonZhStyles, /-webkit-text-fill-color:\s*transparent/);
-  assert.doesNotMatch(homeButtonZhStyles, /#8C5524|#F2C46D|#B87333/);
-  assert.doesNotMatch(homeButtonZhStyles, /#F59105/);
-  assert.match(homeButtonZhStyles, /text-shadow:[\s\S]*1rpx 1rpx 0 rgba\(92,\s*12,\s*16,\s*0\.28\)[\s\S]*-1rpx -1rpx 0 rgba\(255,\s*224,\s*118,\s*0\.32\)/);
-  assert.match(homeButtonZhStyles, /font-style:\s*italic/);
-  assert.match(wxss, /\.home-button-en\s*{[\s\S]*letter-spacing:\s*0\.34em/);
-  assert.match(wxss, /\.home-button-en\s*{[\s\S]*font-family:[\s\S]*Arial Black[\s\S]*Avenir Next Condensed[\s\S]*DIN Condensed/);
-  assert.match(wxss, /\.home-button-en\s*{[\s\S]*font-size:\s*16rpx/);
-  assert.match(wxss, /\.home-button-en\s*{[\s\S]*font-style:\s*normal/);
-  const homeButtonEnBlock = wxss.match(/\.home-button-en\s*{[\s\S]*?\n}/)[0];
-  assert.doesNotMatch(homeButtonEnBlock, /text-shadow:/);
-  assert.doesNotMatch(homeButtonEnBlock, /skewX/);
-  assert.doesNotMatch(homeButtonStyles, /translateX\(/);
-  assert.doesNotMatch(homeButtonBlock, /rgba\(184,\s*74,\s*63|#fffefa|rgba\(28,\s*23,\s*19,\s*0\.88/);
+  assert.deepEqual(
+    Array.from(wxml.matchAll(/class="home-button-index">(\d{2})<\/text>/g), (match) => match[1]),
+    ['01', '02', '03', '04', '05', '06', '07', '08'],
+  );
+  assert.deepEqual(
+    Array.from(wxml.matchAll(/class="home-button home-button-([a-z-]+)"/g), (match) => match[1]),
+    ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
+  );
+  assert.equal((wxml.match(/hover-class="home-index-active"/g) || []).length, 8);
+  assert.equal((wxml.match(/hover-start-time="0"/g) || []).length, 8);
+  assert.equal((wxml.match(/hover-stay-time="60"/g) || []).length, 8);
+  assert.match(wxml, /home-button-edhti"[^>]*bindtap="goEdhti"/);
+  assert.match(wxml, /home-button-match"[^>]*bindtap="goQuiz"/);
+  assert.match(wxml, /home-button-bracket"[^>]*bindtap="goBracket"/);
+  assert.match(wxml, /home-button-playtest"[^>]*bindtap="goPlaytest"/);
+  assert.match(wxml, /home-button-life"[^>]*bindtap="goLifeTracker"/);
+  assert.match(wxml, /home-button-random"[^>]*bindtap="goRandom"/);
+  assert.match(wxml, /home-button-tracker"[^>]*bindtap="goTracker"/);
+  assert.match(wxml, /home-button-meta"[^>]*bindtap="showMetaComingSoon"/);
+  assert.match(wxml, /class="home-actions" aria-role="navigation" aria-label="主要功能"/);
+  assert.doesNotMatch(wxml, /particle-background|particleCanvas/);
+  assert.doesNotMatch(wxml, /<button[^>]*home-button|glass|bindtouch/);
+
+  assert.match(js, /goEdhti\(\)[\s\S]*\/pages\/edhti\/edhti/);
+  assert.match(js, /goQuiz\(\)[\s\S]*\/pages\/quiz\/quiz/);
+  assert.match(js, /goBracket\(\)[\s\S]*\/pages\/bracket\/bracket/);
+  assert.match(js, /goPlaytest\(\)[\s\S]*\/pages\/playtest\/playtest/);
+  assert.match(js, /goLifeTracker\(\)[\s\S]*\/pages\/life-tracker\/life-tracker/);
+  assert.match(js, /goRandom\(\)[\s\S]*\/pages\/random\/random/);
+  assert.match(js, /goTracker\(\)[\s\S]*\/pages\/tracker\/tracker/);
+  assert.match(js, /showMetaComingSoon\(\)[\s\S]*title:\s*'功能还在开发中，敬请期待！'[\s\S]*icon:\s*'none'/);
+  assert.match(js, /enableShareMenu\(\)/);
+  assert.match(shareUtil, /menus:\s*\[\s*'shareAppMessage'\s*,\s*'shareTimeline'\s*\]/);
+  assert.match(js, /onShareAppMessage\s*\(\)\s*{[\s\S]*title:\s*'cEDH Tutor 竞技指挥官导师'/);
+  assert.match(js, /onShareTimeline\s*\(\)\s*{[\s\S]*title:\s*'cEDH Tutor 竞技指挥官导师'/);
+  assert.match(js, /titleFontBase64/);
+  assert.match(js, /family:\s*'cEDHDisplay'/);
+  assert.doesNotMatch(js, /selectComponent|HomeTouch|homeParticles/);
+
+  assert.equal(appJson.window.navigationBarTitleText, 'cEDH Tutor');
+  assert.equal(pageJson.navigationStyle, 'custom');
+  assert.equal(pageJson.navigationBarTitleText, '');
+  assert.equal(pageJson.navigationBarBackgroundColor, '#D0F03C');
+  assert.equal(pageJson.navigationBarTextStyle, 'black');
+  assert.equal(pageJson.backgroundColor, '#D0F03C');
+  assert.equal(pageJson.backgroundTextStyle, 'dark');
+  assert.equal(pageJson.disableScroll, true);
+  assert.equal(pageJson.usingComponents, undefined);
+
+  assert.match(wxss, /page\s*{[\s\S]*background:\s*#D0F03C/);
+  assert.match(wxss, /\.home\s*{[\s\S]*height:\s*100vh[\s\S]*padding:\s*0[\s\S]*constant\(safe-area-inset-bottom\)[\s\S]*env\(safe-area-inset-bottom\)[\s\S]*background:\s*#D0F03C/);
+  assert.match(wxss, /\.home-hero\s*{[\s\S]*flex:\s*0 0 45vh/);
+  assert.match(wxss, /\.home-actions\s*{[\s\S]*flex:\s*1 1 55%[\s\S]*flex-direction:\s*column[\s\S]*border-top:\s*1px solid rgba\(0,0,0,0\.35\)/);
+  assert.match(wxss, /\.home-button\s*{[\s\S]*flex:\s*1 1 0[\s\S]*border-bottom:\s*1px solid rgba\(0,0,0,0\.35\)[\s\S]*border-radius:\s*0/);
+  assert.match(wxss, /\.home-index-active\s*{[\s\S]*color:\s*#D0F03C[\s\S]*background:\s*#0A0A0A/);
+  assert.match(wxss, /\.home-button\s*{[\s\S]*transition:\s*color 60ms linear,\s*background-color 60ms linear/);
+  // 反相态只许改颜色：块内匹配（[^}]*）防跨块误命中，(?<!text-) 防 text-transform 子串误报
+  assert.doesNotMatch(wxss, /\.home-index-active\s*{[^}]*(?:opacity:|scale:|(?<!text-)transform:)/);
+  assert.match(wxss, /@media \(max-height:\s*700px\)[\s\S]*flex-basis:\s*40vh/);
+  assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*flex-basis:\s*40vh/);
+  assert.match(wxss, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*transition:\s*none/);
+  assert.match(wxss, /\.home-button-text\s*{[^}]*align-items:\s*baseline[^}]*justify-content:\s*space-between/);
+  assert.doesNotMatch(wxss, /home-button-leader|dotted/);
+  assert.match(wxss, /\.home-format-note\s*{[^}]*color:\s*rgba\(0,0,0,0\.35\)[^}]*font-size:\s*7px[^}]*letter-spacing:\s*0\.7px[^}]*text-transform:\s*uppercase/);
+  assert.doesNotMatch(wxss, /home-reminder/);
+  assert.match(wxss, /\.home-colophon\s*{[^}]*grid-template-columns:\s*1fr auto 1fr[^}]*font-family:\s*"Courier New",\s*Courier/);
+  assert.match(wxss, /\.home-colophon-center\s*{[^}]*text-align:\s*center/);
+  assert.match(wxss, /\.home-colophon-right\s*{[^}]*text-align:\s*right/);
+  assert.match(wxss, /\.home-colophon-item\s*{[^}]*font-size:\s*8px[^}]*text-transform:\s*uppercase/);
+  assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*\.home-colophon-item\s*{[^}]*font-size:\s*7px/);
+  assert.doesNotMatch(wxss, /gradient|box-shadow|backdrop-filter|clip-path|background-image|radial-gradient/);
+  assert.deepEqual(
+    Array.from(wxss.matchAll(/border-radius:\s*([^;]+);/g), (match) => match[1].trim()),
+    ['0'],
+  );
+
+  const colorLiterals = Array.from(
+    wxss.matchAll(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi),
+    (match) => match[0].replace(/\s/g, '').toUpperCase(),
+  );
+  assert.deepEqual(
+    new Set(colorLiterals),
+    new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.55)']),
+    '首页色板：底色三色 + 半透明黑双档（0.35 装饰 / 0.55 信息）',
+  );
+  // 信息性文字（编号/英文副标题/imprint）0.55 达 ≈4.4:1；装饰注释保持 0.35
+  assert.match(wxss, /\.home-button-index\s*{[^}]*color:\s*rgba\(0,0,0,0\.55\)/);
+  assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.55\)/);
+  assert.match(wxss, /\.home-colophon-item\s*{[^}]*color:\s*rgba\(0,0,0,0\.55\)/);
 
   ['纯前端', '本地配置', '技术', '接口', '云', 'edhtop16'].forEach((word) => {
     assert.doesNotMatch(wxml, new RegExp(word), `home page should not show ${word}`);
   });
 });
 
-test('home title uses a styled display treatment instead of a plain text block', () => {
+test('home uses licensed embedded display and pixel fonts with device-safe fallbacks', () => {
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
   const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
   const js = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.js'), 'utf8');
+  const fontModulePath = path.join(root, 'miniprogram/assets/home-pixel-font.js');
+  const displayFontModulePath = path.join(root, 'miniprogram/assets/title-font.js');
+  const subsetPath = path.join(root, 'tools/fonts/fusion-pixel-10px-monospaced-zh_hans-home-subset.ttf');
+  const packagedLicensePath = path.join(root, 'miniprogram/assets/FUSION_PIXEL_OFL.txt');
+  const sourceLicensePath = path.join(root, 'tools/fonts/FUSION_PIXEL_OFL.txt');
+  const generatorPath = path.join(root, 'scripts/build-home-pixel-font.js');
+  const fontModule = fs.readFileSync(fontModulePath, 'utf8');
+  const displayFontModule = fs.readFileSync(displayFontModulePath, 'utf8');
+  const base64Match = fontModule.match(/const homePixelFontBase64 = '([A-Za-z0-9+/=]+)'/);
+  const displayBase64Match = displayFontModule.match(/titleFontBase64:\s*'([A-Za-z0-9+/=]+)'/);
 
-  assert.match(wxml, /class="title display-title"/);
-  assert.match(wxml, /class="title-latin"/);
-  assert.match(wxml, /class="title-tutor"/);
-  assert.match(wxss, /\.title\s*{[\s\S]*font-size:\s*108rpx/);
-  assert.match(wxss, /\.display-title\s*{[\s\S]*font-style:\s*italic/);
-  assert.match(wxss, /\.display-title\s*{[\s\S]*font-weight:\s*800/);
-  assert.match(wxss, /\.display-title\s*{[\s\S]*skewX\(-/);
-  assert.match(wxss, /\.title-latin\s*{[\s\S]*font-family:[\s\S]*(Arial Black|Avenir Next Condensed|DIN Condensed)/);
-  assert.match(wxss, /\.title-latin\s*{[\s\S]*font-size:\s*108rpx/);
-  assert.match(wxss, /\.title-latin\s*{[\s\S]*font-weight:\s*900/);
-  assert.match(wxss, /\.title-tutor\s*{[\s\S]*font-family:\s*"cEDHDisplay",\s*"Arial Black",\s*"Avenir Next Condensed",\s*"DIN Condensed"/);
-  assert.match(wxss, /\.title-tutor\s*{[\s\S]*font-size:\s*102rpx/);
-  assert.match(wxss, /\.title-tutor\s*{[\s\S]*font-weight:\s*900/);
-  assert.match(wxss, /text-shadow:/);
+  assert.match(wxml, /class="home-title-brand">cEDH Tutor<\/text>/);
+  assert.match(wxml, /class="home-title-zh">竞技指挥官导师<\/text>/);
+  assert.match(wxss, /font-family:\s*"HomePixel",\s*"Fusion Pixel 10px Monospaced SC",\s*"Zpix",\s*ui-monospace,\s*monospace/);
+  assert.match(wxss, /\.home-title-brand\s*{[\s\S]*font-family:\s*"cEDHDisplay"[\s\S]*font-size:\s*52px[\s\S]*font-weight:\s*900[\s\S]*letter-spacing:\s*-0\.055em/);
+  assert.match(wxss, /\.home-title-brand\s*{[\s\S]*-webkit-text-stroke:\s*0\.5px #FFFFFF[\s\S]*transform:\s*skewX\(-8deg\)[\s\S]*transform-origin:\s*left center/);
+  assert.match(wxss, /@media \(max-width:\s*360px\)[\s\S]*\.home-title-brand\s*{[\s\S]*font-size:\s*46px/);
+  assert.match(wxss, /@media \(max-height:\s*700px\)[\s\S]*\.home-title-brand\s*{[\s\S]*font-size:\s*42px/);
+  assert.match(wxss, /\.home-title-zh\s*{[\s\S]*font-size:\s*18px[\s\S]*letter-spacing:\s*4px/);
+  assert.match(wxss, /\.home-button-zh\s*{[\s\S]*font-weight:\s*400[\s\S]*letter-spacing:\s*4px/);
+  assert.match(wxss, /\.home-button-zh\s*{[^}]*font-size:\s*20px/);
+  // 主标题纯白无投影：全页不使用任何 text-shadow
+  assert.doesNotMatch(wxss, /text-shadow|#8A7200|#F26A1B|#8F3A05/);
+  const chineseTextRules = Array.from(
+    wxss.matchAll(/\.home-(?:title|button)-zh\s*{([^}]*)}/g),
+    (match) => match[1],
+  );
+  assert.ok(chineseTextRules.length >= 4);
+  chineseTextRules.forEach((rule) => assert.doesNotMatch(rule, /text-shadow/));
+  assert.match(wxss, /home-format-notes[^}]*font-family:\s*"Courier New",\s*Courier,\s*"Nimbus Mono PS",\s*ui-monospace,\s*monospace/);
+  assert.match(wxss, /home-colophon[^}]*font-family:\s*"Courier New",\s*Courier,\s*"Nimbus Mono PS",\s*ui-monospace,\s*monospace/);
+  assert.match(wxss, /home-colophon-item[^}]*font-size:\s*8px[^}]*font-weight:\s*700[^}]*font-variant-numeric:\s*tabular-nums[^}]*letter-spacing:\s*1px[^}]*line-height:\s*1\.4[^}]*text-transform:\s*uppercase/);
+  assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*home-format-note[^}]*font-size:\s*6px[^}]*letter-spacing:\s*0\.25px/);
+  assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*home-title-brand[^}]*font-size:\s*38px/);
+  assert.doesNotMatch(wxss, /font-style:\s*italic/);
 
-  // 内嵌标题字体：全平台统一渲染，消除 iOS/安卓系统字体分歧
-  assert.match(wxss, /\.title-latin\s*{[\s\S]*font-family:\s*"cEDHDisplay"/);
-  assert.match(js, /wx\.loadFontFace/);
-  assert.match(js, /family:\s*'cEDHDisplay'/);
+  assert.match(js, /homePixelFontBase64/);
   assert.match(js, /titleFontBase64/);
-  const fontModule = fs.readFileSync(path.join(root, 'miniprogram/assets/title-font.js'), 'utf8');
-  assert.match(fontModule, /titleFontBase64:\s*'/);
-  assert.ok(fontModule.length > 20000, '内嵌 base64 字体应存在且足够长');
-  assert.match(fontModule, /Open Font License/);
+  assert.match(js, /wx\.loadFontFace/);
+  assert.match(js, /family:\s*'HomePixel'/);
+  assert.match(js, /family:\s*'cEDHDisplay'/);
+  assert.match(js, /data:font\/ttf;base64/);
+  assert.match(js, /data:font\/woff2;base64/);
+  assert.match(js, /global:\s*false[\s\S]*scopes:\s*\['webview'\]/);
+  assert.match(js, /typeof wx\.getWindowInfo === 'function'[\s\S]*wx\.getSystemInfoSync/);
+  assert.match(js, /wx\.getMenuButtonBoundingClientRect/);
+  assert.match(js, /menuBottom > statusBarHeight[\s\S]*menuBottom < windowHeight \/ 2/);
+  assert.equal((js.match(/wx\.loadFontFace\(/g) || []).length, 2);
+
+  assert.ok(base64Match, '首页点阵字体 base64 应存在');
+  const embeddedFont = Buffer.from(base64Match[1], 'base64');
+  const sourceFont = fs.readFileSync(subsetPath);
+  assert.equal(Buffer.compare(embeddedFont, sourceFont), 0, '发布字体应与受控子集源一致');
+  assert.ok(sourceFont.length > 10000 && sourceFont.length < 20000, '首页字体子集应保持轻量');
+  assert.ok(fontModule.length < 25000, 'base64 模块不应异常膨胀');
+  assert.match(fontModule, /release 2026\.07\.01/);
+  assert.match(fontModule, /SIL Open Font License 1\.1/);
+  assert.ok(displayBase64Match, '首页粗体展示字体 base64 应存在');
+  assert.ok(Buffer.from(displayBase64Match[1], 'base64').length > 15000, '粗体展示字体应随包内嵌');
+  assert.match(displayFontModule, /SIL Open Font License 1\.1/);
+
+  [packagedLicensePath, sourceLicensePath].forEach((licensePath) => {
+    const license = fs.readFileSync(licensePath, 'utf8');
+    assert.match(license, /Fusion Pixel Font/);
+    assert.match(license, /SIL OPEN FONT LICENSE Version 1\.1/);
+    assert.match(license, /Copyright \(c\) 2022, TakWolf/);
+  });
+  const generator = fs.readFileSync(generatorPath, 'utf8');
+  assert.match(generator, /fusion-pixel-10px-monospaced-zh_hans-home-subset\.ttf/);
+  assert.match(generator, /miniprogram', 'assets', 'home-pixel-font\.js/);
+  assert.match(generator, /miniprogram\/assets\/FUSION_PIXEL_OFL\.txt/);
+});
+
+test('bracket page lists exhaustive reasons without a secondary evidence drawer', () => {
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.js'), 'utf8');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.wxml'), 'utf8');
+
+  assert.match(js, /const dominantTheme = \(result\.cohesionProfile \|\| \{\}\)\.dominantTheme \|\| \{\}/);
+  assert.match(js, /if \(dominantTheme\.qualifies && dominantTheme\.label\)\s*{[\s\S]*label: '主线'[\s\S]*dominantTheme\.strong \? '高' : '清晰'/);
+  assert.doesNotMatch(js, /dominantTheme\.label}\s*·/);
+  // 判定依据不设条数上限：规则与强度在前、参考观察在后，每条附触发牌；无二级「完整证据」抽屉
+  assert.match(js, /const reasons = primaryReasons\s+\.concat\(contextReasons\)/);
+  assert.doesNotMatch(js, /primaryReasons\s*\.slice\(/);
+  assert.doesNotMatch(js, /showDetails|toggleDetails|comboRows|comboPotentialRows|signalRows/);
+  assert.match(wxml, /class="reason-row \{\{item\.kind === 'context' \? 'is-context' : ''\}\}"/);
+  assert.match(wxml, /class="reason-cards" wx:if="\{\{item\.cardsText\}\}">\{\{item\.cardsText\}\}/);
+  // 作用标签一律右上角：copy 必须撑满，否则短依据的 space-between 无空间可分配
+  const bracketWxss = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.wxss'), 'utf8');
+  assert.match(bracketWxss, /\.reason-copy\s*{[^}]*flex:\s*1 1 auto/);
+  assert.match(bracketWxss, /\.reason-head\s*{[^}]*justify-content:\s*space-between/);
+  assert.doesNotMatch(wxml, /details-toggle|details-body|查看完整证据|combo-row|comboPotentialRows/);
+  assert.match(js, /\{ label: '构筑', value: `\$\{efficiencyCoveragePercent\}%` \}/);
+  assert.doesNotMatch(js, /\{ label: '稳定性', value:/);
 });
 
 test('button press feedback is centralized and reused across app controls', () => {
   const tokensWxss = fs.readFileSync(path.join(root, 'miniprogram/styles/tokens.wxss'), 'utf8');
   const appWxss = fs.readFileSync(path.join(root, 'miniprogram/app.wxss'), 'utf8');
   const randomWxss = fs.readFileSync(path.join(root, 'miniprogram/pages/random/random.wxss'), 'utf8');
+  const indexWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
   const interactiveMarkup = [
-    'miniprogram/pages/index/index.wxml',
     'miniprogram/pages/quiz/quiz.wxml',
     'miniprogram/pages/result/result.wxml',
     'miniprogram/pages/random/random.wxml',
@@ -219,40 +291,59 @@ test('button press feedback is centralized and reused across app controls', () =
   assert.doesNotMatch(randomWxss, /\.sticker-draw-button\.drawing/);
   assert.ok((interactiveMarkup.match(/hover-class="pressable-active"/g) || []).length >= 18);
   assert.ok((interactiveMarkup.match(/hover-stay-time="120"/g) || []).length >= 18);
+  assert.equal((indexWxml.match(/hover-class="home-index-active"/g) || []).length, 8);
+  assert.equal((indexWxml.match(/hover-start-time="0"/g) || []).length, 8);
+  assert.equal((indexWxml.match(/hover-stay-time="60"/g) || []).length, 8);
 });
 
-test('home particle touch interaction is full-screen and only enabled on home page', () => {
+test('home removes particles while other interfaces retain theme-matched particle backgrounds', () => {
   const indexWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
   const indexJs = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.js'), 'utf8');
+  const indexJson = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.json'), 'utf8'));
   const particleComponent = fs.readFileSync(path.join(root, 'miniprogram/components/particle-background/particle-background.js'), 'utf8');
+  const particleWxml = fs.readFileSync(path.join(root, 'miniprogram/components/particle-background/particle-background.wxml'), 'utf8');
   const particleWxss = fs.readFileSync(path.join(root, 'miniprogram/components/particle-background/particle-background.wxss'), 'utf8');
-  const otherPages = [
-    'miniprogram/pages/quiz/quiz.wxml',
-    'miniprogram/pages/result/result.wxml',
-    'miniprogram/pages/tracker/tracker.wxml',
-    'miniprogram/pages/random/random.wxml',
-  ].map((file) => fs.readFileSync(path.join(root, file), 'utf8')).join('\n');
+  const paletteMounts = [
+    ['miniprogram/pages/edhti/edhti.wxml', 'neon-arcade'],
+    ['miniprogram/pages/quiz/quiz.wxml', 'noir-gold'],
+    ['miniprogram/pages/result/result.wxml', 'noir-gold'],
+    ['miniprogram/pages/tracker/tracker.wxml', 'tracker'],
+    ['miniprogram/pages/random/random.wxml', 'random'],
+    ['miniprogram/pages/playtest/playtest.wxml', 'playtest'],
+    ['miniprogram/pages/bracket/bracket.wxml', 'bracket'],
+    ['miniprogram/pages/cabbage/cabbage.wxml', 'cabbage'],
+    ['miniprogram/pages/izzet/izzet.wxml', 'izzet'],
+  ];
 
-  assert.match(indexWxml, /<view[\s\S]*class="page home"[\s\S]*bindtouchstart="handleHomeTouchStart"[\s\S]*bindtouchmove="handleHomeTouchMove"[\s\S]*bindtouchend="handleHomeTouchEnd"[\s\S]*bindtouchcancel="handleHomeTouchEnd"/);
-  assert.match(indexWxml, /<particle-background\s+id="homeParticles"\s+interactive="\{\{true\}\}">/);
-  assert.match(indexJs, /selectComponent\('#homeParticles'\)/);
-  assert.match(indexJs, /handleHomeTouchStart\(event\)[\s\S]*setTouchFromEvent\(event\)/);
-  assert.match(indexJs, /handleHomeTouchMove\(event\)[\s\S]*setTouchFromEvent\(event\)/);
-  assert.match(indexJs, /handleHomeTouchEnd\(\)[\s\S]*clearTouch\(\)/);
-  assert.doesNotMatch(otherPages, /interactive="\{\{true\}\}"/);
+  assert.doesNotMatch(indexWxml, /particle-background|particleCanvas/);
+  assert.doesNotMatch(indexJs, /selectComponent|homeParticles|HomeTouch|setTouchFromEvent|clearTouch/);
+  assert.equal(indexJson.usingComponents, undefined);
+  paletteMounts.forEach(([file, palette]) => {
+    const markup = fs.readFileSync(path.join(root, file), 'utf8');
+    assert.match(
+      markup,
+      new RegExp(`<particle-background palette="${palette}"></particle-background>`),
+      `${file} 的粒子背景应使用 ${palette} 主题配色`,
+    );
+    assert.ok(particleConfig.palettes && particleConfig.palettes[palette], `${palette} palette 应在 config/particle.js 收录`);
+  });
 
-  assert.match(particleComponent, /properties:\s*{[\s\S]*interactive:\s*{[\s\S]*type:\s*Boolean[\s\S]*value:\s*false/);
+  assert.doesNotMatch(particleComponent, /CLUSTER_|clustered|fieldHeightVh|dotColor|lineColor/);
+  assert.doesNotMatch(particleWxml, /fieldHeightVh|style=/);
+  assert.match(particleComponent, /properties:\s*{[\s\S]*interactive:\s*{[\s\S]*type:\s*Boolean[\s\S]*value:\s*false[\s\S]*palette:\s*{[\s\S]*type:\s*String[\s\S]*value:\s*''/);
+  assert.match(particleComponent, /const palette = palettes\[this\.properties\.palette\] \|\| \{\}/);
+  assert.match(particleComponent, /this\.accentRgb = hexToRgb\(palette\.accentColor \|\| particleConfig\.accentColor\)/);
+  assert.match(particleComponent, /this\.neutralRgb = hexToRgb\(palette\.neutralColor \|\| particleConfig\.neutralColor\)/);
+  assert.match(particleComponent, /this\.connectionRgb = hexToRgb\(palette\.connectionColor \|\| \(particleConfig\.connections && particleConfig\.connections\.color\)\)/);
   assert.match(particleComponent, /this\.width\s*=\s*windowInfo\.windowWidth/);
   assert.match(particleComponent, /this\.height\s*=\s*windowInfo\.windowHeight/);
   assert.match(particleComponent, /setTouchFromEvent\(event\)[\s\S]*this\.properties\.interactive[\s\S]*this\.updateTouch\(event\)/);
   assert.match(particleComponent, /clearTouch\(\)[\s\S]*this\.properties\.interactive[\s\S]*this\.touch = null/);
-  assert.match(particleComponent, /handleTouchStart\(event\)[\s\S]*setTouchFromEvent\(event\)/);
-  assert.match(particleComponent, /handleTouchEnd\(\)[\s\S]*clearTouch\(\)/);
   assert.match(particleWxss, /position:\s*fixed/);
   assert.match(particleWxss, /width:\s*100vw/);
   assert.match(particleWxss, /height:\s*100vh/);
+  assert.match(particleWxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.particle-canvas\s*{[^}]*display:\s*none/);
 });
-
 test('quiz and result action controls stay inside mobile width', () => {
   const quizWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/quiz/quiz.wxml'), 'utf8');
   const resultWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/result/result.wxml'), 'utf8');
@@ -306,7 +397,8 @@ test('quiz and result action controls stay inside mobile width', () => {
   assert.match(resultWxss, /@import "\.\.\/\.\.\/styles\/themes\/noir-gold\.wxss"/);
   assert.match(noirGoldTheme, /\.quiz\s*{[\s\S]*linear-gradient\(180deg,\s*#070707 0%,\s*#020202 58%,\s*#000000 100%\)/);
   assert.doesNotMatch(noirGoldTheme, /radial-gradient/);
-  assert.match(noirGoldTheme, /\.quiz,\s*\.result\s*{[\s\S]*?--cedh-accent:\s*#d8b76a/);
+  assert.match(noirGoldTheme, /\.quiz,\s*\.result\s*{[\s\S]*?--noir-gold-rgb:\s*230,\s*155,\s*82/);
+  assert.match(noirGoldTheme, /\.quiz,\s*\.result\s*{[\s\S]*?--cedh-accent:\s*#e69b52/);
   assert.match(quizWxss, /\.question-title\s*{[\s\S]*color:\s*var\(--cedh-accent-ink\)/);
   assert.match(quizWxss, /\.option\.selected \.option-text\s*{[\s\S]*color:\s*var\(--cedh-accent-ink\)/);
   assert.doesNotMatch(quizWxss, /rgba\(155,\s*58,\s*47/);
@@ -347,6 +439,10 @@ test('result display sorts by fit and replaces repeated partner names with later
   assert.equal(formatCommanderDisplayName('Rograkh, Son of Rohgahh / Silas Renn, Seeker Adept'), 'Rograkh / Silas Renn');
   assert.equal(formatCommanderDisplayName('Vial Smasher the Fierce / Thrasios, Triton Hero'), 'Vial Smasher / Thrasios');
   assert.deepEqual(formatCommanderDisplayLines('Vial Smasher the Fierce / Thrasios, Triton Hero'), ['Vial Smasher', 'Thrasios']);
+  assert.deepEqual(
+    formatCommanderDisplayLines('Vial Smasher the Fierce / Thrasios, Triton Hero', { abbreviatePartners: false }),
+    ['Vial Smasher the Fierce', 'Thrasios, Triton Hero'],
+  );
   assert.equal(formatCommanderDisplayName('Kraum, Ludevic\'s Opus / Tymna the Weaver'), 'Tymna / Kraum');
   assert.deepEqual(formatCommanderDisplayLines('Kraum, Ludevic\'s Opus / Tymna the Weaver'), ['Tymna', 'Kraum']);
   assert.deepEqual(
@@ -435,7 +531,7 @@ test('result page copies links and shows Scryfall previews without export UI', (
   assert.doesNotMatch(wxml, /costTierLabel|reason/);
 });
 
-test('particle and performance configs use white-background champagne dust behavior', () => {
+test('particle and performance configs use champagne dust defaults with per-page theme palettes', () => {
   assert.equal(particleConfig.defaultEnabled, true);
   assert.equal(particleConfig.backgroundFallback, '#FFFFFF');
   assert.equal(Object.hasOwn(particleConfig, 'beam'), false);
@@ -460,16 +556,48 @@ test('particle and performance configs use white-background champagne dust behav
   assert.equal(particleConfig.touch.radiusRpx, 140);
   assert.equal(particleConfig.touch.releaseDamping, 0.93);
 
+  const palettes = particleConfig.palettes || {};
+  assert.deepEqual(
+    Object.fromEntries(Object.entries(palettes).map(([name, palette]) => [
+      name,
+      [palette.accentColor, palette.neutralColor, palette.connectionColor],
+    ])),
+    {
+      'neon-arcade': ['#FF7BC8', '#68C7FF', '#B9E8FF'],
+      'noir-gold': ['#E69B52', '#F5EAD1', '#F0BE8A'],
+      tracker: ['#CDB774', '#E6D8AD', '#D8C48E'],
+      random: ['#BE709E', '#E5BAD3', '#D094B8'],
+      playtest: ['#7E8DCD', '#C8D0EE', '#A3B0E0'],
+      bracket: ['#49B380', '#BDEBD2', '#7FCCA6'],
+      cabbage: ['#2FA75D', '#B2E3C4', '#5BBF6A'],
+      izzet: ['#5AA9FF', '#BCD9FF', '#8CC0FF'],
+    },
+    '粒子 palette 应与各页面主题色一致',
+  );
+  Object.values(palettes).forEach((palette) => {
+    [palette.accentColor, palette.neutralColor, palette.connectionColor].forEach((color) => {
+      assert.match(color, /^#([0-9A-F]{6})$/i);
+    });
+  });
+
   const particleComponent = fs.readFileSync(path.join(root, 'miniprogram/components/particle-background/particle-background.js'), 'utf8');
   assert.match(particleComponent, /particleConfig\.tone\.accentRatio/);
   assert.match(particleComponent, /particleConfig\.softEdge\.shadowAlphaMultiplier/);
   assert.match(particleComponent, /adjustParticlePool\(\)/);
+  assert.match(particleComponent, /wx\.onMemoryWarning/);
+  assert.match(particleComponent, /this\.currentTier = 'low'/);
+  assert.match(particleComponent, /performanceConfig\.defaultMode !== 'auto' \|\| this\.memoryConstrained/);
   assert.doesNotMatch(particleComponent, /this\.currentTier = TIER_ORDER\[currentIndex - 1\];[\s\S]{0,180}this\.resetParticles\(\)/);
   assert.doesNotMatch(particleComponent, /this\.currentTier = TIER_ORDER\[currentIndex \+ 1\];[\s\S]{0,180}this\.resetParticles\(\)/);
   assert.match(particleComponent, /paintConnections\(tier\)/);
   assert.match(particleComponent, /paintConnections\(tier\)\s*{[\s\S]*const ctx = this\.ctx/);
   assert.match(particleComponent, /ctx\.moveTo\(particle\.x,\s*particle\.y\)/);
   assert.match(particleComponent, /ctx\.lineTo\(candidate\.x,\s*candidate\.y\)/);
+  assert.match(particleComponent, /pageLifetimes:\s*{[\s\S]*show\(\)[\s\S]*startAnimation\(\)[\s\S]*hide\(\)[\s\S]*stopAnimation\(\)/);
+  assert.match(particleComponent, /Math\.min\(Number\(windowInfo\.pixelRatio \|\| 1\), MAX_CANVAS_DPR\)/);
+  assert.match(particleComponent, /this\.boundDrawFrame = this\.drawFrame\.bind\(this\)/);
+  assert.doesNotMatch(particleComponent, /requestFrame\(this\.drawFrame\.bind\(this\)\)/);
+  assert.match(particleComponent, /performanceConfig\.defaultMode === 'auto'[\s\S]*\? 'medium'/);
 
   assert.equal(performanceConfig.defaultMode, 'auto');
   assert.equal(performanceConfig.tiers.high.count, 80);
@@ -480,13 +608,12 @@ test('particle and performance configs use white-background champagne dust behav
   assert.equal(performanceConfig.fps.upgradeAbove, 55);
 });
 
-test('interface surfaces use translucent glass tokens so particles remain visible', () => {
+test('non-home interface surfaces use translucent glass tokens so particles remain visible', () => {
   const tokens = fs.readFileSync(path.join(root, 'miniprogram/styles/tokens.wxss'), 'utf8');
   const appWxss = fs.readFileSync(path.join(root, 'miniprogram/app.wxss'), 'utf8');
   const chartJs = fs.readFileSync(path.join(root, 'miniprogram/utils/tracker-charts.js'), 'utf8');
   const pageWxss = [
     'miniprogram/app.wxss',
-    'miniprogram/pages/index/index.wxss',
     'miniprogram/pages/quiz/quiz.wxss',
     'miniprogram/pages/result/result.wxss',
     'miniprogram/pages/tracker/tracker.wxss',
@@ -504,8 +631,8 @@ test('interface surfaces use translucent glass tokens so particles remain visibl
   assert.match(pageWxss, /background:\s*var\(--cedh-surface-raised\)/);
   assert.match(pageWxss, /background:\s*var\(--cedh-surface-muted\)/);
   assert.match(pageWxss, /background:\s*var\(--cedh-input-glass\)/);
-  assert.match(chartJs, /background:\s*'rgba\(255,\s*254,\s*250,\s*0\.64\)'/);
+  assert.match(chartJs, /background:\s*'rgba\(10,\s*10,\s*10,\s*0\.72\)'/);
   assert.doesNotMatch(chartJs, /background:\s*'rgba\(250,\s*255,\s*235/);
-  assert.doesNotMatch(pageWxss, /rgba\(255,\s*254,\s*250,\s*0\.(8[6-9]|9\d)\)/);
+  assert.doesNotMatch(pageWxss, /background:\s*rgba\(255,\s*254,\s*250,\s*0\.(8[6-9]|9\d)\)/);
   assert.doesNotMatch(pageWxss, /radial-gradient/);
 });

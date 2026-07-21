@@ -5,6 +5,31 @@ const path = require('node:path');
 
 const root = path.join(__dirname, '..');
 
+function readJpegDimensions(filePath) {
+  const buffer = fs.readFileSync(filePath);
+  let offset = 2;
+
+  while (offset + 8 < buffer.length) {
+    if (buffer[offset] !== 0xFF) {
+      offset += 1;
+      continue;
+    }
+
+    const marker = buffer[offset + 1];
+    const segmentLength = buffer.readUInt16BE(offset + 2);
+    if ([0xC0, 0xC1, 0xC2, 0xC3, 0xC5, 0xC6, 0xC7, 0xC9, 0xCA, 0xCB, 0xCD, 0xCE, 0xCF].includes(marker)) {
+      return {
+        height: buffer.readUInt16BE(offset + 5),
+        width: buffer.readUInt16BE(offset + 7),
+      };
+    }
+    if (!segmentLength || marker === 0xDA || marker === 0xD9) break;
+    offset += segmentLength + 2;
+  }
+
+  throw new Error(`Unable to read JPEG dimensions: ${filePath}`);
+}
+
 test('EDHTI config mirrors the downloaded repository content', () => {
   const {
     edhtiPersonaColors,
@@ -41,6 +66,50 @@ test('EDHTI config mirrors the downloaded repository content', () => {
   assert.ok(Object.values(edhtiPersonas).every((persona) => /^#[0-9A-F]{6}$/i.test(persona.color)));
   assert.ok(Object.values(edhtiPersonas).every((persona) => persona.quote && persona.quote.length >= 8));
   assert.deepEqual(Object.keys(edhtiTagLabels), ['salt', 'talk', 'judge', 'combo', 'power', 'offbeat', 'aggro', 'politics']);
+});
+
+test('EDHTI 每个人格有 10 位不重复主将且默认主将在池内', () => {
+  const { edhtiPersonas } = require('../miniprogram/config/edhti');
+
+  Object.values(edhtiPersonas).forEach((persona) => {
+    assert.equal(persona.commanderPool.length, 10, `${persona.code} 应保持 10 人池`);
+    assert.equal(new Set(persona.commanderPool).size, 10, `${persona.code} 池内不应重复`);
+    assert.ok(persona.commanderPool.includes(persona.commander.en), `${persona.code} 默认主将应在池内`);
+  });
+
+  // 主流卷王应是成熟 Goodstuff / Midrange，而不是复用拍怪莽夫的大生物池。
+  assert.ok(edhtiPersonas.CSDM.commanderPool.includes('Kenrith, the Returned King'));
+  assert.ok(edhtiPersonas.CSDM.commanderPool.includes("Atraxa, Praetors' Voice"));
+  assert.ok(!edhtiPersonas.CSDM.commanderPool.includes('Ghalta, Primal Hunger'));
+});
+
+test('EDHTI 主将选择稳定、使用完整标签且 10 人池分布均衡', () => {
+  const { edhtiPersonas } = require('../miniprogram/config/edhti');
+  const {
+    EDHTI_COMMANDER_TAG_ORDER,
+    selectEdhtiCommander,
+  } = require('../miniprogram/utils/edhti');
+
+  Object.values(edhtiPersonas).forEach((persona) => {
+    const counts = new Map(persona.commanderPool.map((name) => [name, 0]));
+    let state = 12345;
+
+    for (let sample = 0; sample < 5000; sample += 1) {
+      const tags = {};
+      EDHTI_COMMANDER_TAG_ORDER.forEach((key) => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        tags[key] = state % 41;
+      });
+
+      const selected = selectEdhtiCommander(persona, tags);
+      assert.equal(selectEdhtiCommander(persona, tags), selected, '相同画像必须稳定复现');
+      counts.set(selected, counts.get(selected) + 1);
+    }
+
+    const values = [...counts.values()];
+    assert.ok(values.every((count) => count > 0), `${persona.code} 的全部候选都应可达`);
+    assert.ok(Math.max(...values) / Math.min(...values) < 1.4, `${persona.code} 池内分布不应过度偏斜`);
+  });
 });
 
 test('EDHTI scoring returns the same persona codes as the source rules', () => {
@@ -156,7 +225,10 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   assert.match(scryfallJs, /version=\$\{version \|\| 'normal'\}/);
   assert.match(scryfallJs, /SCRYFALL_USER_AGENT = 'cEDH-Tutor\/1\.0'/);
   assert.match(scryfallJs, /header:\s*{[\s\S]*Accept:\s*'application\/json'[\s\S]*'User-Agent':\s*SCRYFALL_USER_AGENT/);
-  assert.match(js, /loadCommanderArt/);
+  // 结果页保持同一个直连图片 URL，避免 JSON 查询回写 src 后触发二次下载。
+  assert.doesNotMatch(js, /fetchCardImageUris/);
+  assert.doesNotMatch(js, /loadCommanderArt/);
+  assert.match(js, /buildScryfallImageUrl\(displayCommander, 'art_crop'\)/);
   assert.match(js, /commanderArt/);
   assert.match(js, /const EXPORT_HEIGHT = 1624/);
   assert.match(js, /EXPORT_PINK/);
@@ -303,6 +375,8 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   assert.match(wxss, /\.export-canvas\s*{[\s\S]*height:\s*1624rpx/);
   assert.ok(fs.existsSync(miniCodePath), 'mini-program code asset should exist');
   assert.ok(fs.existsSync(cedhHouseQrPath), 'cedh house QR asset should exist');
-  assert.ok(fs.statSync(miniCodePath).size > 500000, 'mini-program code asset should use the ultra clear source');
-  assert.ok(fs.statSync(cedhHouseQrPath).size > 500000, 'cedh house QR asset should use the ultra clear source');
+  assert.deepEqual(readJpegDimensions(miniCodePath), { width: 1024, height: 1024 });
+  assert.deepEqual(readJpegDimensions(cedhHouseQrPath), { width: 1024, height: 1024 });
+  assert.ok(fs.statSync(miniCodePath).size < 160000, 'mini-program code asset should stay package-friendly');
+  assert.ok(fs.statSync(cedhHouseQrPath).size < 160000, 'cedh house QR asset should stay package-friendly');
 });

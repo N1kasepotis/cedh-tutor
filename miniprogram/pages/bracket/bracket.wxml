@@ -1,0 +1,204 @@
+<view class="page bracket {{result ? 'has-result ' + result.tierClass : 'is-input'}}">
+  <particle-background palette="bracket"></particle-background>
+
+  <view class="content-layer bracket-shell">
+    <block wx:if="{{!result}}">
+      <view class="input-panel {{analyzing ? 'is-analyzing' : ''}}">
+        <view class="import-bar">
+          <view class="import-mark mono" aria-hidden="true">TXT</view>
+          <view class="import-hint">
+            <view class="import-primary">支持 MTGO / Moxfield / MTGso 纯文本牌表</view>
+            <view class="import-secondary">每行「数量 卡名」，主将以 Commander 标题或空行与主牌分隔</view>
+          </view>
+          <view
+            class="clear-link"
+            wx:if="{{deckText && !analyzing}}"
+            aria-role="button"
+            aria-label="清空当前牌表"
+            hover-class="pressable-active"
+            hover-stay-time="120"
+            bindtap="clearDeck"
+          >清空</view>
+        </view>
+
+        <view class="input-stage">
+          <view class="input-accent" aria-hidden="true"></view>
+          <textarea
+            class="deck-input"
+            value="{{deckText}}"
+            maxlength="50000"
+            disabled="{{analyzing}}"
+            disable-default-padding="{{true}}"
+            aria-label="英文 Commander 牌表"
+            placeholder="粘贴你想测试强度的套牌"
+            bindinput="handleDeckInput"
+          ></textarea>
+        </view>
+
+        <view class="input-limit-note warning" wx:if="{{inputWarning}}">{{inputWarning}}</view>
+
+        <button
+          class="primary-button analyze-button {{canAnalyze ? 'is-ready' : 'is-idle'}} {{analyzing ? 'is-analyzing' : ''}}"
+          disabled="{{!canAnalyze || analyzing}}"
+          aria-busy="{{analyzing}}"
+          aria-label="{{analyzing ? '正在读取卡牌数据' : '开始分析牌表'}}"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="analyzeDeck"
+        >
+          <view class="analyze-visual" aria-hidden="true">
+            <view class="analyze-texture"></view>
+            <view class="analyze-frame"></view>
+            <view wx:if="{{analyzing}}" class="analyze-scan"></view>
+          </view>
+          <view class="analyze-content">
+            <text class="analyze-title">{{analyzing ? '读取卡牌数据' : '开始分析'}}</text>
+            <view class="analyze-status {{analyzing ? 'is-active' : ''}}" aria-hidden="true">
+              <view class="analyze-chevron"></view>
+            </view>
+          </view>
+        </button>
+      </view>
+    </block>
+
+    <block wx:else>
+      <view class="result-hero surface result-enter">
+        <view class="hero-art" wx:if="{{result.heroArt.mode !== 'none' && !heroArtHidden}}" aria-hidden="true">
+          <image wx:if="{{result.heroArt.mode === 'single'}}" class="hero-art-image" src="{{result.heroArt.images[0].url}}" mode="aspectFill" lazy-load="{{true}}" binderror="hideHeroArt"></image>
+          <view wx:if="{{result.heroArt.mode === 'dual'}}" class="hero-art-split">
+            <image class="hero-art-image" src="{{result.heroArt.images[0].url}}" mode="aspectFill" lazy-load="{{true}}" binderror="hideHeroArt"></image>
+            <image class="hero-art-image" src="{{result.heroArt.images[1].url}}" mode="aspectFill" lazy-load="{{true}}" binderror="hideHeroArt"></image>
+          </view>
+          <view class="hero-art-scrim"></view>
+        </view>
+        <view class="result-accent" aria-hidden="true"></view>
+        <view class="hero-body">
+        <view class="result-topline">
+          <view class="result-kicker">{{result.resultKicker}}</view>
+          <view wx:if="{{result.hasLegalityWarning}}" class="legality-chip needs-fix">{{result.legalityLabel}}</view>
+        </view>
+
+        <view class="result-mainline">
+          <view class="bracket-code mono">{{result.bracketCode}}</view>
+          <view class="result-identity">
+            <view class="bracket-name">{{result.label.zh}}</view>
+            <view class="bracket-en">{{result.label.name}}</view>
+            <view class="bracket-turn">{{result.label.turn}}</view>
+          </view>
+        </view>
+
+        <view class="verdict-chain" aria-label="判定链条">
+          <block wx:for="{{result.verdictSteps}}" wx:key="label">
+            <view class="chain-arrow" wx:if="{{index > 0}}" aria-hidden="true">→</view>
+            <view class="chain-step {{item.changed ? 'is-raised' : ''}} {{index === result.verdictSteps.length - 1 ? 'is-final' : ''}}">
+              <text class="chain-code mono">{{item.code}}</text>
+              <text class="chain-label">{{item.label}}</text>
+            </view>
+          </block>
+        </view>
+
+        <view class="result-summary-shell">
+          <view class="summary-rail" aria-hidden="true"></view>
+          <view class="result-summary">{{result.summary}}</view>
+        </view>
+
+        <view class="parse-alert" wx:if="{{result.parseErrorRows.length}}">
+          <view class="parse-alert-title">{{result.parseErrorRows.length}} 行未解析，结果暂定</view>
+          <view wx:for="{{result.visibleParseErrorRows}}" wx:key="id" class="parse-alert-row">{{item.lineLabel}}{{item.rawLabel}}</view>
+          <view class="parse-alert-more" wx:if="{{result.remainingParseErrorCount}}">另有 {{result.remainingParseErrorCount}} 行未展示</view>
+        </view>
+
+        <view class="result-meta-line">
+          <text>下限 {{result.floorCode}}</text>
+          <text class="result-confidence">置信度：{{result.confidenceLabel}}</text>
+        </view>
+        </view>
+      </view>
+
+      <view class="bracket-panel surface evidence-panel result-enter result-enter-late">
+        <view class="panel-heading">
+          <view class="panel-title">判定依据</view>
+          <view class="panel-caption">全部影响因素</view>
+        </view>
+
+        <view class="deck-metrics">
+          <view class="metrics-topline">
+            <view class="metric-block metric-curve">
+              <text class="metric-label">法术力曲线</text>
+              <text class="metric-value">MV {{result.manaValueLabel}}</text>
+            </view>
+            <view class="metric-divider" aria-hidden="true"></view>
+            <view class="metric-block metric-cost">
+              <text class="metric-label">非基本地预估造价（美元）</text>
+              <text class="metric-value metric-price">{{result.priceLabel}}</text>
+            </view>
+          </view>
+
+          <view class="curve-grid" wx:if="{{result.hasManaCurve}}">
+            <view wx:for="{{result.curveRows}}" wx:key="key" class="curve-column">
+              <view class="curve-count" wx:if="{{item.count}}">{{item.count}}</view>
+              <view class="curve-track">
+                <view class="curve-bar" style="height: {{item.height}}rpx"></view>
+              </view>
+              <view class="curve-label">{{item.label}}</view>
+            </view>
+          </view>
+          <view class="metrics-empty" wx:else>暂无可用曲线数据</view>
+
+          <view class="efficiency-summary" wx:if="{{result.hasEfficiencyProfile}}">
+            <view wx:for="{{result.efficiencyRows}}" wx:key="label" class="efficiency-item">
+              <text class="efficiency-label">{{item.label}}</text>
+              <text class="efficiency-value">{{item.value}}</text>
+            </view>
+          </view>
+
+          <view class="signal-overview" wx:if="{{result.signalOverview.length}}">
+            <text class="coverage-title">构筑信号</text>
+            <view class="signal-grid">
+              <view wx:for="{{result.signalOverview}}" wx:key="key" class="signal-chip">
+                <text class="signal-name">{{item.label}}</text>
+                <text class="signal-count mono">×{{item.count}}</text>
+              </view>
+            </view>
+          </view>
+
+          <view class="metrics-coverage">
+            <text class="coverage-title">覆盖范围</text>
+            <view wx:for="{{result.coverageRows}}" wx:key="label" class="coverage-item">
+              <text>{{item.label}}</text>
+              <text class="coverage-value">{{item.value}}</text>
+            </view>
+          </view>
+        </view>
+
+        <view class="reason-list">
+          <view wx:for="{{result.reasons}}" wx:key="code" class="reason-row {{item.kind === 'context' ? 'is-context' : ''}}">
+            <view class="reason-marker mono">{{item.ordinal}}</view>
+            <view class="reason-copy">
+              <view class="reason-head">
+                <view class="reason-title">{{item.title}}</view>
+                <view class="reason-role mono">{{item.roleLabel}}</view>
+              </view>
+              <view class="reason-detail">{{item.detail}}</view>
+              <view class="reason-cards" wx:if="{{item.cardsText}}">{{item.cardsText}}</view>
+            </view>
+          </view>
+        </view>
+
+      </view>
+    </block>
+  </view>
+
+  <view class="result-action-dock" wx:if="{{result}}">
+    <button
+      class="secondary-button edit-button"
+      aria-label="修改当前牌表"
+      hover-class="pressable-active"
+      hover-stay-time="120"
+      bindtap="editDeck"
+    >
+      <view class="edit-icon" aria-hidden="true"></view>
+      <text>修改牌表</text>
+    </button>
+  </view>
+</view>

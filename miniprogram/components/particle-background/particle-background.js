@@ -1,8 +1,10 @@
 const { particleConfig } = require('../../config/particle');
 const { performanceConfig } = require('../../config/performance');
+const { buildNearestConnectionCandidates } = require('../../utils/particle-connections');
 
 const TIER_ORDER = ['low', 'medium', 'high'];
 const FRAME_MS = 1000 / 60;
+const MAX_CANVAS_DPR = 2;
 
 function clamp(value, min, max) {
   return Math.max(min, Math.min(max, value));
@@ -27,6 +29,10 @@ Component({
       type: Boolean,
       value: false,
     },
+    palette: {
+      type: String,
+      value: '',
+    },
   },
 
   data: {
@@ -36,11 +42,31 @@ Component({
   lifetimes: {
     detached() {
       this.stopAnimation();
+      if (this.memoryWarningHandler && wx.offMemoryWarning) {
+        wx.offMemoryWarning(this.memoryWarningHandler);
+      }
+      this.memoryWarningHandler = null;
+      this.canvas = null;
+      this.ctx = null;
+    },
+  },
+
+  pageLifetimes: {
+    show() {
+      if (this.canvas && this.ctx && this.frameHandle == null) this.startAnimation();
+    },
+    hide() {
+      this.stopAnimation();
+      this.touch = null;
     },
   },
 
   ready() {
     if (!this.data.enabled) return;
+    if (wx.onMemoryWarning) {
+      this.memoryWarningHandler = () => this.handleMemoryWarning();
+      wx.onMemoryWarning(this.memoryWarningHandler);
+    }
     this.initCanvas();
   },
 
@@ -61,27 +87,36 @@ Component({
           const windowInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
           this.canvas = canvasInfo.node;
           this.ctx = this.canvas.getContext('2d');
+          if (!this.ctx) {
+            this.setData({ enabled: false });
+            return;
+          }
           this.width = windowInfo.windowWidth;
           this.height = windowInfo.windowHeight;
-          this.dpr = windowInfo.pixelRatio || 1;
+          this.dpr = Math.min(Number(windowInfo.pixelRatio || 1), MAX_CANVAS_DPR);
           this.rpxRatio = this.width / 750;
-          this.accentRgb = hexToRgb(particleConfig.accentColor);
-          this.neutralRgb = hexToRgb(particleConfig.neutralColor);
-          this.connectionRgb = hexToRgb(particleConfig.connections && particleConfig.connections.color);
+          const palettes = particleConfig.palettes || {};
+          const palette = palettes[this.properties.palette] || {};
+          this.accentRgb = hexToRgb(palette.accentColor || particleConfig.accentColor);
+          this.neutralRgb = hexToRgb(palette.neutralColor || particleConfig.neutralColor);
+          this.connectionRgb = hexToRgb(palette.connectionColor || (particleConfig.connections && particleConfig.connections.color));
 
           this.canvas.width = Math.floor(this.width * this.dpr);
           this.canvas.height = Math.floor(this.height * this.dpr);
           this.ctx.scale(this.dpr, this.dpr);
 
-          this.currentTier = performanceConfig.defaultMode === 'auto'
-            ? 'high'
-            : performanceConfig.defaultMode;
+          this.currentTier = this.memoryConstrained
+            ? 'low'
+            : (performanceConfig.defaultMode === 'auto'
+              ? 'medium'
+              : performanceConfig.defaultMode);
           this.touch = null;
           this.lastFrameTime = 0;
           this.fpsWindowStarted = 0;
           this.frameCount = 0;
           this.lowFpsSince = 0;
           this.highFpsSince = 0;
+          this.boundDrawFrame = this.drawFrame.bind(this);
 
           this.resetParticles();
           this.startAnimation();
@@ -139,17 +174,27 @@ Component({
       }
     },
 
+    handleMemoryWarning() {
+      this.memoryConstrained = true;
+      this.currentTier = 'low';
+      if (this.particles) this.adjustParticlePool();
+    },
+
     startAnimation() {
+      if (!this.canvas || !this.ctx || this.frameHandle != null) return;
       const requestFrame = this.canvas.requestAnimationFrame
         ? this.canvas.requestAnimationFrame.bind(this.canvas)
         : (callback) => setTimeout(() => callback(Date.now()), 16);
 
       this.requestFrame = requestFrame;
-      this.frameHandle = requestFrame(this.drawFrame.bind(this));
+      this.lastFrameTime = 0;
+      this.fpsWindowStarted = 0;
+      this.frameCount = 0;
+      this.frameHandle = requestFrame(this.boundDrawFrame);
     },
 
     stopAnimation() {
-      if (!this.frameHandle) return;
+      if (this.frameHandle == null) return;
 
       if (this.canvas && this.canvas.cancelAnimationFrame) {
         this.canvas.cancelAnimationFrame(this.frameHandle);
@@ -161,7 +206,7 @@ Component({
     },
 
     drawFrame(timestamp) {
-      if (!this.ctx || !this.canvas) return;
+      if (!this.ctx || !this.canvas || this.frameHandle == null) return;
 
       const now = timestamp || Date.now();
       if (!this.lastFrameTime) this.lastFrameTime = now;
@@ -172,7 +217,7 @@ Component({
       this.trackFps(now);
 
       this.lastFrameTime = now;
-      this.frameHandle = this.requestFrame(this.drawFrame.bind(this));
+      this.frameHandle = this.requestFrame(this.boundDrawFrame);
     },
 
     updateParticles(timestamp) {
@@ -280,26 +325,11 @@ Component({
       const maxAlpha = Number(opacity.max || 0.12);
       const lineWidth = Math.max(0.25, this.rpx(Number(tierConfig.lineWidthRpx || config.lineWidthRpx || 0.7)));
       const rgb = this.connectionRgb || this.accentRgb;
-      const candidates = [];
-
-      this.particles.forEach((particle, index) => {
-        for (let nextIndex = index + 1; nextIndex < this.particles.length; nextIndex += 1) {
-          const candidate = this.particles[nextIndex];
-          const dx = particle.x - candidate.x;
-          const dy = particle.y - candidate.y;
-          const distance = Math.sqrt(dx * dx + dy * dy);
-
-          if (distance <= maxDistance) {
-            candidates.push({
-              particle,
-              candidate,
-              from: index,
-              to: nextIndex,
-              distance,
-            });
-          }
-        }
-      });
+      const candidates = buildNearestConnectionCandidates(
+        this.particles,
+        maxDistance,
+        maxLinksPerParticle,
+      );
 
       const linkCounts = new Array(this.particles.length).fill(0);
       let drawn = 0;
@@ -310,32 +340,32 @@ Component({
       ctx.lineWidth = lineWidth;
       ctx.lineCap = 'round';
 
-      candidates
-        .sort((a, b) => a.distance - b.distance)
-        .some(({ particle, candidate, from, to, distance }) => {
-          if (drawn >= maxLines) return true;
-          if (linkCounts[from] >= maxLinksPerParticle || linkCounts[to] >= maxLinksPerParticle) return false;
+      candidates.some(({ from, to, distance }) => {
+        if (drawn >= maxLines) return true;
+        if (linkCounts[from] >= maxLinksPerParticle || linkCounts[to] >= maxLinksPerParticle) return false;
 
-          const strength = 1 - distance / maxDistance;
-          const alpha = minAlpha + strength * (maxAlpha - minAlpha);
-          ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
-          ctx.beginPath();
-          ctx.moveTo(particle.x, particle.y);
-          ctx.lineTo(candidate.x, candidate.y);
-          ctx.stroke();
+        const particle = this.particles[from];
+        const candidate = this.particles[to];
+        const strength = 1 - distance / maxDistance;
+        const alpha = minAlpha + strength * (maxAlpha - minAlpha);
+        ctx.strokeStyle = `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${alpha})`;
+        ctx.beginPath();
+        ctx.moveTo(particle.x, particle.y);
+        ctx.lineTo(candidate.x, candidate.y);
+        ctx.stroke();
 
-          linkCounts[from] += 1;
-          linkCounts[to] += 1;
-          drawn += 1;
-          return false;
-        });
+        linkCounts[from] += 1;
+        linkCounts[to] += 1;
+        drawn += 1;
+        return false;
+      });
 
       ctx.restore();
       ctx.globalCompositeOperation = tier.composite || 'source-over';
     },
 
     trackFps(timestamp) {
-      if (performanceConfig.defaultMode !== 'auto') return;
+      if (performanceConfig.defaultMode !== 'auto' || this.memoryConstrained) return;
 
       this.frameCount += 1;
       const elapsed = timestamp - this.fpsWindowStarted;

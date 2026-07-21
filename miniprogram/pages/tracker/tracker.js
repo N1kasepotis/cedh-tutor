@@ -14,13 +14,16 @@ const {
   todayString,
 } = require('../../utils/tracker');
 const { paintChart } = require('../../utils/tracker-charts');
-const { formatCommanderDisplayLines } = require('../../utils/result-display');
+const { formatCommanderDisplayLines, splitCommanderNames } = require('../../utils/result-display');
+const { buildScryfallImageUrl } = require('../../utils/scryfall');
 const { enableShareMenu } = require('../../utils/share');
+const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
 
-function getCanvasRequestFrame(canvas) {
-  return canvas && canvas.requestAnimationFrame
-    ? canvas.requestAnimationFrame.bind(canvas)
-    : (callback) => setTimeout(callback, 16);
+function buildChartSignature(decks) {
+  return (decks || []).map((deck) => [
+    deck.id,
+    ...(deck.matches || []).map((match) => `${match.id}:${match.date}:${match.result}:${match.seat || ''}`),
+  ].join('|')).join('||');
 }
 
 Page({
@@ -33,8 +36,25 @@ Page({
   },
 
   onLoad() {
+    this.pageActive = true;
+    this.chartDataSignature = '';
     enableShareMenu();
     this.loadTrackerData();
+  },
+
+  onShow() {
+    this.pageActive = true;
+    this.drawAllChartsSoon();
+  },
+
+  onHide() {
+    this.pageActive = false;
+    this.clearChartDrawTimer();
+  },
+
+  onUnload() {
+    this.pageActive = false;
+    this.clearChartDrawTimer();
   },
 
   onReady() {
@@ -53,13 +73,12 @@ Page({
   },
 
   loadTrackerData() {
-    let raw;
-    try {
-      raw = wx.getStorageSync(trackerConfig.storageKey);
-    } catch (e) {
-      raw = null;
-    }
-    const data = normalizeTrackerData(raw, commanders, trackerConfig);
+    const stored = readStorage(trackerConfig.storageKey, {
+      schemaVersion: trackerConfig.version,
+      defaultValue: null,
+      validate: (value) => Boolean(value && Array.isArray(value.decks)),
+    });
+    const data = normalizeTrackerData(stored.value, commanders, trackerConfig);
     this.applyDecks(data.decks, false);
   },
 
@@ -67,24 +86,57 @@ Page({
     return decks.map((deck, index) => {
       const stats = calculateDeckStats(deck, trackerConfig.stats);
       const displayLines = deck.commander
-        ? formatCommanderDisplayLines(deck.commander.name)
+        ? formatCommanderDisplayLines(deck.commander.name, { abbreviatePartners: false })
         : [`第 ${index + 1} 套牌`];
-      const matches = sortMatches(deck.matches).map((match) => ({
+      const longestDisplayLineLength = displayLines.reduce(
+        (length, line) => Math.max(length, String(line || '').length),
+        0,
+      );
+      const commanderNameClass = [
+        displayLines.length > 1 ? 'partner' : 'single',
+        longestDisplayLineLength > 27
+          ? 'name-tight'
+          : (longestDisplayLineLength > 22 ? 'name-compact' : ''),
+      ].filter(Boolean).join(' ');
+      const matches = sortMatches(deck.matches).map((match, matchIndex) => ({
         ...match,
+        sequence: matchIndex + 1,
         label: RESULT_LABELS[match.result],
         seatClass: match.seat || 'seat-unknown',
       }));
+      const newestMatches = matches.slice().reverse();
+      const pendingResult = deck.pendingResult || 'win';
+      const pendingSeat = deck.pendingSeat || 'seat1';
+      const historyExpanded = Boolean(deck.historyExpanded);
+      const historyRenderLimit = Math.max(5, Number(trackerConfig.historyRenderLimit) || 50);
+      const commanderAvatars = deck.commander
+        ? splitCommanderNames(deck.commander.name).slice(0, 2).map((name) => ({
+          name,
+          url: buildScryfallImageUrl(name, 'art_crop'),
+        }))
+        : [];
 
       return {
         ...deck,
         matches,
+        visibleMatches: historyExpanded ? newestMatches.slice(0, historyRenderLimit) : newestMatches.slice(0, 5),
+        historyExpanded,
+        historyToggleLabel: historyExpanded
+          ? '收起'
+          : (newestMatches.length > historyRenderLimit ? `展开最近 ${historyRenderLimit} 条` : '展开全部'),
+        commanderAvatars,
+        commanderNameClass,
         stats,
         query: deck.query || (deck.commander && deck.commander.name) || '',
         displayName: displayLines.join(' '),
         displayLines,
         pendingDate: deck.pendingDate || todayString(),
-        pendingResult: deck.pendingResult || 'win',
-        pendingSeat: deck.pendingSeat || 'seat1',
+        pendingResult,
+        pendingResultIndex: Math.max(0, trackerConfig.resultOptions.findIndex((option) => option.id === pendingResult)),
+        pendingResultLabel: RESULT_LABELS[pendingResult] || RESULT_LABELS.win,
+        pendingSeat,
+        pendingSeatIndex: Math.max(0, trackerConfig.seatOptions.findIndex((option) => option.id === pendingSeat)),
+        pendingSeatLabel: (trackerConfig.seatOptions.find((option) => option.id === pendingSeat) || trackerConfig.seatOptions[0]).label,
         suggestions: deck.suggestions || [],
         showSuggestions: Boolean(deck.showSuggestions && deck.suggestions && deck.suggestions.length),
       };
@@ -94,23 +146,40 @@ Page({
   applyDecks(decks, shouldPersist = true) {
     const normalizedDecks = decks.length ? decks : [createEmptyDeck(0)];
     const decorated = this.decorateDecks(normalizedDecks);
+    const chartSignature = buildChartSignature(decorated);
+    const shouldRedrawCharts = chartSignature !== this.chartDataSignature;
+    this.chartDataSignature = chartSignature;
 
     if (shouldPersist) {
-      wx.setStorageSync(trackerConfig.storageKey, serializeTrackerData({
+      const stored = writeStorage(trackerConfig.storageKey, serializeTrackerData({
         version: trackerConfig.version,
         decks: decorated,
-      }));
+      }), {
+        schemaVersion: trackerConfig.version,
+        validate: (value) => Boolean(value && Array.isArray(value.decks)),
+      });
+      if (!stored.ok) wx.showToast({ title: '战绩保存失败，请重试', icon: 'none' });
     }
 
     this.setData({
       decks: decorated,
       canAddDeck: decorated.length < trackerConfig.maxDecks,
-    }, () => this.drawAllChartsSoon());
+    }, () => {
+      if (shouldRedrawCharts) this.drawAllChartsSoon();
+    });
   },
 
   drawAllChartsSoon() {
-    const requestFrame = getCanvasRequestFrame(this.canvas);
-    requestFrame(() => this.drawAllCharts());
+    if (!this.pageActive || this.chartDrawTimer) return;
+    this.chartDrawTimer = setTimeout(() => {
+      this.chartDrawTimer = null;
+      if (this.pageActive) this.drawAllCharts();
+    }, 16);
+  },
+
+  clearChartDrawTimer() {
+    if (this.chartDrawTimer) clearTimeout(this.chartDrawTimer);
+    this.chartDrawTimer = null;
   },
 
   handleCommanderInput(event) {
@@ -209,9 +278,10 @@ Page({
     this.applyDecks(decks, false);
   },
 
-  selectPendingResult(event) {
+  changePendingResultPicker(event) {
     const deckId = event.currentTarget.dataset.id;
-    const result = event.currentTarget.dataset.result;
+    const option = trackerConfig.resultOptions[Number(event.detail.value)];
+    const result = option && option.id;
     if (!RESULT_LABELS[result]) return;
 
     const decks = this.data.decks.map((deck) => (
@@ -221,9 +291,10 @@ Page({
     this.applyDecks(decks, false);
   },
 
-  selectPendingSeat(event) {
+  changePendingSeatPicker(event) {
     const deckId = event.currentTarget.dataset.id;
-    const seat = event.currentTarget.dataset.seat;
+    const option = trackerConfig.seatOptions[Number(event.detail.value)];
+    const seat = option && option.id;
     const isValidSeat = trackerConfig.seatOptions.some((option) => option.id === seat);
     if (!isValidSeat) return;
 
@@ -244,21 +315,54 @@ Page({
         ? deck.pendingSeat
         : 'seat1';
 
-      return {
-        ...deck,
-        matches: sortMatches([
-          ...deck.matches,
-          {
-            id: `match-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-            date: deck.pendingDate || todayString(),
-            result,
-            seat,
-          },
-        ]),
+      const record = {
+        id: deck.editingMatchId || `match-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        date: deck.pendingDate || todayString(),
+        result,
+        seat,
       };
+      const matches = deck.editingMatchId
+        ? deck.matches.map((match) => (match.id === deck.editingMatchId ? record : match))
+        : [...deck.matches, record];
+
+      return { ...deck, matches: sortMatches(matches), editingMatchId: null };
     });
 
     this.applyDecks(decks);
+  },
+
+  editMatch(event) {
+    const deckId = event.currentTarget.dataset.deckId;
+    const matchId = event.currentTarget.dataset.matchId;
+    const decks = this.data.decks.map((deck) => {
+      if (deck.id !== deckId) return deck;
+      const match = deck.matches.find((item) => item.id === matchId);
+      if (!match) return deck;
+      return {
+        ...deck,
+        editingMatchId: match.id,
+        pendingDate: match.date,
+        pendingResult: match.result,
+        pendingSeat: match.seat || 'seat1',
+      };
+    });
+    this.applyDecks(decks, false);
+  },
+
+  cancelEdit(event) {
+    const deckId = event.currentTarget.dataset.id;
+    const decks = this.data.decks.map((deck) => (
+      deck.id === deckId ? { ...deck, editingMatchId: null } : deck
+    ));
+    this.applyDecks(decks, false);
+  },
+
+  toggleMatchHistory(event) {
+    const deckId = event.currentTarget.dataset.id;
+    const decks = this.data.decks.map((deck) => (
+      deck.id === deckId ? { ...deck, historyExpanded: !deck.historyExpanded } : deck
+    ));
+    this.applyDecks(decks, false);
   },
 
   confirmDeleteMatch(event) {
@@ -308,10 +412,10 @@ Page({
       confirmText: '清空',
       success: (result) => {
         if (!result.confirm) return;
-        try {
-          wx.removeStorageSync(trackerConfig.storageKey);
-        } catch (e) {
-          // storage unavailable, skip
+        const removed = removeStorage(trackerConfig.storageKey);
+        if (!removed.ok) {
+          wx.showToast({ title: '本机战绩清除失败', icon: 'none' });
+          return;
         }
         this.applyDecks([createEmptyDeck(0)], false);
       },
@@ -319,6 +423,7 @@ Page({
   },
 
   drawAllCharts() {
+    if (!this.pageActive) return;
     (this.data.decks || []).forEach((deck) => {
       this.drawChart(`winrateChart-${deck.id}`, buildWinRateSeries(deck.matches, trackerConfig.stats), 'winrate');
       this.drawChart(`seatWinrateChart-${deck.id}`, buildSeatWinRateSeries(deck.matches, trackerConfig.stats), 'seatWinrate');
@@ -328,13 +433,16 @@ Page({
   drawChart(canvasId, series, type) {
     const query = this.createSelectorQuery();
     query.select(`#${canvasId}`).fields({ node: true, size: true }).exec((result) => {
+      if (!this.pageActive) return;
       const info = result && result[0];
       if (!info || !info.node) return;
 
       const canvas = info.node;
       const ctx = canvas.getContext('2d');
+      if (!ctx) return;
       const windowInfo = wx.getWindowInfo ? wx.getWindowInfo() : wx.getSystemInfoSync();
-      const dpr = windowInfo.pixelRatio || 1;
+      // 统计图尺寸较小，2x 已足够清晰；限制超高 DPR 避免多牌组时瞬时放大画布内存。
+      const dpr = Math.min(Number(windowInfo.pixelRatio || 1), 2);
       const width = info.width || 320;
       const height = info.height || 120;
       canvas.width = Math.floor(width * dpr);

@@ -1,6 +1,6 @@
 <view class="page playtest">
   <view class="content-layer playtest-shell" wx:if="{{!imported}}">
-    <particle-background></particle-background>
+    <particle-background palette="playtest"></particle-background>
     <view class="import-hint">
       <view>支持 MTGO / Moxfield / MTGso 纯文本牌表</view>
       <view>每行「数量 卡名」；主将以 Commander 标题或空行与主牌分隔</view>
@@ -8,7 +8,7 @@
     <textarea
       class="deck-input"
       value="{{deckText}}"
-      maxlength="-1"
+      maxlength="50000"
       placeholder="粘贴你想测试的套牌或组合技链条"
       bindinput="handleDeckInput"
     ></textarea>
@@ -52,6 +52,7 @@
         catchtouchstart="fieldTouchStart"
         catchtouchmove="fieldTouchMove"
         catchtouchend="fieldTouchEnd"
+        catchtouchcancel="fieldTouchCancel"
         bindlongpress="inspectFieldCard"
       >
         <image wx:if="{{item.art}}" class="card-art" src="{{item.art}}" mode="aspectFill" lazy-load="{{true}}"></image>
@@ -59,7 +60,7 @@
       </view>
     </view>
 
-    <view class="mana-rail {{manaTotal ? '' : 'mana-dim'}}" aria-label="法力池">
+    <view class="mana-rail {{manaTotal ? '' : 'mana-dim'}}" aria-label="法术力池">
       <view class="mana-cell mana-cell-W {{manaPool.W ? '' : 'mana-zero'}}">
         <view class="mana-symbol">W</view>
         <view class="mana-row">
@@ -108,7 +109,7 @@
           <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="无色 加一" data-color="C" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
         </view>
       </view>
-      <view class="mana-total" aria-role="button" aria-label="清空法力池" hover-class="pressable-active" hover-stay-time="120" bindtap="manaReset">
+      <view class="mana-total" aria-role="button" aria-label="清空法术力池" hover-class="pressable-active" hover-stay-time="120" bindtap="manaReset">
         <view class="mana-total-num mono">{{manaTotal || '╳'}}</view>
         <view class="mana-total-cap">总量</view>
       </view>
@@ -190,6 +191,14 @@
             <view class="move-chip" wx:if="{{panelZone !== 'exile' && panelZone !== 'command'}}" aria-role="button" data-id="{{item.id}}" data-to="exile" bindtap="movePanelCard">放逐</view>
           </view>
         </view>
+        <view
+          wx:if="{{panelHasMore}}"
+          class="zone-panel-more"
+          aria-role="button"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="loadMorePanelCards"
+        >加载更多 · {{panelCards.length}} / {{panelTotal}}</view>
       </scroll-view>
     </view>
 

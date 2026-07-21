@@ -1,5 +1,5 @@
 <view class="page random">
-  <particle-background></particle-background>
+  <particle-background palette="random"></particle-background>
 
   <view class="content-layer random-shell">
     <view class="random-panel surface">
@@ -78,7 +78,7 @@
       </view>
     </view>
 
-    <view class="random-panel surface tool-entry" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goCabbage">
+    <view class="random-panel surface tool-entry tool-entry-cabbage" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goCabbage">
       <view class="tool-entry-text">
         <view class="tool-entry-title">卷心菜对账</view>
         <view class="tool-entry-sub">The Cabbage Merchant</view>
@@ -86,10 +86,10 @@
       <view class="tool-entry-arrow">›</view>
     </view>
 
-    <view class="random-panel surface tool-entry" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goIzzet">
+    <view class="random-panel surface tool-entry tool-entry-izzet" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goIzzet">
       <view class="tool-entry-text">
         <view class="tool-entry-title">伊捷风暴</view>
-        <view class="tool-entry-sub">Krark / Ral</view>
+        <view class="tool-entry-sub">Ral, Monsoon Mage</view>
       </view>
       <view class="tool-entry-arrow">›</view>
     </view>

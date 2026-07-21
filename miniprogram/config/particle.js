@@ -28,9 +28,9 @@ const particleConfig = {
   connections: {
     enabled: true,
     color: '#C2A36D',
-    distanceRpx: 210,
-    maxLinksPerParticle: 2,
-    maxLines: 52,
+    distanceRpx: 300,
+    maxLinksPerParticle: 4,
+    maxLines: 96,
     lineWidthRpx: 1.35,
     opacity: {
       min: 0.06,
@@ -39,28 +39,31 @@ const particleConfig = {
     tiers: {
       high: {
         enabled: true,
-        distanceRpx: 220,
-        maxLines: 56,
+        distanceRpx: 320,
+        maxLinksPerParticle: 4,
+        maxLines: 104,
       },
       medium: {
         enabled: true,
-        distanceRpx: 178,
-        maxLines: 34,
+        distanceRpx: 260,
+        maxLinksPerParticle: 3,
+        maxLines: 68,
       },
       low: {
         enabled: true,
-        distanceRpx: 138,
-        maxLines: 12,
+        distanceRpx: 190,
+        maxLinksPerParticle: 3,
+        maxLines: 28,
       },
     },
   },
 
   flow: {
-    minSpeedRpx: 0.15,
-    maxSpeedRpx: 0.4,
+    minSpeedRpx: 0.28,
+    maxSpeedRpx: 0.72,
     fieldScale: 0.007,
-    timeScale: 0.00035,
-    jitterRpx: 0.035,
+    timeScale: 0.00055,
+    jitterRpx: 0.06,
   },
 
   touch: {
@@ -76,6 +79,19 @@ const particleConfig = {
   twinkle: {
     speedMs: 0.0016,
     amp: 0.16,
+  },
+
+  // 各功能页粒子随页面主题走：accent=模块主色、neutral=同族浅色、connection=连线色。
+  // 页面 wxml 以 palette="名称" 指定；未指定或名称未收录时回退顶层香槟金默认。
+  palettes: {
+    'neon-arcade': { accentColor: '#FF7BC8', neutralColor: '#68C7FF', connectionColor: '#B9E8FF' },
+    'noir-gold': { accentColor: '#E69B52', neutralColor: '#F5EAD1', connectionColor: '#F0BE8A' },
+    tracker: { accentColor: '#CDB774', neutralColor: '#E6D8AD', connectionColor: '#D8C48E' },
+    random: { accentColor: '#BE709E', neutralColor: '#E5BAD3', connectionColor: '#D094B8' },
+    playtest: { accentColor: '#7E8DCD', neutralColor: '#C8D0EE', connectionColor: '#A3B0E0' },
+    bracket: { accentColor: '#49B380', neutralColor: '#BDEBD2', connectionColor: '#7FCCA6' },
+    cabbage: { accentColor: '#2FA75D', neutralColor: '#B2E3C4', connectionColor: '#5BBF6A' },
+    izzet: { accentColor: '#5AA9FF', neutralColor: '#BCD9FF', connectionColor: '#8CC0FF' },
   },
 
   bounds: {

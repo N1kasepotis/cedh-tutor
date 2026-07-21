@@ -1,5 +1,5 @@
 <view class="page cabbage-page">
-  <particle-background></particle-background>
+  <particle-background palette="cabbage"></particle-background>
 
   <view class="content-layer tool-shell">
     <view class="cabbage-engines">
@@ -48,7 +48,8 @@
     <view class="cabbage-activate {{cabbageAvail ? '' : 'disabled'}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageActivate">横置 2 Food → +1 绿（{{cabbageAvail}}）</view>
 
     <view class="cabbage-footer">
-      <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageUntapAll">重置横置</view>
+      <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageUntapAll">全部重置</view>
+      <view class="text-button cabbage-footer-center" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageUntapOneFood">重置 1 Food</view>
       <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageReset">清空</view>
     </view>
   </view>

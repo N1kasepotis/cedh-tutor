@@ -1,6 +1,7 @@
 # Dependencies (installed via npm; WeChat DevTools rebuilds miniprogram_npm/)
 node_modules/
 miniprogram_npm/
+.pnpm-store/
 
 # WeChat DevTools per-developer / generated settings
 project.private.config.json

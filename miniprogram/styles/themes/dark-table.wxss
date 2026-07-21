@@ -4,6 +4,7 @@
 .tracker,
 .random,
 .playtest,
+.bracket,
 .cabbage-page,
 .izzet-page {
   min-height: 100vh;
@@ -26,10 +27,56 @@
   --cedh-shadow-soft: 0 28rpx 72rpx rgba(0, 0, 0, 0.22);
 }
 
+/* 与主页入口保持同一色彩身份；仅覆盖界面强调色，不碰胜负、座位等语义色。 */
+.tracker {
+  --module-accent-rgb: 205, 183, 116;
+  --cedh-accent: #cdb774;
+  --cedh-accent-ink: #e6d8ad;
+  --cedh-accent-soft: rgba(var(--module-accent-rgb), 0.14);
+  --cedh-accent-line: rgba(var(--module-accent-rgb), 0.4);
+  --cedh-line: rgba(var(--module-accent-rgb), 0.2);
+  --cedh-line-strong: rgba(var(--module-accent-rgb), 0.36);
+  --cedh-input-glass: rgba(var(--module-accent-rgb), 0.09);
+}
+
+.random {
+  --module-accent-rgb: 190, 112, 158;
+  --cedh-accent: #be709e;
+  --cedh-accent-ink: #e5bad3;
+  --cedh-accent-soft: rgba(var(--module-accent-rgb), 0.15);
+  --cedh-accent-line: rgba(var(--module-accent-rgb), 0.4);
+  --cedh-line: rgba(var(--module-accent-rgb), 0.2);
+  --cedh-line-strong: rgba(var(--module-accent-rgb), 0.38);
+  --cedh-input-glass: rgba(var(--module-accent-rgb), 0.1);
+}
+
+.playtest {
+  --module-accent-rgb: 126, 141, 205;
+  --cedh-accent: #7e8dcd;
+  --cedh-accent-ink: #c8d0ee;
+  --cedh-accent-soft: rgba(var(--module-accent-rgb), 0.15);
+  --cedh-accent-line: rgba(var(--module-accent-rgb), 0.42);
+  --cedh-line: rgba(var(--module-accent-rgb), 0.2);
+  --cedh-line-strong: rgba(var(--module-accent-rgb), 0.38);
+  --cedh-input-glass: rgba(var(--module-accent-rgb), 0.1);
+}
+
+.bracket {
+  --module-accent-rgb: 73, 179, 128;
+  --cedh-accent: #49b380;
+  --cedh-accent-ink: #bdebd2;
+  --cedh-accent-soft: rgba(var(--module-accent-rgb), 0.14);
+  --cedh-accent-line: rgba(var(--module-accent-rgb), 0.4);
+  --cedh-line: rgba(var(--module-accent-rgb), 0.2);
+  --cedh-line-strong: rgba(var(--module-accent-rgb), 0.38);
+  --cedh-input-glass: rgba(var(--module-accent-rgb), 0.09);
+}
+
 /* 玻璃面板：继承 tracker .deck-card 的顶部高光效果 */
 .tracker .surface,
 .random .surface,
 .playtest .surface,
+.bracket .surface,
 .cabbage-page .surface,
 .izzet-page .surface {
   box-shadow: var(--cedh-shadow-soft), inset 0 1rpx 0 rgba(255, 255, 255, 0.72);
@@ -83,6 +130,7 @@
 
 .random,
 .playtest,
+.bracket,
 .cabbage-page,
 .izzet-page {
   --cedh-btn-primary-color: var(--cedh-text);

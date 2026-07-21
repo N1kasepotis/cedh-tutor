@@ -1,0 +1,327 @@
+page {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #020304;
+}
+
+.life-tracker-page {
+  --life-entry-accent-rgb: 225, 93, 104;
+  --life-entry-accent: #e15d68;
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0;
+  overflow: hidden;
+  color: #ffffff;
+  background: #020304;
+  font-family: var(--cedh-font-sans);
+}
+
+.life-grid {
+  position: fixed;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  grid-template-rows: repeat(2, 1fr);
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* 两人上下对坐：单列两行，无竖线；三人上一下二：第一位横跨整行，竖线只画下半 */
+.life-grid.mode-2 {
+  grid-template-columns: 1fr;
+}
+
+.life-grid.mode-2::after {
+  display: none;
+}
+
+.life-grid.mode-3 .player-zone.seat-1 {
+  grid-column: 1 / -1;
+}
+
+.life-grid.mode-3::after {
+  top: 50%;
+  height: 50%;
+}
+
+.life-grid::before,
+.life-grid::after {
+  content: "";
+  position: absolute;
+  z-index: 5;
+  pointer-events: none;
+  background: rgba(var(--life-entry-accent-rgb), 0.11);
+  box-shadow: 0 0 10rpx rgba(var(--life-entry-accent-rgb), 0.04);
+}
+
+.life-grid::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 1rpx;
+}
+
+.life-grid::after {
+  top: 0;
+  left: 50%;
+  width: 1rpx;
+  height: 100%;
+}
+
+.player-zone {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  background:
+    radial-gradient(circle at 50% 52%, rgba(var(--player-rgb), 0.19), rgba(var(--player-rgb), 0.05) 56%, rgba(2, 3, 4, 0.98) 100%);
+}
+
+.player-face {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-rows: repeat(2, 1fr);
+  transform-origin: center;
+}
+
+.player-facing-top .player-face {
+  transform: rotate(180deg);
+}
+
+.player-facing-bottom .player-face {
+  transform: none;
+}
+
+.life-hit-area {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  user-select: none;
+}
+
+.life-increase {
+  grid-row: 1;
+}
+
+.life-decrease {
+  grid-row: 2;
+}
+
+.life-hit-active {
+  background: rgba(var(--player-rgb), 0.14);
+}
+
+.player-summary {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  z-index: 3;
+  width: 72%;
+  text-align: center;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+
+.life-value {
+  color: #ffffff;
+  font-family: "cEDHDisplay", "Arial Black", "Avenir Next Condensed", "DIN Condensed", Impact, sans-serif;
+  font-size: 21vh;
+  font-size: clamp(76rpx, 21vh, 180rpx);
+  font-style: italic;
+  font-weight: 900;
+  letter-spacing: -0.07em;
+  line-height: 0.82;
+  text-shadow:
+    -1rpx -1rpx 0 var(--player-color),
+    1rpx 1rpx 0 var(--player-color),
+    0 0 10rpx rgba(var(--player-rgb), 0.62),
+    0 0 28rpx rgba(var(--player-rgb), 0.24);
+  pointer-events: none;
+}
+
+.board-hub {
+  position: fixed;
+  top: 50vh;
+  left: 50vw;
+  z-index: 8;
+  width: 0;
+  height: 0;
+}
+
+/* 透明热区：视觉胶囊保持 36×28rpx，可点区域扩到 88×88rpx（44pt 标准） */
+.hub-trigger-hit {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 88rpx;
+  height: 88rpx;
+  transform: translate(-50%, -50%);
+}
+
+.dropdown-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 36rpx;
+  height: 28rpx;
+  color: rgba(var(--life-entry-accent-rgb), 0.72);
+  background: rgba(2, 3, 4, 0.97);
+  border: 1rpx solid rgba(var(--life-entry-accent-rgb), 0.56);
+  border-radius: 999rpx;
+  box-shadow:
+    0 0 4rpx rgba(var(--life-entry-accent-rgb), 0.16),
+    0 0 8rpx rgba(0, 0, 0, 0.66);
+  animation: dropdown-rgb-cycle 12s ease-in-out infinite;
+}
+
+.hub-trigger-hit-active .dropdown-trigger {
+  color: #ffffff;
+  filter: brightness(1.28);
+}
+
+@keyframes dropdown-rgb-cycle {
+  0%, 100% {
+    color: rgba(var(--life-entry-accent-rgb), 0.72);
+    border-color: rgba(var(--life-entry-accent-rgb), 0.56);
+    box-shadow: 0 0 4rpx rgba(var(--life-entry-accent-rgb), 0.16), 0 0 8rpx rgba(0, 0, 0, 0.66);
+  }
+
+  33% {
+    color: rgba(104, 218, 143, 0.72);
+    border-color: rgba(104, 218, 143, 0.56);
+    box-shadow: 0 0 4rpx rgba(104, 218, 143, 0.16), 0 0 8rpx rgba(0, 0, 0, 0.66);
+  }
+
+  66% {
+    color: rgba(102, 190, 255, 0.74);
+    border-color: rgba(102, 190, 255, 0.58);
+    box-shadow: 0 0 4rpx rgba(102, 190, 255, 0.17), 0 0 8rpx rgba(0, 0, 0, 0.66);
+  }
+}
+
+.dropdown-icon {
+  display: flex;
+  flex-direction: column;
+  gap: 3rpx;
+  width: 15rpx;
+  transform: scaleX(1);
+  transition: transform 180ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dropdown-open .dropdown-icon {
+  transform: scaleX(0.72);
+}
+
+.dropdown-bar {
+  width: 100%;
+  height: 1rpx;
+  background: currentColor;
+  border-radius: 999rpx;
+  box-shadow: 0 0 3rpx currentColor;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: 48rpx;
+  left: 0;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+  width: 180rpx;
+  padding: 0;
+  visibility: hidden;
+  opacity: 0;
+  background: transparent;
+  border: 0;
+  box-shadow: none;
+  transform: translate(-50%, -7rpx) scale(0.92);
+  transform-origin: top center;
+  pointer-events: none;
+  transition:
+    opacity 160ms ease,
+    transform 200ms cubic-bezier(0.16, 1, 0.3, 1),
+    visibility 0ms linear 200ms;
+}
+
+.dropdown-menu-open {
+  visibility: visible;
+  opacity: 1;
+  transform: translate(-50%, 0) scale(1);
+  pointer-events: auto;
+  transition-delay: 0ms;
+}
+
+.hub-row {
+  display: flex;
+  gap: 6rpx;
+  justify-content: center;
+}
+
+.hub-action {
+  display: flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: 44rpx;
+  min-width: 0;
+  min-height: 0;
+  padding: 0;
+  color: rgba(255, 255, 255, 0.82);
+  background: rgba(2, 3, 4, 0.97);
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
+  border-radius: 999rpx;
+  font-size: 16rpx;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  white-space: nowrap;
+}
+
+.hub-reset {
+  color: #ffd0d4;
+  border-color: rgba(var(--life-entry-accent-rgb), 0.34);
+}
+
+.hub-mode-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.66);
+}
+
+.hub-action-active {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropdown-trigger {
+    animation: none;
+  }
+
+  .dropdown-icon,
+  .dropdown-menu {
+    transition-duration: 0ms;
+  }
+}
+
+@media (max-height: 390px) {
+  .life-value {
+    font-size: 19vh;
+    font-size: clamp(66rpx, 19vh, 150rpx);
+  }
+}

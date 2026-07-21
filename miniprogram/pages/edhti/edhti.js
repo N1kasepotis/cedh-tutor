@@ -6,6 +6,7 @@ const {
 } = require('../../config/edhti');
 const {
   buildEdhtiResult,
+  selectEdhtiCommander,
 } = require('../../utils/edhti');
 const {
   drawRoundRect,
@@ -17,7 +18,6 @@ const {
 } = require('../../utils/canvas-kit');
 const {
   buildScryfallImageUrl,
-  fetchCardImageUris,
 } = require('../../utils/scryfall');
 const { formatOptionCode } = require('../../utils/quiz-flow');
 const { enableShareMenu } = require('../../utils/share');
@@ -84,21 +84,6 @@ function stripSentencePeriods(value) {
 
 function spaceSentencePeriods(value) {
   return String(value || '').replace(/[。.]/gu, '。 ');
-}
-
-const COMMANDER_TAG_ORDER = ['combo', 'power', 'aggro', 'politics', 'judge', 'offbeat', 'talk', 'salt'];
-
-function selectCommander(persona, tags) {
-  const pool = persona && persona.commanderPool;
-  if (!pool || !pool.length) return null;
-
-  const entries = Object.entries(tags || {});
-  entries.sort((a, b) => (b[1] || 0) - (a[1] || 0));
-
-  const topTag = entries[0] && entries[0][0];
-  const idx = COMMANDER_TAG_ORDER.indexOf(topTag);
-
-  return pool[idx >= 0 ? idx % pool.length : 0];
 }
 
 function hexToRgba(hex, alpha) {
@@ -656,7 +641,8 @@ function formatResult(rawResult) {
   return {
     ...rawResult,
     commanderArt: {
-      // 无字大画（art_crop）直连预填：立刻可显示，不依赖 API；loadCommanderArt 成功后升级为 CDN 地址
+      // 无字大画直连：结果页只保持同一个 URL，避免 JSON 查询返回后替换 src，
+      // 导致微信 image 重新下载/解码同一张卡图。
       artCrop: commanderName ? buildScryfallImageUrl(commanderName, 'art_crop') : '',
       normal: commanderName ? buildScryfallImageUrl(commanderName, 'normal') : '',
       large: '',
@@ -773,7 +759,7 @@ Page({
     );
     const result = formatResult(rawResult);
 
-    const recommendedCommander = selectCommander(result.persona, rawResult.tags);
+    const recommendedCommander = selectEdhtiCommander(result.persona, rawResult.tags);
 
     // 以实际展示的主将（推荐池选中项）预填无字大画，避免先显示人格默认主将再跳变
     const displayCommander = recommendedCommander
@@ -790,33 +776,7 @@ Page({
       hasResult: true,
       result,
       recommendedCommander,
-    }, () => this.loadCommanderArt(result, recommendedCommander));
-  },
-
-  loadCommanderArt(result, recommendedCommander) {
-    const cardName = recommendedCommander
-      || (result
-      && result.persona
-      && result.persona.commander
-      && result.persona.commander.en);
-
-    if (!cardName) return;
-
-    fetchCardImageUris(cardName)
-      .then((fetchedArt) => {
-        if (!fetchedArt.artCrop && !fetchedArt.normal && !fetchedArt.large) return;
-
-        this.setData({
-          'result.commanderArt': {
-            artCrop: fetchedArt.artCrop || '',
-            normal: fetchedArt.normal || '',
-            large: fetchedArt.large || fetchedArt.normal || this.data.result.commanderArt.large || '',
-          },
-        });
-      })
-      .catch((err) => {
-        console.error('EDHTI commander art fetch failed:', err);
-      });
+    });
   },
 
   restart() {

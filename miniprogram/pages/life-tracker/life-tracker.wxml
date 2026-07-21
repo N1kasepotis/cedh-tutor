@@ -1,0 +1,77 @@
+<view class="life-tracker-page">
+  <view class="life-grid mode-{{playerCount}}" aria-label="{{playerCount}}人生命记录器">
+    <view
+      wx:for="{{players}}"
+      wx:key="id"
+      class="player-zone {{item.orientationClass}} seat-{{index + 1}}"
+      style="--player-color: {{item.color}}; --player-rgb: {{item.rgb}};"
+    >
+      <view class="player-face">
+        <view
+          class="life-hit-area life-increase"
+          aria-role="button"
+          aria-label="当前 {{item.life}}，增加 1 点生命"
+          data-id="{{item.id}}"
+          data-delta="1"
+          hover-class="life-hit-active"
+          catchtouchstart="startLifePress"
+          catchtouchend="endLifePress"
+          catchtouchcancel="cancelLifePress"
+        ></view>
+
+        <view class="player-summary">
+          <text class="life-value" aria-label="生命值 {{item.life}}">{{item.life}}</text>
+        </view>
+
+        <view
+          class="life-hit-area life-decrease"
+          aria-role="button"
+          aria-label="当前 {{item.life}}，减少 1 点生命"
+          data-id="{{item.id}}"
+          data-delta="-1"
+          hover-class="life-hit-active"
+          catchtouchstart="startLifePress"
+          catchtouchend="endLifePress"
+          catchtouchcancel="cancelLifePress"
+        ></view>
+      </view>
+    </view>
+
+    <view class="board-hub {{menuOpen ? 'dropdown-open' : ''}}">
+      <view
+        class="hub-trigger-hit"
+        aria-role="button"
+        aria-label="{{menuOpen ? '收起对局菜单' : '展开对局菜单'}}"
+        aria-expanded="{{menuOpen}}"
+        hover-class="hub-trigger-hit-active"
+        bindtap="toggleDropdown"
+      >
+        <view class="dropdown-trigger">
+          <view class="dropdown-icon" aria-hidden="true">
+            <view class="dropdown-bar"></view>
+            <view class="dropdown-bar"></view>
+            <view class="dropdown-bar"></view>
+          </view>
+        </view>
+      </view>
+      <view class="dropdown-menu {{menuOpen ? 'dropdown-menu-open' : ''}}" aria-hidden="{{!menuOpen}}">
+        <view class="hub-row">
+          <view class="hub-action" aria-role="button" aria-label="返回主页" hover-class="hub-action-active" bindtap="goHome">主页</view>
+          <view class="hub-action hub-reset" aria-role="button" aria-label="重置对局并重新分配颜色" hover-class="hub-action-active" bindtap="resetGame">重置</view>
+        </view>
+        <view class="hub-row">
+          <view
+            wx:for="{{playerCountOptions}}"
+            wx:key="*this"
+            class="hub-action hub-mode {{item === playerCount ? 'hub-mode-active' : ''}}"
+            aria-role="button"
+            aria-label="切换为 {{item}} 人对局"
+            hover-class="hub-action-active"
+            data-count="{{item}}"
+            bindtap="setPlayerMode"
+          >{{item}}人</view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>

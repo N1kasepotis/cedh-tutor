@@ -11,8 +11,10 @@
 /* ===== 导入态 ===== */
 .playtest-shell {
   display: flex;
+  flex: 1;
   flex-direction: column;
   gap: var(--cedh-space-4);
+  min-height: 0;
   padding-top: var(--cedh-space-5);
 }
 
@@ -24,8 +26,10 @@
 
 .deck-input {
   box-sizing: border-box;
+  flex: 1 1 auto;
   width: 100%;
-  min-height: 520rpx;
+  height: calc(100vh - 480rpx);
+  min-height: 600rpx;
   padding: var(--cedh-space-4);
   color: var(--cedh-text);
   background: rgba(0, 0, 0, 0.55);
@@ -34,6 +38,13 @@
   font-family: var(--cedh-font-mono);
   font-size: var(--cedh-text-12);
   line-height: 1.6;
+}
+
+@media (max-height: 620px) {
+  .deck-input {
+    height: calc(100vh - 440rpx);
+    min-height: 520rpx;
+  }
 }
 
 .import-warning {
@@ -85,13 +96,13 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 40rpx;
-  height: 40rpx;
+  width: 56rpx;
+  height: 56rpx;
   color: var(--cedh-text-soft);
   background: var(--cedh-surface);
   border: var(--cedh-hairline);
   border-radius: var(--cedh-radius-control-sm);
-  font-size: var(--cedh-text-14);
+  font-size: var(--cedh-text-16);
   line-height: 1;
 }
 
@@ -136,6 +147,13 @@
     opacity 180ms ease,
     border-color 180ms ease;
   will-change: transform, opacity;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .board-action,
+  .zone-chip {
+    transition: none;
+  }
 }
 
 .battlefield {
@@ -281,16 +299,20 @@
 
 .zone-label {
   color: var(--cedh-text-soft);
+  font-family: var(--cedh-font-mono);
   font-size: var(--cedh-text-10);
-  letter-spacing: 0.08em;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
 }
 
 .zone-count {
   margin-top: 4rpx;
   color: var(--cedh-text);
-  font-size: var(--cedh-text-14);
+  font-size: var(--cedh-text-16);
   font-weight: 650;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .hand {
@@ -331,7 +353,7 @@
   line-height: 1.18;
 }
 
-/* ===== 法力池资源栏（战场下方横向；WUBRG 惯例横排，回收战场满宽） ===== */
+/* ===== 法术力池资源栏（战场下方横向；WUBRG 惯例横排，回收战场满宽） ===== */
 .mana-rail {
   display: flex;
   align-items: stretch;
@@ -374,14 +396,15 @@
   gap: 2rpx;
 }
 
+/* 对局中最高频的点按之一：44rpx 是法术力栏纵向空间内能给到的最大目标 */
 .mana-ctrl {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30rpx;
-  height: 30rpx;
+  width: 44rpx;
+  height: 44rpx;
   border-radius: 50%;
-  font-size: var(--cedh-text-12);
+  font-size: var(--cedh-text-14);
   font-weight: 650;
   line-height: 1;
 }
@@ -402,9 +425,11 @@
   width: 28rpx;
   text-align: center;
   color: var(--cedh-text);
-  font-size: var(--cedh-text-12);
+  font-family: var(--cedh-font-mono);
+  font-size: var(--cedh-text-14);
   font-weight: 650;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .mana-total {
@@ -535,6 +560,15 @@
   gap: var(--cedh-space-3);
   min-height: 72rpx;
   border-bottom: var(--cedh-hairline);
+}
+
+.zone-panel-more {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 80rpx;
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
 }
 
 .zone-panel-name {

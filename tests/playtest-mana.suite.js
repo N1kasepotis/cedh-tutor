@@ -1,4 +1,4 @@
-// 试玩法力池纯逻辑测试
+// 试玩法术力池纯逻辑测试
 const assert = require('node:assert');
 const test = require('node:test');
 const {

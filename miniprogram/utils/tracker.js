@@ -227,23 +227,26 @@ function calculateDeckStats(deck, config) {
 }
 
 function buildWinRateSeries(matches, config) {
-  let wins = 0;
-  let losses = 0;
-  let draws = 0;
+  const daily = new Map();
+  sortMatches(matches).forEach((match) => {
+    const entry = daily.get(match.date) || { wins: 0, losses: 0, draws: 0 };
+    if (match.result === 'win') entry.wins += 1;
+    if (match.result === 'loss') entry.losses += 1;
+    if (match.result === 'draw') entry.draws += 1;
+    daily.set(match.date, entry);
+  });
 
-  return sortMatches(matches).map((match, index) => {
-    if (match.result === 'win') wins += 1;
-    if (match.result === 'loss') losses += 1;
-    if (match.result === 'draw') draws += 1;
-
-    const denominator = wins + losses + ((config && config.drawsCountForWinRate) ? draws : 0);
-    const rate = denominator > 0 ? wins / denominator : 0;
-
+  return Array.from(daily.entries()).map(([date, entry], index) => {
+    const denominator = entry.wins + entry.losses
+      + ((config && config.drawsCountForWinRate) ? entry.draws : 0);
+    const rate = denominator > 0 ? entry.wins / denominator : 0;
     return {
       index: index + 1,
-      date: match.date,
+      date,
+      label: date.slice(5),
       rate,
       rateLabel: formatRate(rate),
+      sampleSize: denominator,
     };
   });
 }

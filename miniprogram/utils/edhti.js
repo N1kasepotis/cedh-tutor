@@ -9,6 +9,62 @@ const scoreKeys = [
   'offmeta',
 ];
 
+const EDHTI_COMMANDER_TAG_ORDER = [
+  'combo',
+  'power',
+  'aggro',
+  'politics',
+  'judge',
+  'offbeat',
+  'talk',
+  'salt',
+];
+
+function stableHash(value) {
+  const text = String(value || '');
+  let hash = 0x811c9dc5;
+  for (let index = 0; index < text.length; index += 1) {
+    hash ^= text.charCodeAt(index);
+    hash = Math.imul(hash, 0x01000193);
+  }
+
+  // Avalanche the FNV state so short, similar tag signatures still spread well.
+  hash ^= hash >>> 16;
+  hash = Math.imul(hash, 0x7feb352d);
+  hash ^= hash >>> 15;
+  hash = Math.imul(hash, 0x846ca68b);
+  hash ^= hash >>> 16;
+  return hash >>> 0;
+}
+
+function buildCommanderTagSignature(persona, tags) {
+  const values = EDHTI_COMMANDER_TAG_ORDER.map((key) => `${key}:${Number(tags && tags[key] || 0)}`);
+  return `${persona && persona.code || ''}|${values.join('|')}`;
+}
+
+// Rendezvous hashing：完整标签画像决定池内选择，同一答案稳定复现；
+// 候选顺序变化不会整体洗牌，新增/移除主将只影响命中该主将的画像。
+function selectEdhtiCommander(persona, tags) {
+  const pool = persona && persona.commanderPool;
+  if (!Array.isArray(pool) || !pool.length) return null;
+
+  const signature = buildCommanderTagSignature(persona, tags);
+  let selected = null;
+  let selectedScore = -1;
+
+  pool.forEach((commander) => {
+    const name = typeof commander === 'string' ? commander : commander && commander.name;
+    if (!name) return;
+    const score = stableHash(`${signature}|${name}`);
+    if (score > selectedScore || (score === selectedScore && name < selected)) {
+      selected = name;
+      selectedScore = score;
+    }
+  });
+
+  return selected;
+}
+
 function createEmptyScores() {
   return Object.fromEntries(scoreKeys.map((key) => [key, 0]));
 }
@@ -97,9 +153,13 @@ function buildEdhtiResult(questions, answerMap, personas, tagLabels) {
 }
 
 module.exports = {
+  EDHTI_COMMANDER_TAG_ORDER,
   buildEdhtiResult,
+  buildCommanderTagSignature,
   createEmptyScores,
   getSelectedAnswers,
   normalizeEdhtiTags,
+  selectEdhtiCommander,
+  stableHash,
   tallyEdhtiAnswers,
 };

@@ -168,8 +168,8 @@ test('random page exposes a trimmed Goblin sticker randomizer', () => {
   assert.match(wxml, /class="sticker-word \{\{word.isBest \? 'best' : ''\}\}"/);
   assert.match(wxml, /来自 \{\{stickerRound\.best\.sheetName\}\}/);
   assert.doesNotMatch(wxml, /stickerRound\.best\.sheetName\}\}\s*\/\s*\{\{stickerRound\.best\.word/);
-  assert.match(js, /wx\.getStorageSync\(stickerStorageKey\)/);
-  assert.match(js, /wx\.setStorageSync\(stickerStorageKey/);
+  assert.match(js, /readStorage\(stickerStorageKey/);
+  assert.match(js, /writeStorage\(stickerStorageKey/);
   assert.match(js, /buildStickerRound/);
   assert.doesNotMatch(js, /calculateStickerOdds/);
   assert.match(js, /canDrawStickers/);
@@ -183,6 +183,11 @@ test('random page exposes a trimmed Goblin sticker randomizer', () => {
   // 主题变量收拢在 styles/themes/dark-table.wxss（tracker / random / playtest 共用）
   const darkTable = fs.readFileSync(path.join(root, 'miniprogram/styles/themes/dark-table.wxss'), 'utf8');
   assert.match(wxss, /@import "\.\.\/\.\.\/styles\/themes\/dark-table\.wxss"/);
+  assert.match(darkTable, /\.random\s*{[\s\S]*?--module-accent-rgb:\s*190,\s*112,\s*158[\s\S]*?--cedh-accent:\s*#be709e/);
+  assert.match(wxml, /tool-entry-cabbage/);
+  assert.match(wxml, /tool-entry-izzet/);
+  assert.match(wxss, /\.tool-entry-cabbage\s*{[\s\S]*?--tool-entry-rgb:\s*47,\s*167,\s*93/);
+  assert.match(wxss, /\.tool-entry-izzet\s*{[\s\S]*?--tool-entry-rgb:\s*90,\s*169,\s*255/);
   assert.match(darkTable, /\.izzet-page\s*{[\s\S]*?linear-gradient\(180deg,\s*#070707/);
   assert.doesNotMatch(wxss, /radial-gradient/);
   assert.match(darkTable, /\.izzet-page\s*{[\s\S]*?--cedh-surface:\s*rgba\(255,\s*249,\s*224,\s*0\.08\)/);

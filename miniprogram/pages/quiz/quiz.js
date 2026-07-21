@@ -11,6 +11,9 @@ const {
   toggleMultiSelect,
 } = require('../../utils/quiz-flow');
 const { enableShareMenu } = require('../../utils/share');
+const { writeStorage } = require('../../utils/storage');
+
+const QUIZ_RESULT_STORAGE_KEY = 'quizResult';
 
 function getAnswerValue(question, answers) {
   const value = answers[question.id];
@@ -105,11 +108,19 @@ Page({
     // 结果页只展示 5 个；这里多保留候选，便于展示层去掉重复搭档后补位。
     const recommendations = recommendCommanders(profile, commanders, 12, dimensionLabels, costTierConfig, statsWeightConfig, matchingConfig);
 
-    wx.setStorageSync('quizResult', {
+    const stored = writeStorage(QUIZ_RESULT_STORAGE_KEY, {
       profile,
       recommendations,
       answers: this.data.answers,
+    }, {
+      schemaVersion: 1,
+      validate: (value) => Boolean(value && Array.isArray(value.recommendations)),
     });
+
+    if (!stored.ok) {
+      wx.showToast({ title: '推荐结果保存失败，请重试', icon: 'none' });
+      return;
+    }
 
     // redirectTo 替换当前页：避免 quiz ↔ result 互跳时页面栈无限增长
     wx.redirectTo({

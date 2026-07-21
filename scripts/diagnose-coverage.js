@@ -13,7 +13,9 @@ const {
   calculateSourceStatsMultiplier,
 } = require('../miniprogram/utils/recommender/stats');
 const {
+  applyDiversitySlots,
   calculateCompetitivePriorityMultiplier,
+  calculatePreferencePenaltyMultiplier,
 } = require('../miniprogram/utils/recommender/ranking');
 
 const args = new Set(process.argv.slice(2));
@@ -112,6 +114,70 @@ function buildResourceVariants() {
 
 function buildSingleQuestionAnswerSets() {
   const singleQuestions = questions.filter((question) => question.type !== 'multiple');
+
+  // 全笛卡尔积只适合离线深度诊断。默认 basis 使用确定性的覆盖集：
+  // 基线 + 每个单项变化 + 交错组合，避免发布检查枚举数百万画像。
+  if (mode !== 'full') {
+    const baseline = singleQuestions.reduce((answers, question) => ({
+      ...answers,
+      [question.id]: question.options[0].id,
+    }), {});
+    const variants = [{ ...baseline }];
+
+    singleQuestions.forEach((question) => {
+      question.options.slice(1).forEach((option) => {
+        variants.push({ ...baseline, [question.id]: option.id });
+      });
+    });
+
+    if (mode !== 'singletons') {
+      // 为每位主将生成一份按标签局部最优的画像，确保冷门但有效的推荐路径
+      // 不会因为随机样本不足而被误判为 dead。
+      commanders.forEach((commander) => {
+        const tags = buildEffectiveMatchTags(commander);
+        const answers = {};
+        singleQuestions.forEach((question) => {
+          const ranked = question.options.map((option, optionIndex) => ({
+            option,
+            optionIndex,
+            score: Object.keys(option.weights || {}).reduce((sum, key) => (
+              key.startsWith('__') ? sum : sum + Number(option.weights[key] || 0) * Number(tags[key] || 0)
+            ), 0),
+          })).sort((left, right) => right.score - left.score || left.optionIndex - right.optionIndex);
+          answers[question.id] = ranked[0].option.id;
+        });
+        variants.push(answers);
+      });
+
+      let state = 123456789;
+      const nextRandom = () => {
+        state = (Math.imul(state, 1664525) + 1013904223) >>> 0;
+        return state / 4294967296;
+      };
+      for (let seed = 0; seed < 128; seed += 1) {
+        const answers = {};
+        questions.forEach((question) => {
+          if (question.type === 'multiple') {
+            // 与完整画像采样保持同一随机序列；具体多选组合由外层 variants 穷举。
+            question.options.filter((option) => option.id !== 'any').forEach(() => nextRandom());
+            return;
+          }
+          const optionIndex = Math.floor(nextRandom() * question.options.length);
+          answers[question.id] = question.options[optionIndex].id;
+        });
+        variants.push(answers);
+      }
+    }
+
+    const seen = new Set();
+    return variants.filter((answers) => {
+      const key = singleQuestions.map((question) => answers[question.id]).join('|');
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
+  }
+
   const answerSets = [];
 
   const walk = (index, answers) => {
@@ -198,6 +264,7 @@ function buildSingleComponents(singleAnswerSets) {
       });
 
     const priorityProfile = {
+      ...weights,
       __selectedPriority: selectedPriorityFromAnswers(answers),
     };
     const competitiveMultiplier = commanderRuntime.map((item) => calculateCompetitivePriorityMultiplier(
@@ -205,11 +272,17 @@ function buildSingleComponents(singleAnswerSets) {
       item.commander,
       statsWeightConfig,
     ));
+    const preferenceMultiplier = commanderRuntime.map((item) => calculatePreferencePenaltyMultiplier(
+      priorityProfile,
+      item.commander,
+      matchingConfig,
+    ));
 
     return {
       answers,
       scoreVector: vectorFromWeights(weights),
       competitiveMultiplier,
+      preferenceMultiplier,
     };
   });
 }
@@ -237,33 +310,41 @@ function buildResourceComponents(resourceVariants) {
   }));
 }
 
-function scoreByIndex(baseScore, colorMultiplier, commanderIndex, competitiveMultiplier) {
-  const fitScore = baseScore * colorMultiplier;
-  return roundScore(
-    fitScore
+function scoreByIndex(baseScore, colorMultiplier, commanderIndex, competitiveMultiplier, preferenceMultiplier) {
+  const fitScore = roundScore(baseScore * colorMultiplier);
+  return {
+    fitScore,
+    score: roundScore(
+      fitScore
     * sourceAdjustmentFactor[commanderIndex]
     * metaStatusMultiplier[commanderIndex]
-    * competitiveMultiplier,
-  );
+    * competitiveMultiplier
+    * preferenceMultiplier,
+    ),
+  };
 }
 
 function topThreeFromComponents(single, color, resource) {
   const top = [];
 
   commanderRuntime.forEach((item, commanderIndex) => {
-    const score = scoreByIndex(
+    const scores = scoreByIndex(
       single.scoreVector[commanderIndex] + color.scoreVector[commanderIndex] + resource.scoreVector[commanderIndex],
       color.colorMultiplier[commanderIndex],
       commanderIndex,
       single.competitiveMultiplier[commanderIndex],
+      single.preferenceMultiplier[commanderIndex],
     );
-    const candidate = { name: item.commander.name, score };
+    const candidate = { ...item.commander, ...scores };
     let inserted = false;
 
     for (let index = 0; index < top.length; index += 1) {
       if (
         candidate.score > top[index].score
-        || (candidate.score === top[index].score && candidate.name.localeCompare(top[index].name) < 0)
+        || (candidate.score === top[index].score && candidate.fitScore > top[index].fitScore)
+        || (candidate.score === top[index].score
+          && candidate.fitScore === top[index].fitScore
+          && candidate.name.localeCompare(top[index].name) < 0)
       ) {
         top.splice(index, 0, candidate);
         inserted = true;
@@ -271,11 +352,11 @@ function topThreeFromComponents(single, color, resource) {
       }
     }
 
-    if (!inserted && top.length < 3) top.push(candidate);
-    if (top.length > 3) top.length = 3;
+    if (!inserted && top.length < 24) top.push(candidate);
+    if (top.length > 24) top.length = 24;
   });
 
-  return top;
+  return applyDiversitySlots(top, 3, statsWeightConfig);
 }
 
 function diagnoseCoverage() {
@@ -291,11 +372,6 @@ function diagnoseCoverage() {
   singleComponents.forEach((single) => {
     colorComponents.forEach((color) => {
       resourceComponents.forEach((resource) => {
-        const answers = {
-          ...single.answers,
-          colors: color.selectedIds,
-          resourceEngine: resource.selectedIds,
-        };
         const top = topThreeFromComponents(single, color, resource);
         profileCount += 1;
 
@@ -326,6 +402,9 @@ function diagnoseCoverage() {
 }
 
 function diagnoseVisualConsistency() {
+  const standalonePalettePages = new Set([
+    'miniprogram/pages/index/index.wxss',
+  ]);
   const files = fs.readdirSync(path.join(root, 'miniprogram/pages'), { withFileTypes: true })
     .filter((entry) => entry.isDirectory())
     .map((entry) => path.join(root, 'miniprogram/pages', entry.name, `${entry.name}.wxss`))
@@ -333,6 +412,7 @@ function diagnoseVisualConsistency() {
   const metrics = files.map((file) => {
     const source = fs.readFileSync(file, 'utf8');
     const rel = path.relative(root, file);
+    const normalizedRel = rel.replace(/\\/g, '/');
     return {
       file: rel,
       hexColors: (source.match(/#[0-9a-fA-F]{3,8}\b/g) || []).length,
@@ -343,12 +423,15 @@ function diagnoseVisualConsistency() {
       fontFamilies: (source.match(/font-family:/g) || []).length,
       hardcodedRpx: (source.match(/\b\d+rpx\b/g) || []).length,
       usesTokens: source.includes('var(--cedh-'),
+      standalonePalette: standalonePalettePages.has(normalizedRel),
     };
   });
   const warnings = [];
 
   metrics.forEach((metric) => {
-    if (!metric.usesTokens) warnings.push(`${metric.file}: no design-token usage detected`);
+    if (!metric.usesTokens && !metric.standalonePalette) {
+      warnings.push(`${metric.file}: no design-token usage detected`);
+    }
     if (metric.hexColors + metric.rgbaColors > 70) warnings.push(`${metric.file}: high local color count (${metric.hexColors + metric.rgbaColors})`);
     if (metric.fontFamilies > 3) warnings.push(`${metric.file}: many local font stacks (${metric.fontFamilies})`);
   });
@@ -372,6 +455,8 @@ function printReport() {
     },
     visual,
   }, null, 2));
+
+  if (args.has('--strict') && coverage.dead.length) process.exitCode = 1;
 }
 
 printReport();

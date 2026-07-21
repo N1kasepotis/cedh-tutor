@@ -81,12 +81,15 @@ function formatCommanderDisplayName(name) {
   return value;
 }
 
-function formatCommanderDisplayLines(name) {
+function formatCommanderDisplayLines(name, options = {}) {
   const value = String(name || '').trim();
   if (!value) return [];
 
   if (isPartnerName(value)) {
-    return splitCommanderNames(value).map(shortenPartnerFaceName);
+    const partnerNames = splitCommanderNames(value);
+    return options.abbreviatePartners === false
+      ? partnerNames
+      : partnerNames.map(shortenPartnerFaceName);
   }
 
   return [formatCommanderDisplayName(value)];

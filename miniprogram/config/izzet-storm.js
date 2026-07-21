@@ -1,18 +1,11 @@
-// 伊捷风暴：Krark / Ral 抛硬币风暴的计数器。引擎只留卡名，不放解释文字。
+// 伊捷风暴：Ral, Monsoon Mage 抛硬币风暴计数器。引擎只留卡名，不放解释文字。
 const izzetStormConfig = {
   engines: [
-    { key: 'krark', name: 'Krark, the Thumbless' },
-    { key: 'krarksThumb', name: "Krark's Thumb" },
     { key: 'ralMonsoon', name: 'Ral, Monsoon Mage' },
   ],
-  // 引擎默认全关，进入页面后按场随手开
+  // 默认不在场；用户确认 Ral 正面在场后再开启。
   defaultEngines: {
-    krark: false,
-    krarksThumb: false,
     ralMonsoon: false,
-  },
-  initialState: {
-    krarkCount: 1,
   },
 };
 

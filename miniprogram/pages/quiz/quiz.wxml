@@ -1,5 +1,5 @@
 <view class="page quiz">
-  <particle-background></particle-background>
+  <particle-background palette="noir-gold"></particle-background>
 
   <view class="content-layer quiz-shell">
     <view class="quiz-head">

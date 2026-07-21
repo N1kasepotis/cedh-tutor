@@ -7,3 +7,10 @@
   height: 100vh;
   background: transparent;
 }
+
+/* Canvas 动画无法从 JS 侧感知系统减弱动效设置，直接隐藏画布 */
+@media (prefers-reduced-motion: reduce) {
+  .particle-canvas {
+    display: none;
+  }
+}

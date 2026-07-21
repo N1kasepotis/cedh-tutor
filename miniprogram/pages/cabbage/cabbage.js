@@ -9,6 +9,7 @@ const {
   cabbageActivate,
   cabbageAvailable,
   untapAll,
+  untapOneFood,
   calculateMana,
 } = require('../../utils/cabbage');
 const { enableShareMenu } = require('../../utils/share');
@@ -108,6 +109,11 @@ Page({
 
   cabbageUntapAll() {
     this.cabbageState = untapAll(this.cabbageState);
+    this.syncCabbage();
+  },
+
+  cabbageUntapOneFood() {
+    this.cabbageState = untapOneFood(this.cabbageState);
     this.syncCabbage();
   },
 

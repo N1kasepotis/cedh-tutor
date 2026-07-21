@@ -11,13 +11,15 @@
   background: var(--cedh-surface-raised);
 }
 
+/* 技术仪表段标题：等宽 tracked 微标签，数值才是英雄 */
 .panel-title {
-  color: var(--cedh-text);
-  font-family: var(--cedh-font-serif);
-  font-size: var(--cedh-text-24);
-  font-weight: 400;
-  letter-spacing: -0.025em;
-  line-height: 1.1;
+  color: var(--cedh-text-soft);
+  font-family: var(--cedh-font-mono);
+  font-size: var(--cedh-text-14);
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  line-height: 1.2;
+  text-transform: uppercase;
 }
 
 .range-row {
@@ -77,11 +79,12 @@
   margin: var(--cedh-space-6) 0 var(--cedh-space-4);
   color: var(--cedh-accent);
   font-family: var(--cedh-font-serif);
-  font-size: 88rpx;
+  font-size: 96rpx;
   font-weight: 400;
   letter-spacing: -0.04em;
   line-height: 0.95;
   text-align: center;
+  font-variant-numeric: tabular-nums;
 }
 
 .random-button {
@@ -109,18 +112,22 @@
 }
 
 .roll-seat {
-  color: var(--cedh-text-soft);
+  color: rgba(var(--module-accent-rgb), 0.85);
+  font-family: var(--cedh-font-mono);
   font-size: var(--cedh-text-10);
-  letter-spacing: 0.1em;
+  font-weight: 600;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
 }
 
 .roll-value {
   margin-top: var(--cedh-space-2);
   color: var(--cedh-text);
   font-family: var(--cedh-font-serif);
-  font-size: var(--cedh-text-30);
+  font-size: 56rpx;
   font-weight: 400;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .roll-cell.winner .roll-value {
@@ -195,6 +202,12 @@
   transition: opacity 220ms ease, transform 220ms ease;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  .sticker-results {
+    transition: none;
+  }
+}
+
 .sticker-results.drawing {
   opacity: 0.42;
   transform: translateY(8rpx);
@@ -261,6 +274,35 @@
   align-items: center;
   justify-content: space-between;
   gap: var(--cedh-space-4);
+}
+
+/* 子模块保留自身身份色，避免被混沌工具的紫粉主题吞没。 */
+.tool-entry-cabbage {
+  --tool-entry-rgb: 47, 167, 93;
+  background: linear-gradient(135deg, rgba(var(--tool-entry-rgb), 0.14), var(--cedh-surface-raised) 58%);
+  border-color: rgba(var(--tool-entry-rgb), 0.34);
+}
+
+.tool-entry-izzet {
+  --tool-entry-rgb: 90, 169, 255;
+  background: linear-gradient(135deg, rgba(var(--tool-entry-rgb), 0.14), var(--cedh-surface-raised) 58%);
+  border-color: rgba(var(--tool-entry-rgb), 0.34);
+}
+
+.tool-entry-cabbage .tool-entry-title {
+  color: #bce8c9;
+}
+
+.tool-entry-cabbage .tool-entry-arrow {
+  color: #2fa75d;
+}
+
+.tool-entry-izzet .tool-entry-title {
+  color: #cfe6ff;
+}
+
+.tool-entry-izzet .tool-entry-arrow {
+  color: #5aa9ff;
 }
 
 .tool-entry-text {

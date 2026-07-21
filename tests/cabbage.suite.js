@@ -12,6 +12,7 @@ const {
   cabbageActivate,
   cabbageAvailable,
   untapAll,
+  untapOneFood,
   calculateMana,
 } = require('../miniprogram/utils/cabbage');
 const { cabbageConfig } = require('../miniprogram/config/cabbage');
@@ -41,9 +42,9 @@ test('Peregrin Took：造 token 的事件额外多造 1 Food，空放不触发',
   state = castTokens(createCabbageState(), { manufactor: true, peregrin: true });
   assert.deepEqual([state.food.u, state.clue.u, state.treasure.u], [1, 1, 1]);
 
-  // 三件套：Food(Cabbage 1 + Peregrin 1)=2，Clue 1、Treasure 1
+  // 三件套：Food = Cabbage 1 + Peregrin 1 = 2；Peregrin 那个 Food 也被 Manufactor 三倍 → Clue 2、Treasure 2
   state = castTokens(createCabbageState(), { cabbage: true, manufactor: true, peregrin: true });
-  assert.deepEqual([state.food.u, state.clue.u, state.treasure.u], [2, 1, 1]);
+  assert.deepEqual([state.food.u, state.clue.u, state.treasure.u], [2, 2, 2]);
 });
 
 test('删减优先删已横置，保住未横置资源', () => {
@@ -63,6 +64,17 @@ test('Cabbage 凑对产费横置 2 Food，重置横置全部解开', () => {
   assert.deepEqual(state.food, { u: 3, t: 2 });
   state = untapAll(state);
   assert.deepEqual(state.food, { u: 5, t: 0 });
+});
+
+test('Clock of Omens 解 1 个横置 Food：一次只解 1 个，无横置则不变', () => {
+  let state = createCabbageState();
+  state.food = { u: 1, t: 2 };
+  state = untapOneFood(state);
+  assert.deepEqual(state.food, { u: 2, t: 1 });
+  state = untapOneFood(state);
+  assert.deepEqual(state.food, { u: 3, t: 0 });
+  // 没有已横置 Food 时无操作
+  assert.deepEqual(untapOneFood(state).food, { u: 3, t: 0 });
 });
 
 test('横置追踪自适应：Food 恒有，Clue 仅 Jaheira/Statuary，Treasure 从不', () => {
@@ -143,11 +155,16 @@ test('卷心菜对账是独立全屏页，绿/白文本分色、常亮、切出�
   assert.match(wxml, /bindtap="cabbageCast"/);
   assert.match(wxml, /bindtap="cabbageActivate"/);
   assert.match(wxml, /bindtap="cabbageTapToken"/);
+  // 底部：全部重置（untapAll）+ 重置 1 Food（Clock of Omens 解 1 个横置 Food）+ 清空
+  assert.match(wxml, /bindtap="cabbageUntapAll"[^>]*>全部重置/);
+  assert.match(wxml, /bindtap="cabbageUntapOneFood"[^>]*>重置 1 Food/);
   assert.match(wxml, /wx:for="\{\{cabbageEngineList\}\}"/);
   assert.doesNotMatch(wxml, /征募抵泛用|产出三倍|每 token → 绿/);
   // 绿法术力 = 绿色 accent 文本；泛用 = 白；页根将 accent 覆盖为绿
   assert.match(wxss, /\.cabbage-page\s*{[\s\S]*?--cedh-accent:\s*#2fa75d/);
   assert.match(wxss, /\.cabbage-green\s*{[\s\S]*?color:\s*var\(--cedh-accent\)/);
+  // 仪表微标签消费 rgba(var(--module-accent-rgb))：页根必须定义该变量，否则整条声明失效回退暗色
+  assert.match(wxss, /\.cabbage-page\s*{[\s\S]*?--module-accent-rgb:\s*47,\s*167,\s*93/);
   assert.match(wxss, /\.cabbage-token-ctrls\s*{[\s\S]*?display:\s*grid/);
   assert.match(wxml, /class="cabbage-ctrl-slot"/);
   assert.match(js, /calculateMana/);

@@ -1,9 +1,10 @@
-// 试玩法力池纯逻辑：五色 + 无色增减、状态机、持久化（wx.setStorageSync）。
+// 试玩法术力池纯逻辑：五色 + 无色增减、状态机、持久化（wx.setStorageSync）。
 // 页面只做渲染与手势，所有规则集中在这里以便 Node 测试。
 
 const MANA_COLORS = ['W', 'U', 'B', 'R', 'G', 'C'];
 
 const MANA_STORAGE_KEY = 'playtest-mana-pool';
+const { readStorage, writeStorage } = require('./storage');
 
 function createManaPool() {
   return { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 };
@@ -37,21 +38,31 @@ function totalMana(pool) {
 }
 
 function saveManaPool(pool) {
-  try { wx.setStorageSync(MANA_STORAGE_KEY, { ...pool }); } catch (_) { /* noop */ }
+  return writeStorage(MANA_STORAGE_KEY, { ...pool }, {
+    schemaVersion: 1,
+    validate: isManaPool,
+  }).ok;
 }
 
 function loadManaPool() {
-  try {
-    const saved = wx.getStorageSync(MANA_STORAGE_KEY);
-    if (saved && typeof saved === 'object') {
-      const pool = createManaPool();
-      MANA_COLORS.forEach((c) => {
-        if (typeof saved[c] === 'number') pool[c] = Math.max(0, Math.min(99, saved[c]));
-      });
-      return pool;
-    }
-  } catch (_) { /* noop */ }
-  return createManaPool();
+  const stored = readStorage(MANA_STORAGE_KEY, {
+    schemaVersion: 1,
+    defaultValue: null,
+    validate: (value) => Boolean(value && typeof value === 'object'),
+  });
+  const pool = createManaPool();
+  if (!stored.value) return pool;
+  MANA_COLORS.forEach((c) => {
+    const value = Number(stored.value[c]);
+    if (Number.isFinite(value)) pool[c] = Math.max(0, Math.min(99, Math.floor(value)));
+  });
+  return pool;
+}
+
+function isManaPool(pool) {
+  return Boolean(pool && typeof pool === 'object' && MANA_COLORS.every((color) => (
+    Number.isFinite(pool[color]) && pool[color] >= 0 && pool[color] <= 99
+  )));
 }
 
 module.exports = {

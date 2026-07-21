@@ -1,49 +1,37 @@
 <view class="page result">
-  <particle-background></particle-background>
+  <particle-background palette="noir-gold"></particle-background>
 
   <view class="content-layer result-shell">
     <block wx:if="{{hasResult}}">
       <view class="recommend-list">
         <view wx:for="{{recommendations}}" wx:key="name" class="recommend-card surface {{item.isTop ? 'top-match' : ''}} {{item.previewMode}}">
-          <view class="banner-art banner-art-left" wx:if="{{item.isDualPreview}}">
+          <view class="banner-art banner-art-left" wx:if="{{item.isDualPreview}}" aria-role="button" aria-label="查看卡图" hover-class="art-tap-active" hover-stay-time="120" data-url="{{item.leftPreview.normal}}" bindtap="previewCardImage">
             <image
               wx:if="{{item.leftPreview.artCrop || item.leftPreview.normal}}"
               class="banner-art-image"
               lazy-load="{{true}}"
               src="{{item.leftPreview.artCrop || item.leftPreview.normal}}"
               mode="aspectFill"
-              aria-role="button"
-              aria-label="查看卡图"
-              data-url="{{item.leftPreview.normal}}"
-              bindtap="previewCardImage"
             ></image>
             <view wx:else class="banner-art-placeholder"></view>
           </view>
-          <view class="banner-art banner-art-right" wx:if="{{item.isDualPreview}}">
+          <view class="banner-art banner-art-right" wx:if="{{item.isDualPreview}}" aria-role="button" aria-label="查看卡图" hover-class="art-tap-active" hover-stay-time="120" data-url="{{item.rightPreview.normal}}" bindtap="previewCardImage">
             <image
               wx:if="{{item.rightPreview.artCrop || item.rightPreview.normal}}"
               class="banner-art-image"
               lazy-load="{{true}}"
               src="{{item.rightPreview.artCrop || item.rightPreview.normal}}"
               mode="aspectFill"
-              aria-role="button"
-              aria-label="查看卡图"
-              data-url="{{item.rightPreview.normal}}"
-              bindtap="previewCardImage"
             ></image>
             <view wx:else class="banner-art-placeholder"></view>
           </view>
-          <view class="banner-art banner-art-center" wx:if="{{item.isSinglePreview}}">
+          <view class="banner-art banner-art-center" wx:if="{{item.isSinglePreview}}" aria-role="button" aria-label="查看卡图" hover-class="art-tap-active" hover-stay-time="120" data-url="{{item.singlePreview.normal}}" bindtap="previewCardImage">
             <image
               wx:if="{{item.singlePreview.artCrop || item.singlePreview.normal}}"
               class="banner-art-image"
               lazy-load="{{true}}"
               src="{{item.singlePreview.artCrop || item.singlePreview.normal}}"
               mode="aspectFill"
-              aria-role="button"
-              aria-label="查看卡图"
-              data-url="{{item.singlePreview.normal}}"
-              bindtap="previewCardImage"
             ></image>
             <view wx:else class="banner-art-placeholder"></view>
           </view>

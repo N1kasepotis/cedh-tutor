@@ -29,7 +29,7 @@
   --cedh-line-strong: rgba(255, 123, 200, 0.36);
   --cedh-text: #f7f4ff;
   --cedh-text-soft: rgba(226, 234, 255, 0.68);
-  --cedh-text-faint: rgba(226, 234, 255, 0.38);
+  --cedh-text-faint: rgba(226, 234, 255, 0.46);
   --cedh-accent: #ff7bc8;
   --cedh-accent-ink: #ffd6ef;
   --cedh-accent-soft: rgba(255, 123, 200, 0.13);

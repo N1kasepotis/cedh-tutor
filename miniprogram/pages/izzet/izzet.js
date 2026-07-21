@@ -3,6 +3,7 @@ const {
   createStormState,
   castInstantSorcery,
   castOtherSpell,
+  shouldPromptRalUltimate,
   adjustCounter,
 } = require('../../utils/izzet-storm');
 const { enableShareMenu } = require('../../utils/share');
@@ -15,17 +16,13 @@ Page({
   data: {
     izzetEngineList: [],
     storm: createStormState(),
-    izzetShowCopies: true,
-    izzetShowSelfDamage: false,
-    izzetKrarkCount: 0,
   },
 
-  // 每次进入都是全新页面实例 → 引擎回到默认（切出即自动 deselect）
+  // 每次进入都是全新页面实例；Ral 默认不在场。
   onLoad() {
     enableShareMenu();
     this.stormState = createStormState();
     this.izzetEngines = { ...izzetStormConfig.defaultEngines };
-    this.krarkCount = izzetStormConfig.initialState.krarkCount;
     this.stormHistory = [];
     this.syncStorm();
   },
@@ -52,8 +49,6 @@ Page({
 
   syncStorm() {
     const engines = this.izzetEngines;
-    const krarkTriggers = engines.krark ? this.krarkCount : 0;
-    const flipsPerCast = (krarkTriggers + (engines.ralMonsoon ? 1 : 0)) * (engines.krarksThumb ? 2 : 1);
 
     this.setData({
       izzetEngineList: izzetStormConfig.engines.map((engine) => ({
@@ -62,9 +57,6 @@ Page({
         on: Boolean(engines[engine.key]),
       })),
       storm: this.stormState,
-      izzetShowCopies: Boolean(engines.krark),
-      izzetShowSelfDamage: Boolean(engines.ralMonsoon),
-      izzetKrarkCount: engines.krark ? this.krarkCount : 0,
     });
   },
 
@@ -81,10 +73,11 @@ Page({
 
   stormCastSpell() {
     this.pushStormHistory();
-    this.stormState = castInstantSorcery(this.stormState, this.izzetEngines, Math.random, this.krarkCount);
+    const previousState = this.stormState;
+    this.stormState = castInstantSorcery(this.stormState, this.izzetEngines, Math.random);
     this.syncStorm();
-    if (this.stormState.lastCopies > 0) {
-      wx.showToast({ title: `复制 +${this.stormState.lastCopies}`, icon: 'none' });
+    if (shouldPromptRalUltimate(previousState, this.stormState)) {
+      wx.showToast({ title: '转化可开大', icon: 'none' });
     }
   },
 
@@ -98,16 +91,6 @@ Page({
     const { field, delta } = event.currentTarget.dataset;
     this.pushStormHistory();
     this.stormState = adjustCounter(this.stormState, field, Number(delta));
-    this.syncStorm();
-  },
-
-  krarkCountUp() {
-    this.krarkCount = Math.min(this.krarkCount + 1, 8);
-    this.syncStorm();
-  },
-
-  krarkCountDown() {
-    this.krarkCount = Math.max(this.krarkCount - 1, 1);
     this.syncStorm();
   },
 

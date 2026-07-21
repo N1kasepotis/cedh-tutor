@@ -35,12 +35,15 @@ test('tracker page is registered and exposes commander record controls', () => {
 
   const js = fs.readFileSync(path.join(pageRoot, 'tracker.js'), 'utf8');
   const wxml = fs.readFileSync(path.join(pageRoot, 'tracker.wxml'), 'utf8');
+  const wxss = fs.readFileSync(path.join(pageRoot, 'tracker.wxss'), 'utf8');
   const pageJson = JSON.parse(fs.readFileSync(path.join(pageRoot, 'tracker.json'), 'utf8'));
 
-  assert.match(js, /wx\.getStorageSync/);
-  assert.match(js, /wx\.setStorageSync/);
+  assert.match(js, /readStorage\(trackerConfig\.storageKey/);
+  assert.match(js, /writeStorage\(trackerConfig\.storageKey/);
   assert.match(js, /buildTrackerExportText/);
-  assert.match(js, /formatCommanderDisplayLines/);
+  assert.match(js, /formatCommanderDisplayLines\(deck\.commander\.name,\s*\{ abbreviatePartners: false \}\)/);
+  assert.match(js, /longestDisplayLineLength/);
+  assert.match(js, /commanderNameClass/);
   assert.match(js, /maxDecks/);
   assert.match(wxml, /指挥官战情室/);
   assert.doesNotMatch(wxml, /<view class="tracker-title">我的指挥官<\/view>/);
@@ -58,12 +61,14 @@ test('tracker page is registered and exposes commander record controls', () => {
   assert.match(wxml, /class="selector-block"\s+wx:if="{{!item\.commander}}"/);
   assert.match(wxml, /wx:for="{{decks}}"/);
   assert.match(wxml, /wx:for="{{item\.displayLines}}"/);
+  assert.match(wxml, /class="deck-name \{\{item\.commanderNameClass\}\}"/);
   assert.match(wxml, /class="deck-name-line"/);
   assert.match(wxml, /mode="date"/);
   assert.match(wxml, /胜/);
   assert.match(wxml, /负/);
   assert.match(wxml, /平/);
-  assert.match(wxml, /bindtap="selectPendingResult"/);
+  assert.match(wxml, /bindchange="changePendingResultPicker"/);
+  assert.match(wxml, /bindchange="changePendingSeatPicker"/);
   assert.match(wxml, /resultOptions/);
   assert.match(wxml, /seatOptions/);
   assert.match(wxml, /winrateChart/);
@@ -73,16 +78,29 @@ test('tracker page is registered and exposes commander record controls', () => {
   assert.doesNotMatch(wxml, /周度游玩频率/);
   assert.doesNotMatch(js, /frequencyChart/);
   assert.doesNotMatch(js, /buildFrequencySeries/);
+  assert.match(wxml, /每日胜率/);
   assert.match(wxml, /轮次胜率/);
   assert.doesNotMatch(wxml, /<view class="chart-title">游玩频率<\/view>/);
   assert.doesNotMatch(wxml, /<view class="chart-title">座位胜率<\/view>/);
   assert.match(wxml, /复制战绩文本/);
   assert.match(wxml, /清空数据/);
-  assert.match(js, /selectPendingResult/);
-  assert.match(js, /selectPendingSeat/);
+  assert.match(js, /changePendingResultPicker/);
+  assert.match(js, /changePendingSeatPicker/);
   assert.match(js, /pendingResult/);
   assert.match(js, /pendingSeat/);
   assert.match(wxml, /class="match-row"[\s\S]*bindlongpress="confirmDeleteMatch"/);
+  assert.match(wxml, /wx:for="{{item\.visibleMatches}}"/);
+  assert.match(wxml, /bindtap="toggleMatchHistory"/);
+  assert.match(wxml, /bindtap="editMatch"/);
+  assert.match(wxml, /class="match-action match-edit"/);
+  assert.match(wxml, /class="match-action match-delete"/);
+  assert.match(wxml, /class="commander-avatar"/);
+  const commanderAvatarsStyle = wxss.match(/\.commander-avatars\s*{[\s\S]*?\n}/)?.[0] || '';
+  const commanderAvatarStyle = wxss.match(/\.commander-avatar\s*{[\s\S]*?\n}/)?.[0] || '';
+  assert.match(commanderAvatarsStyle, /gap:\s*12rpx/);
+  assert.doesNotMatch(commanderAvatarStyle, /margin-left:\s*-/);
+  assert.match(js, /splitCommanderNames/);
+  assert.match(js, /buildScryfallImageUrl/);
   assert.match(js, /confirmDeleteMatch\(event\)/);
   assert.match(js, /wx\.showModal\(\{[\s\S]*title:\s*'取消对局'/);
   assert.match(js, /confirmText:\s*'删除对局'/);
@@ -97,7 +115,6 @@ test('tracker page is registered and exposes commander record controls', () => {
   assert.match(exportBlock, /buildTrackerExportText/);
   assert.doesNotMatch(exportBlock, /JSON\.stringify/);
 
-  const wxss = fs.readFileSync(path.join(pageRoot, 'tracker.wxss'), 'utf8');
   // 主题变量收拢在 styles/themes/dark-table.wxss（tracker / random / playtest 共用）
   const darkTableTheme = fs.readFileSync(path.join(root, 'miniprogram/styles/themes/dark-table.wxss'), 'utf8');
   const sharedThemeBlock = darkTableTheme.match(/\.izzet-page\s*{[\s\S]*?\n}/)[0];
@@ -105,10 +122,15 @@ test('tracker page is registered and exposes commander record controls', () => {
   assert.match(sharedThemeBlock, /linear-gradient\(180deg,\s*#070707/);
   assert.match(sharedThemeBlock, /--cedh-surface:\s*rgba\(255,\s*249,\s*224,\s*0\.08\)/);
   assert.match(sharedThemeBlock, /--cedh-accent:\s*#b24536/);
+  assert.match(darkTableTheme, /\.tracker\s*{[\s\S]*?--module-accent-rgb:\s*205,\s*183,\s*116[\s\S]*?--cedh-accent:\s*#cdb774/);
   assert.doesNotMatch(sharedThemeBlock, /radial-gradient/);
   assert.doesNotMatch(darkTableTheme, /#fbfff1|#f3fad7|#eaf6c2/);
   assert.match(wxss, /\.deck-card\s*{[\s\S]*position:\s*relative/);
   assert.match(wxss, /\.deck-name-line\s*{[\s\S]*display:\s*block/);
+  assert.match(wxss, /\.deck-card-head\s*{[\s\S]*?align-items:\s*center/);
+  assert.match(wxss, /\.deck-name-line\s*{[\s\S]*?white-space:\s*nowrap/);
+  assert.match(wxss, /\.deck-name\.partner\s*{[\s\S]*?font-size:\s*28rpx/);
+  assert.match(wxss, /\.deck-name\.name-tight\s*{[\s\S]*?font-size:\s*24rpx/);
   assert.doesNotMatch(wxss, /botanical|flower-|sprig-|\.chart-section::before|\.chart-section::after/);
   assert.match(wxss, /\.deck-delete-button\s*{[\s\S]*position:\s*absolute/);
   assert.match(wxss, /\.deck-delete-button\s*{[\s\S]*right:\s*var\(--cedh-space-4\)/);
@@ -116,26 +138,23 @@ test('tracker page is registered and exposes commander record controls', () => {
   assert.match(wxss, /\.deck-delete-button\s*{[\s\S]*color:\s*var\(--cedh-danger\)/);
 });
 
-test('tracker record buttons stay inside the mobile grid', () => {
+test('tracker record pickers stay inside the mobile grid', () => {
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/tracker/tracker.wxml'), 'utf8');
   const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/tracker/tracker.wxss'), 'utf8');
-  const resultGroup = wxml.slice(
-    wxml.indexOf('<view class="result-buttons">'),
-    wxml.indexOf('<view class="record-label">座位</view>'),
-  );
-  const seatGroup = wxml.slice(
-    wxml.indexOf('<view class="seat-buttons">'),
-    wxml.indexOf('<button class="primary-button add-match-button"'),
+  const selectorGroup = wxml.slice(
+    wxml.indexOf('<view class="record-row record-selectors">'),
+    wxml.indexOf('<view class="record-actions">'),
   );
 
-  assert.doesNotMatch(resultGroup, /<button\b/);
-  assert.doesNotMatch(seatGroup, /<button\b/);
-  assert.match(resultGroup, /bindtap="selectPendingResult"/);
-  assert.match(seatGroup, /bindtap="selectPendingSeat"/);
-  assert.match(wxss, /\.result-buttons,\s*\.seat-buttons\s*{[\s\S]*display:\s*flex/);
-  assert.match(wxss, /\.result-button,\s*\.seat-button\s*{[\s\S]*flex:\s*1 1 0/);
-  assert.match(wxss, /\.result-button,\s*\.seat-button\s*{[\s\S]*min-width:\s*0/);
-  assert.match(wxss, /\.result-button,\s*\.seat-button\s*{[\s\S]*box-sizing:\s*border-box/);
+  assert.match(selectorGroup, /mode="date"/);
+  assert.match(selectorGroup, /mode="selector"[\s\S]*range="{{seatOptions}}"/);
+  assert.match(selectorGroup, /mode="selector"[\s\S]*range="{{resultOptions}}"/);
+  assert.match(selectorGroup, /bindchange="changePendingSeatPicker"/);
+  assert.match(selectorGroup, /bindchange="changePendingResultPicker"/);
+  assert.match(wxss, /\.record-selectors\s*{[\s\S]*grid-template-columns:\s*minmax\(0,/);
+  assert.match(wxss, /\.record-selectors\s*{[\s\S]*min-width:\s*0/);
+  assert.match(wxss, /\.record-select\s*{[\s\S]*box-sizing:\s*border-box/);
+  assert.match(wxss, /\.record-select\s*{[\s\S]*width:\s*100%/);
 });
 
 test('tracker result and seat controls use semantic color classes', () => {
@@ -144,8 +163,8 @@ test('tracker result and seat controls use semantic color classes', () => {
   const js = fs.readFileSync(path.join(root, 'miniprogram/pages/tracker/tracker.js'), 'utf8');
   const chartJs = fs.readFileSync(path.join(root, 'miniprogram/utils/tracker-charts.js'), 'utf8');
 
-  assert.match(wxml, /class="result-button \{\{resultOption\.id\}\}/);
-  assert.match(wxml, /class="seat-button \{\{seat\.id\}\}/);
+  assert.match(wxml, /class="record-select \{\{item\.pendingResult\}\}"/);
+  assert.match(wxml, /class="record-select \{\{item\.pendingSeat\}\}"/);
   assert.match(wxml, /class="match-seat \{\{match\.seatClass\}\}"/);
   assert.match(wxml, /class="match-result \{\{match\.result\}\}"/);
   assert.match(js, /seatClass:\s*match\.seat \|\| 'seat-unknown'/);
@@ -169,15 +188,12 @@ test('tracker result and seat controls use semantic color classes', () => {
   assert.doesNotMatch(seatTheme, /--tracker-seat-1:\s*rgba\(177,\s*82,\s*72/);
 
   ['win', 'loss', 'draw'].forEach((result) => {
-    assert.match(wxss, new RegExp(`\\.result-button\\.${result}\\s*{[\\s\\S]*background:`));
-    assert.match(wxss, new RegExp(`\\.result-button\\.${result}\\.selected\\s*{[\\s\\S]*color:`));
+    assert.match(wxss, new RegExp(`\\.record-select\\.${result}\\s*{[\\s\\S]*background:`));
     assert.match(wxss, new RegExp(`\\.match-result\\.${result}\\s*{[\\s\\S]*color:`));
   });
 
   ['seat1', 'seat2', 'seat3', 'seat4'].forEach((seat) => {
-    assert.match(wxss, new RegExp(`\\.seat-button\\.${seat}\\s*{[\\s\\S]*background:`));
-    assert.match(wxss, new RegExp(`\\.seat-button\\.${seat}\\.selected\\s*{[\\s\\S]*color:\\s*#ffffff`));
-    assert.match(wxss, new RegExp(`\\.seat-button\\.${seat}\\.selected\\s*{[\\s\\S]*background:\\s*var\\(--tracker-seat-leaf-solid-`));
+    assert.match(wxss, new RegExp(`\\.record-select\\.${seat}\\s*{[\\s\\S]*background:`));
     assert.match(wxss, new RegExp(`\\.match-seat\\.${seat}\\s*{[\\s\\S]*color:`));
     assert.match(wxss, new RegExp(`\\.match-seat\\.${seat}\\s*{[\\s\\S]*background:\\s*var\\(--tracker-seat-leaf-`));
   });
@@ -200,8 +216,9 @@ test('tracker commander input and debug actions stay inside mobile width', () =>
   assert.match(wxss, /\.debug-actions\s*{[\s\S]*display:\s*flex/);
   assert.match(wxss, /\.debug-action-button\s*{[\s\S]*flex:\s*1 1 0/);
   assert.match(wxss, /\.debug-action-button\s*{[\s\S]*min-width:\s*0/);
-  assert.match(wxss, /\.date-picker\s*{[\s\S]*background:\s*var\(--cedh-input-glass\)/);
-  assert.match(wxss, /\.date-picker\s*{[\s\S]*border:\s*var\(--cedh-hairline\)/);
+  assert.match(wxss, /\.record-select\s*{[\s\S]*background:\s*var\(--cedh-input-glass\)/);
+  assert.match(wxss, /\.record-select\s*{[\s\S]*border:\s*var\(--cedh-hairline\)/);
+  assert.match(wxss, /page\s*{[\s\S]*overflow-x:\s*hidden/);
   const trackerGlassActionBlock = wxss.match(
     /\.tracker \.add-match-button,[\s\S]*?\.tracker \.debug-action-button\s*{[\s\S]*?\n}/,
   )[0];
@@ -279,7 +296,18 @@ test('tracker stats keep draws separate and build chart series', () => {
 
   assert.deepEqual(
     buildWinRateSeries(deck.matches, trackerConfig.stats).map((point) => point.rateLabel),
-    ['0.0%', '50.0%', '50.0%', '66.7%', '50.0%', '60.0%'],
+    ['0.0%', '100.0%', '0.0%', '100.0%', '0.0%', '100.0%'],
+  );
+  assert.deepEqual(
+    buildWinRateSeries([
+      { id: 'daily-1', date: '2026-07-01', result: 'win' },
+      { id: 'daily-2', date: '2026-07-01', result: 'loss' },
+      { id: 'daily-3', date: '2026-07-02', result: 'win' },
+    ], trackerConfig.stats).map(({ date, label, rateLabel, sampleSize }) => ({ date, label, rateLabel, sampleSize })),
+    [
+      { date: '2026-07-01', label: '07-01', rateLabel: '50.0%', sampleSize: 2 },
+      { date: '2026-07-02', label: '07-02', rateLabel: '100.0%', sampleSize: 1 },
+    ],
   );
   assert.deepEqual(
     buildFrequencySeries(deck.matches, trackerConfig.stats),
@@ -359,11 +387,24 @@ test('tracker chart drawing is isolated from page state', () => {
   assert.match(chartJs, /function paintSeatWinrateChart\(ctx,\s*width,\s*height,\s*series\)/);
   assert.match(chartJs, /function getWinRateViewport\(values\)/);
   assert.equal(CHART_COLORS.accent, '#2FA75D');
-  assert.equal(CHART_COLORS.winrateInk, '#050505');
+  assert.equal(CHART_COLORS.winrateInk, '#F2D0A2');
   assert.match(chartJs, /type === 'winrate' \? CHART_COLORS\.winrateInk : CHART_COLORS\.accent/);
   assert.equal(CHART_CONFIG.winrateMinVisibleRange, 0.32);
   const zoomedViewport = getWinRateViewport([0.5, 0.6]);
   assert.ok(Math.abs(zoomedViewport.min - 0.39) < 0.001);
   assert.ok(Math.abs(zoomedViewport.max - 0.71) < 0.001);
   assert.ok(getWinRateViewport([0, 0.5, 0.667]).max < 1, 'winrate viewport should zoom in when data allows');
+});
+
+test('tracker coalesces chart redraws and caps expanded history nodes', () => {
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/tracker/tracker.js'), 'utf8');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/tracker/tracker.wxml'), 'utf8');
+  const config = fs.readFileSync(path.join(root, 'miniprogram/config/tracker.js'), 'utf8');
+
+  assert.match(js, /buildChartSignature/);
+  assert.match(js, /if \(!this\.pageActive \|\| this\.chartDrawTimer\) return/);
+  assert.match(js, /clearChartDrawTimer\(\)/);
+  assert.match(js, /newestMatches\.slice\(0, historyRenderLimit\)/);
+  assert.match(config, /historyRenderLimit:\s*50/);
+  assert.match(wxml, /\{\{item\.historyToggleLabel\}\}/);
 });

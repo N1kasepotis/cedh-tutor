@@ -1,0 +1,12 @@
+{
+  "name": "cedh-tutor-miniprogram",
+  "version": "1.0.0",
+  "private": true,
+  "description": "cEDH Tutor native WeChat Mini Program",
+  "scripts": {
+    "syntax": "node scripts/check-syntax.js",
+    "test": "node --test tests/*.js",
+    "diagnose": "node scripts/diagnose-coverage.js --strict",
+    "check": "node scripts/check-syntax.js && node --test tests/*.js && node scripts/diagnose-coverage.js --strict"
+  }
+}

@@ -1,5 +1,46 @@
 const SCRYFALL_NAMED_API = 'https://api.scryfall.com/cards/named?fuzzy=';
 const SCRYFALL_USER_AGENT = 'cEDH-Tutor/1.0';
+const SCRYFALL_REQUEST_TIMEOUT_MS = 8000;
+const IMAGE_REQUEST_CACHE_LIMIT = 64;
+const MAX_CONCURRENT_IMAGE_REQUESTS = 4;
+const imageRequestCache = new Map();
+const imageRequestQueue = [];
+let activeImageRequests = 0;
+
+function pumpImageRequestQueue() {
+  while (activeImageRequests < MAX_CONCURRENT_IMAGE_REQUESTS && imageRequestQueue.length) {
+    const job = imageRequestQueue.shift();
+    activeImageRequests += 1;
+    let task;
+    try {
+      task = job.task();
+    } catch (error) {
+      activeImageRequests -= 1;
+      job.reject(error);
+      continue;
+    }
+    Promise.resolve(task).then(
+      (value) => {
+        activeImageRequests -= 1;
+        job.resolve(value);
+        pumpImageRequestQueue();
+      },
+      (error) => {
+        activeImageRequests -= 1;
+        job.reject(error);
+        pumpImageRequestQueue();
+      },
+    );
+  }
+}
+
+function enqueueImageRequest(task) {
+  const promise = new Promise((resolve, reject) => {
+    imageRequestQueue.push({ task, resolve, reject });
+  });
+  pumpImageRequestQueue();
+  return promise;
+}
 
 // 归一化卡名：把 Moxfield/MTGO 导出常用的弯引号（' ' ʼ ＇）替换为 ASCII 直引号。
 // Scryfall 对弯引号（编码后 %E2%80%99）会返回 400，直引号才能命中；
@@ -43,38 +84,63 @@ function extractCardImageUris(card) {
 }
 
 function fetchCardImageUris(cardName) {
-  return new Promise((resolve, reject) => {
+  const normalizedName = normalizeCardName(cardName);
+  if (!normalizedName) return Promise.reject(new Error('Invalid card name'));
+  if (imageRequestCache.has(normalizedName)) return imageRequestCache.get(normalizedName);
+
+  const request = enqueueImageRequest(() => new Promise((resolve, reject) => {
     if (typeof wx === 'undefined' || !wx.request) {
       reject(new Error('wx.request unavailable'));
       return;
     }
 
-    if (!cardName || typeof cardName !== 'string') {
-      reject(new Error('Invalid card name'));
-      return;
-    }
-
     wx.request({
-      url: buildScryfallNamedUrl(cardName),
+      url: buildScryfallNamedUrl(normalizedName),
       method: 'GET',
+      timeout: SCRYFALL_REQUEST_TIMEOUT_MS,
       header: {
         Accept: 'application/json',
         'User-Agent': SCRYFALL_USER_AGENT,
       },
       success: (response) => {
-        if (response.statusCode === 200) {
-          resolve(extractCardImageUris(response.data));
-        } else {
-          reject(new Error(`Scryfall API returned ${response.statusCode}`));
+        if (!response || response.statusCode !== 200) {
+          const statusCode = response && response.statusCode;
+          reject(new Error(`Scryfall API returned ${statusCode || 'invalid response'}`));
+          return;
         }
+        if (!response.data || typeof response.data !== 'object') {
+          reject(new Error('Scryfall API returned invalid data'));
+          return;
+        }
+
+        const images = extractCardImageUris(response.data);
+        if (!images.artCrop && !images.normal && !images.large) {
+          reject(new Error('Scryfall card has no image'));
+          return;
+        }
+        resolve(images);
       },
-      fail: reject,
+      fail: (cause) => reject(cause instanceof Error ? cause : new Error('Scryfall request failed')),
     });
+  }));
+
+  // 同一张卡的并发请求复用一个 Promise；失败后删除，允许用户下次重试。
+  const cachedRequest = request.catch((error) => {
+    imageRequestCache.delete(normalizedName);
+    throw error;
   });
+  imageRequestCache.set(normalizedName, cachedRequest);
+  if (imageRequestCache.size > IMAGE_REQUEST_CACHE_LIMIT) {
+    const oldestKey = imageRequestCache.keys().next().value;
+    if (oldestKey !== normalizedName) imageRequestCache.delete(oldestKey);
+  }
+  return cachedRequest;
 }
 
 module.exports = {
   SCRYFALL_NAMED_API,
+  SCRYFALL_REQUEST_TIMEOUT_MS,
+  MAX_CONCURRENT_IMAGE_REQUESTS,
   normalizeCardName,
   buildScryfallNamedUrl,
   buildScryfallImageUrl,

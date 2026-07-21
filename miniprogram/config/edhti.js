@@ -136,7 +136,7 @@ const edhtiPersonas = {
     description: '你不一定玩最热门的套牌，但你一定要让对手为轻敌付费。你喜欢短平快、出其不意、低调攒杀机。',
     quote: '别人经常在输掉前一回合才意识到你是最大威胁。',
     strategy: ["Aggro","Voltron","Stompy","Surprise Kill"],
-    colors: '红白为核心，Boros / Mardu / Naya',
+    colors: 'Dimir / Boros / Mardu / Naya 奇袭',
     color: '#FF4FD8',
     commander: {
       cn: '虎影百合子',
@@ -152,7 +152,7 @@ const edhtiPersonas = {
       "Marisi, Breaker of the Coil",
       "Firkraag, Cunning Instigator",
       "Karazikar, the Eye Tyrant",
-      "Tahngarth, First Mate",
+      "Yuriko, the Tiger's Shadow",
     ],
   },
   CSXM: {
@@ -204,7 +204,7 @@ const edhtiPersonas = {
       "Jan Jansen, Chaos Crafter",
       "Mishra, Artificer Prodigy",
       "Magar of the Magic Strings",
-      "Evelyn, the Covetous",
+      "Yisan, the Wanderer Bard",
     ],
   },
   CSDM: {
@@ -221,16 +221,16 @@ const edhtiPersonas = {
       en: 'Kenrith, the Returned King',
     },
     commanderPool: [
-      "Etali, Primal Conqueror",
-      "Xenagos, God of Revels",
-      "Klauth, Unrivaled Ancient",
-      "Ghalta, Primal Hunger",
-      "Atarka, World Render",
-      "Miirym, Sentinel Wyrm",
-      "The Ur-Dragon",
-      "Animar, Soul of Elements",
-      "Maelstrom Wanderer",
-      "Ziatora, the Incinerator",
+      "Kenrith, the Returned King",
+      "Atraxa, Praetors' Voice",
+      "Atraxa, Grand Unifier",
+      "Jodah, the Unifier",
+      "Esika, God of the Tree",
+      "Niv-Mizzet Reborn",
+      "Omnath, Locus of Creation",
+      "Tivit, Seller of Secrets",
+      "Sisay, Weatherlight Captain",
+      "Narset, Enlightened Master",
     ],
   },
   CSDO: {
@@ -240,7 +240,7 @@ const edhtiPersonas = {
     description: '你喜欢少废话，给压力，逼对手回答。你可以玩冷门，但冷门不是借口，能砍人才算合格。',
     quote: '别人会在第三回合开始重新计算自己的血量。',
     strategy: ["Voltron","Aggro","Stomp","Single-threat"],
-    colors: '红绿为核心，Gruul / Temur / Naya',
+    colors: 'Boros / Selesnya / Naya / Gruul 单体强化',
     color: '#FF6A5C',
     commander: {
       cn: '受雇狂徒切片',
@@ -256,7 +256,7 @@ const edhtiPersonas = {
       "Sigarda, Host of Herons",
       "Uril, the Miststalker",
       "Rafiq of the Many",
-      "Zurgo Helmsmasher",
+      "Slicer, Hired Muscle",
     ],
   },
   FTXM: {
@@ -308,7 +308,7 @@ const edhtiPersonas = {
       "Karona, False God",
       "Vaevictis Asmadi, the Dire",
       "Aminatou, the Fateshifter",
-      "Zedruu the Greathearted",
+      "Nekusar, the Mindrazer",
     ],
   },
   FTDM: {
@@ -318,7 +318,7 @@ const edhtiPersonas = {
     description: '你爱互动、爱谈局势，也爱把情绪写在脸上。你可能不是最想卷的人，但你绝不会让牌桌安静无事发生。',
     quote: '别人会觉得跟你打牌很有节目效果，偶尔也需要降温。',
     strategy: ["Aggro","Politics","Goad","Group Slug"],
-    colors: 'Mardu / Rakdos 政治猛袭',
+    colors: 'Mardu / Rakdos / Jeskai 政治互动',
     color: '#FF5A4E',
     commander: {
       cn: '至善赛特鲁',
@@ -334,7 +334,7 @@ const edhtiPersonas = {
       "Phabine, Boss's Confidant",
       "Jetmir, Nexus of Revels",
       "Jinnie Fay, Jetmir's Second",
-      "Rocco, Cabaretti Caterer",
+      "Zedruu the Greathearted",
     ],
   },
   FTDO: {
@@ -360,7 +360,7 @@ const edhtiPersonas = {
       "Brenard, Ginger Sculptor",
       "Xyris, the Writhing Storm",
       "Captain Howler, Sea Scourge",
-      "Gogo, Master of Mimicry",
+      "Kynaios and Tiro of Meletis",
     ],
   },
   FSXM: {
@@ -412,7 +412,7 @@ const edhtiPersonas = {
       "Gorion, Wise Mentor",
       "Eruth, Tormented Prophet",
       "Rilsa Rael, Kingpin",
-      "Sefris of the Hidden Ways",
+      "Muldrotha, the Gravetide",
     ],
   },
   FSDM: {
@@ -422,7 +422,7 @@ const edhtiPersonas = {
     description: '你喜欢简单快乐：跳费、拍威胁、进战斗。你不排斥强牌，但你更想让主将和大怪真的上桌做事。',
     quote: '别人知道你要做什么，但还是得回答你的场面。',
     strategy: ["Stompy","Big Creatures","Aggro","Dragons"],
-    colors: 'Gruul / Temur 大生物',
+    colors: 'Gruul / Temur / Mono-red 大生物',
     color: '#C7F05A',
     commander: {
       cn: '暴民头目克仑可',
@@ -438,7 +438,7 @@ const edhtiPersonas = {
       "Miirym, Sentinel Wyrm",
       "The Ur-Dragon",
       "Maelstrom Wanderer",
-      "Jin Sakai, Ghost of Tsushima",
+      "Krenko, Mob Boss",
     ],
   },
   FSDO: {

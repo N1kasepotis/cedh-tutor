@@ -1,5 +1,5 @@
 <view class="page edhti">
-  <particle-background></particle-background>
+  <particle-background palette="neon-arcade"></particle-background>
 
   <view class="content-layer edhti-shell">
     <block wx:if="{{!hasResult}}">

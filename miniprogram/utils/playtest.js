@@ -15,6 +15,9 @@ const ZONE_LABELS = {
 };
 
 const MAX_DECK_LINES = 400;
+const MAX_DECK_CHARS = 50000;
+const MAX_TOTAL_CARDS = 250;
+const MAX_COMMANDER_CARDS = 3;
 
 const SECTION_HEADERS = {
   commander: 'command',
@@ -41,9 +44,15 @@ function normalizeSectionHeader(line) {
 // 可用 Commander / Deck 区段标题，也可用第一个空行把后段视为指挥官区；
 // 无标题且无空行时，首 1–3 张自动识别为指挥官，其余归主牌。
 function parseMtgoDeckText(text) {
-  const lines = String(text || '').replace(/\r\n?/g, '\n').split('\n');
-  if (lines.length > MAX_DECK_LINES) {
-    return { main: [], commanders: [], warnings: ['牌表行数过多，请确认是纯文本牌表'] };
+  const source = String(text || '').replace(/\r\n?/g, '\n');
+  const lines = source.split('\n');
+  if (source.length > MAX_DECK_CHARS || lines.length > MAX_DECK_LINES) {
+    return {
+      main: [],
+      commanders: [],
+      warnings: [`牌表超过 ${MAX_DECK_LINES} 行或 ${MAX_DECK_CHARS} 字符上限`],
+      fatal: true,
+    };
   }
 
   const cards = [];
@@ -105,7 +114,23 @@ function parseMtgoDeckText(text) {
     });
   }
 
-  return { main, commanders, warnings };
+  const mainCount = main.reduce((total, card) => total + card.count, 0);
+  const commanderCount = commanders.reduce((total, card) => total + card.count, 0);
+  const totalCards = mainCount + commanderCount;
+  if (totalCards > MAX_TOTAL_CARDS || commanderCount > MAX_COMMANDER_CARDS) {
+    return {
+      main: [],
+      commanders: [],
+      warnings: [
+        totalCards > MAX_TOTAL_CARDS
+          ? `牌表共 ${totalCards} 张，超过 ${MAX_TOTAL_CARDS} 张试玩上限`
+          : `解析到 ${commanderCount} 张主将牌，最多支持 ${MAX_COMMANDER_CARDS} 张`,
+      ],
+      fatal: true,
+    };
+  }
+
+  return { main, commanders, warnings, fatal: false, totalCards };
 }
 
 function cleanCard(card) {
@@ -237,4 +262,8 @@ module.exports = {
   moveCard,
   toggleTapped,
   countZones,
+  MAX_DECK_LINES,
+  MAX_DECK_CHARS,
+  MAX_TOTAL_CARDS,
+  MAX_COMMANDER_CARDS,
 };

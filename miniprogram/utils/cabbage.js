@@ -27,24 +27,26 @@ function tokenNeedsTap(tokenKey, engines) {
   return Boolean(on.jaheira || on.statuary);
 }
 
-// 对手施放非生物咒语：The Cabbage Merchant 在场才造 Food；
-// Academy Manufactor 在场则线索/珍宝各再造 1（三倍膨胀）；
-// Peregrin Took 在场时，本次事件只要造了任意 token，就再额外多造 1 个 Food
-//（Cabbage/Manufactor 造出的 token 都在你的控制下，触发 Peregrin「那些 token 外加 1 个 Food」）。
+// 对手施放非生物咒语的产出。顺序①：先把本次要创建的 Food 全数算出，再让 Manufactor 三倍。
+// - The Cabbage Merchant 在场造 1 个 Food；
+// - Peregrin Took 在场、且本次有 token 产生（Cabbage 或 Manufactor 在场）时，再额外造 1 个 Food；
+// - Academy Manufactor 在场时，对上面「每一个被创建的 Food」各补 1 Clue + 1 Treasure。
+// 于是三件套里 Peregrin 那个 Food 也被 Manufactor 三倍 → Food/Clue/Treasure 各 2 个
+//（旧写法把 Peregrin 的 Food 加在 Manufactor 之后，漏算了它对应的 1 Clue + 1 Treasure）。
 function castTokens(state, engines) {
   const on = engines || {};
   const next = cloneState(state);
-  let created = 0;
-  if (on.cabbage) {
-    next.food.u += 1;
-    created += 1;
-  }
+
+  const created = on.cabbage || on.manufactor;
+  let food = 0;
+  if (on.cabbage) food += 1;
+  if (on.peregrin && created) food += 1;
+
+  next.food.u += food;
   if (on.manufactor) {
-    next.clue.u += 1;
-    next.treasure.u += 1;
-    created += 1;
+    next.clue.u += food;
+    next.treasure.u += food;
   }
-  if (on.peregrin && created > 0) next.food.u += 1;
   return next;
 }
 
@@ -96,6 +98,16 @@ function untapAll(state) {
   return next;
 }
 
+// Clock of Omens（横置两个其它神器 → 解横置目标神器）：解开 1 个已横置 Food，拿回去再凑对产费。
+// 只解 1 个；没有已横置 Food 时不变（Clock 的费用是横置别的神器，不进食物账追踪）。
+function untapOneFood(state) {
+  if (state.food.t <= 0) return state;
+  const next = cloneState(state);
+  next.food.t -= 1;
+  next.food.u += 1;
+  return next;
+}
+
 // 可造法术力：绿（有色，优先）+ 泛用（Inspiring Statuary 征募，仅非神器咒语）。
 // Treasure 作为独立的“可再产 N 绿”提示返回，不折进主数（牺牲/Jaheira 皆为未横置 Treasure 数）。
 function calculateMana(state, engines) {
@@ -133,5 +145,6 @@ module.exports = {
   cabbageActivate,
   cabbageAvailable,
   untapAll,
+  untapOneFood,
   calculateMana,
 };

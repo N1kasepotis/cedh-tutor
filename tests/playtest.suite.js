@@ -64,7 +64,28 @@ test('牌组试玩解析把弯引号归一化为直引号（Moxfield 导出兼�
   assert.ok(parsed.main.every((entry) => !entry.name.includes('’')));
 });
 
-test('建局：洗库、指挥区、起手七张，注入 rng 可复现', () => {
+test('牌组试玩拒绝超长文本、异常总张数与过量主将，避免无界展开', () => {
+  const {
+    parseMtgoDeckText,
+    MAX_DECK_CHARS,
+    MAX_TOTAL_CARDS,
+    MAX_COMMANDER_CARDS,
+  } = require('../miniprogram/utils/playtest');
+
+  const tooLong = parseMtgoDeckText('A'.repeat(MAX_DECK_CHARS + 1));
+  assert.equal(tooLong.fatal, true);
+  assert.equal(tooLong.main.length + tooLong.commanders.length, 0);
+
+  const tooManyCards = parseMtgoDeckText('99 Alpha\n99 Beta\n99 Gamma\n\n1 Boss');
+  assert.equal(tooManyCards.fatal, true);
+  assert.match(tooManyCards.warnings[0], new RegExp(String(MAX_TOTAL_CARDS)));
+
+  const tooManyCommanders = parseMtgoDeckText(`1 Main\n\n${MAX_COMMANDER_CARDS + 1} Boss`);
+  assert.equal(tooManyCommanders.fatal, true);
+  assert.match(tooManyCommanders.warnings[0], /主将/);
+});
+
+test('建局：洗库、主将区、起手七张，注入 rng 可复现', () => {
   const { parseMtgoDeckText, createGame } = require('../miniprogram/utils/playtest');
 
   const lines = [];
@@ -165,6 +186,9 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   const wxml = fs.readFileSync(path.join(pageRoot, 'playtest.wxml'), 'utf8');
   const wxss = fs.readFileSync(path.join(pageRoot, 'playtest.wxss'), 'utf8');
   const pageJson = JSON.parse(fs.readFileSync(path.join(pageRoot, 'playtest.json'), 'utf8'));
+  const darkTableTheme = fs.readFileSync(path.join(root, 'miniprogram/styles/themes/dark-table.wxss'), 'utf8');
+
+  assert.match(darkTableTheme, /\.playtest\s*{[\s\S]*?--module-accent-rgb:\s*126,\s*141,\s*205[\s\S]*?--cedh-accent:\s*#7e8dcd/);
 
   // 六区俱全
   ['battlefield', 'zone-command', 'zone-library', 'zone-graveyard', 'zone-exile', 'hand'].forEach((id) => {
@@ -177,6 +201,7 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   assert.match(wxml, /bindtap="openZone"/);
   assert.match(wxml, /bindtap="playFromHand"/);
   assert.match(wxml, /bindlongpress="inspectFieldCard"/);
+  assert.match(wxml, /catchtouchcancel="fieldTouchCancel"/);
   assert.match(wxml, /bindtap="addToken"/);
   assert.match(wxml, /Token/);
   assert.match(wxml, /长按查找/);
@@ -186,9 +211,12 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
 
   // 性能约定：无 keyframe 动画、禁页面滚动
   assert.doesNotMatch(wxss, /animation|keyframes/);
+  // 触控地板：对局高频 ± 控件不得回落到 44rpx / 56rpx 以下
+  assert.match(wxss, /\.mana-ctrl\s*{[\s\S]*?width:\s*44rpx[\s\S]*?height:\s*44rpx/);
+  assert.match(wxss, /\.life-btn\s*{[\s\S]*?width:\s*56rpx[\s\S]*?height:\s*56rpx/);
   const boardBlock = wxml.slice(wxml.indexOf('playtest-board'));
   // 粒子背景提升到页面级：导入态与对局态（含 battlefield）共用同款暗色动态背景
-  assert.match(wxml, /<particle-background><\/particle-background>/);
+  assert.match(wxml, /<particle-background palette="playtest"><\/particle-background>/);
   // particle-background 当前在 playtest-shell 内部，导入态与对局态复用
   assert.ok(wxml.indexOf('particle-background') > wxml.indexOf('playtest-shell'), '粒子背景应在导入态壳内');
   assert.ok(wxml.indexOf('particle-background') < wxml.indexOf('playtest-board'), '粒子背景应在对局态之前（页面级）');
@@ -202,6 +230,10 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   assert.doesNotMatch(wxml, /playtest-title|套牌试玩<\/view>/);
   assert.match(wxml, /支持 MTGO \/ Moxfield \/ MTGso 纯文本牌表/);
   assert.match(wxml, /每行「数量 卡名」；主将以 Commander 标题或空行与主牌分隔/);
+  assert.match(wxss, /\.playtest-shell\s*{[\s\S]*flex:\s*1/);
+  assert.match(wxss, /\.deck-input\s*{[\s\S]*height:\s*calc\(100vh - 480rpx\)/);
+  assert.match(wxss, /\.deck-input\s*{[\s\S]*min-height:\s*600rpx/);
+  assert.match(wxml, /maxlength="50000"/);
   // 对局沙盘不再堆砌互动规则说明（已按需求删除 battlefield-empty 引导）
   assert.doesNotMatch(wxml, /battlefield-empty|点手牌打出|长按手牌看大图/);
   assert.match(wxml, /bindtap="confirmClearDeckText"[\s\S]{0,80}>清除现套牌/);
@@ -234,8 +266,11 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   // 导师效应：牌库面板带精确查找输入框
   assert.match(wxml, /class="panel-search"/);
   assert.match(wxml, /bindinput="handlePanelSearch"/);
+  assert.match(wxml, /bindtap="loadMorePanelCards"/);
   assert.match(js, /handlePanelSearch/);
   assert.match(js, /panelQuery/);
+  assert.match(js, /PANEL_PAGE_SIZE\s*=\s*40/);
+  assert.match(js, /cards\.slice\(0, this\.panelVisibleCount\)/);
 
   // 区域面板可把牌移入放逐区（除放逐区自身与主将区外都提供）；主将只在手牌/战场/坟场间移动
   assert.match(wxml, /wx:if="\{\{panelZone !== 'exile' && panelZone !== 'command'\}\}"[^>]*data-to="exile"[^>]*>放逐/);
@@ -247,9 +282,13 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   const generalInspectTargets = js.slice(js.indexOf('const targets'), js.indexOf('return targets.filter'));
   assert.doesNotMatch(generalInspectTargets, /zone: 'command'/);
 
-  // 非牌库区卡面带直连卡图，衍生物保持文字瓦片
+  // 小卡面使用 small 图，详视仍使用 normal；衍生物保持文字瓦片
   assert.match(wxml, /class="card-art"/);
-  assert.match(js, /art:\s*card\.token \? '' : buildScryfallImageUrl\(card\.name\)/);
+  assert.match(js, /art:\s*card\.token \|\| this\.lowMemoryMode \? '' : buildScryfallImageUrl\(card\.name, 'small'\)/);
+  assert.match(js, /art:\s*this\.lowMemoryMode \? '' : buildScryfallImageUrl\(card\.name, 'small'\)/);
+  assert.match(js, /wx\.onMemoryWarning/);
+  assert.match(js, /DRAG_RENDER_INTERVAL_MS\s*=\s*32/);
+  assert.match(js, /syncManaView\(\)/);
   assert.match(wxss, /\.card-art\s*{[\s\S]*position:\s*absolute/);
   assert.match(wxss, /\.field-card\.token\s*{[\s\S]*border-style:\s*dashed/);
 
@@ -286,7 +325,7 @@ test('展示库顶模式：牌库检索面板 toggle + 库顶 art_crop 铺底牌
   // 库顶图取 library[0] 的 art_crop 无字大画；关闭 / 空库时返回空串
   assert.match(js, /buildTopCardArt\(revealTop\)\s*{/);
   assert.match(js, /this\.game\.library\[0\]\.name,\s*'art_crop'/);
-  assert.match(js, /if \(!revealTop \|\| !this\.game \|\| !this\.game\.library\.length\) return '';/);
+  assert.match(js, /if \(this\.lowMemoryMode \|\| !revealTop \|\| !this\.game \|\| !this\.game\.library\.length\) return '';/);
 
   // syncView 每次重算库顶图，抓牌 / 检索取牌 / 洗牌后自动跟随
   assert.match(js, /topCardArt: this\.buildTopCardArt\(this\.data\.revealTop\)/);
@@ -340,25 +379,23 @@ test('主将区呈现主将卡图（单主将居中 / 双拍档左右分屏）�
   assert.match(wxss, /\.zone-art-half\s*{[\s\S]*?flex:\s*1/);
 });
 
-test('主页入口：playtest 位于混沌工具下方，反馈模块已移除', () => {
+test('主页入口：playtest 导航完整，反馈模块已移除', () => {
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
   const js = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.js'), 'utf8');
   const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
 
   assert.match(wxml, /home-button-playtest/);
   assert.match(wxml, /套牌试玩/);
+  assert.match(wxml, /home-button-playtest[^>]*>[\s\S]*?home-button-index">04<\/text>/);
   assert.match(js, /goPlaytest/);
-  assert.ok(
-    wxml.indexOf('home-button-random') < wxml.indexOf('home-button-playtest'),
-    'playtest 入口应在混沌工具之后',
-  );
 
-  // 反馈模块已清除，中文入口使用暗橙色与极薄双阴影
+  // 反馈模块已清除，首页入口遵循统一的无装饰索引样式；标题可保留独立硬边投影
   assert.doesNotMatch(wxml, /feedback/);
   assert.doesNotMatch(js, /goFeedback|feedback/);
   assert.doesNotMatch(wxss, /feedback/);
-  assert.match(wxss.match(/\.home-button-zh\s*{[\s\S]*?\n}/)[0], /rgba\(138,\s*64,\s*22,\s*0\.9\)/);
-  assert.match(wxss.match(/\.home-button-zh\s*{[\s\S]*?\n}/)[0], /text-shadow:/);
+  assert.doesNotMatch(wxss, /gradient|--home-accent/);
+  assert.doesNotMatch(wxss, /\.home-button\s*{[^}]*text-shadow/);
+  assert.match(wxss, /\.home\s*{[\s\S]*font-family:[^;]*HomePixel/);
   assert.ok(!fs.existsSync(path.join(root, 'miniprogram/pages/feedback')), 'feedback 页面目录应已删除');
   assert.ok(!fs.existsSync(path.join(root, 'miniprogram/config/feedback.js')), 'feedback 配置应已删除');
 });

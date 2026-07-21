@@ -357,7 +357,7 @@
 .commander-en {
   margin-top: var(--cedh-space-2);
   color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-16);
+  font-size: calc(var(--cedh-text-16) + 5rpx);
   font-style: italic;
   letter-spacing: 0.08em;
   line-height: 1.35;

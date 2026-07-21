@@ -1,64 +1,94 @@
-<view
-  class="page home"
-  bindtouchstart="handleHomeTouchStart"
-  bindtouchmove="handleHomeTouchMove"
-  bindtouchend="handleHomeTouchEnd"
-  bindtouchcancel="handleHomeTouchEnd"
->
-  <particle-background id="homeParticles" interactive="{{true}}"></particle-background>
+<view class="page home">
+  <view class="home-content">
+    <view class="home-hero" style="padding-top: {{homeNavClearancePx}}px;">
+      <view class="home-format-notes" aria-label="Commander format annotations">
+        <text class="home-format-note">RULE 903 DEFINES EDH AS MULTIPLAYER COMMANDER</text>
+        <text class="home-format-note home-format-note-next">EVERY DECK PLAYS 100 SINGLETON CARDS</text>
+        <text class="home-format-note home-format-note-next">EVERY PLAYER STARTS THE GAME AT 40 LIFE</text>
+        <text class="home-format-note home-format-para">CEDH PLAYS THE SAME RULES AT FULL POWER</text>
+        <text class="home-format-note home-format-note-next">PODS OF FOUR RACE ON FAST MANA AND TUTORS</text>
+        <text class="home-format-note home-format-note-next">MOST GAMES END BETWEEN TURN 2 AND TURN 6</text>
+        <text class="home-format-note home-format-para">EVERY SEAT PLAYS TO WIN AND NO ONE APOLOGIZES</text>
+        <text class="home-format-note home-format-note-next">ALLIANCES FOLLOW THREAT NOT FRIENDSHIP</text>
+        <text class="home-format-note home-format-note-next">PROXIES ARE WELCOME AT MOST TABLES</text>
+      </view>
 
-  <view class="content-layer home-content">
-    <view class="title display-title" aria-label="cEDH Tutor">
-      <text class="title-latin">cEDH</text>
-      <text class="title-tutor">Tutor</text>
+      <view class="home-title-block">
+        <text class="home-title-brand">cEDH Tutor</text>
+        <text class="home-title-zh">竞技指挥官导师</text>
+      </view>
     </view>
-    <view class="subtitle">竞技指挥官导师</view>
-    <view class="home-actions">
-      <view class="home-button home-button-edhti" aria-role="button" aria-label="人格测试" hover-class="pressable-active" hover-stay-time="120" bindtap="goEdhti">
-        <view class="home-button-glass-stack">
-          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
-        </view>
+
+    <view class="home-actions" aria-role="navigation" aria-label="主要功能">
+      <view class="home-button home-button-edhti" aria-role="button" aria-label="人格测试" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goEdhti">
+        <text class="home-button-index">01</text>
         <view class="home-button-text">
-          <view class="home-button-zh">人格测试</view>
-          <view class="home-button-en" aria-hidden="true">EDHTI TEST</view>
+          <text class="home-button-zh">人格测试</text>
+          <text class="home-button-en">EDHTI PROFILE</text>
         </view>
       </view>
-      <view class="home-button home-button-match" aria-role="button" aria-label="火花觉醒 指挥官问卷" hover-class="pressable-active" hover-stay-time="120" bindtap="goQuiz">
-        <view class="home-button-glass-stack">
-          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
-        </view>
+
+      <view class="home-button home-button-match" aria-role="button" aria-label="火花觉醒，指挥官问卷" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goQuiz">
+        <text class="home-button-index">02</text>
         <view class="home-button-text">
-          <view class="home-button-zh">火花觉醒</view>
-          <view class="home-button-en" aria-hidden="true">SPARK ZONE</view>
+          <text class="home-button-zh">火花觉醒</text>
+          <text class="home-button-en">COMMANDER FINDER</text>
         </view>
       </view>
-      <view class="home-button home-button-tracker" aria-role="button" aria-label="我的主将" hover-class="pressable-active" hover-stay-time="120" bindtap="goTracker">
-        <view class="home-button-glass-stack">
-          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
-        </view>
+
+      <view class="home-button home-button-bracket" aria-role="button" aria-label="强度分级" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goBracket">
+        <text class="home-button-index">03</text>
         <view class="home-button-text">
-          <view class="home-button-zh">我的主将</view>
-          <view class="home-button-en" aria-hidden="true">COMMANDERS</view>
+          <text class="home-button-zh">强度分级</text>
+          <text class="home-button-en">BRACKET ANALYSIS</text>
         </view>
       </view>
-      <view class="home-button home-button-random" aria-role="button" aria-label="混沌工具" hover-class="pressable-active" hover-stay-time="120" bindtap="goRandom">
-        <view class="home-button-glass-stack">
-          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
-        </view>
+
+      <view class="home-button home-button-playtest" aria-role="button" aria-label="套牌试玩" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goPlaytest">
+        <text class="home-button-index">04</text>
         <view class="home-button-text">
-          <view class="home-button-zh">混沌工具</view>
-          <view class="home-button-en" aria-hidden="true">CHAOS TOOLS</view>
+          <text class="home-button-zh">套牌试玩</text>
+          <text class="home-button-en">DECK SANDBOX</text>
         </view>
       </view>
-      <view class="home-button home-button-playtest" aria-role="button" aria-label="套牌试玩" hover-class="pressable-active" hover-stay-time="120" bindtap="goPlaytest">
-        <view class="home-button-glass-stack">
-          <view wx:for="{{glassLayers}}" wx:key="*this" class="home-button-glass home-button-glass-{{item}}"></view>
-        </view>
+
+      <view class="home-button home-button-life" aria-role="button" aria-label="血量记录" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goLifeTracker">
+        <text class="home-button-index">05</text>
         <view class="home-button-text">
-          <view class="home-button-zh">套牌试玩</view>
-          <view class="home-button-en" aria-hidden="true">PLAYTEST</view>
+          <text class="home-button-zh">血量记录</text>
+          <text class="home-button-en">LIFE COUNTER</text>
         </view>
       </view>
+
+      <view class="home-button home-button-random" aria-role="button" aria-label="混沌工具" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goRandom">
+        <text class="home-button-index">06</text>
+        <view class="home-button-text">
+          <text class="home-button-zh">混沌工具</text>
+          <text class="home-button-en">CHAOS TOOLKIT</text>
+        </view>
+      </view>
+
+      <view class="home-button home-button-tracker" aria-role="button" aria-label="我的主将" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goTracker">
+        <text class="home-button-index">07</text>
+        <view class="home-button-text">
+          <text class="home-button-zh">我的主将</text>
+          <text class="home-button-en">COMMANDER LOG</text>
+        </view>
+      </view>
+
+      <view class="home-button home-button-meta" aria-role="button" aria-label="环境梯度，功能开发中" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="showMetaComingSoon">
+        <text class="home-button-index">08</text>
+        <view class="home-button-text">
+          <text class="home-button-zh">环境梯度</text>
+          <text class="home-button-en">META TIER LIST</text>
+        </view>
+      </view>
+    </view>
+
+    <view class="home-colophon" aria-label="版次与授权信息">
+      <text class="home-colophon-item">MADE BY CPP123</text>
+      <text class="home-colophon-item home-colophon-center">MIT LICENSE</text>
+      <text class="home-colophon-item home-colophon-right">SCRYFALL API</text>
     </view>
   </view>
 </view>

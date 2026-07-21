@@ -7,6 +7,7 @@ const {
   toggleTapped,
   countZones,
   shuffleInPlace,
+  MAX_DECK_CHARS,
 } = require('../../utils/playtest');
 const {
   MANA_COLORS,
@@ -21,12 +22,15 @@ const {
 const { buildScryfallImageUrl, normalizeCardName } = require('../../utils/scryfall');
 const { splitCommanderNames } = require('../../utils/result-display');
 const { enableShareMenu } = require('../../utils/share');
+const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
 
 const DECK_TEXT_STORAGE_KEY = 'playtestDeckText';
 const CARD_WIDTH = 66;
 const CARD_HEIGHT = 92;
 const DRAG_THRESHOLD = 6;
 const LONGPRESS_MS = 350;
+const DRAG_RENDER_INTERVAL_MS = 32;
+const PANEL_PAGE_SIZE = 40;
 
 function buildInspectTargets(zone) {
   // 主将只在手牌 / 战场 / 坟场之间移动，不入库、不放逐、不回主将区
@@ -64,6 +68,8 @@ Page({
     panelZone: '',
     panelTitle: '',
     panelCards: [],
+    panelTotal: 0,
+    panelHasMore: false,
     panelQuery: '',
     revealTop: false,
     topCardArt: '',
@@ -87,13 +93,44 @@ Page({
     this.nextTokenId = -1;
     this.handScrollLeft = 0;
     this.manaPool = loadManaPool();
-
-    try {
-      const savedText = wx.getStorageSync(DECK_TEXT_STORAGE_KEY);
-      if (savedText) this.setData({ deckText: savedText });
-    } catch (e) {
-      // storage unavailable, proceed with empty input
+    this.lowMemoryMode = false;
+    if (wx.onMemoryWarning) {
+      this.memoryWarningHandler = () => {
+        this.lowMemoryMode = true;
+        if (this.game) this.syncView();
+      };
+      wx.onMemoryWarning(this.memoryWarningHandler);
     }
+
+    const storedDeck = readStorage(DECK_TEXT_STORAGE_KEY, {
+      schemaVersion: 1,
+      defaultValue: '',
+      validate: (value) => typeof value === 'string',
+    });
+    if (storedDeck.value) {
+      const deckText = storedDeck.value.slice(0, MAX_DECK_CHARS);
+      this.setData({
+        deckText,
+        importWarning: deckText.length < storedDeck.value.length ? '已截断过长的历史牌表，请重新导入' : '',
+      });
+    }
+  },
+
+  onHide() {
+    this.clearFieldLongpress();
+    this.clearDragRender();
+    this.drag = null;
+  },
+
+  onUnload() {
+    this.clearFieldLongpress();
+    this.clearDragRender();
+    this.drag = null;
+    this.zoneRects = null;
+    if (this.memoryWarningHandler && wx.offMemoryWarning) {
+      wx.offMemoryWarning(this.memoryWarningHandler);
+    }
+    this.memoryWarningHandler = null;
   },
 
   onShareAppMessage() {
@@ -120,10 +157,10 @@ Page({
       confirmText: '清除',
       success: (result) => {
         if (!result.confirm) return;
-        try {
-          wx.removeStorageSync(DECK_TEXT_STORAGE_KEY);
-        } catch (e) {
-          // storage unavailable, skip
+        const removed = removeStorage(DECK_TEXT_STORAGE_KEY);
+        if (!removed.ok) {
+          wx.showToast({ title: '牌表清除失败', icon: 'none' });
+          return;
         }
         this.setData({ deckText: '', importWarning: '' });
       },
@@ -138,7 +175,14 @@ Page({
       return;
     }
 
-    wx.setStorageSync(DECK_TEXT_STORAGE_KEY, this.data.deckText);
+    const stored = writeStorage(DECK_TEXT_STORAGE_KEY, this.data.deckText, {
+      schemaVersion: 1,
+      validate: (value) => typeof value === 'string',
+    });
+    if (!stored.ok) {
+      wx.showToast({ title: '牌表保存失败，请重试', icon: 'none' });
+      return;
+    }
     this.parsed = parsed;
     this.game = createGame(parsed);
     this.nextTokenId = -1;
@@ -183,15 +227,15 @@ Page({
     const config = typeof options === 'function' ? { callback: options } : (options || {});
 
     this.setData({
-      // 非牌库区的卡带 normal 直连卡图；衍生物保持文字瓦片
+      // 小卡片只加载 small 图，详视才使用 normal，降低真机图片解码内存。
       battlefield: this.game.battlefield.map((card) => ({
         ...card,
-        art: card.token ? '' : buildScryfallImageUrl(card.name),
+        art: card.token || this.lowMemoryMode ? '' : buildScryfallImageUrl(card.name, 'small'),
       })),
       hand: this.game.hand.map((card) => ({
         id: card.id,
         name: card.name,
-        art: buildScryfallImageUrl(card.name),
+        art: this.lowMemoryMode ? '' : buildScryfallImageUrl(card.name, 'small'),
       })),
       counts: countZones(this.game),
       topCardArt: this.buildTopCardArt(this.data.revealTop),
@@ -314,7 +358,8 @@ Page({
     const card = this.game.battlefield[index];
     if (!card) return;
 
-    const touch = event.touches[0];
+    const touch = event.touches && event.touches[0];
+    if (!touch) return;
     this.longpressFired = false;
     this.drag = {
       id: card.id,
@@ -335,7 +380,8 @@ Page({
     if (!drag) return;
     if (this.longpressFired) return;
 
-    const touch = event.touches[0];
+    const touch = event.touches && event.touches[0];
+    if (!touch) return;
     const deltaX = touch.clientX - drag.startX;
     const deltaY = touch.clientY - drag.startY;
     if (!drag.moved && Math.abs(deltaX) < DRAG_THRESHOLD && Math.abs(deltaY) < DRAG_THRESHOLD) return;
@@ -351,15 +397,32 @@ Page({
       y = Math.max(-CARD_HEIGHT / 2, Math.min(y, rect.height + CARD_HEIGHT / 2));
     }
 
-    this.setData({
-      [`battlefield[${drag.index}].x`]: x,
-      [`battlefield[${drag.index}].y`]: y,
-      dragId: drag.id,
-    });
+    drag.latestX = x;
+    drag.latestY = y;
+    this.scheduleDragRender(drag);
+  },
+
+  scheduleDragRender(drag) {
+    if (this.dragRenderTimer) return;
+    this.dragRenderTimer = setTimeout(() => {
+      this.dragRenderTimer = null;
+      if (!this.drag || this.drag !== drag) return;
+      this.setData({
+        [`battlefield[${drag.index}].x`]: drag.latestX,
+        [`battlefield[${drag.index}].y`]: drag.latestY,
+        dragId: drag.id,
+      });
+    }, DRAG_RENDER_INTERVAL_MS);
+  },
+
+  clearDragRender() {
+    if (this.dragRenderTimer) clearTimeout(this.dragRenderTimer);
+    this.dragRenderTimer = null;
   },
 
   fieldTouchEnd(event) {
     this.clearFieldLongpress();
+    this.clearDragRender();
     const drag = this.drag;
     this.drag = null;
     if (!drag) return;
@@ -376,7 +439,11 @@ Page({
       return;
     }
 
-    const touch = event.changedTouches[0];
+    const touch = event.changedTouches && event.changedTouches[0];
+    if (!touch) {
+      this.setData({ dragId: 0 });
+      return;
+    }
     const dropZone = this.hitTestZone(touch.clientX, touch.clientY);
 
     if (dropZone && dropZone !== 'battlefield') {
@@ -398,9 +465,21 @@ Page({
     // 留在战场：把新坐标写回状态
     const card = this.game.battlefield[drag.index];
     if (card) {
-      card.x = this.data.battlefield[drag.index].x;
-      card.y = this.data.battlefield[drag.index].y;
+      card.x = Number.isFinite(drag.latestX) ? drag.latestX : card.x;
+      card.y = Number.isFinite(drag.latestY) ? drag.latestY : card.y;
     }
+    this.setData({
+      [`battlefield[${drag.index}].x`]: card ? card.x : 0,
+      [`battlefield[${drag.index}].y`]: card ? card.y : 0,
+      dragId: 0,
+    });
+  },
+
+  fieldTouchCancel() {
+    this.clearFieldLongpress();
+    this.clearDragRender();
+    this.drag = null;
+    this.longpressFired = false;
     this.setData({ dragId: 0 });
   },
 
@@ -433,32 +512,51 @@ Page({
   openZone(event) {
     const zone = event.currentTarget.dataset.zone;
     if (!zone || !this.game) return;
-    if (zone !== this.data.panelZone) this.setData({ panelQuery: '' });
-    this.refreshPanel(zone);
+    const panelQuery = zone === this.data.panelZone ? this.data.panelQuery : '';
+    this.refreshPanel(zone, { reset: true, query: panelQuery });
   },
 
-  refreshPanel(zone) {
+  refreshPanel(zone, options = {}) {
     // 查询也归一化弯引号，与已归一化的存储名对齐
-    const query = normalizeCardName(this.data.panelQuery).toLowerCase();
+    const panelQuery = options.query === undefined ? this.data.panelQuery : String(options.query || '');
+    const query = normalizeCardName(panelQuery).toLowerCase();
     const cards = (this.game[zone] || [])
       .filter((card) => !query || card.name.toLowerCase().includes(query))
       .map((card) => ({ id: card.id, name: card.name }));
+    if (options.reset || !this.panelVisibleCount) this.panelVisibleCount = PANEL_PAGE_SIZE;
+    const panelCards = cards.slice(0, this.panelVisibleCount);
 
     this.setData({
       panelZone: zone,
       panelTitle: zone === 'library' ? '查找牌库' : (ZONE_LABELS[zone] || zone),
-      panelCards: cards,
+      panelQuery,
+      panelCards,
+      panelTotal: cards.length,
+      panelHasMore: panelCards.length < cards.length,
     });
   },
 
   handlePanelSearch(event) {
-    this.setData({ panelQuery: event.detail.value }, () => {
-      if (this.data.panelZone) this.refreshPanel(this.data.panelZone);
-    });
+    if (this.data.panelZone) {
+      this.refreshPanel(this.data.panelZone, { reset: true, query: event.detail.value });
+    }
+  },
+
+  loadMorePanelCards() {
+    if (!this.data.panelZone || !this.data.panelHasMore) return;
+    this.panelVisibleCount = (this.panelVisibleCount || PANEL_PAGE_SIZE) + PANEL_PAGE_SIZE;
+    this.refreshPanel(this.data.panelZone);
   },
 
   closeZone() {
-    this.setData({ panelZone: '', panelCards: [], panelQuery: '' });
+    this.panelVisibleCount = PANEL_PAGE_SIZE;
+    this.setData({
+      panelZone: '',
+      panelCards: [],
+      panelQuery: '',
+      panelTotal: 0,
+      panelHasMore: false,
+    });
   },
 
   shuffleLibrary() {
@@ -472,7 +570,7 @@ Page({
   // 展示库顶模式（Bolas's Citadel / Mystic Forge 类效应）：开启后牌库芯片以库顶
   // 第一张的 art_crop 无字大画铺底。syncView 每次重算，抓牌/检索/洗牌后自动跟随。
   buildTopCardArt(revealTop) {
-    if (!revealTop || !this.game || !this.game.library.length) return '';
+    if (this.lowMemoryMode || !revealTop || !this.game || !this.game.library.length) return '';
     return buildScryfallImageUrl(this.game.library[0].name, 'art_crop');
   },
 
@@ -486,7 +584,9 @@ Page({
   buildCommandPreview() {
     const faces = ((this.game && this.game.command) || [])
       .reduce((list, card) => list.concat(splitCommanderNames(card.name)), []);
-    if (!faces.length) return { mode: 'empty', single: '', left: '', right: '' };
+    if (this.lowMemoryMode || !faces.length) {
+      return { mode: 'empty', single: '', left: '', right: '' };
+    }
     if (faces.length === 1) {
       return { mode: 'single', single: buildScryfallImageUrl(faces[0], 'art_crop'), left: '', right: '' };
     }
@@ -501,7 +601,7 @@ Page({
   // 坟场 / 放逐区：最上方（最近置入 = 数组末位）一张的 art_crop 大画，恒显（无开关，逻辑同展示库顶）。
   buildZoneTopArt(zone) {
     const cards = (this.game && this.game[zone]) || [];
-    if (!cards.length) return '';
+    if (this.lowMemoryMode || !cards.length) return '';
     return buildScryfallImageUrl(cards[cards.length - 1].name, 'art_crop');
   },
 
@@ -635,30 +735,43 @@ Page({
     const color = event.currentTarget.dataset.color;
     if (!color || !this.manaPool) return;
     addMana(this.manaPool, color);
-    saveManaPool(this.manaPool);
-    this.syncView();
+    this.persistManaPool();
+    this.syncManaView();
   },
 
   manaRemove(event) {
     const color = event.currentTarget.dataset.color;
     if (!color || !this.manaPool) return;
     removeMana(this.manaPool, color);
-    saveManaPool(this.manaPool);
-    this.syncView();
+    this.persistManaPool();
+    this.syncManaView();
   },
 
   manaReset() {
     if (!this.manaPool) return;
     wx.showModal({
-      title: '清空法力池',
-      content: '将所有颜色的法力量归零？',
+      title: '清空法术力池',
+      content: '将所有颜色的法术力量归零？',
       confirmText: '清空',
       success: (result) => {
         if (!result.confirm) return;
         resetManaPool(this.manaPool);
-        saveManaPool(this.manaPool);
-        this.syncView();
+        this.persistManaPool();
+        this.syncManaView();
       },
+    });
+  },
+
+  persistManaPool() {
+    if (saveManaPool(this.manaPool) || this.manaStorageWarningShown) return;
+    this.manaStorageWarningShown = true;
+    wx.showToast({ title: '法术力池保存失败', icon: 'none' });
+  },
+
+  syncManaView() {
+    this.setData({
+      manaPool: { ...this.manaPool },
+      manaTotal: totalMana(this.manaPool),
     });
   },
 

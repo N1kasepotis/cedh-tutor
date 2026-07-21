@@ -1,219 +1,317 @@
+page {
+  height: 100%;
+  overflow: hidden;
+  background: #D0F03C;
+}
+
+.home {
+  box-sizing: border-box;
+  width: 100%;
+  height: 100vh;
+  min-height: 100vh;
+  padding: 0;
+  padding-bottom: constant(safe-area-inset-bottom);
+  padding-bottom: env(safe-area-inset-bottom);
+  overflow: hidden;
+  color: #FFFFFF;
+  background: #D0F03C;
+  font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
+}
+
 .home-content {
   display: flex;
-  min-height: calc(100vh - 240rpx);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
   flex-direction: column;
-  justify-content: flex-end;
-  align-items: stretch;
-  gap: var(--cedh-space-4);
-  padding-bottom: var(--cedh-space-8);
 }
 
-.title {
-  color: var(--cedh-text);
-  font-size: 108rpx;
-  letter-spacing: -0.06em;
-  line-height: 1.08;
-}
-
-.display-title {
-  display: flex;
-  flex-wrap: nowrap;
-  align-items: baseline;
-  justify-content: center;
-  width: 552rpx;
+.home-hero {
   box-sizing: border-box;
-  padding: 0 0 10rpx 4rpx;
-  color: var(--cedh-ink);
-  font-style: italic;
-  font-weight: 800;
+  display: flex;
+  min-height: 0;
+  flex: 0 0 45vh;
+  flex-direction: column;
+  padding-right: 40rpx;
+  padding-bottom: 48rpx;
+  padding-left: 40rpx;
+  overflow: hidden;
+}
+
+/* 工业注释风小字：完整句子成段，只用字母数字与空格，无冒号斜杠句号 */
+.home-format-notes {
+  display: flex;
+  flex: 0 0 auto;
+  flex-direction: column;
+  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
+}
+
+.home-format-note {
+  display: block;
+  max-width: 100%;
+  color: rgba(0,0,0,0.35);
+  font-size: 7px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.7px;
+  line-height: 1.35;
+  text-transform: uppercase;
+  word-spacing: 1px;
+}
+
+.home-format-note-next {
+  margin-top: 8rpx;
+}
+
+.home-format-para {
+  margin-top: 28rpx;
+}
+
+.home-title-block {
+  display: flex;
+  min-width: 0;
+  margin-top: auto;
+  padding-right: 16rpx;
+  flex-direction: column;
+  align-items: flex-start;
+}
+
+.home-title-brand,
+.home-title-zh {
+  display: block;
+  max-width: 100%;
+  font-style: normal;
+  font-weight: 400;
+  white-space: nowrap;
+}
+
+.home-title-brand {
+  color: #FFFFFF;
+  font-family: "cEDHDisplay", "Arial Black", Impact, "Avenir Next Condensed", "DIN Condensed", sans-serif;
+  font-size: 52px;
+  font-weight: 900;
+  letter-spacing: -0.055em;
+  line-height: 0.92;
+  -webkit-font-smoothing: antialiased;
+  -webkit-text-stroke: 0.5px #FFFFFF;
   transform: skewX(-8deg);
   transform-origin: left center;
-  /* 统一渲染：iOS 默认亚像素抗锯齿会把重字重描得更粗，与安卓灰度抗锯齿拉开差距 */
-  -webkit-font-smoothing: antialiased;
-  text-shadow:
-    2rpx 2rpx 0 rgba(177, 139, 82, 0.22),
-    0 18rpx 40rpx rgba(95, 33, 27, 0.14);
 }
 
-/* cEDHDisplay = index.js 用 wx.loadFontFace 内嵌的 Archivo Black；系统字体只作加载前/失败兜底 */
-.title-latin {
-  font-family: "cEDHDisplay", "Arial Black", "Avenir Next Condensed", "DIN Condensed", Impact, var(--cedh-font-sans);
-  font-size: 108rpx;
-  font-weight: 900;
-  letter-spacing: -0.085em;
-  line-height: 1.05;
-}
-
-.title-tutor {
-  margin-left: 20rpx;
-  font-family: "cEDHDisplay", "Arial Black", "Avenir Next Condensed", "DIN Condensed", Impact, var(--cedh-font-sans);
-  font-size: 102rpx;
-  font-weight: 900;
-  letter-spacing: -0.07em;
-  line-height: 1.05;
-}
-
-.subtitle {
-  align-self: flex-start;
-  width: 552rpx;
-  max-width: 100%;
-  margin-top: -22rpx;
-  color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-14);
-  font-weight: 420;
-  letter-spacing: 0.12em;
-  line-height: 1.7;
-  text-align: center;
+.home-title-zh {
+  margin-top: 24rpx;
+  color: #FFFFFF;
+  font-size: 18px;
+  letter-spacing: 4px;
+  line-height: 1;
 }
 
 .home-actions {
+  box-sizing: border-box;
   display: flex;
+  min-height: 0;
+  flex: 1 1 55%;
   flex-direction: column;
-  gap: 58rpx;
-  align-items: flex-start;
-  width: calc(100% + 44rpx);
-  margin-left: -44rpx;
-  margin-top: var(--cedh-space-6);
+  border-top: 1px solid rgba(0,0,0,0.35);
 }
 
 .home-button {
-  position: relative;
+  box-sizing: border-box;
   display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  justify-content: center;
-  width: 284rpx;
-  max-width: calc(100vw - 104rpx);
-  height: 116rpx;
+  min-width: 0;
   min-height: 0;
-  padding: 20rpx 36rpx 20rpx 12rpx;
-  overflow: visible;
-  color: rgba(18, 20, 21, 0.94);
+  flex: 1 1 0;
+  align-items: center;
+  padding: 0 40rpx;
+  overflow: hidden;
+  color: #FFFFFF;
   background: transparent;
   border: 0;
-  border-radius: var(--cedh-radius-control-sm);
-  box-shadow: none;
-  filter: none;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
-  line-height: 1.1;
-  transition:
-    transform 220ms cubic-bezier(0.16, 1, 0.3, 1),
-    opacity 220ms ease;
-  will-change: transform, opacity;
+  border-bottom: 1px solid rgba(0,0,0,0.35);
+  border-radius: 0;
+  transition: color 60ms linear, background-color 60ms linear;
 }
 
-.home-button-glass-stack {
-  position: absolute;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-}
-
-.home-button-glass {
-  position: absolute;
-  inset: 0;
-  border: 1rpx solid rgba(255, 249, 224, 0.72);
-  border-radius: var(--cedh-radius-control-sm);
-  background: rgba(255, 249, 224, 0.52);
-  box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.84);
-  backdrop-filter: blur(20rpx);
-  -webkit-backdrop-filter: blur(20rpx);
-  clip-path: polygon(0 8%, 3% 0, 100% 0, 88% 100%, 3% 100%, 0 92%);
-  transform-origin: left top;
-}
-
-.home-button-glass-1 {
-  z-index: 5;
-  border-color: rgba(255, 249, 224, 0.76);
-  background: rgba(255, 249, 224, 0.56);
-  opacity: 0.96;
-  transform: translate3d(0, 0, 0);
-}
-
-.home-button-glass-2 {
-  z-index: 4;
-  border-color: rgba(226, 207, 172, 0.46);
-  background: rgba(248, 240, 218, 0.62);
-  opacity: 0.48;
-  transform: translate3d(-6rpx, 6rpx, 0);
-}
-
-.home-button-glass-3 {
-  z-index: 3;
-  border-color: rgba(205, 185, 151, 0.36);
-  background: rgba(238, 228, 211, 0.68);
-  opacity: 0.32;
-  transform: translate3d(-12rpx, 12rpx, 0);
-}
-
-.home-button-glass-4 {
-  z-index: 2;
-  border-color: rgba(172, 160, 142, 0.3);
-  background: rgba(224, 220, 211, 0.74);
-  opacity: 0.22;
-  transform: translate3d(-18rpx, 18rpx, 0);
-}
-
-.home-button-glass-5 {
-  z-index: 1;
-  border-color: rgba(139, 142, 136, 0.24);
-  background: rgba(211, 214, 209, 0.8);
-  opacity: 0.15;
-  transform: translate3d(-24rpx, 24rpx, 0);
+/* 信息性文字用 0.55 半透明黑（对荧光绿 ≈4.4:1）；装饰注释与分隔线保持 0.35 */
+.home-button-index {
+  display: block;
+  width: 72rpx;
+  flex: 0 0 72rpx;
+  color: rgba(0,0,0,0.55);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 2px;
+  line-height: 1;
 }
 
 .home-button-text {
-  position: absolute;
-  inset: 0;
-  z-index: 6;
   display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  pointer-events: none;
+  min-width: 0;
+  flex: 1 1 auto;
+  align-items: baseline;
+  justify-content: space-between;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
+/* 20px = 点阵字体 10px 网格的整数倍，真机渲染最锐利 */
 .home-button-zh {
-  position: relative;
-  z-index: 2;
-  color: rgba(138, 64, 22, 0.9);
-  font-family: "Source Han Serif SC", "Noto Serif CJK SC", "Songti SC", "STSong", "PingFang SC", "Microsoft YaHei", serif;
-  font-size: var(--cedh-text-18);
-  font-style: italic;
-  font-weight: 620;
-  letter-spacing: -0.035em;
-  text-shadow:
-    1rpx 1rpx 0 rgba(92, 12, 16, 0.28),
-    -1rpx -1rpx 0 rgba(255, 224, 118, 0.32);
-}
-
-@media (max-width: 360px) {
-  .title-latin {
-    font-size: 96rpx;
-  }
-
-  .title-tutor {
-    font-size: 90rpx;
-  }
-
-  .display-title {
-    width: 100%;
-  }
+  display: block;
+  flex: 0 0 auto;
+  color: #FFFFFF;
+  font-size: 20px;
+  font-weight: 400;
+  letter-spacing: 4px;
+  line-height: 1;
 }
 
 .home-button-en {
-  position: relative;
-  z-index: 2;
-  margin-top: 8rpx;
-  color: rgba(16, 14, 12, 0.38);
-  font-family: "Arial Black", "Avenir Next Condensed", "DIN Condensed", Impact, var(--cedh-font-sans);
-  font-size: 16rpx;
-  font-style: normal;
-  font-weight: 760;
-  letter-spacing: 0.34em;
+  display: block;
+  min-width: 0;
+  margin-left: 24rpx;
+  flex: 0 1 auto;
+  overflow: hidden;
+  color: rgba(0,0,0,0.55);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 2px;
   line-height: 1;
-  transform: none;
-  transform-origin: left center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.home-index-active {
+  color: #D0F03C;
+  background: #0A0A0A;
+}
+
+.home-index-active .home-button-index,
+.home-index-active .home-button-zh,
+.home-index-active .home-button-en {
+  color: #D0F03C;
+}
+
+/* 版权行绝对对称：三列网格（1fr auto 1fr），中段严格居中、两端贴边 */
+.home-colophon {
+  box-sizing: border-box;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  flex: 0 0 auto;
+  align-items: baseline;
+  padding: 20rpx 40rpx 10rpx;
+  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
+}
+
+.home-colophon-item {
+  display: block;
+  color: rgba(0,0,0,0.55);
+  font-size: 8px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 1px;
+  line-height: 1.4;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.home-colophon-center {
+  text-align: center;
+}
+
+.home-colophon-right {
+  text-align: right;
+}
+
+@media (max-width: 360px) {
+  .home-hero,
+  .home-button,
+  .home-colophon {
+    padding-right: 32rpx;
+    padding-left: 32rpx;
+  }
+
+  .home-title-brand {
+    font-size: 46px;
+  }
+
+  .home-title-zh {
+    font-size: 16px;
+  }
+
+  .home-button-index {
+    width: 64rpx;
+    flex-basis: 64rpx;
+  }
+
+  .home-button-en {
+    margin-left: 16rpx;
+    font-size: 9px;
+  }
+
+  .home-colophon-item {
+    letter-spacing: 0.5px;
+  }
+}
+
+@media (max-height: 700px) {
+  .home-hero {
+    flex-basis: 40vh;
+    padding-bottom: 36rpx;
+  }
+
+  .home-format-note-next {
+    margin-top: 5rpx;
+  }
+
+  .home-format-para {
+    margin-top: 18rpx;
+  }
+
+  .home-title-brand {
+    font-size: 42px;
+  }
+
+  .home-title-zh {
+    margin-top: 18rpx;
+    font-size: 15px;
+  }
+}
+
+@media (max-height: 600px) {
+  .home-hero {
+    flex-basis: 40vh;
+  }
+
+  .home-title-brand {
+    font-size: 38px;
+  }
+
+  .home-title-zh {
+    margin-top: 12rpx;
+    font-size: 13px;
+  }
+
+  .home-format-note {
+    font-size: 6px;
+    letter-spacing: 0.25px;
+    line-height: 1.2;
+  }
+
+  .home-format-note-next {
+    margin-top: 3rpx;
+  }
+
+  .home-colophon {
+    padding-top: 8rpx;
+  }
+
+  .home-colophon-item {
+    font-size: 7px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .home-button {
+    transition: none;
+  }
 }

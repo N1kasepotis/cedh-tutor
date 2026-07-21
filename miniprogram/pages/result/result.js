@@ -4,6 +4,9 @@ const {
 } = require('../../utils/result-display');
 const { fetchCardImageUris } = require('../../utils/scryfall');
 const { enableShareMenu } = require('../../utils/share');
+const { readStorage } = require('../../utils/storage');
+
+const QUIZ_RESULT_STORAGE_KEY = 'quizResult';
 
 Page({
   data: {
@@ -13,12 +16,12 @@ Page({
 
   onShow() {
     enableShareMenu();
-    let result;
-    try {
-      result = wx.getStorageSync('quizResult');
-    } catch (e) {
-      result = null;
-    }
+    const stored = readStorage(QUIZ_RESULT_STORAGE_KEY, {
+      schemaVersion: 1,
+      defaultValue: null,
+      validate: (value) => Boolean(value && Array.isArray(value.recommendations)),
+    });
+    const result = stored.value;
 
     if (!result || !result.recommendations) {
       this.loadedSignature = '';
@@ -32,7 +35,9 @@ Page({
     const recommendations = sortRecommendationsForDisplay(result.recommendations, 5);
 
     // 同一份问卷结果从别的页面返回时不重置展示、不重发十个图片请求
-    const signature = recommendations.map((item) => item.name).join('|');
+    const signature = recommendations
+      .map((item) => `${item.name}:${item.score || 0}:${item.fitLabel || ''}`)
+      .join('|');
     if (signature === this.loadedSignature) return;
     this.loadedSignature = signature;
 
@@ -41,7 +46,7 @@ Page({
       recommendations,
     });
 
-    this.loadPreviewImages(recommendations);
+    this.loadPreviewImages(recommendations, signature);
   },
 
   onShareAppMessage() {
@@ -58,11 +63,12 @@ Page({
     return { title: '答几道题，找到你的本命 cEDH 主将' };
   },
 
-  loadPreviewImages(recommendations) {
+  loadPreviewImages(recommendations, signature) {
     recommendations.forEach((recommendation, recommendIndex) => {
       recommendation.previewCards.forEach((card, cardIndex) => {
         fetchCardImageUris(card.name)
           .then((images) => {
+            if (signature !== this.loadedSignature) return;
             // API 拿不到图时保留预填的直连 URL，只清 loading，避免把能用的 src 覆盖成空
             if (!images.artCrop && !images.normal) {
               this.updatePreviewCard(recommendIndex, cardIndex, { loading: false });
@@ -76,6 +82,7 @@ Page({
             });
           })
           .catch(() => {
+            if (signature !== this.loadedSignature) return;
             this.updatePreviewCard(recommendIndex, cardIndex, {
               loading: false,
             });

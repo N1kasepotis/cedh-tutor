@@ -1,11 +1,23 @@
 <view class="page tracker" data-page-title="指挥官战情室">
-  <particle-background></particle-background>
+  <particle-background palette="tracker"></particle-background>
 
   <view class="content-layer tracker-shell">
     <view class="deck-list">
       <view wx:for="{{decks}}" wx:key="id" class="deck-card surface">
         <view class="deck-card-head">
-          <view class="deck-name">
+          <view class="commander-avatars" wx:if="{{item.commanderAvatars.length}}">
+            <image
+              wx:for="{{item.commanderAvatars}}"
+              wx:for-item="avatar"
+              wx:key="name"
+              class="commander-avatar"
+              src="{{avatar.url}}"
+              mode="aspectFill"
+              lazy-load="true"
+              aria-label="{{avatar.name}}"
+            />
+          </view>
+          <view class="deck-name {{item.commanderNameClass}}">
             <text wx:for="{{item.displayLines}}" wx:for-item="line" wx:key="*this" class="deck-name-line">{{line}}</text>
           </view>
           <view class="text-button deck-delete-button" aria-role="button" aria-label="删除套牌" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="deleteDeck">删除</view>
@@ -27,8 +39,11 @@
               wx:for-item="commander"
               wx:key="name"
               class="suggestion"
+              aria-role="button"
               data-deck-id="{{item.id}}"
               data-name="{{commander.name}}"
+              hover-class="pressable-active"
+              hover-stay-time="120"
               bindtap="selectCommander"
             >
               {{commander.name}}
@@ -36,23 +51,34 @@
           </view>
         </view>
 
-        <view class="stats-grid">
-          <view class="stat-cell">
-            <view class="stat-value mono">{{item.stats.winRateLabel}}</view>
-            <view class="stat-label">胜率</view>
+        <view class="stat-readout">
+          <view class="stat-hero">
+            <text class="stat-hero-value mono">{{item.stats.winRateLabel}}</text>
+            <view class="stat-hero-meta">
+              <text class="stat-micro-label">WIN RATE</text>
+              <text class="stat-micro-sub">胜率</text>
+            </view>
           </view>
-          <view class="stat-cell">
-            <view class="stat-value mono">{{item.stats.total}}</view>
-            <view class="stat-label">总场次</view>
-          </view>
-          <view class="stat-cell">
-            <view class="stat-value mono">{{item.stats.wins}} / {{item.stats.losses}} / {{item.stats.draws}}</view>
-            <view class="stat-label">胜负平</view>
+          <view class="stat-secondary">
+            <view class="stat-line">
+              <text class="stat-line-value mono">{{item.stats.total}}</text>
+              <view class="stat-line-meta">
+                <text class="stat-micro-label">MATCHES</text>
+                <text class="stat-micro-sub">总场次</text>
+              </view>
+            </view>
+            <view class="stat-line">
+              <text class="stat-line-value mono">{{item.stats.wins}}/{{item.stats.losses}}/{{item.stats.draws}}</text>
+              <view class="stat-line-meta">
+                <text class="stat-micro-label">W / L / D</text>
+                <text class="stat-micro-sub">胜负平</text>
+              </view>
+            </view>
           </view>
         </view>
 
         <view class="chart-section">
-          <view class="chart-title">胜率曲线</view>
+          <view class="chart-title">每日胜率</view>
           <canvas id="winrateChart-{{item.id}}" type="2d" class="chart-canvas"></canvas>
         </view>
         <view class="chart-section">
@@ -61,47 +87,39 @@
         </view>
 
         <view class="record-entry">
-          <view class="record-row">
+          <view class="record-row record-selectors">
             <picker mode="date" value="{{item.pendingDate}}" data-id="{{item.id}}" bindchange="changePendingDate">
-              <view class="date-picker mono">{{item.pendingDate}}</view>
+              <view class="record-select date-picker">
+                <text class="record-select-label">日期</text>
+                <text class="mono">{{item.pendingDate}}</text>
+              </view>
+            </picker>
+            <picker mode="selector" range="{{seatOptions}}" range-key="label" value="{{item.pendingSeatIndex}}" data-id="{{item.id}}" bindchange="changePendingSeatPicker">
+              <view class="record-select {{item.pendingSeat}}">
+                <text class="record-select-label">座次</text>
+                <text>{{item.pendingSeatLabel}}</text>
+              </view>
+            </picker>
+            <picker mode="selector" range="{{resultOptions}}" range-key="label" value="{{item.pendingResultIndex}}" data-id="{{item.id}}" bindchange="changePendingResultPicker">
+              <view class="record-select {{item.pendingResult}}">
+                <text class="record-select-label">结果</text>
+                <text>{{item.pendingResultLabel}}</text>
+              </view>
             </picker>
           </view>
-          <view class="record-label">结果</view>
-          <view class="result-buttons">
-            <view
-              wx:for="{{resultOptions}}"
-              wx:for-item="resultOption"
-              wx:key="id"
-              class="result-button {{resultOption.id}} {{item.pendingResult === resultOption.id ? 'selected' : ''}}"
-              aria-role="button"
-              data-id="{{item.id}}"
-              data-result="{{resultOption.id}}"
-              hover-class="pressable-active"
-              hover-stay-time="120"
-              bindtap="selectPendingResult"
-            >{{resultOption.label}}</view>
+          <view class="record-actions">
+            <button class="primary-button add-match-button" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="addMatch">{{item.editingMatchId ? '保存修改' : '添加对局'}}</button>
+            <button wx:if="{{item.editingMatchId}}" class="text-button cancel-edit-button" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cancelEdit">取消</button>
           </view>
-          <view class="record-label">座位</view>
-          <view class="seat-buttons">
-            <view
-              wx:for="{{seatOptions}}"
-              wx:for-item="seat"
-              wx:key="id"
-              class="seat-button {{seat.id}} {{item.pendingSeat === seat.id ? 'selected' : ''}}"
-              aria-role="button"
-              data-id="{{item.id}}"
-              data-seat="{{seat.id}}"
-              hover-class="pressable-active"
-              hover-stay-time="120"
-              bindtap="selectPendingSeat"
-            >{{seat.label}}</view>
-          </view>
-          <button class="primary-button add-match-button" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="addMatch">添加对局</button>
         </view>
 
         <view class="match-list" wx:if="{{item.matches.length}}">
+          <view class="match-list-head">
+            <text>对局记录</text>
+            <view wx:if="{{item.matches.length > 5}}" class="text-button history-toggle" aria-role="button" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="toggleMatchHistory">{{item.historyToggleLabel}}</view>
+          </view>
           <view
-            wx:for="{{item.matches}}"
+            wx:for="{{item.visibleMatches}}"
             wx:for-item="match"
             wx:key="id"
             class="match-row"
@@ -109,10 +127,16 @@
             data-match-id="{{match.id}}"
             bindlongpress="confirmDeleteMatch"
           >
-            <view class="match-date mono">{{match.date}}</view>
+            <view class="match-identity">
+              <text class="match-sequence mono">#{{match.sequence}}</text>
+              <text class="match-date mono">{{match.date}}</text>
+            </view>
             <view class="match-seat {{match.seatClass}}">{{match.seatLabel}}</view>
             <view class="match-result {{match.result}}">{{match.label}}</view>
-            <button class="text-button" aria-label="删除这条对局" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmDeleteMatch">删除</button>
+            <view class="match-row-actions">
+              <view class="match-action match-edit" aria-role="button" aria-label="编辑这条对局" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="editMatch">改</view>
+              <view class="match-action match-delete" aria-role="button" aria-label="删除这条对局" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmDeleteMatch">删</view>
+            </view>
           </view>
         </view>
       </view>

@@ -3,6 +3,7 @@ const trackerConfig = {
   version: 1,
   maxDecks: 5,
   suggestionLimit: 8,
+  historyRenderLimit: 50,
   resultOptions: [
     { id: 'win', label: '胜' },
     { id: 'loss', label: '负' },
