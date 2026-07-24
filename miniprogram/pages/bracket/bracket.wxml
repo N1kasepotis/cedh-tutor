@@ -86,7 +86,7 @@
             <view class="bracket-turn">{{result.label.turn}}</view>
             <view class="band-position {{result.bandPositionClass}}" wx:if="{{result.bandPositionZh}}">
               <text class="band-position-tier">{{result.bandPositionZh}}</text>
-              <text class="band-position-metric mono">{{result.bandPositionMetricText}}</text>
+              <text class="band-position-metric mono" wx:if="{{result.bandPositionMetricText}}">{{result.bandPositionMetricText}}</text>
             </view>
           </view>
         </view>

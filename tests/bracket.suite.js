@@ -864,15 +864,15 @@ test('Band position splits every bracket into balanced 偏弱/中等/偏强 with
   assert.equal(b2High.assignedBracket, 2);
   assert.equal(b2High.bandPosition.tier, 'high');
 
-  // 规则下限锁定的 B4（炸地）结构远未达标 → 偏弱，且证据点名瓶颈轴
+  // 规则下限锁定的 B4（炸地）结构远未达标 → 偏弱；只描述区间内位置，不论述与下一档的接近度
   const denialFloor = analyze(['Deck', '1 Armageddon']);
   assert.equal(denialFloor.assignedBracket, 4);
   assert.equal(denialFloor.bandPosition.tier, 'low');
   const denialEvidence = denialFloor.evidence.find((item) => item.code === 'BAND_POSITION');
-  assert.ok(denialEvidence.detail.includes('四项必要条件平均达成')
-    && denialEvidence.detail.includes('瓶颈'));
+  assert.match(denialEvidence.detail, /落在 B4 区间下段/);
+  assert.doesNotMatch(denialEvidence.detail, /接近度|推进度|判定门槛|平均达成|瓶颈|%/);
 
-  // 证据、摘要与顺序：区间定位紧邻置信度之前，摘要末尾带推进度说明
+  // 证据、摘要与顺序：区间定位紧邻置信度之前，文案只给区间内位置、无接近度百分比
   const positioned = analyze(completeDeck(['Sol Ring', 'Lotus Petal', 'Diabolic Intent', 'Wishclaw Talisman', 'Mox Amber']));
   assert.equal(positioned.assignedBracket, 3);
   const codes = positioned.evidence.map((item) => item.code);
@@ -880,9 +880,10 @@ test('Band position splits every bracket into balanced 偏弱/中等/偏强 with
   assert.equal(codes[codes.length - 2], 'BAND_POSITION');
   const positionedEvidence = positioned.evidence.find((item) => item.code === 'BAND_POSITION');
   assert.match(positionedEvidence.title, /^区间定位：B3 (偏弱|中等|偏强)$/);
-  assert.ok(positionedEvidence.detail.includes('向 B4 判定门槛的推进度')
-    && positionedEvidence.detail.includes('最接近的路径是'));
-  assert.match(buildBracketSummary(positioned), /区间定位(偏弱|中等|偏强)，向 B4 判定门槛的推进度约 \d+%$/);
+  assert.match(positionedEvidence.detail, /^落在 B3 区间(下段|中段|上段)/);
+  assert.doesNotMatch(positionedEvidence.detail, /接近度|推进度|判定门槛|最接近的路径|%/);
+  assert.match(buildBracketSummary(positioned), /区间定位(偏弱|中等|偏强)$/);
+  assert.doesNotMatch(buildBracketSummary(positioned), /接近度|推进度|判定门槛/);
 });
 
 test('bracket report page shows verdict chain, signal overview and per-reason roles', () => {
@@ -918,14 +919,14 @@ test('bracket report page shows verdict chain, signal overview and per-reason ro
   assert.match(pageWxml, /class="reason-role mono">\{\{item\.roleLabel\}\}/);
   assert.match(pageWxss, /\.reason-role\s*\{[^}]*white-space:\s*nowrap/);
 
-  // 区间定位：hero 档位下方的偏弱/中等/偏强 + 度量文字，证据条对应角色标签
+  // 区间定位：hero 档位下方只显示偏弱/中等/偏强（度量文字空则不渲染），证据条对应角色标签
   // B4.5 与 B5 竞技档 deferred → bandPositioned 为假 → 不渲染区间定位行
   assert.match(pageJs, /return '区间定位'/);
   assert.match(pageJs, /const bandPositioned = Boolean\(bandPosition && !bandPosition\.deferred && bandPosition\.tier\)/);
   assert.match(pageJs, /bandPositionClass: bandPositioned \? `band-\$\{bandPosition\.tier\}` : ''/);
   assert.match(pageWxml, /class="band-position \{\{result\.bandPositionClass\}\}" wx:if="\{\{result\.bandPositionZh\}\}"/);
   assert.match(pageWxml, /class="band-position-tier">\{\{result\.bandPositionZh\}\}/);
-  assert.match(pageWxml, /class="band-position-metric mono">\{\{result\.bandPositionMetricText\}\}/);
+  assert.match(pageWxml, /class="band-position-metric mono" wx:if="\{\{result\.bandPositionMetricText\}\}">/);
   assert.match(pageWxss, /\.band-position\.band-high \.band-position-tier\s*\{[^}]*rgba\(var\(--module-accent-rgb\), 0\.95\)/);
   assert.match(pageWxss, /\.band-position\.band-low \.band-position-tier\s*\{[^}]*var\(--cedh-text-soft\)/);
 });
@@ -1196,9 +1197,9 @@ test('Expensive fast-mana deck with a pool commander promotes B4/B4.5 to B5', ()
   assert.equal(promoted.expensivePoolPromoted, true);
   assert.equal(promoted.assignedBracket, 5);
   const evidence = promoted.evidence.find((item) => item.code === 'EXPENSIVE_POOL_PROMOTION');
-  assert.ok(evidence && evidence.detail.includes('100 人竞技主将池')
-    && evidence.detail.includes('$1500') && evidence.detail.includes('B5'));
-  assert.match(buildBracketSummary(promoted), /主将命中现有 100 人竞技主将池[\s\S]*升到B5强度/);
+  assert.ok(evidence && evidence.detail.includes('cEDH 数据库排名前 100')
+    && evidence.detail.includes('$1500') && evidence.detail.includes('升为 B5'));
+  assert.match(buildBracketSummary(promoted), /cEDH 数据库排名前 100[\s\S]*升到B5强度/);
 
   // 护栏一：池外主将（Bear Cub）→ 不升档
   const outParsed = parseBracketDeck(buildLines('Bear Cub'));

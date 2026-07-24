@@ -175,6 +175,42 @@ test('衍生物离开战场即消失（MTG 状态动作）', () => {
   assert.equal(game.library.some((card) => card.token), false);
 });
 
+test('战场卡指示物：±调整、0–999 夹取、归零删字段、离场清空', () => {
+  const {
+    parseMtgoDeckText, createGame, moveCard, adjustCardCounters, cardCounterTotal, MAX_CARD_COUNTERS,
+  } = require('../miniprogram/utils/playtest');
+
+  const game = createGame(parseMtgoDeckText('8 Filler'), () => 0);
+  game.battlefield.push({ id: 501, name: 'Walking Ballista', tapped: false, x: 4, y: 4 });
+
+  // 无指示物的卡对象形状不变
+  assert.ok(!('counters' in game.battlefield[0]));
+  assert.equal(cardCounterTotal(game.battlefield[0]), 0);
+  assert.equal(cardCounterTotal({ name: 'x' }), 0);
+
+  // 累加 → { generic: n }
+  assert.ok(adjustCardCounters(game, 501, 3));
+  assert.deepEqual(game.battlefield[0].counters, { generic: 3 });
+  assert.equal(cardCounterTotal(game.battlefield[0]), 3);
+
+  // 下限 0：归零即删键、删空对象字段（不残留 counters: {}）
+  assert.ok(adjustCardCounters(game, 501, -10));
+  assert.ok(!('counters' in game.battlefield[0]));
+
+  // 上限 999
+  adjustCardCounters(game, 501, 5000);
+  assert.equal(game.battlefield[0].counters.generic, MAX_CARD_COUNTERS);
+
+  // 只作用于战场；非法目标与非有限 delta 返回 false
+  assert.equal(adjustCardCounters(game, 99999, 1), false);
+  assert.equal(adjustCardCounters(game, 501, NaN), false);
+
+  // 离开战场丢失指示物（moveCard 重建卡对象）
+  moveCard(game, 'battlefield', 501, 'graveyard');
+  const inGrave = game.graveyard.find((card) => card.id === 501);
+  assert.ok(inGrave && !('counters' in inGrave));
+});
+
 test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   const appJson = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/app.json'), 'utf8'));
   const pageRoot = path.join(root, 'miniprogram/pages/playtest');
@@ -208,6 +244,19 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   assert.match(js, /toggleTapped/);
   assert.match(js, /hitTestZone/);
   assert.match(js, /addToken\(\)/);
+
+  // 战场指示物（方案 A + 角标 + 单一通用计数）：角标纯展示不截手势、± 在详视弹窗内编辑
+  assert.match(wxml, /class="card-counter-badge"[^>]*aria-label="指示物 \{\{item\.counterTotal\}\}">\{\{item\.counterTotal\}\}/);
+  assert.match(wxml, /wx:if="\{\{item\.counterTotal\}\}"/);
+  assert.match(wxss, /\.card-counter-badge\s*{[\s\S]*?pointer-events:\s*none/);
+  assert.match(wxml, /class="inspect-counter" wx:if="\{\{inspect\.canCounter\}\}"/);
+  assert.match(wxml, /data-delta="-1" bindtap="adjustInspectCounter"/);
+  assert.match(wxml, /data-delta="1" bindtap="adjustInspectCounter"/);
+  assert.match(js, /adjustCardCounters/);
+  assert.match(js, /cardCounterTotal/);
+  assert.match(js, /canCounter: zone === 'battlefield' && !card\.token/);
+  // 详视步进控件触控 ≥ 64rpx
+  assert.match(wxss, /\.counter-ctrl\s*{[\s\S]*?width:\s*64rpx[\s\S]*?height:\s*64rpx/);
 
   // 性能约定：无 keyframe 动画、禁页面滚动
   assert.doesNotMatch(wxss, /animation|keyframes/);

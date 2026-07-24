@@ -5,6 +5,8 @@ const {
   drawCards,
   moveCard,
   toggleTapped,
+  adjustCardCounters,
+  cardCounterTotal,
   countZones,
   shuffleInPlace,
   MAX_DECK_CHARS,
@@ -231,6 +233,7 @@ Page({
       battlefield: this.game.battlefield.map((card) => ({
         ...card,
         art: card.token || this.lowMemoryMode ? '' : buildScryfallImageUrl(card.name, 'small'),
+        counterTotal: cardCounterTotal(card),
       })),
       hand: this.game.hand.map((card) => ({
         id: card.id,
@@ -676,9 +679,24 @@ Page({
         zone,
         name: card.name,
         imageUrl: buildScryfallImageUrl(card.name, 'normal'),
+        // 指示物只在战场卡上可编辑（token 长按是删除，走不到详视）
+        canCounter: zone === 'battlefield' && !card.token,
+        counterTotal: cardCounterTotal(card),
       },
       inspectTargets: buildInspectTargets(zone),
     });
+  },
+
+  // 详视内 ± 调整战场卡指示物；角标随 syncView 同步刷新
+  adjustInspectCounter(event) {
+    const inspect = this.data.inspect;
+    if (!inspect || !inspect.canCounter || !this.game) return;
+    const delta = Number(event.currentTarget.dataset.delta) || 0;
+    if (!adjustCardCounters(this.game, inspect.id, delta)) return;
+
+    const found = this.game.battlefield.find((card) => card.id === inspect.id);
+    this.setData({ 'inspect.counterTotal': found ? cardCounterTotal(found) : 0 });
+    this.syncView();
   },
 
   closeInspect() {

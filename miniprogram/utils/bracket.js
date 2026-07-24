@@ -1059,20 +1059,12 @@ function computeBandPosition({
   const topAxis = axes.reduce((best, axis) => (axis.progress > best.progress ? axis : best), axes[0]);
   const bracketCode = `B${assignedBracket}`;
 
-  let evidenceText;
-  let metricText;
-  let summaryText;
-  if (assignedBracket === 4) {
-    metricText = `B5 接近度 ${percent}%`;
-    summaryText = `区间定位${label.zh}，距 B5 竞技线的整体接近度约 ${percent}%`;
-    evidenceText = `按 B5 竞技线的整体接近度计算为 ${percent}%，四项必要条件平均达成 ${conjunctMeanPercent}%，当前瓶颈是${bottleneckAxis.label}（${Math.round(bottleneckAxis.progress * 100)}%），落在 B4 区间${label.segment}`;
-  } else {
-    metricText = `向 B${nextBracket} 推进 ${percent}%`;
-    summaryText = `区间定位${label.zh}，向 B${nextBracket} 判定门槛的推进度约 ${percent}%`;
-    evidenceText = score === 0
-      ? `未检测到任何向 B${nextBracket} 判定门槛推进的信号轴，落在 ${bracketCode} 区间下段`
-      : `按向 B${nextBracket} 判定门槛的推进度计算为 ${percent}%，最接近的路径是${topAxis.label}（已达 ${Math.round(topAxis.progress * 100)}%），落在 ${bracketCode} 区间${label.segment}`;
-  }
+  // 只描述在当前档位内的相对位置（偏弱/中等/偏强 + 最集中的强度轴），不再论述与下一档的接近度。
+  const metricText = '';
+  const summaryText = `区间定位${label.zh}`;
+  const evidenceText = topAxis && topAxis.progress > 0
+    ? `落在 ${bracketCode} 区间${label.segment}，其中${topAxis.label}最集中`
+    : `落在 ${bracketCode} 区间${label.segment}`;
 
   return {
     tier: tierKey,
@@ -1479,7 +1471,7 @@ function evaluateBracket(parsed, options = {}) {
       'strength',
       (parsed.commanders || []).map((card) => card.name),
       '高造价竞技主将升档',
-      `主将命中现有 100 人竞技主将池，快速法术力 ${fastManaCardCount} 张、按基本地以外的牌估算约 $${Math.round(deckMetrics.estimatedTotalUsd)}（超过 $${EXPENSIVE_POOL_PRICE_THRESHOLD_USD}），高价快攻配已知竞技主将按 cEDH 处理，由 B${competitiveBracket} 升至 B5`,
+      `快速法术力 ${fastManaCardCount} 张、按基本地以外的牌估算约 $${Math.round(deckMetrics.estimatedTotalUsd)}（超过 $${EXPENSIVE_POOL_PRICE_THRESHOLD_USD}），高造价与快速法术力搭配 cEDH 数据库排名前 100 的主将按 cEDH 强度处理，由 B${competitiveBracket} 升为 B5`,
       5,
     ));
   }
@@ -1789,8 +1781,8 @@ function buildBracketSummary(result, parseErrorCount = 0) {
       ? '牌表已具备竞技构筑特征，先落在 B4.5 准竞技'
       : `结构判断落在 B${preBracket}`);
     const metrics = result.deckMetrics || {};
-    sentences.push(`快速法术力有 ${Number(result.expensivePoolFastMana) || 0} 张、按基本地以外的牌估算约 $${bracketSummaryUsd(metrics.estimatedTotalUsd)}（超过 $${bracketSummaryUsd(EXPENSIVE_POOL_PRICE_THRESHOLD_USD)}），且主将命中现有 100 人竞技主将池`);
-    sentences.push('高价快攻配已知竞技主将按 cEDH 处理，因此升到B5强度');
+    sentences.push(`快速法术力有 ${Number(result.expensivePoolFastMana) || 0} 张、按基本地以外的牌估算约 $${bracketSummaryUsd(metrics.estimatedTotalUsd)}（超过 $${bracketSummaryUsd(EXPENSIVE_POOL_PRICE_THRESHOLD_USD)}），且主将命中 cEDH 数据库排名前 100`);
+    sentences.push('高造价与快速法术力搭配 cEDH 数据库排名前 100 的主将按 cEDH 强度处理，因此升到B5强度');
     pushBandPositionSentence(sentences, result);
     return finalizeBracketSummary(sentences);
   }

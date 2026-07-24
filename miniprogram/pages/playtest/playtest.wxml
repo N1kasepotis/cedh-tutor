@@ -57,6 +57,7 @@
       >
         <image wx:if="{{item.art}}" class="card-art" src="{{item.art}}" mode="aspectFill" lazy-load="{{true}}"></image>
         <view wx:if="{{!item.art}}" class="card-name">{{item.name}}</view>
+        <view wx:if="{{item.counterTotal}}" class="card-counter-badge" aria-label="指示物 {{item.counterTotal}}">{{item.counterTotal}}</view>
       </view>
     </view>
 
@@ -206,6 +207,12 @@
     <view class="inspect-panel" wx:if="{{inspect}}">
       <image class="inspect-image" src="{{inspect.imageUrl}}" mode="widthFix" lazy-load="{{true}}"></image>
       <view class="inspect-name">{{inspect.name}}</view>
+      <view class="inspect-counter" wx:if="{{inspect.canCounter}}">
+        <text class="inspect-counter-label">指示物</text>
+        <view class="counter-ctrl" aria-role="button" aria-label="指示物减一" hover-class="pressable-active" hover-stay-time="120" data-delta="-1" bindtap="adjustInspectCounter">−</view>
+        <text class="inspect-counter-value">{{inspect.counterTotal}}</text>
+        <view class="counter-ctrl" aria-role="button" aria-label="指示物加一" hover-class="pressable-active" hover-stay-time="120" data-delta="1" bindtap="adjustInspectCounter">+</view>
+      </view>
       <view class="inspect-move">
         <view
           wx:for="{{inspectTargets}}"

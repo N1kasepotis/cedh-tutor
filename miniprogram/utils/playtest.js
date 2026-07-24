@@ -243,6 +243,37 @@ function toggleTapped(game, cardId) {
   return true;
 }
 
+const MAX_CARD_COUNTERS = 999;
+const DEFAULT_COUNTER_TYPE = 'generic';
+
+// 战场卡指示物：counters 按 { 类型: 数量 } 存（当前 UI 只暴露通用一类，对象结构为将来
+// 分型（+1/+1、忠诚等）预留）。数量夹在 0–999，归零即删键、空对象删字段，保证无指示物
+// 的卡对象形状不变。指示物只存在于战场：moveCard 离场时重建卡对象，指示物随之丢失（符合规则）。
+function adjustCardCounters(game, cardId, delta, type) {
+  const found = findCard(game, 'battlefield', cardId);
+  if (!found || !Number.isFinite(delta)) return false;
+
+  const counterType = type || DEFAULT_COUNTER_TYPE;
+  const counters = { ...(found.card.counters || {}) };
+  const current = Number.isFinite(counters[counterType]) ? counters[counterType] : 0;
+  const next = Math.min(MAX_CARD_COUNTERS, Math.max(0, current + delta));
+
+  if (next > 0) counters[counterType] = next;
+  else delete counters[counterType];
+
+  if (Object.keys(counters).length) found.card.counters = counters;
+  else delete found.card.counters;
+  return true;
+}
+
+function cardCounterTotal(card) {
+  const counters = card && card.counters;
+  if (!counters) return 0;
+  return Object.keys(counters).reduce((total, key) => (
+    total + (Number.isFinite(counters[key]) ? counters[key] : 0)
+  ), 0);
+}
+
 function countZones(game) {
   const counts = {};
   PLAYTEST_ZONES.forEach((zone) => {
@@ -261,7 +292,10 @@ module.exports = {
   drawCards,
   moveCard,
   toggleTapped,
+  adjustCardCounters,
+  cardCounterTotal,
   countZones,
+  MAX_CARD_COUNTERS,
   MAX_DECK_LINES,
   MAX_DECK_CHARS,
   MAX_TOTAL_CARDS,
