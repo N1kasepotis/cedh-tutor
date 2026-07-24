@@ -33,9 +33,13 @@ function getHomeNavClearancePx() {
   return Math.ceil(statusBarHeight + 56);
 }
 
+const HOME_ACTION_COUNT = 8;
+
 Page({
   data: {
     homeNavClearancePx: 96,
+    // 事故色 glitch 行：每次进首页随机让一个功能入口"故障"成电光蓝，制造不可预测的粗野破坏感
+    glitchIndex: 0,
   },
 
   onLoad() {
@@ -60,6 +64,10 @@ Page({
         fail: () => {},
       });
     }
+  },
+
+  onShow() {
+    this.setData({ glitchIndex: Math.floor(Math.random() * HOME_ACTION_COUNT) });
   },
 
   onShareAppMessage() {

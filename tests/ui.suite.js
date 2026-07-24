@@ -34,14 +34,14 @@ test('home is a single-screen acid index with the eight existing actions', () =>
 
   assert.match(wxml, /class="home-title-brand">cEDH Tutor<\/text>/);
   assert.match(wxml, /class="home-title-zh">竞技指挥官导师<\/text>/);
-  // 底部中置格言（cEDH 精神题词）：坐落 credits 之上，大写、以竖线分隔两句，独立类名不计入注释块，居中
-  assert.match(wxml, /class="home-epigraph">PLAY TO WIN \| PLAY FOR THE GAME<\/text>/);
-  assert.match(wxml, /class="home-actions"[\s\S]*class="home-epigraph"[\s\S]*class="home-colophon"/);
-  const epigraph = (wxml.match(/class="home-epigraph">([^<]+)<\/text>/) || [])[1];
-  assert.match(epigraph, /^[A-Z0-9 |]+$/);
-  assert.ok(epigraph.length <= 46);
-  assert.match(wxss, /\.home-epigraph\s*\{[^}]*text-align:\s*center/);
-  assert.match(wxss, /\.home-epigraph\s*\{[^}]*flex:\s*0 0 auto/);
+  // 侧脊格言（cEDH 精神题词）：从底部中置移到页面右缘竖排，独立于 home-content
+  assert.match(wxml, /class="home-edge-tagline"[^>]*>PLAY TO WIN \| PLAY FOR THE GAME<\/text>/);
+  const tagline = (wxml.match(/class="home-edge-tagline"[^>]*>([^<]+)<\/text>/) || [])[1];
+  assert.match(tagline, /^[A-Z0-9 |]+$/);
+  assert.ok(tagline.length <= 46);
+  assert.match(wxml, /class="home-content"[\s\S]*<\/view>\s*<text class="home-edge-tagline"/);
+  assert.match(wxss, /\.home-edge-tagline\s*{[^}]*position:\s*fixed[^}]*writing-mode:\s*vertical-rl/);
+  assert.doesNotMatch(wxml, /home-epigraph/);
   // 工业注释风小字：EDH 与 cEDH 两段、每段三个完整句子，只用大写字母数字与空格（无冒号斜杠句号）
   const formatNotes = Array.from(
     wxml.matchAll(/class="home-format-note[^"]*">([^<]+)<\/text>/g),
@@ -55,6 +55,12 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 单行纪律：每句 ≤46 字符，7px Courier 在最窄机型也不折行，防止注释块撑破 45vh 压进目录
   formatNotes.forEach((note) => assert.ok(note.length <= 46, `注释句需单行（≤46 字符）：${note}`));
   assert.equal((wxml.match(/home-format-para/g) || []).length, 2);
+  // 氛围文字密度 ③：宣言整墙轻微倾斜、审查黑条压住一条规则、字符 /// 作粗暴分割
+  assert.match(wxss, /\.home-format-notes\s*{[^}]*transform:\s*rotate\(-1\.3deg\)/);
+  assert.match(wxml, /class="home-redaction"/);
+  assert.match(wxss, /\.home-redaction\s*{[^}]*background:\s*#0A0A0A/);
+  assert.match(wxml, /class="home-rule-slash"[^>]*>\/{6,}<\/view>/);
+  assert.match(wxss, /\.home-rule-slash\s*{[^}]*color:\s*#0A0A0A/);
   assert.doesNotMatch(wxml, /home-reminder|home-button-leader/);
   assert.doesNotMatch(wxml, /开源共学|OPEN SOURCE COMMONS|·|home-button-separator/);
   const colophonItems = Array.from(
@@ -78,25 +84,26 @@ test('home is a single-screen acid index with the eight existing actions', () =>
       'META TIER LIST',
     ],
   );
+  // 编号与 key 后可跟随巨号/偏移/粗分割等破坏性修饰类，提取放宽到 key 边界
   assert.deepEqual(
-    Array.from(wxml.matchAll(/class="home-button-index">(\d{2})<\/text>/g), (match) => match[1]),
+    Array.from(wxml.matchAll(/class="home-button-index[^"]*">(\d{2})<\/text>/g), (match) => match[1]),
     ['01', '02', '03', '04', '05', '06', '07', '08'],
   );
   assert.deepEqual(
-    Array.from(wxml.matchAll(/class="home-button home-button-([a-z-]+)"/g), (match) => match[1]),
+    Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (match) => match[1]),
     ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
   );
   assert.equal((wxml.match(/hover-class="home-index-active"/g) || []).length, 8);
   assert.equal((wxml.match(/hover-start-time="0"/g) || []).length, 8);
   assert.equal((wxml.match(/hover-stay-time="60"/g) || []).length, 8);
-  assert.match(wxml, /home-button-edhti"[^>]*bindtap="goEdhti"/);
-  assert.match(wxml, /home-button-match"[^>]*bindtap="goQuiz"/);
-  assert.match(wxml, /home-button-bracket"[^>]*bindtap="goBracket"/);
-  assert.match(wxml, /home-button-playtest"[^>]*bindtap="goPlaytest"/);
-  assert.match(wxml, /home-button-life"[^>]*bindtap="goLifeTracker"/);
-  assert.match(wxml, /home-button-random"[^>]*bindtap="goRandom"/);
-  assert.match(wxml, /home-button-tracker"[^>]*bindtap="goTracker"/);
-  assert.match(wxml, /home-button-meta"[^>]*bindtap="showMetaComingSoon"/);
+  assert.match(wxml, /home-button-edhti[^>]*bindtap="goEdhti"/);
+  assert.match(wxml, /home-button-match[^>]*bindtap="goQuiz"/);
+  assert.match(wxml, /home-button-bracket[^>]*bindtap="goBracket"/);
+  assert.match(wxml, /home-button-playtest[^>]*bindtap="goPlaytest"/);
+  assert.match(wxml, /home-button-life[^>]*bindtap="goLifeTracker"/);
+  assert.match(wxml, /home-button-random[^>]*bindtap="goRandom"/);
+  assert.match(wxml, /home-button-tracker[^>]*bindtap="goTracker"/);
+  assert.match(wxml, /home-button-meta[^>]*bindtap="showMetaComingSoon"/);
   assert.match(wxml, /class="home-actions" aria-role="navigation" aria-label="主要功能"/);
   assert.doesNotMatch(wxml, /particle-background|particleCanvas/);
   assert.doesNotMatch(wxml, /<button[^>]*home-button|glass|bindtouch/);
@@ -130,9 +137,12 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.match(wxss, /page\s*{[\s\S]*background:\s*#D0F03C/);
   assert.match(wxss, /\.home\s*{[\s\S]*height:\s*100vh[\s\S]*padding:\s*0[\s\S]*constant\(safe-area-inset-bottom\)[\s\S]*env\(safe-area-inset-bottom\)[\s\S]*background:\s*#D0F03C/);
   assert.match(wxss, /\.home-hero\s*{[\s\S]*flex:\s*0 0 45vh/);
-  assert.match(wxss, /\.home-actions\s*{[\s\S]*flex:\s*1 1 55%[\s\S]*flex-direction:\s*column[\s\S]*border-top:\s*1px solid rgba\(0,0,0,0\.35\)/);
+  // 顶栏 5px 粗黑分割，取代旧发丝线（排版破坏 ②）
+  assert.match(wxss, /\.home-actions\s*{[\s\S]*flex:\s*1 1 55%[\s\S]*flex-direction:\s*column[\s\S]*border-top:\s*5px solid #0A0A0A/);
   assert.match(wxss, /\.home-button\s*{[\s\S]*flex:\s*1 1 0[\s\S]*border-bottom:\s*1px solid rgba\(0,0,0,0\.35\)[\s\S]*border-radius:\s*0/);
-  assert.match(wxss, /\.home-index-active\s*{[\s\S]*color:\s*#D0F03C[\s\S]*background:\s*#0A0A0A/);
+  // 暴力按压：整块黑底 + 电光蓝字（反相，非缩放/位移）
+  assert.match(wxss, /\.home-index-active\s*{[^}]*background:\s*#0A0A0A/);
+  assert.match(wxss, /\.home-index-active \.home-button-index[\s\S]*?color:\s*#00B3FF/);
   assert.match(wxss, /\.home-button\s*{[\s\S]*transition:\s*color 60ms linear,\s*background-color 60ms linear/);
   // 反相态只许改颜色：块内匹配（[^}]*）防跨块误命中，(?<!text-) 防 text-transform 子串误报
   assert.doesNotMatch(wxss, /\.home-index-active\s*{[^}]*(?:opacity:|scale:|(?<!text-)transform:)/);
@@ -141,13 +151,29 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.match(wxss, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*transition:\s*none/);
   assert.match(wxss, /\.home-button-text\s*{[^}]*align-items:\s*baseline[^}]*justify-content:\s*space-between/);
   assert.doesNotMatch(wxss, /home-button-leader|dotted/);
-  assert.match(wxss, /\.home-format-note\s*{[^}]*color:\s*rgba\(0,0,0,0\.35\)[^}]*font-size:\s*7px[^}]*letter-spacing:\s*0\.7px[^}]*text-transform:\s*uppercase/);
+  // 排版破坏 ①：不等行高、偏移打破左对齐线、巨号编号、部分行粗黑分割
+  assert.match(wxss, /\.home-button-tall\s*{[^}]*flex-grow:\s*1\.45/);
+  assert.match(wxss, /\.home-button-short\s*{[^}]*flex-grow:\s*0\.72/);
+  assert.match(wxss, /\.home-button-shift\s*{[^}]*padding-left:\s*64rpx/);
+  assert.match(wxss, /\.home-button-heavy\s*{[^}]*border-bottom:\s*5px solid #0A0A0A/);
+  assert.match(wxss, /\.home-button-index-xxl\s*{[^}]*font-size:\s*38px/);
+  assert.match(wxss, /\.home-button-index-over\s*{[^}]*margin-left:\s*-40rpx/);
+  // 对比极端化 ②：标题横向拉伸变形 + 倾斜，"喊叫"压过点阵"低语"
+  assert.match(wxss, /\.home-title-brand\s*{[^}]*transform:\s*scaleX\(1\.18\) skewX\(-10deg\)/);
+  // 事故色 glitch ④：每个入口条件挂 is-glitch，随机行由 glitchIndex 决定、每次进页面重掷
+  for (let i = 0; i < 8; i += 1) {
+    assert.match(wxml, new RegExp(`\\{\\{glitchIndex === ${i} \\? 'is-glitch' : ''\\}\\}`));
+  }
+  assert.match(wxss, /\.home-button\.is-glitch\s*{[^}]*background:\s*#00B3FF/);
+  assert.match(js, /HOME_ACTION_COUNT = 8/);
+  assert.match(js, /onShow\s*\(\)\s*{[\s\S]*glitchIndex:\s*Math\.floor\(Math\.random\(\)\s*\*\s*HOME_ACTION_COUNT\)/);
+  assert.match(wxss, /\.home-format-note\s*{[^}]*color:\s*rgba\(0,0,0,0\.35\)[^}]*font-size:\s*7px[^}]*text-transform:\s*uppercase/);
   assert.doesNotMatch(wxss, /home-reminder/);
   assert.match(wxss, /\.home-colophon\s*{[^}]*grid-template-columns:\s*1fr auto 1fr[^}]*font-family:\s*"Courier New",\s*Courier/);
   assert.match(wxss, /\.home-colophon-center\s*{[^}]*text-align:\s*center/);
   assert.match(wxss, /\.home-colophon-right\s*{[^}]*text-align:\s*right/);
-  assert.match(wxss, /\.home-colophon-item\s*{[^}]*font-size:\s*8px[^}]*text-transform:\s*uppercase/);
-  assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*\.home-colophon-item\s*{[^}]*font-size:\s*7px/);
+  // imprint 缩到近乎隐形的 fine print（6px）
+  assert.match(wxss, /\.home-colophon-item\s*{[^}]*font-size:\s*6px[^}]*text-transform:\s*uppercase/);
   assert.doesNotMatch(wxss, /gradient|box-shadow|backdrop-filter|clip-path|background-image|radial-gradient/);
   assert.deepEqual(
     Array.from(wxss.matchAll(/border-radius:\s*([^;]+);/g), (match) => match[1].trim()),
@@ -160,13 +186,13 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   );
   assert.deepEqual(
     new Set(colorLiterals),
-    new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.55)']),
-    '首页色板：底色三色 + 半透明黑双档（0.35 装饰 / 0.55 信息）',
+    new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', '#00B3FF', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.55)']),
+    '首页色板：底色 + 黑 + 白 + 事故色电光蓝 + 半透明黑双档（0.35 装饰 / 0.55 信息）',
   );
-  // 信息性文字（编号/英文副标题/imprint）0.55 达 ≈4.4:1；装饰注释保持 0.35
-  assert.match(wxss, /\.home-button-index\s*{[^}]*color:\s*rgba\(0,0,0,0\.55\)/);
+  // 编号提为纯黑巨号（最大对比），英文副标题保持 0.55；imprint 退到 0.35 近乎隐形
+  assert.match(wxss, /\.home-button-index\s*{[^}]*color:\s*#0A0A0A/);
   assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.55\)/);
-  assert.match(wxss, /\.home-colophon-item\s*{[^}]*color:\s*rgba\(0,0,0,0\.55\)/);
+  assert.match(wxss, /\.home-colophon-item\s*{[^}]*color:\s*rgba\(0,0,0,0\.35\)/);
 
   ['纯前端', '本地配置', '技术', '接口', '云', 'edhtop16'].forEach((word) => {
     assert.doesNotMatch(wxml, new RegExp(word), `home page should not show ${word}`);
@@ -191,20 +217,20 @@ test('home uses licensed embedded display and pixel fonts with device-safe fallb
   assert.match(wxml, /class="home-title-brand">cEDH Tutor<\/text>/);
   assert.match(wxml, /class="home-title-zh">竞技指挥官导师<\/text>/);
   assert.match(wxss, /font-family:\s*"HomePixel",\s*"Fusion Pixel 10px Monospaced SC",\s*"Zpix",\s*ui-monospace,\s*monospace/);
-  assert.match(wxss, /\.home-title-brand\s*{[\s\S]*font-family:\s*"cEDHDisplay"[\s\S]*font-size:\s*52px[\s\S]*font-weight:\s*900[\s\S]*letter-spacing:\s*-0\.055em/);
-  assert.match(wxss, /\.home-title-brand\s*{[\s\S]*-webkit-text-stroke:\s*0\.5px #FFFFFF[\s\S]*transform:\s*skewX\(-8deg\)[\s\S]*transform-origin:\s*left center/);
-  assert.match(wxss, /@media \(max-width:\s*360px\)[\s\S]*\.home-title-brand\s*{[\s\S]*font-size:\s*46px/);
+  // 喊叫：超粗展示体横向拉伸变形、字距更紧；字号留边防止品牌名被右缘裁切
+  assert.match(wxss, /\.home-title-brand\s*{[\s\S]*font-family:\s*"cEDHDisplay"[\s\S]*font-size:\s*48px[\s\S]*font-weight:\s*900[\s\S]*letter-spacing:\s*-0\.06em/);
+  assert.match(wxss, /\.home-title-brand\s*{[\s\S]*-webkit-text-stroke:\s*0\.6px #FFFFFF[\s\S]*transform:\s*scaleX\(1\.18\) skewX\(-10deg\)[\s\S]*transform-origin:\s*left center/);
+  assert.match(wxss, /@media \(max-width:\s*360px\)[\s\S]*\.home-title-brand\s*{[\s\S]*font-size:\s*42px/);
   assert.match(wxss, /@media \(max-height:\s*700px\)[\s\S]*\.home-title-brand\s*{[\s\S]*font-size:\s*42px/);
-  assert.match(wxss, /\.home-title-zh\s*{[\s\S]*font-size:\s*18px[\s\S]*letter-spacing:\s*4px/);
-  assert.match(wxss, /\.home-button-zh\s*{[\s\S]*font-weight:\s*400[\s\S]*letter-spacing:\s*4px/);
+  assert.match(wxss, /\.home-title-zh\s*{[\s\S]*font-size:\s*18px[\s\S]*letter-spacing:\s*5px/);
+  assert.match(wxss, /\.home-button-zh\s*{[\s\S]*font-weight:\s*400[\s\S]*letter-spacing:\s*3px/);
   assert.match(wxss, /\.home-button-zh\s*{[^}]*font-size:\s*20px/);
   // 全页文字均不使用 text-shadow（题词已改普通字体、加粗、无投影）；旧橙色双影配色不得复现
   assert.doesNotMatch(wxss, /text-shadow|#8A7200|#F26A1B|#8F3A05/);
-  // 底部题词：普通无衬线字体（非 Courier 工业注释体）、常规字重（非加粗）
-  const epigraphRule = (wxss.match(/\.home-epigraph\s*{([^}]*)}/) || [])[1] || '';
-  assert.match(epigraphRule, /font-family:\s*-apple-system[^;]*sans-serif/);
-  assert.doesNotMatch(epigraphRule, /Courier/);
-  assert.match(epigraphRule, /font-weight:\s*400/);
+  // 侧脊题词：竖排贴右缘，Courier 工业注释体、无投影（位置/竖排在第一组测试锁定）
+  const edgeTaglineRule = (wxss.match(/\.home-edge-tagline\s*{([^}]*)}/) || [])[1] || '';
+  assert.match(edgeTaglineRule, /font-family:\s*"Courier New"/);
+  assert.doesNotMatch(edgeTaglineRule, /text-shadow/);
   const titleBrandRule = (wxss.match(/\.home-title-brand\s*{([^}]*)}/) || [])[1] || '';
   assert.doesNotMatch(titleBrandRule, /text-shadow/);
   const chineseTextRules = Array.from(
@@ -215,8 +241,8 @@ test('home uses licensed embedded display and pixel fonts with device-safe fallb
   chineseTextRules.forEach((rule) => assert.doesNotMatch(rule, /text-shadow/));
   assert.match(wxss, /home-format-notes[^}]*font-family:\s*"Courier New",\s*Courier,\s*"Nimbus Mono PS",\s*ui-monospace,\s*monospace/);
   assert.match(wxss, /home-colophon[^}]*font-family:\s*"Courier New",\s*Courier,\s*"Nimbus Mono PS",\s*ui-monospace,\s*monospace/);
-  assert.match(wxss, /home-colophon-item[^}]*font-size:\s*8px[^}]*font-weight:\s*700[^}]*font-variant-numeric:\s*tabular-nums[^}]*letter-spacing:\s*1px[^}]*line-height:\s*1\.4[^}]*text-transform:\s*uppercase/);
-  assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*home-format-note[^}]*font-size:\s*6px[^}]*letter-spacing:\s*0\.25px/);
+  assert.match(wxss, /home-colophon-item[^}]*font-size:\s*6px[^}]*font-weight:\s*700[^}]*font-variant-numeric:\s*tabular-nums[^}]*letter-spacing:\s*0\.5px[^}]*line-height:\s*1\.3[^}]*text-transform:\s*uppercase/);
+  assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*home-format-note[^}]*font-size:\s*6px[^}]*letter-spacing:\s*0\.2px/);
   assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*home-title-brand[^}]*font-size:\s*38px/);
   assert.doesNotMatch(wxss, /font-style:\s*italic/);
 
