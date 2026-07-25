@@ -131,12 +131,4 @@ Page({
       url: '/pages/bracket/bracket',
     });
   },
-
-  showMetaComingSoon() {
-    wx.showToast({
-      title: '功能还在开发中，敬请期待！',
-      icon: 'none',
-      duration: 2400,
-    });
-  },
 });

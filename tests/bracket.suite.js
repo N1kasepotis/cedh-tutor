@@ -1925,9 +1925,9 @@ test('Bracket page and two home entries are wired without creating a Meta page',
   assert.match(indexWxml, /强度分级[\s\S]*BRACKET ANALYSIS/);
   assert.match(indexWxml, /环境梯度[\s\S]*META TIER LIST/);
   assert.match(indexJs, /goBracket\(\)[\s\S]*url:\s*'\/pages\/bracket\/bracket'/);
-  assert.match(indexJs, /showMetaComingSoon\(\)[\s\S]*title:\s*'功能还在开发中，敬请期待！'[\s\S]*icon:\s*'none'/);
-  const metaHandler = indexJs.slice(indexJs.indexOf('showMetaComingSoon()'));
-  assert.doesNotMatch(metaHandler, /navigateTo/);
+  // 环境梯度仍占版面但不可点：没有页面就不假装有入口，也不再弹「开发中」
+  assert.doesNotMatch(indexJs, /showMetaComingSoon/);
+  assert.match(indexWxml, /home-button-meta[^>]*is-pending/);
   assert.equal(bracketJson.navigationBarTitleText, '强度分级');
   assert.match(bracketJs, /fetchBracketCardMetadata/);
   assert.match(bracketJs, /evaluateBracket\(parsed, \{ metadataResult \}\)/);

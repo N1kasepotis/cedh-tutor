@@ -105,9 +105,10 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (match) => match[1]),
     ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
   );
-  assert.equal((wxml.match(/hover-class="home-index-active"/g) || []).length, 8);
-  assert.equal((wxml.match(/hover-start-time="0"/g) || []).length, 8);
-  assert.equal((wxml.match(/hover-stay-time="60"/g) || []).length, 8);
+  // 八行构图保留，但只有 7 个真正可用的入口带按压反馈：08 是未启用态，不给可点的假象
+  assert.equal((wxml.match(/hover-class="home-index-active"/g) || []).length, 7);
+  assert.equal((wxml.match(/hover-start-time="0"/g) || []).length, 7);
+  assert.equal((wxml.match(/hover-stay-time="60"/g) || []).length, 7);
   assert.match(wxml, /home-button-edhti[^>]*bindtap="goEdhti"/);
   assert.match(wxml, /home-button-match[^>]*bindtap="goQuiz"/);
   assert.match(wxml, /home-button-bracket[^>]*bindtap="goBracket"/);
@@ -115,7 +116,11 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.match(wxml, /home-button-life[^>]*bindtap="goLifeTracker"/);
   assert.match(wxml, /home-button-random[^>]*bindtap="goRandom"/);
   assert.match(wxml, /home-button-tracker[^>]*bindtap="goTracker"/);
-  assert.match(wxml, /home-button-meta[^>]*bindtap="showMetaComingSoon"/);
+  // 08 环境梯度尚未开放：可点击即承诺可用，所以它不该有 bindtap，只以未启用态出现
+  assert.match(wxml, /home-button-meta[^>]*is-pending[^>]*aria-disabled="true"/);
+  assert.doesNotMatch(wxml, /home-button-meta[^>]*bindtap=/);
+  assert.doesNotMatch(wxml, /home-button-meta[^>]*hover-class=/);
+  assert.match(wxml, /class="home-button-pending">SOON</);
   assert.match(wxml, /class="home-actions" aria-role="navigation" aria-label="主要功能"/);
   assert.doesNotMatch(wxml, /particle-background|particleCanvas/);
   assert.doesNotMatch(wxml, /<button[^>]*home-button|glass|bindtouch/);
@@ -127,7 +132,7 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.match(js, /goLifeTracker\(\)[\s\S]*\/pages\/life-tracker\/life-tracker/);
   assert.match(js, /goRandom\(\)[\s\S]*\/pages\/random\/random/);
   assert.match(js, /goTracker\(\)[\s\S]*\/pages\/tracker\/tracker/);
-  assert.match(js, /showMetaComingSoon\(\)[\s\S]*title:\s*'功能还在开发中，敬请期待！'[\s\S]*icon:\s*'none'/);
+  assert.doesNotMatch(js, /showMetaComingSoon/);
   assert.match(js, /enableShareMenu\(\)/);
   assert.match(shareUtil, /menus:\s*\[\s*'shareAppMessage'\s*,\s*'shareTimeline'\s*\]/);
   assert.match(js, /onShareAppMessage\s*\(\)\s*{[\s\S]*title:\s*'cEDH Tutor 竞技指挥官导师'/);
@@ -198,12 +203,15 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   );
   assert.deepEqual(
     new Set(colorLiterals),
-    new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', '#00B3FF', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.55)']),
-    '首页色板：底色 + 黑 + 白 + 事故色电光蓝 + 半透明黑双档（0.35 装饰 / 0.55 信息）',
+    new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', '#00B3FF', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.7)']),
+    '首页色板：底色 + 黑 + 白 + 事故色电光蓝 + 半透明黑双档（0.35 装饰 / 0.7 功能文本）',
   );
-  // 编号提为纯黑巨号（最大对比），英文副标题保持 0.55；imprint 退到 0.35 近乎隐形
+  // 编号提为纯黑巨号（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
   assert.match(wxss, /\.home-button-index\s*{[^}]*color:\s*#0A0A0A/);
-  assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.55\)/);
+  // 功能文本（入口副标题）按正文对比度要求：10px + 0.7 alpha 在 #D0F03C 上约 7.5:1，过 AA 4.5:1
+  assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.7\)[^}]*font-size:\s*10px/);
+  // 窄屏只收紧字距，不把说明文本降回 8px
+  assert.doesNotMatch(wxss, /\.home-button-en\s*{[^}]*font-size:\s*[89]px/);
   assert.match(wxss, /\.home-colophon-item\s*{[^}]*color:\s*rgba\(0,0,0,0\.35\)/);
 
   ['纯前端', '本地配置', '技术', '接口', '云', 'edhtop16'].forEach((word) => {
@@ -345,9 +353,10 @@ test('button press feedback is centralized and reused across app controls', () =
   assert.doesNotMatch(randomWxss, /\.sticker-draw-button\.drawing/);
   assert.ok((interactiveMarkup.match(/hover-class="pressable-active"/g) || []).length >= 18);
   assert.ok((interactiveMarkup.match(/hover-stay-time="120"/g) || []).length >= 18);
-  assert.equal((indexWxml.match(/hover-class="home-index-active"/g) || []).length, 8);
-  assert.equal((indexWxml.match(/hover-start-time="0"/g) || []).length, 8);
-  assert.equal((indexWxml.match(/hover-stay-time="60"/g) || []).length, 8);
+  // 只有可用的 7 个入口有按压反馈；08 未启用态不带 hover，避免「按得动 = 用得了」的错觉
+  assert.equal((indexWxml.match(/hover-class="home-index-active"/g) || []).length, 7);
+  assert.equal((indexWxml.match(/hover-start-time="0"/g) || []).length, 7);
+  assert.equal((indexWxml.match(/hover-stay-time="60"/g) || []).length, 7);
 });
 
 test('home removes particles while other interfaces retain theme-matched particle backgrounds', () => {
@@ -460,6 +469,82 @@ test('quiz and result action controls stay inside mobile width', () => {
   assert.match(resultWxss, /\.actions\s*{[\s\S]*display:\s*flex/);
   assert.match(resultWxss, /\.action-button\s*{[\s\S]*flex:\s*1 1 0/);
   assert.match(resultWxss, /\.action-button\s*{[\s\S]*min-width:\s*0/);
+});
+
+// 粘 100 行是本项目最贵的单次操作：不能白粘一次，也不该为「先分析再试玩」粘两次
+test('bracket keeps its deck text, offers clipboard import, and hands off to playtest', () => {
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.js'), 'utf8');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.wxml'), 'utf8');
+
+  // 与套牌试玩各存各的 key：改一边不该悄悄改掉另一边
+  assert.match(js, /const DECK_TEXT_STORAGE_KEY = 'bracketDeckText'/);
+  assert.match(js, /const PLAYTEST_DECK_TEXT_STORAGE_KEY = 'playtestDeckText'/);
+  assert.match(js, /onLoad\(\)\s*{[\s\S]*this\.restoreDeckText\(\)/);
+  assert.match(js, /handleDeckInput\(event\)\s*{[\s\S]*this\.persistDeckText\(deckText\)/);
+  assert.match(js, /clearDeck\(\)\s*{[\s\S]*removeStorage\(DECK_TEXT_STORAGE_KEY\)/);
+  // 长度上限复用 utils/bracket 的常量，不在页面里另抄一份
+  assert.match(js, /MAX_DECK_CHARS,\s*\n\s*MAX_DECK_LINES,\s*\n\}\s*=\s*require\('\.\.\/\.\.\/utils\/bracket'\)/);
+
+  // 显式按钮读剪贴板：微信会弹系统提示，不能在 onShow 静默读
+  assert.match(js, /importFromClipboard\(\)\s*{[\s\S]*wx\.getClipboardData/);
+  assert.doesNotMatch(js, /onShow\s*\([\s\S]{0,200}getClipboardData/);
+  assert.match(js, /lineCount < CLIPBOARD_DECK_MIN_LINES/);
+  assert.match(wxml, /bindtap="importFromClipboard"\s*\n?\s*>粘贴</);
+
+  // 分析完直接开局，不用把同一副牌再粘一遍
+  assert.match(js, /playtestDeck\(\)\s*{[\s\S]*writeStorage\(PLAYTEST_DECK_TEXT_STORAGE_KEY[\s\S]*url: '\/pages\/playtest\/playtest'/);
+  assert.match(wxml, /bindtap="playtestDeck"[\s\S]{0,120}用这副牌试玩/);
+});
+
+// 弱网下顺序分批可能拖到 20–30 秒：等待必须有分母，也必须有出路
+test('bracket analysis shows progress and exposes a local-rules escape hatch', () => {
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.js'), 'utf8');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.wxml'), 'utf8');
+
+  assert.match(js, /onProgress: \(\{ done, total, phase \}\) =>[\s\S]*analyzeProgress: phase === 'prices' \? '读取参考价' : `\$\{done\} \/ \$\{total\}`/);
+  assert.match(js, /requestId !== this\.analysisRequestId\) return;\s*\n\s*this\.setData\(\{\s*\n\s*analyzeProgress/);
+  assert.match(wxml, /class="analyze-progress mono" wx:if="\{\{analyzing && analyzeProgress\}\}" aria-live="polite"/);
+
+  // 降级出口在 6 秒后才出现，避免打断正常速度的分析
+  assert.match(js, /const SLOW_ANALYSIS_MS = 6000/);
+  assert.match(js, /startSlowAnalysisTimer\(requestId\)\s*{[\s\S]*this\.setData\(\{ canSkipMetadata: true \}\)/);
+  assert.match(wxml, /wx:if="\{\{canSkipMetadata\}\}"[\s\S]*bindtap="skipMetadata"[\s\S]*网络较慢，先看本地规则结果/);
+  // 提前出结果必须递增请求编号，晚到的元数据不能再覆盖这份本地结果
+  assert.match(js, /skipMetadata\(\)\s*{[\s\S]*this\.analysisRequestId = \(this\.analysisRequestId \|\| 0\) \+ 1[\s\S]*evaluateBracket\(parsed\)/);
+  // 计时器不能泄漏
+  assert.match(js, /onUnload\(\)\s*{[\s\S]*this\.clearSlowAnalysisTimer\(\)/);
+});
+
+// 问卷答案不该一次性：中途被打断能恢复，出结果后能只改一个答案而不重答 12 题
+test('quiz persists a draft, offers resume, and can prefill from the stored result', () => {
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/quiz/quiz.js'), 'utf8');
+  const resultJs = fs.readFileSync(path.join(root, 'miniprogram/pages/result/result.js'), 'utf8');
+  const resultWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/result/result.wxml'), 'utf8');
+
+  // 每步落盘，切后台被回收也不丢已答的题
+  assert.match(js, /const QUIZ_DRAFT_STORAGE_KEY = 'quizDraft'/);
+  assert.match(js, /refreshQuestion\(index, answers\)\s*{[\s\S]*this\.persistDraft\(index, answers\)/);
+  assert.match(js, /persistDraft\(currentIndex, answers\)\s*{[\s\S]*writeStorage\(QUIZ_DRAFT_STORAGE_KEY, { currentIndex, answers }/);
+
+  // 只有真的有答案可丢时才弹恢复询问
+  const resumeBlock = js.slice(js.indexOf('offerDraftResume()'));
+  assert.match(resumeBlock, /if \(!draft \|\| !countAnswered\(draft\.answers\)\) return/);
+  assert.match(resumeBlock, /title: '继续上次作答'/);
+  assert.match(resumeBlock, /confirmText: '继续'/);
+  assert.match(resumeBlock, /cancelText: '重新开始'/);
+  assert.match(resumeBlock, /removeStorage\(QUIZ_DRAFT_STORAGE_KEY\)/);
+
+  // 出结果即清草稿，避免带着结果再进问卷还被问「继续上次」
+  assert.match(js, /removeStorage\(QUIZ_DRAFT_STORAGE_KEY\);[\s\S]*wx\.redirectTo\(\{\s*url: '\/pages\/result\/result'/);
+
+  // mode 分流：edit 预填上次答案，restart 明确清空
+  assert.match(js, /mode === 'restart'[\s\S]*removeStorage\(QUIZ_DRAFT_STORAGE_KEY\)/);
+  assert.match(js, /mode === 'edit'[\s\S]*this\.prefillFromResult\(\)/);
+  assert.match(js, /prefillFromResult\(\)\s*{[\s\S]*QUIZ_RESULT_STORAGE_KEY[\s\S]*this\.refreshQuestion\(0, { \.\.\.stored\.value\.answers }\)/);
+
+  assert.match(resultJs, /editAnswers\(\)\s*{[\s\S]*url: '\/pages\/quiz\/quiz\?mode=edit'/);
+  assert.match(resultJs, /restart\(\)\s*{[\s\S]*url: '\/pages\/quiz\/quiz\?mode=restart'/);
+  assert.match(resultWxml, /bindtap="editAnswers">修改答案</);
 });
 
 test('result display sorts by fit and replaces repeated partner names with later candidates', () => {

@@ -78,12 +78,13 @@
         </view>
       </view>
 
-      <view class="home-button home-button-meta home-button-tall {{glitchIndex === 7 ? 'is-glitch' : ''}}" aria-role="button" aria-label="环境梯度，功能开发中" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="showMetaComingSoon">
+      <view class="home-button home-button-meta home-button-tall is-pending {{glitchIndex === 7 ? 'is-glitch' : ''}}" aria-disabled="true" aria-label="环境梯度，功能尚未开放">
         <text class="home-button-index home-button-index-xl">08</text>
         <view class="home-button-text">
           <text class="home-button-zh">环境梯度</text>
           <text class="home-button-en">META TIER LIST</text>
         </view>
+        <text class="home-button-pending">SOON</text>
       </view>
     </view>
 

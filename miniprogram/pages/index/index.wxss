@@ -225,14 +225,36 @@ page {
   margin-left: 20rpx;
   flex: 0 1 auto;
   overflow: hidden;
-  color: rgba(0,0,0,0.55);
-  font-size: 9px;
+  /* 副标题是这一行里唯一说明「点进去会发生什么」的功能文本，不按装饰文本的标准压小压淡：
+     10px + 0.7 alpha 在 #D0F03C 上约 7.5:1，过 WCAG AA 正文 4.5:1（原 9px / 0.55 只有约 4.46:1） */
+  color: rgba(0,0,0,0.7);
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 1.5px;
   line-height: 1;
   text-overflow: ellipsis;
   white-space: nowrap;
   text-transform: uppercase;
+}
+
+/* 未启用入口：可点击即承诺可用，所以不给 hover / bindtap，
+   改成看得见的未启用态——保住八行构图，也不骗用户点一下才发现没有 */
+.home-button.is-pending {
+  opacity: 0.55;
+}
+
+.home-button-pending {
+  flex: 0 0 auto;
+  margin-left: 16rpx;
+  padding: 2px 6px;
+  color: #D0F03C;
+  background: #0A0A0A;
+  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 700;
+  letter-spacing: 1px;
+  line-height: 1.2;
+  white-space: nowrap;
 }
 
 /* 粗暴分割：字符 /// 一整行当分隔线 */
@@ -340,9 +362,10 @@ page {
     font-size: 16px;
   }
 
+  /* 窄屏只收紧间距，不再把功能文本降到 8px——挤版面该让装饰让路，不该让说明让路 */
   .home-button-en {
     margin-left: 12rpx;
-    font-size: 8px;
+    letter-spacing: 1px;
   }
 }
 
