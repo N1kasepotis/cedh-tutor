@@ -73,5 +73,16 @@
         </view>
       </view>
     </view>
+
+    <view wx:if="{{undoVisible}}" class="undo-bar" aria-live="polite">
+      <text class="undo-text">{{undoText}}</text>
+      <view
+        class="undo-action"
+        aria-role="button"
+        aria-label="撤销，恢复上一局血量"
+        hover-class="undo-action-active"
+        bindtap="undoLastChange"
+      >撤销</view>
+    </view>
   </view>
 </view>

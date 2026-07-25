@@ -282,6 +282,21 @@ function countZones(game) {
   return counts;
 }
 
+// 一步撤销用的局面快照：拷贝六个区的数组与卡对象，
+// counters 是唯一的嵌套字段，单独浅拷贝即可与原局面完全脱钩
+function cloneGame(game) {
+  const clone = {};
+  PLAYTEST_ZONES.forEach((zone) => {
+    const cards = game && Array.isArray(game[zone]) ? game[zone] : [];
+    clone[zone] = cards.map((card) => {
+      const copy = { ...card };
+      if (card && card.counters) copy.counters = { ...card.counters };
+      return copy;
+    });
+  });
+  return clone;
+}
+
 module.exports = {
   PLAYTEST_ZONES,
   ZONE_LABELS,
@@ -289,6 +304,7 @@ module.exports = {
   expandCards,
   shuffleInPlace,
   createGame,
+  cloneGame,
   drawCards,
   moveCard,
   toggleTapped,

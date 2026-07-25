@@ -286,8 +286,19 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   // 对局沙盘不再堆砌互动规则说明（已按需求删除 battlefield-empty 引导）
   assert.doesNotMatch(wxml, /battlefield-empty|点手牌打出|长按手牌看大图/);
   assert.match(wxml, /bindtap="confirmClearDeckText"[\s\S]{0,80}>清除现套牌/);
-  // 导入与清除两颗按钮同款（半透明 primary-button import-button），且都有短按反馈
-  assert.equal((wxml.match(/class="primary-button import-button"/g) || []).length, 2);
+  // 导入 / 剪贴板粘贴 / 清除三颗按钮同款（半透明 primary-button import-button），且都有短按反馈
+  assert.equal((wxml.match(/class="primary-button import-button"/g) || []).length, 3);
+  assert.match(wxml, /bindtap="importFromClipboard">从剪贴板粘贴/);
+  // 但只能占两行：deck-input 高度按「下方固定两行」预留，再堆一行会被 overflow:hidden 裁出屏幕
+  const importActions = wxml.slice(
+    wxml.indexOf('<view class="import-actions">'),
+    wxml.indexOf('</view>\n  </view>'),
+  );
+  assert.match(importActions, /bindtap="importFromClipboard"/);
+  assert.match(importActions, /bindtap="confirmClearDeckText"/);
+  assert.doesNotMatch(importActions, /bindtap="importDeck"/);
+  assert.match(wxss, /\.import-actions\s*{[\s\S]*display:\s*flex/);
+  assert.match(wxss, /\.import-actions \.import-button\s*{[\s\S]*flex:\s*1 1 0[\s\S]*min-width:\s*0/);
   assert.match(wxml, /class="primary-button import-button"[\s\S]{0,90}bindtap="confirmClearDeckText"/);
   assert.ok((wxml.match(/hover-class="pressable-active"/g) || []).length >= 2);
   assert.match(js, /content:\s*'会清空输入框和已保存的牌表文本'/);
@@ -447,4 +458,66 @@ test('主页入口：playtest 导航完整，反馈模块已移除', () => {
   assert.match(wxss, /\.home\s*{[\s\S]*font-family:[^;]*HomePixel/);
   assert.ok(!fs.existsSync(path.join(root, 'miniprogram/pages/feedback')), 'feedback 页面目录应已删除');
   assert.ok(!fs.existsSync(path.join(root, 'miniprogram/config/feedback.js')), 'feedback 配置应已删除');
+});
+
+// 拖错一张牌只能重开是不可接受的：保留一步局面快照，且快照必须与现局面完全脱钩
+test('cloneGame snapshots every zone independently for one-step undo', () => {
+  const {
+    PLAYTEST_ZONES,
+    cloneGame,
+    createGame,
+    moveCard,
+    toggleTapped,
+    adjustCardCounters,
+    countZones,
+  } = require('../miniprogram/utils/playtest');
+
+  const parsed = {
+    main: [{ count: 40, name: 'Island' }, { count: 20, name: 'Brainstorm' }],
+    commanders: [{ count: 1, name: 'Kinnan, Bonder Prodigy' }],
+  };
+  const game = createGame(parsed);
+  const before = countZones(game);
+  const snapshot = cloneGame(game);
+
+  assert.deepEqual(Object.keys(snapshot).sort(), PLAYTEST_ZONES.slice().sort());
+  assert.deepEqual(countZones(snapshot), before);
+
+  // 快照里的卡与现局面不是同一批对象
+  assert.notEqual(snapshot.hand[0], game.hand[0]);
+
+  // 之后的移动 / 横置 / 指示物都不能回写进快照
+  const moving = game.hand[0];
+  moveCard(game, 'hand', moving.id, 'graveyard');
+  toggleTapped(game, game.battlefield[0] ? game.battlefield[0].id : moving.id);
+  adjustCardCounters(snapshot.hand[0], 'generic', 0);
+  adjustCardCounters(game.hand[0], 'generic', 3);
+
+  assert.equal(countZones(game).hand, before.hand - 1);
+  assert.deepEqual(countZones(snapshot), before, '快照的区计数不随现局面变化');
+  assert.ok(snapshot.hand.some((card) => card.id === moving.id), '被移走的牌仍留在快照里');
+  assert.equal(snapshot.hand[0].counters, undefined, '指示物不共享引用');
+
+  // 把快照装回去就是撤销：区计数回到动作之前
+  assert.deepEqual(countZones(cloneGame(snapshot)), before);
+});
+
+test('playtest exposes one-step undo on the board without multi-level history', () => {
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/playtest/playtest.js'), 'utf8');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/playtest/playtest.wxml'), 'utf8');
+
+  assert.match(js, /captureUndo\(label\)\s*{[\s\S]*this\.undoSnapshot = \{ game: cloneGame\(this\.game\), label \}/);
+  assert.match(js, /undoLastAction\(\)\s*{[\s\S]*this\.game = game[\s\S]*this\.syncView\(\)/);
+  assert.match(wxml, /wx:if="\{\{canUndo\}\}"[\s\S]{0,160}bindtap="undoLastAction">撤销/);
+
+  // 每条会改局面的路径都先留快照：抓牌 / 打出 / 横置 / 拖放 / 随机弃 / 面板移动
+  ['抓牌', '打出', '横置', '收回手牌', '随机弃牌'].forEach((label) => {
+    assert.ok(js.includes(`this.captureUndo('${label}')`), `${label} 应留下撤销快照`);
+  });
+  assert.ok((js.match(/this\.captureUndo\('移动'\)/g) || []).length >= 3, '拖放与面板移动都要可撤销');
+
+  // 只保留一步：不引入历史栈
+  assert.doesNotMatch(js, /undoStack|undoHistory|\.undoSnapshots/);
+  // 新开局与已确认的刷新都不该还能撤回上一局面
+  assert.match(js, /this\.undoSnapshot = null;\s*\n\s*this\.setData\(\{ canUndo: false \}\)/);
 });

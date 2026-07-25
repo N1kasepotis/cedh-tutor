@@ -2,6 +2,7 @@ const {
   ZONE_LABELS,
   parseMtgoDeckText,
   createGame,
+  cloneGame,
   drawCards,
   moveCard,
   toggleTapped,
@@ -27,6 +28,8 @@ const { enableShareMenu } = require('../../utils/share');
 const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
 
 const DECK_TEXT_STORAGE_KEY = 'playtestDeckText';
+// 手机上粘 100 行成本很高，够长才认为剪贴板里真是一份牌表
+const CLIPBOARD_DECK_MIN_LINES = 8;
 const CARD_WIDTH = 66;
 const CARD_HEIGHT = 92;
 const DRAG_THRESHOLD = 6;
@@ -81,6 +84,7 @@ Page({
     inspect: null,
     inspectTargets: [],
     dragId: 0,
+    canUndo: false,
     manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 },
     manaTotal: 0,
   },
@@ -150,6 +154,24 @@ Page({
     this.setData({ deckText: event.detail.value, importWarning: '' });
   },
 
+  // 显式按钮而不是进页面偷读：微信读剪贴板会弹系统提示，静默读既惊吓又踩隐私准则
+  importFromClipboard() {
+    wx.getClipboardData({
+      success: (clipboard) => {
+        const text = String((clipboard && clipboard.data) || '');
+        const lineCount = text.replace(/\r\n?/g, '\n').split('\n')
+          .filter((line) => line.trim()).length;
+        if (lineCount < CLIPBOARD_DECK_MIN_LINES) {
+          this.setData({ importWarning: '剪贴板里没有找到牌表' });
+          return;
+        }
+        this.setData({ deckText: text.slice(0, MAX_DECK_CHARS), importWarning: '' });
+        wx.showToast({ title: `已导入 ${lineCount} 行`, icon: 'none' });
+      },
+      fail: () => this.setData({ importWarning: '读取剪贴板失败' }),
+    });
+  },
+
   confirmClearDeckText() {
     if (!this.data.deckText) return;
 
@@ -190,9 +212,12 @@ Page({
     this.nextTokenId = -1;
     this.handScrollLeft = 0;
     this.manaPool = createManaPool();
+    // 新开局没有「上一步」可回
+    this.undoSnapshot = null;
 
     this.setData({
       imported: true,
+      canUndo: false,
       life: 40,
       importWarning: parsed.warnings.length ? `${parsed.warnings.length} 行未识别，已跳过` : '',
       handScrollLeft: 0,
@@ -265,8 +290,27 @@ Page({
       wx.showToast({ title: '牌库已空', icon: 'none' });
       return;
     }
+    this.captureUndo('抓牌');
     drawCards(this.game, 1);
     this.syncView(() => this.scrollHandToEnd());
+  },
+
+  // 只留一步：拖错一张牌能收回来，但不做多级历史——内存与心智成本都不划算
+  captureUndo(label) {
+    if (!this.game) return;
+    this.undoSnapshot = { game: cloneGame(this.game), label };
+    if (!this.data.canUndo) this.setData({ canUndo: true });
+  },
+
+  undoLastAction() {
+    if (!this.undoSnapshot) return;
+    const { game, label } = this.undoSnapshot;
+    this.undoSnapshot = null;
+    this.game = game;
+    this.setData({ canUndo: false });
+    this.closeInspect();
+    this.syncView();
+    wx.showToast({ title: `已撤销${label}`, icon: 'none' });
   },
 
   // 找战场上第一个没被占用的网格格子。以「已占格子」而非「战场牌数」定位，
@@ -313,6 +357,7 @@ Page({
 
   playFromHand(event) {
     const cardId = Number(event.currentTarget.dataset.id);
+    this.captureUndo('打出');
     moveCard(this.game, 'hand', cardId, 'battlefield', this.nextFieldSlot());
     this.syncView();
   },
@@ -347,6 +392,7 @@ Page({
       confirmText: '弃掉',
       success: (result) => {
         if (!result.confirm) return;
+        this.captureUndo('随机弃牌');
         moveCard(this.game, 'hand', card.id, 'graveyard');
         this.syncView();
       },
@@ -437,6 +483,7 @@ Page({
 
     // 位移未超过阈值视为单击：横置 / 竖置
     if (!drag.moved) {
+      this.captureUndo('横置');
       toggleTapped(this.game, drag.id);
       this.syncView();
       return;
@@ -450,6 +497,7 @@ Page({
     const dropZone = this.hitTestZone(touch.clientX, touch.clientY);
 
     if (dropZone && dropZone !== 'battlefield') {
+      this.captureUndo('移动');
       moveCard(this.game, 'battlefield', drag.id, dropZone);
       this.setData({ dragId: 0 });
       this.syncView(dropZone === 'hand' ? () => this.scrollHandToEnd() : undefined);
@@ -459,6 +507,7 @@ Page({
     // 落在战场之外、又不属于任何指定区域的「黑区」：收回手牌。
     // 否则卡牌会被夹在战场边缘外、被 overflow:hidden 裁掉，看着像凭空消失。
     if (!dropZone && !this.isInsideBattlefield(touch.clientX, touch.clientY)) {
+      this.captureUndo('收回手牌');
       moveCard(this.game, 'battlefield', drag.id, 'hand');
       this.setData({ dragId: 0 });
       this.syncView(() => this.scrollHandToEnd());
@@ -614,6 +663,7 @@ Page({
     const fromZone = this.data.panelZone;
     const options = toZone === 'battlefield' ? this.nextFieldSlot() : {};
 
+    this.captureUndo('移动');
     const moved = moveCard(this.game, fromZone, cardId, toZone, options);
     if (!moved) return;
 
@@ -711,6 +761,7 @@ Page({
     const position = event.currentTarget.dataset.position;
     const options = toZone === 'battlefield' ? this.nextFieldSlot() : { position };
 
+    this.captureUndo('移动');
     const moved = moveCard(this.game, inspect.zone, inspect.id, toZone, options);
     if (!moved) return;
 
@@ -801,6 +852,9 @@ Page({
       success: (result) => {
         if (!result.confirm || !this.parsed) return;
         this.game = createGame(this.parsed);
+        // 刷新是已确认的破坏性操作，不该还能撤回到上一局面
+        this.undoSnapshot = null;
+        this.setData({ canUndo: false });
         this.nextTokenId = -1;
         this.handScrollLeft = 0;
         this.manaPool = createManaPool();

@@ -57,6 +57,21 @@
   margin-top: var(--cedh-space-2);
 }
 
+/* 两个次级动作并排占一行：.deck-input 的高度按「下方固定两行」预留（calc(100vh - 480rpx)），
+   再往下堆一行按钮就会被 .playtest 的 overflow:hidden 裁掉 */
+.import-actions {
+  display: flex;
+  gap: var(--cedh-space-3);
+}
+
+.import-actions .import-button {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
 /* ===== 对局态 ===== */
 .playtest-board {
   position: relative;

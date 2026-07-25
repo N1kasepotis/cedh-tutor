@@ -308,6 +308,51 @@ page {
   background: rgba(255, 255, 255, 0.12);
 }
 
+/* 撤销条起点 150rpx，避开展开状态的中心菜单（48rpx 起、约 142rpx 收尾），两者不会叠字 */
+.undo-bar {
+  position: fixed;
+  top: calc(50vh + 150rpx);
+  left: 50vw;
+  z-index: 9;
+  display: flex;
+  align-items: center;
+  gap: 14rpx;
+  height: 52rpx;
+  padding: 0 12rpx 0 20rpx;
+  background: rgba(2, 3, 4, 0.97);
+  border: 1rpx solid rgba(255, 255, 255, 0.22);
+  border-radius: 999rpx;
+  transform: translate(-50%, 0);
+  white-space: nowrap;
+}
+
+.undo-text {
+  color: rgba(255, 255, 255, 0.82);
+  font-size: 16rpx;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+}
+
+/* 撤销是这条里唯一的动作，给实心白最高对比；热区 88rpx 宽与中心触发器同口径 */
+.undo-action {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 88rpx;
+  height: 44rpx;
+  padding: 0 16rpx;
+  color: #0a0a0a;
+  background: rgba(255, 255, 255, 0.92);
+  border-radius: 999rpx;
+  font-size: 17rpx;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
+.undo-action-active {
+  background: rgba(255, 255, 255, 0.68);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .dropdown-trigger {
     animation: none;

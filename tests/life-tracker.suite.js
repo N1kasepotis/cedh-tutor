@@ -263,3 +263,42 @@ test('match toolbar provides a direct return to the home page', () => {
   assert.match(readPage('wxss'), /\.dropdown-menu\s*{[\s\S]*opacity:\s*0[\s\S]*transform:[\s\S]*scale\(0\.92\)[\s\S]*transition:/);
   assert.match(readPage('wxss'), /\.dropdown-menu-open\s*{[\s\S]*opacity:\s*1[\s\S]*scale\(1\)/);
 });
+
+// 重置 / 切人数会抹掉一整局血量：给可点撤销而不是事后 toast，也不给正常路径加二次确认
+test('life tracker offers an undo window after destructive board changes', () => {
+  const js = readPage('js');
+  const wxml = readPage('wxml');
+  const wxss = readPage('wxss');
+
+  // 两条破坏性路径都先留快照、再交给撤销条，不再只弹 toast
+  const resetBlock = js.slice(js.indexOf('resetGame()'), js.indexOf('setPlayerMode(event)'));
+  assert.match(resetBlock, /this\.undoPendingSnapshot = cloneLifeState\(this\.gameState\)/);
+  assert.match(resetBlock, /this\.offerUndo\('对局已重置'\)/);
+  assert.doesNotMatch(resetBlock, /wx\.showToast/);
+
+  const modeBlock = js.slice(js.indexOf('setPlayerMode(event)'), js.indexOf('goHome()'));
+  assert.match(modeBlock, /this\.undoPendingSnapshot = cloneLifeState\(this\.gameState\)/);
+  assert.match(modeBlock, /this\.offerUndo\(`已切换为 \$\{count\} 人对局`\)/);
+  assert.doesNotMatch(modeBlock, /wx\.showToast/);
+
+  // 破坏性操作不该被二次确认拦住——重置在长局里是高频合法操作
+  assert.doesNotMatch(resetBlock, /wx\.showModal/);
+  assert.doesNotMatch(modeBlock, /wx\.showModal/);
+
+  // 快照必须是拷贝，不能与 gameState 共享 players 引用
+  assert.match(js, /function cloneLifeState\(state\)\s*{[\s\S]*players: \(state\.players \|\| \[\]\)\.map\(\(player\) => \(\{ \.\.\.player \}\)\)/);
+
+  // 撤销窗口有限，且继续记血 / 离开页面都会收起
+  assert.match(js, /const UNDO_WINDOW_MS = 8000/);
+  assert.match(js, /applyLifeChange\(playerId, delta\)\s*{[\s\S]*if \(this\.data\.undoVisible\) this\.dismissUndo\(\)/);
+  assert.match(js, /onHide\(\)\s*{[\s\S]*this\.dismissUndo\(\)/);
+  assert.match(js, /onUnload\(\)\s*{[\s\S]*this\.dismissUndo\(\)/);
+  assert.match(js, /undoLastChange\(\)\s*{[\s\S]*this\.gameState = this\.undoSnapshot[\s\S]*this\.writeStorage\(\)/);
+
+  assert.match(wxml, /wx:if="\{\{undoVisible\}\}"[\s\S]*bindtap="undoLastChange"/);
+  assert.match(wxml, /class="undo-bar" aria-live="polite"/);
+
+  // 撤销条让到 150rpx 以下，避开展开状态的中心菜单（48rpx 起、约 142rpx 收尾）
+  assert.match(wxss, /\.undo-bar\s*{[\s\S]*top:\s*calc\(50vh \+ 150rpx\)/);
+  assert.match(wxss, /\.undo-action\s*{[\s\S]*min-width:\s*88rpx[\s\S]*height:\s*44rpx/);
+});

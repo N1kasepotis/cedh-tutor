@@ -14,7 +14,10 @@
     ></textarea>
     <view class="import-warning" wx:if="{{importWarning}}">{{importWarning}}</view>
     <button class="primary-button import-button" hover-class="pressable-active" hover-stay-time="120" bindtap="importDeck">导入并开始</button>
-    <button class="primary-button import-button" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmClearDeckText">清除现套牌</button>
+    <view class="import-actions">
+      <button class="primary-button import-button" aria-label="从剪贴板导入牌表" hover-class="pressable-active" hover-stay-time="120" bindtap="importFromClipboard">从剪贴板粘贴</button>
+      <button class="primary-button import-button" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmClearDeckText">清除现套牌</button>
+    </view>
   </view>
 
   <view class="playtest-board" wx:else>
@@ -28,6 +31,7 @@
         </view>
       </view>
       <view class="board-actions">
+        <view class="text-button board-action" wx:if="{{canUndo}}" aria-role="button" aria-label="撤销上一步" hover-class="pressable-active" hover-stay-time="120" bindtap="undoLastAction">撤销</view>
         <view class="text-button board-action token-action" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="addToken">Token</view>
         <view class="text-button board-action" wx:if="{{counts.hand}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="randomDiscard">随机弃</view>
         <view class="text-button board-action" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmRestart">刷新</view>
