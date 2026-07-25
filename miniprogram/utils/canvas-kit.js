@@ -276,7 +276,8 @@ function exportPosterImage(page, options) {
   });
 
   const finish = (success) => {
-    wx.hideLoading();
+    // 同 hideKeyboard：无参调用走 Promise 风格，没有 loading 可收时会拒绝且无人 catch
+    wx.hideLoading({ fail: () => {} });
     page.setData({ exporting: false });
     wx.showToast({
       title: success ? '图片已保存' : '导出失败，请重试',

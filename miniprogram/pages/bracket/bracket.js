@@ -310,7 +310,9 @@ Page({
       return;
     }
 
-    if (wx.hideKeyboard) wx.hideKeyboard();
+    // 必须传回调：无参调用会走 Promise 风格，而「粘贴」按钮填入牌表时键盘从未升起，
+    // 此时 hideKeyboard 无键盘可收会拒绝，没人 catch 就冒成框架级的 Error: timeout
+    if (wx.hideKeyboard) wx.hideKeyboard({ fail: () => {} });
     const requestId = (this.analysisRequestId || 0) + 1;
     this.analysisRequestId = requestId;
     this.pendingParsed = parsed;

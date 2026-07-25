@@ -287,3 +287,44 @@ test('commander-meta 批量打标签与 config/commanders 输出一致', () => {
     assert.deepEqual(commander.metaTags, commanders[index].metaTags, commander.name);
   });
 });
+
+// 微信的异步 API 无参调用会返回 Promise：没人 catch 时拒绝会冒成框架级的
+// Error: timeout（栈里全是 WAServiceMainContext，没有任何应用帧，极难定位）。
+// 这类调用必须显式传回调，退回 callback 风格。
+test('异步 wx API 不使用无参调用，避免未处理的 Promise 拒绝', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+
+  const SYNC_APIS = new Set([
+    'getWindowInfo', 'getSystemInfoSync', 'getMenuButtonBoundingClientRect',
+    'onMemoryWarning', 'offMemoryWarning', 'createSelectorQuery',
+    'getStorageSync', 'setStorageSync', 'removeStorageSync', 'clearStorageSync',
+    'getAppBaseInfo', 'getDeviceInfo', 'nextTick', 'getLaunchOptionsSync',
+  ]);
+
+  const offenders = [];
+  const walk = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        return;
+      }
+      if (!entry.name.endsWith('.js')) return;
+      const source = fs.readFileSync(full, 'utf8');
+      const pattern = /wx\.([A-Za-z]+)\s*\(\s*\)/g;
+      let match = pattern.exec(source);
+      while (match) {
+        if (!SYNC_APIS.has(match[1])) {
+          const line = source.slice(0, match.index).split('\n').length;
+          offenders.push(`${path.relative(root, full)}:${line} wx.${match[1]}()`);
+        }
+        match = pattern.exec(source);
+      }
+    });
+  };
+  walk(path.join(root, 'miniprogram'));
+
+  assert.deepEqual(offenders, [], `这些异步 wx 调用需要显式回调：\n${offenders.join('\n')}`);
+});

@@ -513,6 +513,11 @@ test('bracket analysis shows progress and exposes a local-rules escape hatch', (
   assert.match(js, /skipMetadata\(\)\s*{[\s\S]*this\.analysisRequestId = \(this\.analysisRequestId \|\| 0\) \+ 1[\s\S]*evaluateBracket\(parsed\)/);
   // 计时器不能泄漏
   assert.match(js, /onUnload\(\)\s*{[\s\S]*this\.clearSlowAnalysisTimer\(\)/);
+
+  // wx.hideKeyboard 必须带回调：无参调用走 Promise 风格，而从「粘贴」按钮填入牌表时
+  // 键盘从未升起，无键盘可收会拒绝，没人 catch 就冒成框架级的 Error: timeout
+  assert.match(js, /wx\.hideKeyboard\(\{ fail: \(\) => \{\} \}\)/);
+  assert.doesNotMatch(js, /wx\.hideKeyboard\(\s*\)/);
 });
 
 // 问卷答案不该一次性：中途被打断能恢复，出结果后能只改一个答案而不重答 12 题
