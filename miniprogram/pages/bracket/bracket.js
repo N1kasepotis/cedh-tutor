@@ -2,11 +2,22 @@ const {
   parseBracketDeck,
   evaluateBracket,
   buildBracketSummary,
+  MAX_DECK_CHARS,
   MAX_DECK_LINES,
 } = require('../../utils/bracket');
 const { fetchBracketCardMetadata } = require('../../utils/bracket-metadata');
 const { buildScryfallImageUrl } = require('../../utils/scryfall');
 const { enableShareMenu } = require('../../utils/share');
+const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
+
+// 与套牌试玩各存各的：改一边不该悄悄改掉另一边，跨页只走显式的「用这副牌试玩」
+const DECK_TEXT_STORAGE_KEY = 'bracketDeckText';
+const PLAYTEST_DECK_TEXT_STORAGE_KEY = 'playtestDeckText';
+const DECK_TEXT_SCHEMA_VERSION = 1;
+// 手机上粘 100 行成本很高，够长才认为剪贴板里真是一份牌表
+const CLIPBOARD_DECK_MIN_LINES = 8;
+// 弱网下顺序分批可能拖到 20–30 秒，超过这个时长就把降级出口摆出来
+const SLOW_ANALYSIS_MS = 6000;
 
 const CONFIDENCE_LABELS = Object.freeze({
   high: '高',
@@ -181,15 +192,82 @@ Page({
     heroArtHidden: false,
     inputWarning: '',
     analyzing: false,
+    analyzeProgress: '',
+    canSkipMetadata: false,
   },
 
   onLoad() {
     this.analysisRequestId = 0;
     enableShareMenu();
+    this.restoreDeckText();
+  },
+
+  // 退出再进来输入框不该是空的：粘一次 100 行的成本太高，不能让它白粘
+  restoreDeckText() {
+    const stored = readStorage(DECK_TEXT_STORAGE_KEY, {
+      schemaVersion: DECK_TEXT_SCHEMA_VERSION,
+      defaultValue: '',
+      validate: (value) => typeof value === 'string',
+    });
+    if (!stored.value) return;
+    const deckText = stored.value.slice(0, MAX_DECK_CHARS);
+    this.setData({ deckText, canAnalyze: Boolean(deckText.trim()) });
+  },
+
+  persistDeckText(deckText) {
+    if (!String(deckText || '').trim()) {
+      removeStorage(DECK_TEXT_STORAGE_KEY);
+      return;
+    }
+    writeStorage(DECK_TEXT_STORAGE_KEY, String(deckText).slice(0, MAX_DECK_CHARS), {
+      schemaVersion: DECK_TEXT_SCHEMA_VERSION,
+      validate: (value) => typeof value === 'string',
+    });
+  },
+
+  // 显式按钮而不是进页面偷读：微信读剪贴板会弹系统提示，静默读既惊吓又踩隐私准则
+  importFromClipboard() {
+    if (this.data.analyzing) return;
+    wx.getClipboardData({
+      success: (clipboard) => {
+        const text = String((clipboard && clipboard.data) || '');
+        const lineCount = text.replace(/\r\n?/g, '\n').split('\n')
+          .filter((line) => line.trim()).length;
+        if (lineCount < CLIPBOARD_DECK_MIN_LINES) {
+          wx.showToast({ title: '剪贴板里没有找到牌表', icon: 'none' });
+          return;
+        }
+        const deckText = text.slice(0, MAX_DECK_CHARS);
+        this.setData({
+          deckText,
+          inputWarning: '',
+          canAnalyze: Boolean(deckText.trim()),
+        });
+        this.persistDeckText(deckText);
+        wx.showToast({ title: `已导入 ${lineCount} 行`, icon: 'none' });
+      },
+      fail: () => wx.showToast({ title: '读取剪贴板失败', icon: 'none' }),
+    });
+  },
+
+  // 分析完直接开局，不用把同一副牌再粘一遍
+  playtestDeck() {
+    const deckText = String(this.data.deckText || '');
+    if (!deckText.trim()) return;
+    const stored = writeStorage(PLAYTEST_DECK_TEXT_STORAGE_KEY, deckText.slice(0, MAX_DECK_CHARS), {
+      schemaVersion: DECK_TEXT_SCHEMA_VERSION,
+      validate: (value) => typeof value === 'string',
+    });
+    if (!stored.ok) {
+      wx.showToast({ title: '牌表传递失败，请重试', icon: 'none' });
+      return;
+    }
+    wx.navigateTo({ url: '/pages/playtest/playtest' });
   },
 
   onUnload() {
     this.analysisRequestId = (this.analysisRequestId || 0) + 1;
+    this.clearSlowAnalysisTimer();
   },
 
   onShareAppMessage() {
@@ -216,6 +294,7 @@ Page({
       canAnalyze: Boolean(String(deckText || '').trim()) && !inputWarning,
       analyzing: false,
     });
+    this.persistDeckText(deckText);
   },
 
   analyzeDeck() {
@@ -234,16 +313,33 @@ Page({
     if (wx.hideKeyboard) wx.hideKeyboard();
     const requestId = (this.analysisRequestId || 0) + 1;
     this.analysisRequestId = requestId;
-    this.setData({ analyzing: true, inputWarning: '' });
+    this.pendingParsed = parsed;
+    this.setData({
+      analyzing: true,
+      inputWarning: '',
+      analyzeProgress: '',
+      canSkipMetadata: false,
+    });
+    this.startSlowAnalysisTimer(requestId);
 
-    fetchBracketCardMetadata(parsed.cards.map((card) => card.name))
+    fetchBracketCardMetadata(parsed.cards.map((card) => card.name), {
+      onProgress: ({ done, total, phase }) => {
+        if (requestId !== this.analysisRequestId) return;
+        this.setData({
+          analyzeProgress: phase === 'prices' ? '读取参考价' : `${done} / ${total}`,
+        });
+      },
+    })
       .then((metadataResult) => {
         if (requestId !== this.analysisRequestId) return;
+        this.clearSlowAnalysisTimer();
         this.setData({
           result: decorateResult(evaluateBracket(parsed, { metadataResult }), parsed.commanders),
           heroArtHidden: false,
           inputWarning: '',
           analyzing: false,
+          analyzeProgress: '',
+          canSkipMetadata: false,
         });
         if (metadataResult.requestedCount
           && !metadataResult.resolvedCount
@@ -253,14 +349,49 @@ Page({
       })
       .catch(() => {
         if (requestId !== this.analysisRequestId) return;
+        this.clearSlowAnalysisTimer();
         this.setData({
           result: decorateResult(evaluateBracket(parsed), parsed.commanders),
           heroArtHidden: false,
           inputWarning: '',
           analyzing: false,
+          analyzeProgress: '',
+          canSkipMetadata: false,
         });
         wx.showToast({ title: '卡牌数据暂不可用，已按本地规则分析', icon: 'none' });
       });
+  },
+
+  startSlowAnalysisTimer(requestId) {
+    this.clearSlowAnalysisTimer();
+    this.slowAnalysisTimer = setTimeout(() => {
+      this.slowAnalysisTimer = null;
+      if (requestId !== this.analysisRequestId || !this.data.analyzing) return;
+      this.setData({ canSkipMetadata: true });
+    }, SLOW_ANALYSIS_MS);
+  },
+
+  clearSlowAnalysisTimer() {
+    if (this.slowAnalysisTimer) clearTimeout(this.slowAnalysisTimer);
+    this.slowAnalysisTimer = null;
+  },
+
+  // 弱网时的出路：本地规则结果本来就是网络失败的回退路径，这里只是提前让用户选它
+  skipMetadata() {
+    if (!this.data.analyzing || !this.pendingParsed) return;
+    const parsed = this.pendingParsed;
+    // 递增请求编号：晚到的元数据不会再覆盖这份本地结果
+    this.analysisRequestId = (this.analysisRequestId || 0) + 1;
+    this.clearSlowAnalysisTimer();
+    this.setData({
+      result: decorateResult(evaluateBracket(parsed), parsed.commanders),
+      heroArtHidden: false,
+      inputWarning: '',
+      analyzing: false,
+      analyzeProgress: '',
+      canSkipMetadata: false,
+    });
+    wx.showToast({ title: '已按本地规则分析', icon: 'none' });
   },
 
   // 任一半卡图加载失败即整层隐藏，hero 回落为纯档位色底
@@ -275,6 +406,7 @@ Page({
 
   clearDeck() {
     this.analysisRequestId = (this.analysisRequestId || 0) + 1;
+    removeStorage(DECK_TEXT_STORAGE_KEY);
     this.setData({
       deckText: '',
       canAnalyze: false,

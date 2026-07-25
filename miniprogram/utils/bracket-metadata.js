@@ -460,7 +460,12 @@ function fetchMissingPrices(names) {
   });
 }
 
-function fetchBracketCardMetadata(cardNames) {
+// onProgress 让调用方把「不确定的等待」变成「有终点的等待」：
+// 只在批次真正完成时推进，不做假动画
+function fetchBracketCardMetadata(cardNames, options) {
+  const onProgress = options && typeof options.onProgress === 'function'
+    ? options.onProgress
+    : null;
   const names = [];
   const seen = new Set();
   (Array.isArray(cardNames) ? cardNames : []).forEach((name) => {
@@ -487,15 +492,32 @@ function fetchBracketCardMetadata(cardNames) {
     batches.push(pendingNames.slice(index, index + SCRYFALL_COLLECTION_BATCH_SIZE));
   }
 
+  // 命中缓存的卡不产生请求，进度一开始就该把它们算进去
+  let done = names.length - pendingNames.length - existingRequests.size;
+  const report = (phase) => {
+    if (!onProgress) return;
+    onProgress({
+      done: Math.max(0, Math.min(done, names.length)),
+      total: names.length,
+      phase,
+    });
+  };
+  report('cards');
+
   const requests = new Set(existingRequests);
   let gate = existingRequests.size ? Promise.all(Array.from(existingRequests)) : null;
   batches.forEach((batch) => {
     const request = scheduleCollectionBatch(batch, gate);
-    requests.add(request);
+    requests.add(onProgress ? request.then((outcome) => {
+      done += batch.length;
+      report('cards');
+      return outcome;
+    }) : request);
     gate = request;
   });
 
   return Promise.all(Array.from(requests)).then((outcomes) => {
+    report('prices');
     const diagnostics = {
       failedBatchCount: outcomes.filter((outcome) => outcome && outcome.failed).length,
       collectionRetryCount: outcomes.reduce(

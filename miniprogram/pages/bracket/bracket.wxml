@@ -12,6 +12,15 @@
           </view>
           <view
             class="clear-link"
+            wx:if="{{!analyzing}}"
+            aria-role="button"
+            aria-label="从剪贴板导入牌表"
+            hover-class="pressable-active"
+            hover-stay-time="120"
+            bindtap="importFromClipboard"
+          >粘贴</view>
+          <view
+            class="clear-link"
             wx:if="{{deckText && !analyzing}}"
             aria-role="button"
             aria-label="清空当前牌表"
@@ -58,6 +67,18 @@
             </view>
           </view>
         </button>
+
+        <view class="analyze-progress mono" wx:if="{{analyzing && analyzeProgress}}" aria-live="polite">{{analyzeProgress}}</view>
+
+        <view
+          class="skip-metadata-link"
+          wx:if="{{canSkipMetadata}}"
+          aria-role="button"
+          aria-label="网络较慢，先按本地规则查看结果"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="skipMetadata"
+        >网络较慢，先看本地规则结果</view>
       </view>
     </block>
 
@@ -203,6 +224,15 @@
     >
       <view class="edit-icon" aria-hidden="true"></view>
       <text>修改牌表</text>
+    </button>
+    <button
+      class="secondary-button edit-button"
+      aria-label="用这副牌开始试玩"
+      hover-class="pressable-active"
+      hover-stay-time="120"
+      bindtap="playtestDeck"
+    >
+      <text>用这副牌试玩</text>
     </button>
   </view>
 </view>

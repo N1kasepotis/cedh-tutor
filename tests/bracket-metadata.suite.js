@@ -488,3 +488,69 @@ test('transient price failures retry once while HTTP rejection and network failu
     else global.wx = originalWx;
   }
 });
+
+// 进度必须只在批次真正完成时推进：弱网下用户看到的是「有终点的等待」而不是假动画
+test('metadata lookup reports batch progress and never reports a fake head start', async () => {
+  const originalWx = global.wx;
+  const requests = [];
+  global.wx = {
+    request(options) {
+      requests.push(options);
+    },
+  };
+
+  try {
+    const names = Array.from({ length: 80 }, (_, index) => `Progress Probe Card ${index + 1}`);
+    const events = [];
+    const pending = fetchBracketCardMetadata(names, {
+      onProgress: (event) => events.push({ ...event }),
+    });
+
+    // 首次上报发生在任何响应之前，且不能虚报已完成数
+    assert.deepEqual(events[0], { done: 0, total: 80, phase: 'cards' });
+    assert.equal(requests.length, 1, '75 张一批，第一批立即发出');
+
+    const respond = (request) => request.success({
+      statusCode: 200,
+      data: {
+        data: request.data.identifiers.map((identifier) => ({
+          name: identifier.name,
+          cmc: 2,
+          type_line: 'Instant',
+          prices: { usd: '1.00' },
+        })),
+        not_found: [],
+      },
+    });
+
+    respond(requests[0]);
+    await waitForRequestCount(requests, 2);
+    // 第一批 75 张落地后进度才推进
+    assert.deepEqual(events[events.length - 1], { done: 75, total: 80, phase: 'cards' });
+
+    respond(requests[1]);
+    const result = await pending;
+
+    assert.equal(result.resolvedCount, 80);
+    // 卡牌阶段收尾于满值，随后切到价格阶段
+    const cardEvents = events.filter((event) => event.phase === 'cards');
+    assert.deepEqual(cardEvents[cardEvents.length - 1], { done: 80, total: 80, phase: 'cards' });
+    assert.equal(events[events.length - 1].phase, 'prices');
+    // 进度单调不回退
+    const doneSeries = events.map((event) => event.done);
+    assert.deepEqual(doneSeries, doneSeries.slice().sort((a, b) => a - b));
+
+    // 全部命中缓存时进度一开始就是满的，不该再假装从 0 爬
+    const cachedEvents = [];
+    await fetchBracketCardMetadata(names, {
+      onProgress: (event) => cachedEvents.push({ ...event }),
+    });
+    assert.deepEqual(cachedEvents[0], { done: 80, total: 80, phase: 'cards' });
+
+    // 不传 onProgress 时行为不变
+    const plain = await fetchBracketCardMetadata(names);
+    assert.equal(plain.resolvedCount, 80);
+  } finally {
+    global.wx = originalWx;
+  }
+});

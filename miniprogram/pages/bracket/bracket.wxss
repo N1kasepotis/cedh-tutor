@@ -198,6 +198,29 @@
   line-height: 1.4;
 }
 
+/* 进度与降级出口放在按钮下方，不挤按钮里那行绝对中置的主文案 */
+.analyze-progress {
+  flex: 0 0 auto;
+  margin-top: var(--cedh-space-2);
+  color: rgba(var(--module-accent-rgb), 0.82);
+  font-size: 20rpx;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+  line-height: 1.4;
+  text-align: center;
+}
+
+.skip-metadata-link {
+  flex: 0 0 auto;
+  margin-top: var(--cedh-space-2);
+  padding: 16rpx 0;
+  color: rgba(227, 242, 234, 0.72);
+  font-size: 22rpx;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: underline;
+}
+
 .input-limit-note.warning {
   color: #e8a098;
   text-align: right;
@@ -982,13 +1005,16 @@
   left: 0;
   display: flex;
   justify-content: center;
+  gap: 16rpx;
   padding: 40rpx var(--cedh-page-x) calc(env(safe-area-inset-bottom) + 18rpx);
   background: linear-gradient(180deg, transparent, rgba(0, 0, 0, 0.9) 48%);
 }
 
+/* 底栏放两个入口后按钮改为可收缩：窄机型上「修改牌表 / 用这副牌试玩」都要完整显示 */
 .edit-button {
   gap: 14rpx;
-  width: 286rpx;
+  flex: 0 1 286rpx;
+  min-width: 0;
   min-height: 82rpx;
   color: rgba(227, 242, 234, 0.88);
   background: linear-gradient(180deg, rgba(25, 32, 29, 0.97), rgba(5, 8, 7, 0.98));
