@@ -381,3 +381,32 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   assert.ok(fs.statSync(miniCodePath).size < 160000, 'mini-program code asset should stay package-friendly');
   assert.ok(fs.statSync(cedhHouseQrPath).size < 160000, 'cedh house QR asset should stay package-friendly');
 });
+
+// 24 题不能一次性：中途被打断能续答，做完的结果能重建，不必为了再看一眼而重测
+test('edhti persists answers and rebuilds the finished result on reentry', () => {
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/edhti/edhti.js'), 'utf8');
+
+  assert.match(js, /const EDHTI_STATE_STORAGE_KEY = 'edhtiState'/);
+  assert.match(js, /require\('\.\.\/\.\.\/utils\/storage'\)/);
+
+  // 每一步落盘
+  assert.match(js, /refreshState\(\)\s*{[\s\S]*this\.persistState\(\);\s*\n\s*}/);
+  assert.match(js, /persistState\(options\)\s*{[\s\S]*writeStorage\(EDHTI_STATE_STORAGE_KEY, \{[\s\S]*currentIndex: this\.data\.currentIndex[\s\S]*answers: this\.data\.answers/);
+
+  // 只存答案不存算好的结果：结果由答案确定性重建，配置更新后不会展示陈旧人格
+  const persistBlock = js.slice(js.indexOf('persistState(options)'), js.indexOf('onShareAppMessage()'));
+  assert.doesNotMatch(persistBlock, /result:/);
+
+  // 完成态直接重建结果；未完成态才问要不要续答
+  assert.match(js, /onLoad\(\)\s*{[\s\S]*if \(!this\.restoreState\(\)\) this\.refreshState\(\)/);
+  const restoreBlock = js.slice(js.indexOf('restoreState()'), js.indexOf('persistState(options)'));
+  assert.match(restoreBlock, /if \(!state \|\| !countEdhtiAnswers\(state\.answers\)\) return false/);
+  assert.match(restoreBlock, /if \(state\.completed\)[\s\S]*this\.showResult\(\)/);
+  assert.match(restoreBlock, /title: '继续上次测试'/);
+  assert.match(restoreBlock, /confirmText: '继续'/);
+  assert.match(restoreBlock, /cancelText: '重新开始'/);
+  assert.match(restoreBlock, /removeStorage\(EDHTI_STATE_STORAGE_KEY\)/);
+
+  assert.match(js, /showResult\(\)\s*{[\s\S]*this\.persistState\(\{ completed: true \}\)/);
+  assert.match(js, /restart\(\)\s*{[\s\S]*removeStorage\(EDHTI_STATE_STORAGE_KEY\)/);
+});

@@ -21,7 +21,12 @@ const {
 } = require('../../utils/scryfall');
 const { formatOptionCode } = require('../../utils/quiz-flow');
 const { enableShareMenu } = require('../../utils/share');
+const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
 const { titleFontBase64 } = require('../../assets/title-font');
+
+// 只存答案不存算好的结果：结果可由答案确定性重建，配置更新后也不会展示陈旧人格
+const EDHTI_STATE_STORAGE_KEY = 'edhtiState';
+const EDHTI_STATE_SCHEMA_VERSION = 1;
 
 const EXPORT_WIDTH = 750;
 const EXPORT_HEIGHT = 1624;
@@ -657,6 +662,19 @@ function formatResult(rawResult) {
   };
 }
 
+function isEdhtiState(value) {
+  return Boolean(value
+    && typeof value === 'object'
+    && value.answers
+    && typeof value.answers === 'object');
+}
+
+function countEdhtiAnswers(answers) {
+  return edhtiQuestions.reduce((total, question) => (
+    (answers || {})[question.id] !== undefined ? total + 1 : total
+  ), 0);
+}
+
 Page({
   data: {
     answers: {},
@@ -685,7 +703,59 @@ Page({
         fail: () => {},
       });
     }
-    this.refreshState();
+    // 恢复流程会自行接管渲染（重建结果或弹继续询问），没有可恢复的状态才走首题
+    if (!this.restoreState()) this.refreshState();
+  },
+
+  // 24 题的答案与结果都要留下来：切后台被回收、来电、误触返回都不该让整份测试作废
+  restoreState() {
+    const stored = readStorage(EDHTI_STATE_STORAGE_KEY, {
+      schemaVersion: EDHTI_STATE_SCHEMA_VERSION,
+      defaultValue: null,
+      validate: isEdhtiState,
+    });
+    const state = stored.value;
+    if (!state || !countEdhtiAnswers(state.answers)) return false;
+
+    if (state.completed) {
+      this.setData({ answers: { ...state.answers } }, () => this.showResult());
+      return true;
+    }
+
+    const resumeIndex = Math.min(
+      Math.max(Number(state.currentIndex) || 0, 0),
+      edhtiQuestions.length - 1,
+    );
+    wx.showModal({
+      title: '继续上次测试',
+      content: `上次答到第 ${resumeIndex + 1} / ${edhtiQuestions.length} 题`,
+      confirmText: '继续',
+      cancelText: '重新开始',
+      success: (result) => {
+        if (result.confirm) {
+          this.setData({
+            answers: { ...state.answers },
+            currentIndex: resumeIndex,
+          }, () => this.refreshState());
+          return;
+        }
+        removeStorage(EDHTI_STATE_STORAGE_KEY);
+        this.refreshState();
+      },
+      fail: () => this.refreshState(),
+    });
+    return true;
+  },
+
+  persistState(options) {
+    writeStorage(EDHTI_STATE_STORAGE_KEY, {
+      currentIndex: this.data.currentIndex,
+      answers: this.data.answers || {},
+      completed: Boolean(options && options.completed),
+    }, {
+      schemaVersion: EDHTI_STATE_SCHEMA_VERSION,
+      validate: isEdhtiState,
+    });
   },
 
   onShareAppMessage() {
@@ -715,6 +785,8 @@ Page({
       progressPercent: Math.round(((currentIndex + 1) / edhtiQuestions.length) * 100),
       progressText: `${currentIndex + 1} / ${edhtiQuestions.length}`,
     });
+    // 每一步都落盘，答到哪算哪
+    this.persistState();
   },
 
   selectAnswer(event) {
@@ -777,6 +849,8 @@ Page({
       result,
       recommendedCommander,
     });
+    // 标记完成：下次进页面直接重建这份结果，不用重测 24 题
+    this.persistState({ completed: true });
   },
 
   restart() {
@@ -786,6 +860,7 @@ Page({
       confirmText: '重新开始',
       success: (result) => {
         if (!result.confirm) return;
+        removeStorage(EDHTI_STATE_STORAGE_KEY);
         this.setData({
           answers: {},
           currentIndex: 0,

@@ -11,9 +11,18 @@ const {
   toggleMultiSelect,
 } = require('../../utils/quiz-flow');
 const { enableShareMenu } = require('../../utils/share');
-const { writeStorage } = require('../../utils/storage');
+const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
 
 const QUIZ_RESULT_STORAGE_KEY = 'quizResult';
+const QUIZ_DRAFT_STORAGE_KEY = 'quizDraft';
+const QUIZ_DRAFT_SCHEMA_VERSION = 1;
+
+function isQuizDraft(value) {
+  return Boolean(value
+    && typeof value === 'object'
+    && value.answers
+    && typeof value.answers === 'object');
+}
 
 function getAnswerValue(question, answers) {
   const value = answers[question.id];
@@ -32,6 +41,12 @@ function buildSteps(currentIndex) {
 
 function buildProgressText(index) {
   return `第 ${index + 1} / ${questions.length} 步`;
+}
+
+function countAnswered(answers) {
+  return questions.reduce((total, question) => (
+    hasAnswerValue(getAnswerValue(question, answers || {})) ? total + 1 : total
+  ), 0);
 }
 
 function decorateQuestion(index, answers) {
@@ -62,8 +77,62 @@ Page({
     nextButtonText: '下一步',
   },
 
-  onLoad() {
+  // mode=edit 从结果页带着上次答案回来改；mode=restart 明确要求重来；无参数则尝试恢复草稿
+  onLoad(options) {
     enableShareMenu();
+    const mode = (options && options.mode) || '';
+
+    if (mode === 'restart') {
+      removeStorage(QUIZ_DRAFT_STORAGE_KEY);
+      return;
+    }
+
+    if (mode === 'edit') {
+      this.prefillFromResult();
+      return;
+    }
+
+    this.offerDraftResume();
+  },
+
+  // 改一个答案不该重答 12 题：结果里已经存了 answers，直接读回来预填
+  prefillFromResult() {
+    const stored = readStorage(QUIZ_RESULT_STORAGE_KEY, {
+      schemaVersion: 1,
+      defaultValue: null,
+      validate: (value) => Boolean(value && value.answers && typeof value.answers === 'object'),
+    });
+    if (!stored.value) return;
+    this.refreshQuestion(0, { ...stored.value.answers });
+  },
+
+  // 只有真的有答案可丢时才打断用户，避免每次进页面都要做一次无谓选择
+  offerDraftResume() {
+    const stored = readStorage(QUIZ_DRAFT_STORAGE_KEY, {
+      schemaVersion: QUIZ_DRAFT_SCHEMA_VERSION,
+      defaultValue: null,
+      validate: isQuizDraft,
+    });
+    const draft = stored.value;
+    if (!draft || !countAnswered(draft.answers)) return;
+
+    const resumeIndex = Math.min(
+      Math.max(Number(draft.currentIndex) || 0, 0),
+      questions.length - 1,
+    );
+    wx.showModal({
+      title: '继续上次作答',
+      content: `上次答到第 ${resumeIndex + 1} / ${questions.length} 题`,
+      confirmText: '继续',
+      cancelText: '重新开始',
+      success: (result) => {
+        if (result.confirm) {
+          this.refreshQuestion(resumeIndex, { ...draft.answers });
+          return;
+        }
+        removeStorage(QUIZ_DRAFT_STORAGE_KEY);
+      },
+    });
   },
 
   onShareAppMessage() {
@@ -122,9 +191,20 @@ Page({
       return;
     }
 
+    // 已出结果，草稿完成使命；再进问卷不该再问「继续上次」
+    removeStorage(QUIZ_DRAFT_STORAGE_KEY);
+
     // redirectTo 替换当前页：避免 quiz ↔ result 互跳时页面栈无限增长
     wx.redirectTo({
       url: '/pages/result/result',
+    });
+  },
+
+  // 每步都落盘：切后台被回收、来电打断都不该让已答的题作废
+  persistDraft(currentIndex, answers) {
+    writeStorage(QUIZ_DRAFT_STORAGE_KEY, { currentIndex, answers }, {
+      schemaVersion: QUIZ_DRAFT_SCHEMA_VERSION,
+      validate: isQuizDraft,
     });
   },
 
@@ -143,5 +223,6 @@ Page({
       canGoNext: hasAnswer,
       nextButtonText: index === questions.length - 1 ? '查看推荐' : '下一步',
     });
+    this.persistDraft(index, answers);
   },
 });

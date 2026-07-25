@@ -55,6 +55,7 @@
       <view class="image-credit">图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师</view>
 
       <view class="actions">
+        <view class="secondary-button action-button" aria-role="button" aria-label="修改上次的问卷答案" hover-class="pressable-active" hover-stay-time="120" bindtap="editAnswers">修改答案</view>
         <view class="secondary-button action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="restart">重新匹配</view>
         <view class="secondary-button action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goHome">返回首页</view>
       </view>

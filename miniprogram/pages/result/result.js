@@ -141,10 +141,17 @@ Page({
   },
 
 
+  // 只想换一个答案时不必重答整份问卷：带 mode=edit 让问卷预填上次选择
+  editAnswers() {
+    wx.redirectTo({
+      url: '/pages/quiz/quiz?mode=edit',
+    });
+  },
+
   restart() {
     // redirectTo 替换当前页：避免 quiz ↔ result 互跳时页面栈无限增长
     wx.redirectTo({
-      url: '/pages/quiz/quiz',
+      url: '/pages/quiz/quiz?mode=restart',
     });
   },
 
