@@ -884,6 +884,24 @@ test('Band position splits every bracket into balanced 偏弱/中等/偏强 with
   assert.doesNotMatch(positionedEvidence.detail, /接近度|推进度|判定门槛|最接近的路径|%/);
   assert.match(buildBracketSummary(positioned), /区间定位(偏弱|中等|偏强)$/);
   assert.doesNotMatch(buildBracketSummary(positioned), /接近度|推进度|判定门槛/);
+
+  // 强度轴用「因子影响力较高」描述：topAxis 取的是推进度最高的轴，说的是该因子对区间定位
+  // 的影响力，不是牌张的密集程度，因此不再用「最集中」
+  assert.match(positionedEvidence.detail, /其中.+因子影响力较高$/);
+  assert.doesNotMatch(positionedEvidence.detail, /最集中/);
+
+  // 复合轴（快速法术力 / 高效导师 / 免费互动 的联合门槛）是唯一带顿号的轴名，
+  // 必须真的命中它，否则下面的叠词断言等于没测
+  const combinedAxis = analyze(completeDeck(['Sol Ring', 'Lotus Petal', 'Pact of Negation', 'Mental Misstep']));
+  assert.equal(combinedAxis.assignedBracket, 3);
+  const combinedDetail = combinedAxis.evidence.find((item) => item.code === 'BAND_POSITION').detail;
+  assert.match(combinedDetail, /其中快速法术力、高效导师与免费互动因子影响力较高$/);
+
+  // 轴名一律是纯名词短语，由「因子」承担名词，不出现「组合门槛因子」这类叠词
+  [positionedEvidence.detail, combinedDetail, denialEvidence.detail].forEach((detail) => {
+    assert.doesNotMatch(detail, /门槛因子/, `轴名不应与「因子」叠词：${detail}`);
+    assert.doesNotMatch(detail, /最集中/, `已改用「因子影响力较高」：${detail}`);
+  });
 });
 
 test('bracket report page shows verdict chain, signal overview and per-reason roles', () => {

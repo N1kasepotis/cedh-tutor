@@ -1035,7 +1035,9 @@ function computeBandPosition({
       bandAxis('efficientTutor', signalGroupLabel('efficientTutor'), (tutors - 3) / 2),
       bandAxis('freeInteraction', signalGroupLabel('freeInteraction'), (free - 2) / 2),
       bandAxis('staxOrDenial', signalGroupLabel('staxOrDenial'), (denial - 2) / 2),
-      bandAxis('combinedEfficiency', '快速法术力、高效导师与免费互动组合门槛', combinedGate),
+      // 结尾不带「组合门槛」：展示时会接「因子影响力较高」，由「因子」承担名词，
+      // 与其余轴（快速法术力 / 完整组合技 / 额外回合…）统一为纯名词短语
+      bandAxis('combinedEfficiency', '快速法术力、高效导师与免费互动', combinedGate),
       bandAxis('comboFamilies', '完整组合技', (detectedComboFamilies || []).length / 2),
       bandAxis('extraTurns', '额外回合', (extraTurnCount - 2) / 2),
     ];
@@ -1064,11 +1066,13 @@ function computeBandPosition({
   const topAxis = axes.reduce((best, axis) => (axis.progress > best.progress ? axis : best), axes[0]);
   const bracketCode = `B${assignedBracket}`;
 
-  // 只描述在当前档位内的相对位置（偏弱/中等/偏强 + 最集中的强度轴），不再论述与下一档的接近度。
+  // 只描述在当前档位内的相对位置（偏弱/中等/偏强 + 影响力最高的强度轴），不再论述与下一档的接近度。
   const metricText = '';
   const summaryText = `区间定位${label.zh}`;
+  // 用「因子影响力较高」而不是「最集中」：topAxis 取的是推进度最高的轴，
+  // 描述的是该因子对区间定位的影响力，不是牌张的密集程度
   const evidenceText = topAxis && topAxis.progress > 0
-    ? `落在 ${bracketCode} 区间${label.segment}，其中${topAxis.label}最集中`
+    ? `落在 ${bracketCode} 区间${label.segment}，其中${topAxis.label}因子影响力较高`
     : `落在 ${bracketCode} 区间${label.segment}`;
 
   return {
