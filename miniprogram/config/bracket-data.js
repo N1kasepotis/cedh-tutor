@@ -9,7 +9,7 @@ const BRACKET_MANIFEST = Object.freeze({
   schemaVersion: 1,
   ruleVersion: 'commander-brackets-2026-02-09',
   dataVersion: 'curated-en-2026-07-15-combo-families',
-  evaluatorVersion: '2.6.0',
+  evaluatorVersion: '2.7.0',
   supportedLanguage: 'en',
 });
 

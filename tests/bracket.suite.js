@@ -1671,6 +1671,30 @@ test('Adding exact hard violations never lowers the bracket floor', () => {
   assert.ok(landDenial.floorBracket >= base.floorBracket);
 });
 
+test('Free/alt-cost interaction alone caps at B3 and never independently reaches B4', () => {
+  // 四张非 Game Changer 替费（Solitude/Fury/Grief/Endurance），无快速法术力/导师/combo：
+  // 替费是反应性牌，只算「升级」信号封顶 B3，不再单独把结构冲到 B4。
+  const freeControl = analyze([
+    'Commander', '1 Bear Cub',
+    'Deck',
+    '1 Solitude', '1 Fury', '1 Grief', '1 Endurance',
+    '95 Midrange Filler',
+  ]);
+  assert.equal(freeControl.floorBracket, 1, '这些替费都不是 Game Changer，规则下限保持 B1');
+  assert.equal(freeControl.structuralStrengthBracket, 3, '替费密度只算升级信号，封顶 B3');
+  assert.equal(freeControl.assignedBracket, 3, '纯替费控制不再单独进 B4');
+
+  // 再堆一张替费（共五张）也仍是 B3——密度本身不再独立升档，需搭配主动信号或 GC 下限。
+  const moreFree = analyze([
+    'Commander', '1 Bear Cub',
+    'Deck',
+    '1 Solitude', '1 Fury', '1 Grief', '1 Endurance', '1 Subtlety',
+    '94 Midrange Filler',
+  ]);
+  assert.equal(moreFree.structuralStrengthBracket, 3, '五张替费仍封顶 B3');
+  assert.equal(moreFree.assignedBracket, 3);
+});
+
 test('Named Commander bans and Lutri companion status are reported without inventing a bracket', () => {
   assert.equal(BANNED_CARDS.length, 42);
   assert.ok(BANNED_CARDS.includes('Tinker'));
@@ -1704,7 +1728,7 @@ test('Every result carries internal version metadata, evidence, confidence bound
   assert.ok(result.evidence.length >= 1);
   assert.ok(result.evidence.every((item) => item.ruleVersion === BRACKET_MANIFEST.ruleVersion));
   assert.equal(result.versions.evaluatorVersion, BRACKET_MANIFEST.evaluatorVersion);
-  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.6.0');
+  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.7.0');
   assert.equal(BRACKET_MANIFEST.dataVersion, 'curated-en-2026-07-15-combo-families');
   assert.equal(result.versions.supportedLanguage, 'en');
   assert.equal(result.confidence, 'low');

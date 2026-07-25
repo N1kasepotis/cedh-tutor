@@ -667,13 +667,18 @@ function signalBand(signals) {
   const engines = counts.engine || 0;
   const winConditions = counts.efficientWinCondition || 0;
   const command = counts.commandZoneEngine || 0;
+  // 免费互动是反应性/保护性的：它护住一套打法，本身不构成打法。因此单独的替费密度不足以
+  // 独立进 B4（optimized/高强度需要主动牌力）——只在与主动信号搭配时（fast≥2 & tutors≥3 &
+  // free≥2）计入 B4，或经 Game Changer 张数下限（官方 3 张规则）进档。Stax 是主动控制轴，
+  // denial≥4 仍可独立 B4。参见四支柱门槛里「锋利度」同样是必要非充分。
   if (fast >= 4
     || tutors >= 5
-    || free >= 4
     || denial >= 4
     || (fast >= 2 && tutors >= 3 && free >= 2)
     || (command >= 1 && fast >= 3 && tutors >= 3)) return 4;
 
+  // 一两张替费仍算「升级」结构信号（B3），与官方 1–3 张 Game Changer→Upgraded 对齐；
+  // 但不再让纯替费密度独自冲到 B4。
   if (fast >= 2
     || tutors >= 3
     || free >= 2
