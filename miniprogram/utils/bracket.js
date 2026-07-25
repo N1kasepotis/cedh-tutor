@@ -932,7 +932,7 @@ function bandApproachToBFive(counts, combos, signals) {
   };
 }
 
-// 超出 B5 竞技线的余量（B4.5 与 B5 的升档门槛）。
+// 超出 B5 竞技强度阈值的余量（B4.5 与 B5 的升档门槛）。
 function bandCompetitiveSurplus(counts, combos) {
   const speedSurplus = combos.reduce((best, combo) => {
     if (Number.isInteger(combo.assemblySpeed)) {
@@ -978,10 +978,10 @@ function computeBandPosition({
   const config = BAND_POSITION_CONFIG;
 
   if (assignedBracket >= 4.5) {
-    // B5 是有真实赛事 meta 的竞技档，说明为何暂不细分；B4.5 准竞技是工具过渡档、无对应 meta，一句带过不赘述。
+    // B5 是有真实赛事 meta 的竞技档，说明为何暂不细分；B4.5 准竞技是 B4 与 cEDH 之间的过渡、无对应 meta，一句带过不赘述。
     const evidenceText = assignedBracket === 5
       ? 'B5 竞技档内的强弱区分取决于赛事 meta 表现（对局数据、席位胜率与常见配置对照），结构信号不足以支撑可信排序，当前版本暂不区分，待 meta 分析加入后提供'
-      : 'B4.5 准竞技是 B4 与 cEDH 之间的工具过渡档，档内不再细分强弱';
+      : 'B4.5 准竞技是 B4 与 cEDH 之间的过渡，档内不再细分强弱';
     return {
       tier: null,
       zh: '',
@@ -1155,7 +1155,7 @@ function evaluateBracket(parsed, options = {}) {
       `${gameChangers.length} 张 Game Changers`,
       gameChangers.length > 3
         ? '超过 Upgraded 的 3 张基线，规则下限进入 Optimized。'
-        : 'Core 基线不使用 Game Changers，规则下限进入 Upgraded。',
+        : 'Core 不使用 Game Changers，规则下限进入 Upgraded。',
       minimum,
     ));
   }
@@ -1413,7 +1413,7 @@ function evaluateBracket(parsed, options = {}) {
     Math.max(floorBracket, strengthBracket, automaticBase), 4,
   );
   // 竞技升档：结构判定先落在 B4、B5 必要条件的联合接近度超过区间「偏强」线，且具备完整
-  // 竞技特征才离开 B4；再看超出竞技线的余量——余量越过 B5 升档线判 B5，否则归 B4.5 准竞技。
+  // 竞技特征才离开 B4；再看超出竞技强度阈值的余量——余量越过 B5 基准判 B5，否则归 B4.5 准竞技。
   // 韧性轴色彩中立（免费反击 / Stax / 主将区引擎 / 冗余皆可），不偏向蓝色。
   const promotionCounts = bandSignalCounts(signals);
   const promotionCombos = detectedComboFamilies.concat(detectedComboPatterns);
@@ -1457,9 +1457,9 @@ function evaluateBracket(parsed, options = {}) {
     if (!competitivePromoted) {
       competitiveDetail = '快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但结构判定未落在 B4，不触发竞技升档';
     } else if (clearCompetitiveSurplus) {
-      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，超出竞技线的余量 ${surplusPercent}% 越过 B5 升档线（${surplusLinePercent}%）`;
+      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，超出竞技强度阈值的余量 ${surplusPercent}% 越过 B5 基准（${surplusLinePercent}%）`;
     } else {
-      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但超出竞技线的余量约 ${surplusPercent}%，未达 B5 升档线（${surplusLinePercent}%），归入 B4.5 准竞技`;
+      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但超出竞技强度阈值的余量约 ${surplusPercent}%，未达 B5 基准（${surplusLinePercent}%），归入 B4.5 准竞技`;
     }
     evidence.push(buildEvidence(
       'COMPETITIVE_SIGNAL_DENSITY',
@@ -1570,7 +1570,7 @@ function evaluateBracket(parsed, options = {}) {
   if (competitivePromoted
     && Math.abs(competitiveSurplus.score - BAND_POSITION_CONFIG.promotion.b5SurplusMin)
       <= BAND_POSITION_CONFIG.promotion.b5SurplusBand) {
-    confidenceIssues.push('超出竞技线的余量贴近 B5 升档线，少量高效单卡的增减可能改变 B4.5 与 B5 的细分');
+    confidenceIssues.push('超出竞技强度阈值的余量贴近 B5 基准，少量高效单卡的增减可能改变 B4.5 与 B5 的细分');
   }
   const confidence = !structurallyComplete || recognizedTriggerKeys.size === 0
     ? 'low'
@@ -1809,13 +1809,13 @@ function buildBracketSummary(result, parseErrorCount = 0) {
       : `${densityText}，资源引擎或其他效率轴也足够集中`);
     const surplusScore = Number(result.competitiveSurplusScore);
     if (assignedBracket === 4.5) {
-      // 竞技特征达标但余量未越过 B5 升档线：准竞技归 B4.5
+      // 竞技特征达标但余量未越过 B5 基准：准竞技归 B4.5
       sentences.push(Number.isFinite(surplusScore)
-        ? `不过超出竞技线的余量约 ${Math.round(surplusScore * 100)}%，未越过 B5 升档线，归于B4.5准竞技强度`
-        : '不过超出竞技线的余量未越过 B5 升档线，归于B4.5准竞技强度');
+        ? `不过超出竞技强度阈值的余量约 ${Math.round(surplusScore * 100)}%，未越过 B5 基准，归于B4.5准竞技强度`
+        : '不过超出竞技强度阈值的余量未越过 B5 基准，归于B4.5准竞技强度');
     } else {
       if (Number.isFinite(surplusScore)) {
-        sentences.push(`超出竞技线的余量约 ${Math.round(surplusScore * 100)}% 越过 B5 升档线`);
+        sentences.push(`超出竞技强度阈值的余量约 ${Math.round(surplusScore * 100)}% 越过 B5 基准`);
       }
       sentences.push('因此归于B5强度');
     }

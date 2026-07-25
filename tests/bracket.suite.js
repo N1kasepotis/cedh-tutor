@@ -711,7 +711,7 @@ test('Pattern combo assembly cost is the minimal recipe, not the sum of every re
 });
 
 test('Price never subdivides the competitive verdict once the 500 dollar budget line is removed', () => {
-  // 越过 B5 升档线的完整竞技结构：快速法术力 6、高效导师 6、免费互动 4
+  // 越过 B5 基准的完整竞技结构：快速法术力 6、高效导师 6、免费互动 4
   const cedhLines = [
     'Commander',
     '1 Kinnan, Bonder Prodigy',
@@ -1001,10 +1001,10 @@ test('B1 and B5 are inferred conservatively without a declared environment', () 
   const competitive = analyze(competitiveDeck);
   assert.equal(competitive.competitiveProfile, true);
   assert.equal(competitive.competitivePromoted, true);
-  assert.equal(competitive.assignedBracket, 4.5, '入门竞技结构余量不足 B5 升档线，归 B4.5');
+  assert.equal(competitive.assignedBracket, 4.5, '入门竞技结构余量不足 B5 基准，归 B4.5');
   assert.ok(competitive.competitiveSurplusScore < 0.6);
   assert.ok(competitive.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'
-    && item.detail.includes('未达 B5 升档线')));
+    && item.detail.includes('未达 B5 基准')));
 
   // 快速法术力、高效导师与免费互动都超出阈值时余量越线，才归 B5
   const stackedDeck = competitiveDeck
@@ -1016,10 +1016,10 @@ test('B1 and B5 are inferred conservatively without a declared environment', () 
       '82 Forest',
     ]);
   const stacked = analyze(stackedDeck);
-  assert.equal(stacked.assignedBracket, 5, '余量越过 B5 升档线的完整竞技结构才判 B5');
+  assert.equal(stacked.assignedBracket, 5, '余量越过 B5 基准的完整竞技结构才判 B5');
   assert.ok(stacked.competitiveSurplusScore >= 0.6);
   assert.ok(stacked.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'
-    && item.detail.includes('越过 B5 升档线')));
+    && item.detail.includes('越过 B5 基准')));
 
   const dataHeavyCompetitiveDeck = competitiveDeck
     .map((line) => (line === '89 Forest' ? '89 Midrange Filler' : line));
@@ -1810,7 +1810,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
   assert.doesNotMatch(priceSummary, /覆盖 91%|72 张计价牌/);
   assert.match(priceSummary, /基本地以外的牌估算约 \$1,500[\s\S]*\$1,200 的辅助线/);
 
-  // 竞技阈值达标但余量未越过 B5 升档线：B4.5 准竞技专属叙述
+  // 竞技阈值达标但余量未越过 B5 基准：B4.5 准竞技专属叙述
   const thresholdSummary = buildBracketSummary({
     ...base,
     assignedBracket: 4.5,
@@ -1823,7 +1823,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
     detectedCombos: [{ speed: 'early' }],
   });
   assert.match(thresholdSummary, /已经达到竞技构筑所需的密度[\s\S]*早期组合技/);
-  assert.match(thresholdSummary, /余量约 25%[\s\S]*未越过 B5 升档线[\s\S]*归于B4\.5准竞技强度/);
+  assert.match(thresholdSummary, /余量约 25%[\s\S]*未越过 B5 基准[\s\S]*归于B4\.5准竞技强度/);
   assert.doesNotMatch(thresholdSummary, /主将池|预算线/);
 
   const competitiveSummary = buildBracketSummary({
