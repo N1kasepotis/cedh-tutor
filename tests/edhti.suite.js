@@ -376,7 +376,11 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   assert.match(wxss, /\.export-canvas\s*{[\s\S]*height:\s*1624rpx/);
   assert.ok(fs.existsSync(miniCodePath), 'mini-program code asset should exist');
   assert.ok(fs.existsSync(cedhHouseQrPath), 'cedh house QR asset should exist');
-  assert.deepEqual(readJpegDimensions(miniCodePath), { width: 1024, height: 1024 });
+  // 小程序码直接用微信后台导出的 258px 原件，不做重采样也不重压缩：
+  // 海报按 codeSize=126 逻辑像素绘制，乘 EXPORT_PIXEL_SCALE(1080/750) 后实绘约 181px，
+  // 258 仍是缩小而非放大。换码时照搬微信导出件即可，不要为了「和另一张一样大」而放大——
+  // 放大可扫描码只会引入插值模糊，对 181px 的实绘没有任何收益。
+  assert.deepEqual(readJpegDimensions(miniCodePath), { width: 258, height: 258 });
   assert.deepEqual(readJpegDimensions(cedhHouseQrPath), { width: 1024, height: 1024 });
   assert.ok(fs.statSync(miniCodePath).size < 160000, 'mini-program code asset should stay package-friendly');
   assert.ok(fs.statSync(cedhHouseQrPath).size < 160000, 'cedh house QR asset should stay package-friendly');
