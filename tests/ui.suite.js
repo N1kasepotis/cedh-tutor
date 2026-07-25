@@ -41,6 +41,9 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.ok(tagline.length <= 46);
   assert.match(wxml, /class="home-content"[\s\S]*<\/view>\s*<text class="home-edge-tagline"/);
   assert.match(wxss, /\.home-edge-tagline\s*{[^}]*position:\s*fixed[^}]*writing-mode:\s*vertical-rl/);
+  // 侧脊题词与底部版权左右都留安全区内缩，避免贴边被屏幕圆角吞掉
+  assert.match(wxss, /\.home-edge-tagline\s*{[^}]*padding-right:\s*calc\(14rpx \+ env\(safe-area-inset-right\)\)/);
+  assert.match(wxss, /\.home-colophon\s*{[^}]*padding-right:\s*calc\(48rpx \+ env\(safe-area-inset-right\)\)/);
   assert.doesNotMatch(wxml, /home-epigraph/);
   // 工业注释风小字：EDH 与 cEDH 两段、每段三个完整句子，只用大写字母数字与空格（无冒号斜杠句号）
   const formatNotes = Array.from(
@@ -57,8 +60,17 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.equal((wxml.match(/home-format-para/g) || []).length, 2);
   // 氛围文字密度 ③：宣言整墙轻微倾斜、审查黑条压住一条规则、字符 /// 作粗暴分割
   assert.match(wxss, /\.home-format-notes\s*{[^}]*transform:\s*rotate\(-1\.3deg\)/);
-  assert.match(wxml, /class="home-redaction"/);
-  assert.match(wxss, /\.home-redaction\s*{[^}]*background:\s*#0A0A0A/);
+  // 审查＝随机涂黑一整行：把该行自身文字盒染黑、字色同底隐去，黑条与文字天然等宽等高必定盖住。
+  // 绝不用绝对定位/像素 top 定位（字体回退与屏高断点会让黑条悬空在行间空白或墙外）。
+  assert.match(wxss, /\.home-format-note\.is-redacted\s*{[^}]*color:\s*#0A0A0A[^}]*background:\s*#0A0A0A/);
+  assert.doesNotMatch(wxss, /\.home-redaction/);
+  assert.doesNotMatch(wxml, /home-redaction/);
+  assert.doesNotMatch(wxss, /\.home-format-notes\s*{[^}]*position:\s*absolute/);
+  for (let line = 0; line < 9; line += 1) {
+    assert.match(wxml, new RegExp(`\\{\\{redactionLine === ${line} \\? 'is-redacted' : ''\\}\\}`));
+  }
+  assert.match(js, /REDACTION_LINE_COUNT = 9/);
+  assert.match(js, /redactionLine:\s*Math\.floor\(Math\.random\(\)\s*\*\s*REDACTION_LINE_COUNT\)/);
   assert.match(wxml, /class="home-rule-slash"[^>]*>\/{6,}<\/view>/);
   assert.match(wxss, /\.home-rule-slash\s*{[^}]*color:\s*#0A0A0A/);
   assert.doesNotMatch(wxml, /home-reminder|home-button-leader/);

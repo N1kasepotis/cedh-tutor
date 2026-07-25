@@ -34,12 +34,16 @@ function getHomeNavClearancePx() {
 }
 
 const HOME_ACTION_COUNT = 8;
+// 审查黑条：每次进首页随机涂黑注释墙里的一整行——直接把那一行自己的文字盒染成实心黑，
+// 因此黑条与文字天然等宽等高、必定盖住，不做任何像素定位（字体回退/屏高断点都不会错位）。
+const REDACTION_LINE_COUNT = 9;
 
 Page({
   data: {
     homeNavClearancePx: 96,
     // 事故色 glitch 行：每次进首页随机让一个功能入口"故障"成电光蓝，制造不可预测的粗野破坏感
     glitchIndex: 0,
+    redactionLine: 3,
   },
 
   onLoad() {
@@ -67,7 +71,10 @@ Page({
   },
 
   onShow() {
-    this.setData({ glitchIndex: Math.floor(Math.random() * HOME_ACTION_COUNT) });
+    this.setData({
+      glitchIndex: Math.floor(Math.random() * HOME_ACTION_COUNT),
+      redactionLine: Math.floor(Math.random() * REDACTION_LINE_COUNT),
+    });
   },
 
   onShareAppMessage() {

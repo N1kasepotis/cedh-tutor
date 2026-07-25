@@ -2,16 +2,15 @@
   <view class="home-content">
     <view class="home-hero" style="padding-top: {{homeNavClearancePx}}px;">
       <view class="home-format-notes" aria-label="Commander format annotations">
-        <text class="home-format-note">RULE 903 DEFINES EDH AS MULTIPLAYER COMMANDER</text>
-        <text class="home-format-note home-format-note-next">EVERY DECK PLAYS 100 SINGLETON CARDS</text>
-        <text class="home-format-note home-format-note-next">EVERY PLAYER STARTS THE GAME AT 40 LIFE</text>
-        <text class="home-format-note home-format-para">CEDH PLAYS THE SAME RULES AT FULL POWER</text>
-        <text class="home-format-note home-format-note-next">PODS OF FOUR RACE ON FAST MANA AND TUTORS</text>
-        <text class="home-format-note home-format-note-next">MOST GAMES END BETWEEN TURN 2 AND TURN 6</text>
-        <text class="home-format-note home-format-para">EVERY SEAT PLAYS TO WIN AND NO ONE APOLOGIZES</text>
-        <view class="home-redaction" aria-hidden="true"></view>
-        <text class="home-format-note home-format-note-next">ALLIANCES FOLLOW THREAT NOT FRIENDSHIP</text>
-        <text class="home-format-note home-format-note-next">PROXIES ARE WELCOME AT MOST TABLES</text>
+        <text class="home-format-note {{redactionLine === 0 ? 'is-redacted' : ''}}">RULE 903 DEFINES EDH AS MULTIPLAYER COMMANDER</text>
+        <text class="home-format-note home-format-note-next {{redactionLine === 1 ? 'is-redacted' : ''}}">EVERY DECK PLAYS 100 SINGLETON CARDS</text>
+        <text class="home-format-note home-format-note-next {{redactionLine === 2 ? 'is-redacted' : ''}}">EVERY PLAYER STARTS THE GAME AT 40 LIFE</text>
+        <text class="home-format-note home-format-para {{redactionLine === 3 ? 'is-redacted' : ''}}">CEDH PLAYS THE SAME RULES AT FULL POWER</text>
+        <text class="home-format-note home-format-note-next {{redactionLine === 4 ? 'is-redacted' : ''}}">PODS OF FOUR RACE ON FAST MANA AND TUTORS</text>
+        <text class="home-format-note home-format-note-next {{redactionLine === 5 ? 'is-redacted' : ''}}">MOST GAMES END BETWEEN TURN 2 AND TURN 6</text>
+        <text class="home-format-note home-format-para {{redactionLine === 6 ? 'is-redacted' : ''}}">EVERY SEAT PLAYS TO WIN AND NO ONE APOLOGIZES</text>
+        <text class="home-format-note home-format-note-next {{redactionLine === 7 ? 'is-redacted' : ''}}">ALLIANCES FOLLOW THREAT NOT FRIENDSHIP</text>
+        <text class="home-format-note home-format-note-next {{redactionLine === 8 ? 'is-redacted' : ''}}">PROXIES ARE WELCOME AT MOST TABLES</text>
       </view>
 
       <view class="home-title-block">
