@@ -328,3 +328,38 @@ test('异步 wx API 不使用无参调用，避免未处理的 Promise 拒绝', 
 
   assert.deepEqual(offenders, [], `这些异步 wx 调用需要显式回调：\n${offenders.join('\n')}`);
 });
+
+// 发布门禁：除首页与导出海报外，非导出页面禁用 radial-gradient 背景光斑。
+// 唯一例外是血量记录的玩家分区光晕——它用 --player-rgb 给每位玩家上色，是该页的核心视觉。
+// 例外写在这里而不是留在 README 散文里：一条「明知会被违反」的发布检查项，
+// 只会训练人忽略整张检查单。
+test('非导出页面不使用 radial-gradient 背景光斑（血量记录玩家分区是唯一例外）', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+
+  const ALLOWED = 'miniprogram/pages/life-tracker/life-tracker.wxss';
+  const offenders = [];
+  const walk = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) {
+        walk(full);
+        return;
+      }
+      if (!entry.name.endsWith('.wxss')) return;
+      if (!fs.readFileSync(full, 'utf8').includes('radial-gradient')) return;
+      const rel = path.relative(root, full).split(path.sep).join('/');
+      if (rel !== ALLOWED) offenders.push(rel);
+    });
+  };
+  walk(path.join(root, 'miniprogram'));
+
+  assert.deepEqual(offenders, [], `这些页面不应使用 radial-gradient：\n${offenders.join('\n')}`);
+
+  // 例外本身也要有边界：血量记录里的光晕只能用于玩家分区着色，不能蔓延成通用装饰
+  const lifeTracker = fs.readFileSync(path.join(root, ALLOWED), 'utf8');
+  const glows = lifeTracker.match(/radial-gradient\([^;]*/g) || [];
+  assert.equal(glows.length, 1, '血量记录只应有一处玩家分区光晕');
+  assert.match(glows[0], /--player-rgb/, '该光晕必须由 --player-rgb 驱动（每位玩家一色），否则就是普通装饰光斑');
+});
