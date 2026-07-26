@@ -298,7 +298,10 @@ test('life tracker offers an undo window after destructive board changes', () =>
   assert.match(wxml, /wx:if="\{\{undoVisible\}\}"[\s\S]*bindtap="undoLastChange"/);
   assert.match(wxml, /class="undo-bar" aria-live="polite"/);
 
-  // 撤销条让到 150rpx 以下，避开展开状态的中心菜单（48rpx 起、约 142rpx 收尾）
-  assert.match(wxss, /\.undo-bar\s*{[\s\S]*top:\s*calc\(50vh \+ 150rpx\)/);
+  // 本页锁横屏：rpx 由「宽」推导，横屏下宽是长边，纵向定位不能用 vh + rpx 混算——
+  // 50vh + 150rpx 在横屏约 349pt，加上条高会溢出 375pt 的视口。贴顶才是稳定解。
+  assert.match(wxss, /\.undo-bar\s*{[\s\S]*top:\s*calc\(16rpx \+ env\(safe-area-inset-top\)\)/);
+  const undoBarRule = wxss.match(/\.undo-bar\s*{[^}]*}/)[0];
+  assert.doesNotMatch(undoBarRule, /50vh/, '横屏页纵向定位不得混用 vh 与 rpx');
   assert.match(wxss, /\.undo-action\s*{[\s\S]*min-width:\s*88rpx[\s\S]*height:\s*44rpx/);
 });

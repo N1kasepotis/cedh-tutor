@@ -308,10 +308,13 @@ page {
   background: rgba(255, 255, 255, 0.12);
 }
 
-/* 撤销条起点 150rpx，避开展开状态的中心菜单（48rpx 起、约 142rpx 收尾），两者不会叠字 */
+/* 本页锁横屏：rpx 由「宽」推导，而横屏下宽是长边，所以 rpx 相对视口高度会很大——
+   不能用 50vh + Nrpx 这类混算做纵向定位（150rpx 在横屏约 162pt，直接把条推出屏幕底部）。
+   中心菜单向下展开、横屏下已到约 91vh，下方没有空间；顶部是唯一稳定的空区，直接贴顶。 */
 .undo-bar {
   position: fixed;
-  top: calc(50vh + 150rpx);
+  top: calc(16rpx + constant(safe-area-inset-top));
+  top: calc(16rpx + env(safe-area-inset-top));
   left: 50vw;
   z-index: 9;
   display: flex;
