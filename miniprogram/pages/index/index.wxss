@@ -209,6 +209,9 @@ page {
    与注释墙的「审查涂黑」同一语汇，压得更狠 */
 .home-index-redacted {
   padding: 2rpx 10rpx;
+  /* 黑块比字形宽出 10rpx，会吃掉原本靠字形侧边距留出的间隙、顶到中文；
+     这里把间隙还回来，让实心块与中文之间仍有可呼吸的留白 */
+  margin-right: 18rpx;
   color: #D0F03C;
   background: #0A0A0A;
   letter-spacing: 0.04em;

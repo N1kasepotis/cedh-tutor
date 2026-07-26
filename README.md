@@ -159,6 +159,8 @@ Deck
 - 除首页外的非导出页面禁用 `radial-gradient` 背景光斑，只保留线性底色 + 玻璃层 + 粒子背景 + 语义色。
 - 导出图是独立海报视觉，可用渐变/纹理/暗角。
 - 通用按钮按压反馈集中在 `app.wxss` 的 `pressable-active`；首页目录行不继承其位移反馈。
+- **胶囊套胶囊要同心**：内层被外层包住时，上下内缩 `(外高 − 内高) / 2` 必须等于该侧的 `padding`，否则两个 999rpx 圆角不同心，真机上一眼就是「没对齐」。血量记录的撤销条是这条规则的实例（外 56rpx / 内 44rpx / 右 6rpx），`life-tracker.suite.js` 用算式而非字面量锁住它。
+- **实心底色的文字块要自己补回间距**：给文字加 `background` + 横向 `padding` 后，色块会宽出字形，把原本靠字形侧边距形成的留白吃掉、直接顶到相邻文字。首页 02/06 的涂黑编号即为此显式加了 `margin-right`，且必须大于黑块外扩量（`ui.suite.js` 按此关系断言，不锁死具体数值）。
 - 页面主题在 `styles/themes/`，卷心菜绿 `#2fa75d`、伊捷蓝 `#5aa9ff`、自伤/输红 `#e0655c`。
 - **技术仪表语汇（dark-table 工具页：tracker/random/playtest/cabbage/izzet）**：关键数值是英雄——超大等宽 `tabular-nums` 数字（tracker 胜率、random 随机数/骰点、cabbage 现可造绿、izzet storm/瞬间/自伤、playtest 法术力与区计数），段标题与数值标签退为等宽大写 tracked「微标签」（`--cedh-font-mono`、`letter-spacing` 0.14–0.2em、`text-transform: uppercase`、模块 accent 色）。不使用装饰性刻线或短横。首页与导出海报保持各自语汇；result/quiz 是展示型页面不套用此语汇。
 

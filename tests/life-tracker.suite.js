@@ -304,4 +304,19 @@ test('life tracker offers an undo window after destructive board changes', () =>
   const undoBarRule = wxss.match(/\.undo-bar\s*{[^}]*}/)[0];
   assert.doesNotMatch(undoBarRule, /50vh/, '横屏页纵向定位不得混用 vh 与 rpx');
   assert.match(wxss, /\.undo-action\s*{[\s\S]*min-width:\s*88rpx[\s\S]*height:\s*44rpx/);
+
+  // 胶囊套胶囊必须同心：上下内缩 (外高 - 内高) / 2 要等于右侧 padding。
+  // 两者不等时真机上一眼就看得出白胶囊没和黑条对齐——曾经是 52/44 配 12rpx 右 padding，
+  // 上下缩 4rpx、右侧缩 12rpx，圆角明显错位。
+  const cssRule = (name) => wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`))[0];
+  const barRule = cssRule('undo-bar');
+  const actionRule = cssRule('undo-action');
+  const barHeight = Number(barRule.match(/\n\s*height:\s*(\d+)rpx/)[1]);
+  const actionHeight = Number(actionRule.match(/\n\s*height:\s*(\d+)rpx/)[1]);
+  const barPadRight = Number(barRule.match(/\n\s*padding:\s*0\s+(\d+)rpx\s+0\s+\d+rpx/)[1]);
+  assert.equal(
+    (barHeight - actionHeight) / 2,
+    barPadRight,
+    `撤销胶囊未同心：外高 ${barHeight}rpx、内高 ${actionHeight}rpx，上下缩 ${(barHeight - actionHeight) / 2}rpx，右侧却缩 ${barPadRight}rpx`,
+  );
 });

@@ -232,6 +232,13 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.ok(whisperSize >= 28, '点阵编号仍须是巨号，对比来自肌理而不是缩小');
   // 涂黑编号在 glitch 行必须另行反相，否则黑底黑字整枚消失
   assert.match(wxss, /\.home-button\.is-glitch \.home-index-redacted\s*{[^}]*color:\s*#00B3FF/);
+  // 实心黑块比字形宽出左右各 10rpx，会吃掉原本靠字形侧边距留出的间隙、直接顶到中文；
+  // 必须显式补回右侧留白（真机上 02火花觉醒 / 06混沌工具 曾经贴死）
+  const redactedRule = wxss.match(/\.home-index-redacted\s*\{[^}]*\}/)[0];
+  const redactedPadX = Number(redactedRule.match(/padding:\s*\d+rpx\s+(\d+)rpx/)[1]);
+  const redactedGap = Number(redactedRule.match(/margin-right:\s*(\d+)rpx/)[1]);
+  assert.ok(redactedGap > redactedPadX,
+    `涂黑编号的右侧留白 ${redactedGap}rpx 必须大于黑块外扩的 ${redactedPadX}rpx，否则仍会顶到中文`);
   // 功能文本（入口副标题）按正文对比度要求：10px + 0.7 alpha 在 #D0F03C 上约 7.5:1，过 AA 4.5:1
   assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.7\)[^}]*font-size:\s*10px/);
   // 窄屏只收紧字距，不把说明文本降回 8px
