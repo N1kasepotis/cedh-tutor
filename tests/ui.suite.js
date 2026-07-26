@@ -208,6 +208,30 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   );
   // 编号提为纯黑巨号（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
   assert.match(wxss, /\.home-button-index\s*{[^}]*color:\s*#0A0A0A/);
+
+  // 编号有四种字面「声音」，按行的既有角色分配（heavy / shift / plain / short），
+  // 不是八行八种、也不是八行一种——避免退回「只有字号差别、没有字体对比」的状态
+  const indexVoices = {
+    'home-index-shout': ['01', '05'],
+    'home-index-redacted': ['02', '06'],
+    'home-index-whisper': ['03', '07'],
+    'home-index-stretch': ['04'],
+  };
+  Object.entries(indexVoices).forEach(([voice, numbers]) => {
+    numbers.forEach((n) => {
+      assert.match(wxml, new RegExp(`class="home-button-index[^"]*${voice}">${n}<`),
+        `${n} 应使用 ${voice} 字面`);
+    });
+  });
+  // 三套字面必须真的不同族：超粗 / 点阵 / 等宽
+  assert.match(wxss, /\.home-index-shout\s*{[^}]*font-family:\s*"cEDHDisplay"/);
+  assert.match(wxss, /\.home-index-whisper\s*{[^}]*font-family:\s*"HomePixel"/);
+  // 点阵放大必须落在 10px 网格整数倍上，否则真机糊
+  const whisperSize = Number(wxss.match(/\.home-index-whisper\s*{[^}]*font-size:\s*(\d+)px/)[1]);
+  assert.equal(whisperSize % 10, 0, `点阵编号字号需为 10 的整数倍，当前 ${whisperSize}px`);
+  assert.ok(whisperSize >= 28, '点阵编号仍须是巨号，对比来自肌理而不是缩小');
+  // 涂黑编号在 glitch 行必须另行反相，否则黑底黑字整枚消失
+  assert.match(wxss, /\.home-button\.is-glitch \.home-index-redacted\s*{[^}]*color:\s*#00B3FF/);
   // 功能文本（入口副标题）按正文对比度要求：10px + 0.7 alpha 在 #D0F03C 上约 7.5:1，过 AA 4.5:1
   assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.7\)[^}]*font-size:\s*10px/);
   // 窄屏只收紧字距，不把说明文本降回 8px

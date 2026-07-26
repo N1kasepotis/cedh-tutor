@@ -194,6 +194,42 @@ page {
   margin-left: -40rpx;
 }
 
+/* 编号的四种字面「声音」：不按行号随机换字体，而是跟着每行本来就有的角色走
+   （heavy / shift / plain / short），让差异读起来是系统而不是杂音。
+   全部复用已内嵌的两套字体与既有色板，不新增资源、不引入会静默失败的描边。 */
+
+/* 喊叫（heavy 行 01/05）：与 cEDH Tutor 字标同源的超粗，字标喊、编号也喊 */
+.home-index-shout {
+  font-family: "cEDHDisplay", "Arial Black", Impact, "Avenir Next Condensed", "DIN Condensed", sans-serif;
+  font-weight: 900;
+  letter-spacing: -0.04em;
+}
+
+/* 涂黑（shift 行 02/06）：这两行本来就负位移压在文字上，改成实心黑块反白，
+   与注释墙的「审查涂黑」同一语汇，压得更狠 */
+.home-index-redacted {
+  padding: 2rpx 10rpx;
+  color: #D0F03C;
+  background: #0A0A0A;
+  letter-spacing: 0.04em;
+}
+
+/* 点阵（plain 行 03/07）：与下方点阵中文目录同族。对比来自「点阵 vs 实心」的肌理，
+   不是靠缩小，所以仍保持巨号；30px 是 10px 网格的整数倍，放大后依然锐利 */
+.home-index-whisper {
+  font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
+  font-size: 30px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+}
+
+/* 变形（short 行 04）：横向拉伸，呼应被 scaleX 拉变形的字标 */
+.home-index-stretch {
+  transform: scaleX(1.5);
+  transform-origin: left center;
+  letter-spacing: -0.02em;
+}
+
 .home-button-text {
   display: flex;
   min-width: 0;
@@ -280,6 +316,12 @@ page {
 .home-button.is-glitch .home-button-zh,
 .home-button.is-glitch .home-button-en {
   color: #0A0A0A;
+}
+
+/* 涂黑编号在 glitch 行要单独反相：该行整行已是电光蓝底 + 纯黑字，
+   而这枚编号自带纯黑块，沿用黑字会变成黑底黑字直接消失 */
+.home-button.is-glitch .home-index-redacted {
+  color: #00B3FF;
 }
 
 /* 暴力按压：整块反相为黑底 + 电光蓝字，而非温柔缩放 */
