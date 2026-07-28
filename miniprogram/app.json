@@ -10,7 +10,8 @@
     "pages/izzet/izzet",
     "pages/playtest/playtest",
     "pages/quiz/quiz",
-    "pages/result/result"
+    "pages/result/result",
+    "pages/meta/meta"
   ],
   "window": {
     "navigationBarTitleText": "cEDH Tutor",

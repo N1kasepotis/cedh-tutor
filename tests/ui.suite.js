@@ -105,10 +105,10 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (match) => match[1]),
     ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
   );
-  // 八行构图保留，但只有 7 个真正可用的入口带按压反馈：08 是未启用态，不给可点的假象
-  assert.equal((wxml.match(/hover-class="home-index-active"/g) || []).length, 7);
-  assert.equal((wxml.match(/hover-start-time="0"/g) || []).length, 7);
-  assert.equal((wxml.match(/hover-stay-time="60"/g) || []).length, 7);
+  // 八行全部可用，八行都要有按压反馈
+  assert.equal((wxml.match(/hover-class="home-index-active"/g) || []).length, 8);
+  assert.equal((wxml.match(/hover-start-time="0"/g) || []).length, 8);
+  assert.equal((wxml.match(/hover-stay-time="60"/g) || []).length, 8);
   assert.match(wxml, /home-button-edhti[^>]*bindtap="goEdhti"/);
   assert.match(wxml, /home-button-match[^>]*bindtap="goQuiz"/);
   assert.match(wxml, /home-button-bracket[^>]*bindtap="goBracket"/);
@@ -116,11 +116,11 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.match(wxml, /home-button-life[^>]*bindtap="goLifeTracker"/);
   assert.match(wxml, /home-button-random[^>]*bindtap="goRandom"/);
   assert.match(wxml, /home-button-tracker[^>]*bindtap="goTracker"/);
-  // 08 环境梯度尚未开放：可点击即承诺可用，所以它不该有 bindtap，只以未启用态出现
-  assert.match(wxml, /home-button-meta[^>]*is-pending[^>]*aria-disabled="true"/);
-  assert.doesNotMatch(wxml, /home-button-meta[^>]*bindtap=/);
-  assert.doesNotMatch(wxml, /home-button-meta[^>]*hover-class=/);
-  assert.match(wxml, /class="home-button-pending">SOON</);
+  // 08 环境梯度已开放：未启用态（is-pending / SOON / aria-disabled）必须一并清干净，
+  // 否则会留下「看着不可点却能点」的矛盾状态
+  assert.match(wxml, /home-button-meta[^>]*bindtap="goMeta"/);
+  assert.doesNotMatch(wxml, /is-pending|home-button-pending|SOON|aria-disabled/);
+  assert.doesNotMatch(wxss, /is-pending|home-button-pending/);
   assert.match(wxml, /class="home-actions" aria-role="navigation" aria-label="主要功能"/);
   assert.doesNotMatch(wxml, /particle-background|particleCanvas/);
   assert.doesNotMatch(wxml, /<button[^>]*home-button|glass|bindtouch/);
@@ -214,7 +214,8 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   const indexVoices = {
     'home-index-shout': ['01', '05'],
     'home-index-redacted': ['02', '06'],
-    'home-index-whisper': ['03', '07'],
+    // 08 是 tall 但非 heavy，与 03/07 一样没有额外角色修饰，归入点阵
+    'home-index-whisper': ['03', '07', '08'],
     'home-index-stretch': ['04'],
   };
   Object.entries(indexVoices).forEach(([voice, numbers]) => {
@@ -384,10 +385,9 @@ test('button press feedback is centralized and reused across app controls', () =
   assert.doesNotMatch(randomWxss, /\.sticker-draw-button\.drawing/);
   assert.ok((interactiveMarkup.match(/hover-class="pressable-active"/g) || []).length >= 18);
   assert.ok((interactiveMarkup.match(/hover-stay-time="120"/g) || []).length >= 18);
-  // 只有可用的 7 个入口有按压反馈；08 未启用态不带 hover，避免「按得动 = 用得了」的错觉
-  assert.equal((indexWxml.match(/hover-class="home-index-active"/g) || []).length, 7);
-  assert.equal((indexWxml.match(/hover-start-time="0"/g) || []).length, 7);
-  assert.equal((indexWxml.match(/hover-stay-time="60"/g) || []).length, 7);
+  assert.equal((indexWxml.match(/hover-class="home-index-active"/g) || []).length, 8);
+  assert.equal((indexWxml.match(/hover-start-time="0"/g) || []).length, 8);
+  assert.equal((indexWxml.match(/hover-stay-time="60"/g) || []).length, 8);
 });
 
 test('home removes particles while other interfaces retain theme-matched particle backgrounds', () => {

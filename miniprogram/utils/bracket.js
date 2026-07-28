@@ -978,9 +978,11 @@ function computeBandPosition({
   const config = BAND_POSITION_CONFIG;
 
   if (assignedBracket >= 4.5) {
-    // B5 是有真实赛事 meta 的竞技档，说明为何暂不细分；B4.5 准竞技是 B4 与 cEDH 之间的过渡、无对应 meta，一句带过不赘述。
+    // B5 是有真实赛事 meta 的竞技档，说明为何不细分；B4.5 准竞技是 B4 与 cEDH 之间的过渡、无对应 meta，一句带过不赘述。
+    // 不承诺「日后接入 meta 后提供」：环境梯度是署名的人工编辑判断，把它注入确定性分类器
+    // 会毁掉判定链的可审计性，也会让同一副牌的档位随第三方编辑改动而变。两者刻意保持解耦。
     const evidenceText = assignedBracket === 5
-      ? 'B5 竞技档内的强弱区分取决于赛事 meta 表现（对局数据、席位胜率与常见配置对照），结构信号不足以支撑可信排序，当前版本暂不区分，待 meta 分析加入后提供'
+      ? 'B5 竞技档内的强弱区分取决于赛事 meta 表现（对局数据、席位胜率与常见配置对照），结构信号不足以支撑可信排序，本工具不对该档内部排序'
       : 'B4.5 准竞技是 B4 与 cEDH 之间的过渡，档内不再细分强弱';
     return {
       tier: null,

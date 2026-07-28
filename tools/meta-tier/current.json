@@ -1,0 +1,2103 @@
+{
+  "schema_version": 1,
+  "site": {
+    "title": "cEDH 小屋 Tier List",
+    "brand": "cEDH小屋",
+    "description": "由 cEDH小屋编辑的中文 cEDH 套牌原型分级与分析。",
+    "methodology": "榜单由 cEDH小屋人工编辑。\n赛事数据、环境表现与易上手程度用于辅助判断，表单顺序不直接决定“强度”。强度与个人水平高度相关。\n如有主将疏漏，可基本归类为 T3 、T4。\n欢迎加qq 群 708152440 交流",
+    "language": "zh-CN",
+    "draft_updated_at": "2026-07-28T00:23:00+08:00"
+  },
+  "tiers": [
+    {
+      "id": "t0",
+      "label": "T0",
+      "color": "#ef5b4c",
+      "description": "定义环境，强度与影响力最突出。"
+    },
+    {
+      "id": "t1",
+      "label": "T1",
+      "color": "#f0aa4a",
+      "description": "顶级竞争力，稳定且经过充分验证。"
+    },
+    {
+      "id": "t2",
+      "label": "T2",
+      "color": "#64b9a5",
+      "description": "成熟可战，具备明确优势但存在环境限制。"
+    },
+    {
+      "id": "t3",
+      "label": "T3",
+      "color": "#70a7c7",
+      "description": "小众可行，需要更强的环境判断或驾驶经验。"
+    },
+    {
+      "id": "t4",
+      "label": "T4",
+      "color": "#8c8f94",
+      "description": "边缘或实验性原型，仍保留 cEDH 构筑目标。"
+    }
+  ],
+  "entries": [
+    {
+      "name_en": "Blue Farm",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange"
+      ],
+      "summary": "以高质量抓牌引擎和四色牌池建立资源优势的cEDH长青代表性中速组合技。",
+      "win_conditions": [
+        "经典UUB",
+        "裂隙线与高效咒语链"
+      ],
+      "strengths": [
+        "牌张质量极高",
+        "堤谟娜与寇姆持续补牌"
+      ],
+      "weaknesses": [
+        "构筑与操作选择复杂",
+        "容易成为全桌优先压制目标"
+      ],
+      "analysis": "四色提供最完整的互动、导师与加速配置。双指挥官都能把对局自然推进到资源占优的位置，是衡量其他中速套牌的重要基准。",
+      "deck_url": "https://topdeck.gg/deck/cedh-win-a-badlands-a-commander-invitational-qualifier/GFToELdqNdTrwgyc1iScl6OVtLa2",
+      "updated_at": "2026-07-26T15:16:21.106Z",
+      "id": "blue-farm",
+      "name_zh": "Blue Farm",
+      "tier": "t0",
+      "order": 0,
+      "commanders": [
+        {
+          "cn": "织命使堤谟娜",
+          "en": "Tymna the Weaver",
+          "scryfall_id": "bc7cbe9b-324e-42b8-94e2-36e91cb32163",
+          "image": "assets/cards/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/48/tymna-the-weaver?utm_source=api"
+        },
+        {
+          "cn": "卢德维佳作寇姆",
+          "en": "Kraum, Ludevic's Opus",
+          "scryfall_id": "557fcd17-6cb3-414a-b2b1-ea9ae32e5aec",
+          "image": "assets/cards/557fcd17-6cb3-414a-b2b1-ea9ae32e5aec.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/34/kraum-ludevics-opus?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Vivi Ornitier",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo",
+        "风暴"
+      ],
+      "summary": "围绕低费咒语和指挥官增值构建的高速蓝红组合技。",
+      "win_conditions": [
+        "风暴组合技"
+      ],
+      "strengths": [
+        "启动速度快"
+      ],
+      "weaknesses": [
+        "对指挥官依赖较高"
+      ],
+      "analysis": "比比和好奇互动可以带来非常强大的效果，游戏计划一般围绕好奇+大量的低费非生物咒语展开，达成一种风暴循环，在过程中还能使用主将进行费用补充。",
+      "deck_url": "https://topdeck.gg/deck/the-bonefire-2-magic-may-hem/f9fY4V4MyMMe2vkN6KYxjpPRrvd2",
+      "updated_at": "2026-07-27T16:14:54.821Z",
+      "id": "vivi-ornitier",
+      "name_zh": "比比·奥尼提尔",
+      "tier": "t2",
+      "order": 2,
+      "commanders": [
+        {
+          "cn": "比比·奥尼提尔",
+          "en": "Vivi Ornitier",
+          "scryfall_id": "ecc1027a-8c07-44a0-bdde-fa2844cff694",
+          "image": "assets/cards/ecc1027a-8c07-44a0-bdde-fa2844cff694.jpg",
+          "scryfall_url": "https://scryfall.com/card/fin/248/vivi-ornitier?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Kinnan, Bonder Prodigy",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "法术力爆发",
+        "绿色哥们儿"
+      ],
+      "summary": "主将异能能带来大量法术力，同时配合玄武巨石一卡无限费。并以指挥官异能持续制造威胁的蓝绿引擎套牌。",
+      "win_conditions": [
+        "无限法术力",
+        "大量高费高质量生物"
+      ],
+      "strengths": [
+        "指挥官费用低",
+        "资源与致胜组件高度重合",
+        "能快速越过常规节奏"
+      ],
+      "weaknesses": [
+        "惧怕针对法术力源的压制",
+        "惧怕扫场"
+      ],
+      "analysis": "季宁把普通加速转化成爆发资源，并在长局中提供稳定的法术力出口。它既能快速达成组合技，也能通过高质量永久物持续施压。",
+      "deck_url": "https://topdeck.gg/deck/tm-circuit-verse-2-song/YU5xxo3WblMGnLhtGcKyziTX2sL2",
+      "updated_at": "2026-07-27T16:17:34.249Z",
+      "id": "kinnan",
+      "name_zh": "持绊逸才季宁",
+      "tier": "t0",
+      "order": 1,
+      "commanders": [
+        {
+          "cn": "持绊逸才季宁",
+          "en": "Kinnan, Bonder Prodigy",
+          "scryfall_id": "63cda4a0-0dff-4edb-ae67-a2b7e2971350",
+          "image": "assets/cards/63cda4a0-0dff-4edb-ae67-a2b7e2971350.jpg",
+          "scryfall_url": "https://scryfall.com/card/iko/192/kinnan-bonder-prodigy?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Sisay, Weatherlight Captain",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "工具箱 Toolbox",
+        "五色传奇"
+      ],
+      "summary": "用指挥官把五色传奇工具箱转化为确定性组合路线。",
+      "win_conditions": [
+        "连续检索传奇永久物形成组合技，不同组法有不同的制胜线路"
+      ],
+      "strengths": [
+        "指挥区内置导师",
+        "路线灵活"
+      ],
+      "weaknesses": [
+        "依赖指挥官留场与启动",
+        "复杂路线对操作精度要求高"
+      ],
+      "analysis": "西赛的核心优势是把大量单卡工具组织成可重复访问的路线。对手必须尊重每一次激活窗口，套牌也因此拥有很强的威慑力。",
+      "deck_url": "https://topdeck.gg/deck/last-chance-redemption/yjYxM96teWXrjakkVOdc3LqfiyA2",
+      "updated_at": "2026-07-26T13:54:22.807Z",
+      "id": "sisay",
+      "name_zh": "晴空号船长西赛",
+      "tier": "t1",
+      "order": 2,
+      "commanders": [
+        {
+          "cn": "晴空号船长西赛",
+          "en": "Sisay, Weatherlight Captain",
+          "scryfall_id": "5a293c45-1e73-4527-be2f-2dcd5c47b610",
+          "image": "assets/cards/5a293c45-1e73-4527-be2f-2dcd5c47b610.jpg",
+          "scryfall_url": "https://scryfall.com/card/mh1/29/sisay-weatherlight-captain?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Ral, Monsoon Mage",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo",
+        "风暴"
+      ],
+      "summary": "通过减费与咒语密度构建爆发回合的蓝红高速组合技。",
+      "win_conditions": [
+        "风暴说书"
+      ],
+      "strengths": [
+        "启动窗口多",
+        "低曲线"
+      ],
+      "weaknesses": [
+        "对资源计算要求高",
+        "中场盘相对困难"
+      ],
+      "analysis": "拉尔把大量本就适合 cEDH 的低费瞬间与法术连接成完整引擎。最近由于不断的有单卡加强以及玩家策略的不断优化，正成为环境当中不可忽视的威胁。",
+      "deck_url": "https://topdeck.gg/deck/the-horizon/bRZf5LzkbWPvDPpxmQm5MtTqMM33",
+      "updated_at": "2026-07-26T13:51:57.737Z",
+      "id": "ral-monsoon-mage",
+      "name_zh": "风雨法师拉尔",
+      "tier": "t1",
+      "order": 0,
+      "commanders": [
+        {
+          "cn": "风雨法师拉尔",
+          "en": "Ral, Monsoon Mage // Ral, Leyline Prodigy",
+          "scryfall_id": "438d8a26-ddc9-4829-8aff-22d6af6575cf",
+          "image": "assets/cards/438d8a26-ddc9-4829-8aff-22d6af6575cf.jpg",
+          "scryfall_url": "https://scryfall.com/card/mh3/247/ral-monsoon-mage-ral-leyline-prodigy?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Tymna & Thrasios",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange"
+      ],
+      "summary": "以双重指挥区资源引擎支撑互动密集型四色中速策略。",
+      "win_conditions": [
+        "无限法术力",
+        "UUB"
+      ],
+      "strengths": [
+        "长局资源能力强",
+        "构筑弹性高",
+        "互动密度充足"
+      ],
+      "weaknesses": [
+        "速度通常低于纯 Turbo",
+        "胜利路线可能被坟场或沉默效应拆分"
+      ],
+      "analysis": "TnT 的价值在于稳定与可塑性。它可以根据预期环境调整永久物、互动和组合比例，是典型的玩家导向型套牌。",
+      "deck_url": "https://topdeck.gg/deck/from-the-vault-cedh-32-1k/PGlcyu3I8ZQAOJ7Iw3Ez69CYiER2",
+      "updated_at": "2026-07-26T15:02:49.969Z",
+      "id": "tymna-thrasios",
+      "name_zh": "TnT",
+      "tier": "t1",
+      "order": 4,
+      "commanders": [
+        {
+          "cn": "织命使堤谟娜",
+          "en": "Tymna the Weaver",
+          "scryfall_id": "bc7cbe9b-324e-42b8-94e2-36e91cb32163",
+          "image": "assets/cards/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/48/tymna-the-weaver?utm_source=api"
+        },
+        {
+          "cn": "屈东英雄萨拉希洛斯",
+          "en": "Thrasios, Triton Hero",
+          "scryfall_id": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+          "image": "assets/cards/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/46/thrasios-triton-hero?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Tivit, Seller of Secrets",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "控制 Control",
+        "中速 Midrange",
+        "神器"
+      ],
+      "summary": "用高韧性指挥官制造资源，并以神器额外回合组合结束对局。",
+      "win_conditions": [
+        "时间筛与棣维特形成额外回合循环",
+        "UUB"
+      ],
+      "strengths": [
+        "指挥官落地价值高",
+        "抗普通去除",
+        "控制计划清晰"
+      ],
+      "weaknesses": [
+        "指挥官费用高",
+        "早期节奏受快速桌影响"
+      ],
+      "analysis": "棣维特适合把对局拖入资源交换阶段。指挥官一旦成功结算，会带来很大优势。而前期则需要稳定的控场，希望顺利的将游戏拖入中后期，而一旦进入中后期，单靠主将就能获得很大的优势。",
+      "deck_url": "https://topdeck.gg/deck/rule-them-all-cedh-european-qualifier/HNKlW4eE3PVOLZkbsLlNML7RQei2",
+      "updated_at": "2026-07-26T15:05:14.594Z",
+      "id": "tivit",
+      "name_zh": "密报商棣维特",
+      "tier": "t2",
+      "order": 0,
+      "commanders": [
+        {
+          "cn": "密报商棣维特",
+          "en": "Tivit, Seller of Secrets",
+          "scryfall_id": "9235977e-a999-4ed0-83a3-742be87b13bb",
+          "image": "assets/cards/9235977e-a999-4ed0-83a3-742be87b13bb.jpg",
+          "scryfall_url": "https://scryfall.com/card/ncc/10/tivit-seller-of-secrets?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Rograkh & Silas Renn",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo"
+      ],
+      "summary": "利用零费指挥官与格利极牌池追求极低回合数的高速组合技。",
+      "win_conditions": [
+        "冥界裂隙",
+        "uub"
+      ],
+      "strengths": [
+        "爆发速度极高",
+        "罗噶克支撑多种免费资源",
+        "牌池紧凑高效"
+      ],
+      "weaknesses": [
+        "持续资源能力有限"
+      ],
+      "analysis": "这是最纯粹的 Turbo 基准之一。它牺牲部分长局能力换取速度和法术力效率，适合主动寻找窗口的操作方式。",
+      "deck_url": "https://topdeck.gg/deck/torneo-cedh-junio-rigor-mortis-galdakao/dqMmjoXLlqUFlt0E4U6zAUBbP4G3",
+      "updated_at": "2026-07-26T13:54:29.759Z",
+      "id": "rograkh-silas",
+      "name_zh": "罗噶克 + 赛拉司",
+      "tier": "t1",
+      "order": 3,
+      "commanders": [
+        {
+          "cn": "罗噶之子罗噶克",
+          "en": "Rograkh, Son of Rohgahh",
+          "scryfall_id": "a4fab67f-00c2-4125-9262-d21a29411797",
+          "image": "assets/cards/a4fab67f-00c2-4125-9262-d21a29411797.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmr/197/rograkh-son-of-rohgahh?utm_source=api"
+        },
+        {
+          "cn": "致知专家赛拉司雷恩",
+          "en": "Silas Renn, Seeker Adept",
+          "scryfall_id": "4e3fe912-1374-47c7-b73f-89ef55c479c1",
+          "image": "assets/cards/4e3fe912-1374-47c7-b73f-89ef55c479c1.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/43/silas-renn-seeker-adept?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "K'rrik, Son of Yawgmoth",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo",
+        "单色",
+        "生物组合技"
+      ],
+      "summary": "把生命值转化为黑色法术力，以极高速度串联导师和组合组件。",
+      "win_conditions": [
+        "单黑生物组合",
+        "导师链与吸血终结"
+      ],
+      "strengths": [
+        "法术力规则独特",
+        "爆发回合强",
+        "单色法术力稳定"
+      ],
+      "weaknesses": [
+        "生命压力与指挥官依赖明显"
+      ],
+      "analysis": "强大快速的纯黑组合技主将，组合技线路复杂且多变，但非常需要玩家自己的熟练度来支撑。",
+      "deck_url": "https://topdeck.gg/deck/landfall-3er-clasificatorio-al-nacional-de-cedh/wmEZh09DzrT2LTtSVI3k0VAUJgk1",
+      "updated_at": "2026-07-26T15:03:51.080Z",
+      "id": "krrik",
+      "name_zh": "约格莫夫之子格锐克",
+      "tier": "t1",
+      "order": 9,
+      "commanders": [
+        {
+          "cn": "约格莫夫之子格锐克",
+          "en": "K'rrik, Son of Yawgmoth",
+          "scryfall_id": "4f087b1c-97e0-4379-a94d-beac53685314",
+          "image": "assets/cards/4f087b1c-97e0-4379-a94d-beac53685314.jpg",
+          "scryfall_url": "https://scryfall.com/card/mh3/274/krrik-son-of-yawgmoth?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Tayam, Luminous Enigma",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "坟场+永久物组合",
+        "绿色哥们儿"
+      ],
+      "summary": "用指示物和坟场循环构建韧性极强的永久物组合体系。",
+      "win_conditions": [
+        "坟场组合技"
+      ],
+      "strengths": [
+        "组合组件可互相回收",
+        "抗单点互动",
+        "擅长复杂资源战"
+      ],
+      "weaknesses": [
+        "操作与触发管理复杂",
+        "调色困难主将难出"
+      ],
+      "analysis": "塔亚姆的深度来自大量彼此交叉的循环路线，每一个生物以及每一个卡位都值得仔细选择，目前最大的问题就在于制胜依赖主将但是主将非常难出，不仅费用是4费而且需要3种颜色，构筑当中还必须要携带单色的功能地、基本地，调色十分困难。",
+      "deck_url": "https://topdeck.gg/deck/mox-mania-ii-perfect-storm-comics-games/9Qtmz7MpFKeHBE6KG3sKlDf7yLy2",
+      "updated_at": "2026-07-27T14:14:03.047Z",
+      "id": "tayam",
+      "name_zh": "灿光谜兽塔亚姆",
+      "tier": "t2",
+      "order": 14,
+      "commanders": [
+        {
+          "cn": "灿光谜兽塔亚姆",
+          "en": "Tayam, Luminous Enigma",
+          "scryfall_id": "05b837a2-5773-4340-87f9-b4d6a43deb27",
+          "image": "assets/cards/05b837a2-5773-4340-87f9-b4d6a43deb27.jpg",
+          "scryfall_url": "https://scryfall.com/card/c20/16/tayam-luminous-enigma?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Magda, Brazen Outlaw",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "工具箱 Toolbox",
+        "神器"
+      ],
+      "summary": "以珍宝作为法术力和导师资源的红色神器工具箱。",
+      "win_conditions": [
+        "magda专属的预兆时钟组合技"
+      ],
+      "strengths": [
+        "指挥官费用低",
+        "导师异能难以用常规反击处理",
+        "制胜路线启动难以阻止。"
+      ],
+      "weaknesses": [
+        "依赖指挥官",
+        "单红互动范围有限"
+      ],
+      "analysis": "玛格妲最近构筑倾向于突然爆发解决战斗，相比原来更具侵略性，舍弃了很多防守端的锁，桌上必须持续计算其珍宝数量。",
+      "deck_url": "https://topdeck.gg/deck/bonfire-3-red-white-bluefarm/qujVfPt8DvYuYAUFqthXwNCcgqu1",
+      "updated_at": "2026-07-26T15:03:49.778Z",
+      "id": "magda",
+      "name_zh": "莽勇狂徒玛格妲",
+      "tier": "t1",
+      "order": 8,
+      "commanders": [
+        {
+          "cn": "莽勇狂徒玛格妲",
+          "en": "Magda, Brazen Outlaw",
+          "scryfall_id": "079e6263-e54c-4899-a336-5315909b9322",
+          "image": "assets/cards/079e6263-e54c-4899-a336-5315909b9322.jpg",
+          "scryfall_url": "https://scryfall.com/card/khm/142/magda-brazen-outlaw?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Kefka, Court Mage",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "资源压制"
+      ],
+      "summary": "以格利极互动和指挥官资源交换能力建立优势的新型中速原型。",
+      "win_conditions": [
+        "UUB",
+        "裂隙"
+      ],
+      "strengths": [
+        "颜色组合优质",
+        "指挥官兼顾推进与干扰",
+        "适应中速桌"
+      ],
+      "weaknesses": [
+        "主将还是费用太高"
+      ],
+      "analysis": "喜欢格色主将绝对会喜欢的单卡，上场之后拥有强大的压迫力，但可惜弱点还是主将太笨重。",
+      "deck_url": "https://topdeck.gg/deck/cedh-monthly-dual-land-tournament/A8N9blZZuvOMluITWdLrt3UwlaC2",
+      "updated_at": "2026-07-26T13:55:27.641Z",
+      "id": "kefka",
+      "name_zh": "宫廷魔法师凯夫卡",
+      "tier": "t1",
+      "order": 6,
+      "commanders": [
+        {
+          "cn": "宫廷魔法师凯夫卡",
+          "en": "Kefka, Court Mage // Kefka, Ruler of Ruin",
+          "scryfall_id": "8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8",
+          "image": "assets/cards/8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8.jpg",
+          "scryfall_url": "https://scryfall.com/card/fin/231/kefka-court-mage-kefka-ruler-of-ruin?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Tymna & Dargo",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo",
+        "牺牲"
+      ],
+      "summary": "让达戈充当法术力与牺牲组件，并由堤谟娜补充资源的马尔都爆发主将。",
+      "win_conditions": [
+        "达戈牺牲循环",
+        "玛铎导师链"
+      ],
+      "strengths": [
+        "指挥区提供组合组件",
+        "爆发法术力强",
+        "堤谟娜改善续航"
+      ],
+      "weaknesses": [
+        "缺少蓝色堆叠互动"
+      ],
+      "analysis": "爆发上限高，而且主将作为牺牲源拥有强大的turbo实力，裂隙在这套牌当中非常厉害。",
+      "deck_url": "https://topdeck.gg/deck/socc-on-the-stack/SiDkLCGFJvd9g8I2hwnMQnwUH9m2",
+      "updated_at": "2026-07-26T13:57:38.404Z",
+      "id": "tymna-dargo",
+      "name_zh": "堤谟娜 + 达戈",
+      "tier": "t2",
+      "order": 1,
+      "commanders": [
+        {
+          "cn": "织命使堤谟娜",
+          "en": "Tymna the Weaver",
+          "scryfall_id": "bc7cbe9b-324e-42b8-94e2-36e91cb32163",
+          "image": "assets/cards/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/48/tymna-the-weaver?utm_source=api"
+        },
+        {
+          "cn": "碎船巨人达戈",
+          "en": "Dargo, the Shipwrecker",
+          "scryfall_id": "5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b",
+          "image": "assets/cards/5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmr/172/dargo-the-shipwrecker?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Tevesh Szat & Thrasios",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "控制 Control",
+        "中速 Midrange",
+        "四人桌优势"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/cedh-shuffle-2-the-reshuffle/uXA5k4QaHJUcobxlLSprQO6rRfp2",
+      "updated_at": "2026-07-27T14:14:23.992Z",
+      "id": "tevesh-thrasios",
+      "name_zh": "刹特 + 萨拉希洛斯",
+      "tier": "t3",
+      "order": 6,
+      "commanders": [
+        {
+          "cn": "愚者末日泰维司刹特",
+          "en": "Tevesh Szat, Doom of Fools",
+          "scryfall_id": "8f244716-78ab-46f5-b6e9-fc1e6db28052",
+          "image": "assets/cards/8f244716-78ab-46f5-b6e9-fc1e6db28052.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmr/153/tevesh-szat-doom-of-fools?utm_source=api"
+        },
+        {
+          "cn": "屈东英雄萨拉希洛斯",
+          "en": "Thrasios, Triton Hero",
+          "scryfall_id": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+          "image": "assets/cards/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/46/thrasios-triton-hero?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Rocco, Cabaretti Caterer",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "工具箱 Toolbox",
+        "生物组合",
+        "纳雅"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/cedh-dual-tournament-6-march-29th/D9PZpKML81bz909R8849RkD6GC62",
+      "updated_at": "2026-07-27T14:14:21.775Z",
+      "id": "rocco",
+      "name_zh": "乐舞会主厨罗孔",
+      "tier": "t3",
+      "order": 7,
+      "commanders": [
+        {
+          "cn": "乐舞会主厨罗孔",
+          "en": "Rocco, Cabaretti Caterer",
+          "scryfall_id": "b6cf8b35-2a81-40fd-b383-becb81bef806",
+          "image": "assets/cards/b6cf8b35-2a81-40fd-b383-becb81bef806.jpg",
+          "scryfall_url": "https://scryfall.com/card/snc/218/rocco-cabaretti-caterer?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Derevi, Empyrial Tactician",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "生物中速"
+      ],
+      "summary": "利用重置获取大量资源的bant资源性中速套牌。",
+      "win_conditions": [
+        "埃米尔+苗地+主将组合技"
+      ],
+      "strengths": [
+        "可绕过指挥官税入场",
+        "通过战斗阶段可以赚取费用，甚至是配合至尊戒获取手牌"
+      ],
+      "weaknesses": [
+        "套牌操作复杂",
+        "容错空间小"
+      ],
+      "analysis": "德蕾薇能把细小的战斗触发转化为法术力以及手牌资源。它尤其依赖对环境速度的准确判断。",
+      "deck_url": "https://topdeck.gg/deck/802cedh-presents-hot-heels-of-summer-part-2/ig2RLb5RfTXNLIFlkXll9XAJa2h2",
+      "updated_at": "2026-07-27T14:10:40.430Z",
+      "id": "derevi",
+      "name_zh": "穹光策士德蕾薇",
+      "tier": "t2",
+      "order": 12,
+      "commanders": [
+        {
+          "cn": "穹光策士德蕾薇",
+          "en": "Derevi, Empyrial Tactician",
+          "scryfall_id": "3a1d0dad-18a8-489e-ac11-08f64b72fda4",
+          "image": "assets/cards/3a1d0dad-18a8-489e-ac11-08f64b72fda4.jpg",
+          "scryfall_url": "https://scryfall.com/card/cma/176/derevi-empyrial-tactician?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Yoshimaru & Thrasios",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "法术力爆发",
+        "苗地",
+        "绿色哥们儿"
+      ],
+      "summary": "和鬼仔人鱼一样，但是有白色，多了止咒、封口等单卡。",
+      "win_conditions": [
+        "无限法术力配合萨拉希洛斯",
+        "指挥官伤害与中速压制"
+      ],
+      "strengths": [
+        "萨拉希洛斯提供续航",
+        "颜色拥有优质互动"
+      ],
+      "weaknesses": [
+        "速度偏慢"
+      ],
+      "analysis": "和鬼仔人鱼类似，依赖苗地。鬼仔人鱼优势有更加快速顺滑的前期展开，但是鬼仔狗有止咒、封口等更加优质的保护咒语。",
+      "deck_url": "https://topdeck.gg/deck/atlantic-city-tcg-show-cedh-15k/dQ1EcYlXSRPdX0w48llDyKaLeKy2",
+      "updated_at": "2026-07-27T16:14:57.039Z",
+      "id": "yoshimaru-thrasios",
+      "name_zh": "义丸 + 萨拉希洛斯",
+      "tier": "t2",
+      "order": 3,
+      "commanders": [
+        {
+          "cn": "忠犬义丸",
+          "en": "Yoshimaru, Ever Faithful",
+          "scryfall_id": "aa409269-3698-42a2-8c51-75557b27a6f6",
+          "image": "assets/cards/aa409269-3698-42a2-8c51-75557b27a6f6.jpg",
+          "scryfall_url": "https://scryfall.com/card/nec/32/yoshimaru-ever-faithful?utm_source=api"
+        },
+        {
+          "cn": "屈东英雄萨拉希洛斯",
+          "en": "Thrasios, Triton Hero",
+          "scryfall_id": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+          "image": "assets/cards/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/46/thrasios-triton-hero?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Rograkh & Thrasios",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "法术力爆发",
+        "苗地",
+        "绿色哥们儿"
+      ],
+      "summary": "结合零费指挥官资源与萨拉希洛斯出口的铁木尔苗地组合技套牌。",
+      "win_conditions": [
+        "无限法术力配合萨拉希洛斯",
+        "玩苗地永久物循环"
+      ],
+      "strengths": [
+        "指挥区组件成本低",
+        "可兼顾速度与续航"
+      ],
+      "weaknesses": [
+        "惧怕扫场",
+        "制胜链条长，依赖熟练度"
+      ],
+      "analysis": "罗噶克提供爆发起点，配合苗地可以快速的获得大量的法术力，在游戏的中期达成一种伪“风暴”的生物循环，具有难以用语言表达的游戏体验。",
+      "deck_url": "https://topdeck.gg/deck/pittsburgh-2026-tcedh-10k-25000/BP2zsiHEccO3Pe128MLPcCbygql1",
+      "updated_at": "2026-07-27T16:14:44.841Z",
+      "id": "rograkh-thrasios",
+      "name_zh": "罗噶克 + 萨拉希洛斯",
+      "tier": "t1",
+      "order": 1,
+      "commanders": [
+        {
+          "cn": "罗噶之子罗噶克",
+          "en": "Rograkh, Son of Rohgahh",
+          "scryfall_id": "a4fab67f-00c2-4125-9262-d21a29411797",
+          "image": "assets/cards/a4fab67f-00c2-4125-9262-d21a29411797.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmr/197/rograkh-son-of-rohgahh?utm_source=api"
+        },
+        {
+          "cn": "屈东英雄萨拉希洛斯",
+          "en": "Thrasios, Triton Hero",
+          "scryfall_id": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+          "image": "assets/cards/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/46/thrasios-triton-hero?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Tymna & Malcolm",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "海盗",
+        "四人桌优势"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/njcedh-low-stakes-red-seal-gaming-june-27th/b7XpP9Z6dSPaaZMIBpHg9FFY2w02",
+      "updated_at": "2026-07-27T14:14:14.426Z",
+      "id": "tymna-malcolm",
+      "name_zh": "堤谟娜 + 马科姆",
+      "tier": "t3",
+      "order": 3,
+      "commanders": [
+        {
+          "cn": "织命使堤谟娜",
+          "en": "Tymna the Weaver",
+          "scryfall_id": "bc7cbe9b-324e-42b8-94e2-36e91cb32163",
+          "image": "assets/cards/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/48/tymna-the-weaver?utm_source=api"
+        },
+        {
+          "cn": "锐目领航员马科姆",
+          "en": "Malcolm, Keen-Eyed Navigator",
+          "scryfall_id": "51187cdb-85ee-4f68-9e29-d84d296f0825",
+          "image": "assets/cards/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg",
+          "scryfall_url": "https://scryfall.com/card/lcc/161/malcolm-keen-eyed-navigator?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Kenrith, the Returned King",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "五色",
+        "中速 Midrange"
+      ],
+      "summary": "以五色牌池和多功能指挥官支撑高度可定制的中速组合。",
+      "win_conditions": [
+        "无限法术力配合指挥官",
+        "五色通用组合"
+      ],
+      "strengths": [
+        "构筑自由度高",
+        "指挥官是完整法术力出口"
+      ],
+      "weaknesses": [
+        "指挥官费用高"
+      ],
+      "analysis": "肯理斯能把任何无限资源转化为胜利，也能在公平回合中提供多种小优势。代价是套牌容易缺少足够鲜明的第一计划。",
+      "deck_url": "https://topdeck.gg/deck/jeweled-lotus-lattenkamp-2026/JcZxZy4vAuaaqVij3tgdSaqO2mE3",
+      "updated_at": "2026-07-26T15:18:39.380Z",
+      "id": "kenrith",
+      "name_zh": "复归国王肯理斯",
+      "tier": "t2",
+      "order": 9,
+      "commanders": [
+        {
+          "cn": "复归国王肯理斯",
+          "en": "Kenrith, the Returned King",
+          "scryfall_id": "0e259db1-14db-4314-998c-6a076a28d8cb",
+          "image": "assets/cards/0e259db1-14db-4314-998c-6a076a28d8cb.jpg",
+          "scryfall_url": "https://scryfall.com/card/plst/ELD-303/kenrith-the-returned-king?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Zirda, the Dawnwaker",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "神器",
+        "Turbo"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/autism-awareness-cedh-event-3rd-annual/Q87hfI7uuFU5XXq5GZzTxtCaCQw2",
+      "updated_at": "2026-07-27T14:14:12.146Z",
+      "id": "zirda",
+      "name_zh": "熠晓灵狐泽尔达",
+      "tier": "t3",
+      "order": 2,
+      "commanders": [
+        {
+          "cn": "熠晓灵狐泽尔达",
+          "en": "Zirda, the Dawnwaker",
+          "scryfall_id": "1bd8e61c-2ee8-4243-a848-7008810db8a0",
+          "image": "assets/cards/1bd8e61c-2ee8-4243-a848-7008810db8a0.jpg",
+          "scryfall_url": "https://scryfall.com/card/iko/233/zirda-the-dawnwaker?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Dargo & Kodama",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "永久物组合",
+        "牺牲",
+        "古鲁"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/jeweled-lotus-lattenkamp-2026/yU3r3RPdbEbRPD0ZuiWCEVQhphP2",
+      "updated_at": "2026-07-27T14:14:08.260Z",
+      "id": "dargo-kodama",
+      "name_zh": "达戈 + 东树木灵",
+      "tier": "t3",
+      "order": 0,
+      "commanders": [
+        {
+          "cn": "碎船巨人达戈",
+          "en": "Dargo, the Shipwrecker",
+          "scryfall_id": "5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b",
+          "image": "assets/cards/5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmr/172/dargo-the-shipwrecker?utm_source=api"
+        },
+        {
+          "cn": "东树木灵",
+          "en": "Kodama of the East Tree",
+          "scryfall_id": "af5105ee-09e2-4344-ab39-00f0e9034c47",
+          "image": "assets/cards/af5105ee-09e2-4344-ab39-00f0e9034c47.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmr/239/kodama-of-the-east-tree?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Korvold, Fae-Cursed King",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "牺牲",
+        "勇得"
+      ],
+      "summary": "将牺牲动作转化为抓牌的勇得引擎与组合套牌。",
+      "win_conditions": [
+        "食物链循环"
+      ],
+      "strengths": [
+        "指挥官抓牌上限高",
+        "与珍宝和牺牲组件自然协同"
+      ],
+      "weaknesses": [
+        "指挥官费用高",
+        "首次施放被阻止后很难再起"
+      ],
+      "analysis": "寇沃一旦结算，所有珍宝和牺牲动作都可以抓牌，特别具有压制力。",
+      "deck_url": "https://topdeck.gg/deck/seaedh-16/xxah4cWc8oUmLHYyFpJQyiCFdmq1",
+      "updated_at": "2026-07-26T15:22:11.377Z",
+      "id": "korvold",
+      "name_zh": "受诅国王寇沃",
+      "tier": "t2",
+      "order": 10,
+      "commanders": [
+        {
+          "cn": "受诅国王寇沃",
+          "en": "Korvold, Fae-Cursed King",
+          "scryfall_id": "607c1793-8e5a-4ebf-87c6-7f9c99bbd29a",
+          "image": "assets/cards/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg",
+          "scryfall_url": "https://scryfall.com/card/eoc/120/korvold-fae-cursed-king?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Najeela, the Blade-Blossom",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "战斗",
+        "五色",
+        "中速 Midrange"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/commandergeddon-10-brought-to-you-by-jenes-mtg/Tn7hc9tJIjhoDu0yDp7OHtJRG3i2",
+      "updated_at": "2026-07-27T14:14:17.846Z",
+      "id": "najeela",
+      "name_zh": "剑花娜吉拉",
+      "tier": "t3",
+      "order": 5,
+      "commanders": [
+        {
+          "cn": "剑花娜吉拉",
+          "en": "Najeela, the Blade-Blossom",
+          "scryfall_id": "2cb1d1da-6077-46b5-8c63-39882b8016f2",
+          "image": "assets/cards/2cb1d1da-6077-46b5-8c63-39882b8016f2.jpg",
+          "scryfall_url": "https://scryfall.com/card/bbd/62/najeela-the-blade-blossom?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Tasigur, the Golden Fang",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "控制 Control",
+        "坟场",
+        "苏勒台"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/cardart-monthly-volcanic-island/mwVyp8cBdTY0t24IAomKClv2qzP2",
+      "updated_at": "2026-07-27T14:14:33.775Z",
+      "id": "tasigur",
+      "name_zh": "金牙塔西格",
+      "tier": "t3",
+      "order": 12,
+      "commanders": [
+        {
+          "cn": "金牙塔西格",
+          "en": "Tasigur, the Golden Fang",
+          "scryfall_id": "175ad810-3cdd-43c7-99a9-8a2e8ad6dbae",
+          "image": "assets/cards/175ad810-3cdd-43c7-99a9-8a2e8ad6dbae.jpg",
+          "scryfall_url": "https://scryfall.com/card/tdc/197/tasigur-the-golden-fang?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Arcum Dagsson",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "神器",
+        "工具箱 Toolbox",
+        "单色"
+      ],
+      "summary": "通过牺牲神器生物直接检索关键非生物神器的单蓝工具箱。",
+      "win_conditions": [
+        "神器锁与独特的组合技"
+      ],
+      "strengths": [
+        "指挥官导师能力强",
+        "神器路线明确",
+        "蓝色提供保护"
+      ],
+      "weaknesses": [
+        "指挥官需横置启动",
+        "容易被生物去除和召唤失调拖慢"
+      ],
+      "analysis": "启动条件比较严格，但是成功启动后的工具箱能力仍然值得尊重。",
+      "deck_url": "https://topdeck.gg/deck/the-birdcage-vii-2fast2finch/oUlN9S1weOZzrMzf6X0agE5lLWl1",
+      "updated_at": "2026-07-27T16:15:00.490Z",
+      "id": "arcum-dagsson",
+      "name_zh": "阿肯达格森",
+      "tier": "t2",
+      "order": 15,
+      "commanders": [
+        {
+          "cn": "阿肯达格森",
+          "en": "Arcum Dagsson",
+          "scryfall_id": "f5ecf811-2efc-4fa6-9af8-ef09f559ec1a",
+          "image": "assets/cards/f5ecf811-2efc-4fa6-9af8-ef09f559ec1a.jpg",
+          "scryfall_url": "https://scryfall.com/card/2xm/41/arcum-dagsson?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Crystal, Inhuman Princess",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "实验性",
+        "中速 Midrange",
+        "生物组合"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/mulligan-championship-series-july-w-guaranteed-plateau/GHPNb0E7DnWMVIsJIhYSXre58rB3",
+      "updated_at": "2026-07-27T14:14:29.777Z",
+      "id": "crystal-inhuman-princess",
+      "name_zh": "异人族公主水晶",
+      "tier": "t3",
+      "order": 10,
+      "commanders": [
+        {
+          "cn": "异人族公主水晶",
+          "en": "Crystal, Inhuman Princess",
+          "scryfall_id": "1e9aec49-08d7-4fc8-87dd-69ab8910688a",
+          "image": "assets/cards/1e9aec49-08d7-4fc8-87dd-69ab8910688a.jpg",
+          "scryfall_url": "https://scryfall.com/card/msc/80/crystal-inhuman-princess?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Ashling, the Limitless",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "实验性",
+        "单色",
+        "法术力引擎"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/stage-select-underground-sea-final-boss-x-commander/FQRVO20M93dnkLGPm3oiCrXVRjr1",
+      "updated_at": "2026-07-27T16:17:38.534Z",
+      "id": "ashling-limitless",
+      "name_zh": "瀚力无边灰儿",
+      "tier": "t4",
+      "order": 2,
+      "commanders": [
+        {
+          "cn": "瀚力无边灰儿",
+          "en": "Ashling, the Limitless",
+          "scryfall_id": "5924c01f-2815-4e37-b700-3ba6cc81e0e4",
+          "image": "assets/cards/5924c01f-2815-4e37-b700-3ba6cc81e0e4.jpg",
+          "scryfall_url": "https://scryfall.com/card/ecc/1/ashling-the-limitless?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "Rowan, Scion of War",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo",
+        "生命资源",
+        "拉铎司"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/christmas-for-cedh-charity-tournament-lost-levels-card/u7T8OPfcuaWFomt0m51uoJuFfzy2",
+      "updated_at": "2026-07-27T14:14:25.459Z",
+      "id": "rowan-scion-of-war",
+      "name_zh": "尚武后裔萝婉",
+      "tier": "t3",
+      "order": 8,
+      "commanders": [
+        {
+          "cn": "尚武后裔萝婉",
+          "en": "Rowan, Scion of War",
+          "scryfall_id": "4ee179ab-a15b-4bd6-b7f8-1e1abeeb31b7",
+          "image": "assets/cards/4ee179ab-a15b-4bd6-b7f8-1e1abeeb31b7.jpg",
+          "scryfall_url": "https://scryfall.com/card/woe/211/rowan-scion-of-war?utm_source=api"
+        }
+      ]
+    },
+    {
+      "name_en": "The Gitrog Monster",
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "坟场",
+        "组合技 Combo",
+        "地牌"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/lcq-for-the-cedh-european-championship/EOObQc22o3SXUM4Fn4eVkoLmgu13",
+      "updated_at": "2026-07-27T14:14:16.342Z",
+      "id": "gitrog-monster",
+      "name_zh": "噬人蛙怪",
+      "tier": "t3",
+      "order": 4,
+      "commanders": [
+        {
+          "cn": "噬人蛙怪",
+          "en": "The Gitrog Monster",
+          "scryfall_id": "40489e28-878d-44a2-847f-07beef1aa0f8",
+          "image": "assets/cards/40489e28-878d-44a2-847f-07beef1aa0f8.jpg",
+          "scryfall_url": "https://scryfall.com/card/eoc/117/the-gitrog-monster?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "etali-primal-conqueror",
+      "name_zh": "始霸埃泰力",
+      "name_en": "Etali, Primal Conqueror",
+      "tier": "t1",
+      "order": 5,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo",
+        "食物链"
+      ],
+      "summary": "以埃泰力的进场异能作为资源与终结手段的红绿组合技。",
+      "win_conditions": [
+        "食物链组合技+反复施放埃泰力"
+      ],
+      "strengths": [
+        "指挥区提供高影响力进场异能",
+        "红绿爆发法术力充足"
+      ],
+      "weaknesses": [
+        "持续资源能力有限"
+      ],
+      "analysis": "非常简单直接的主将，拥有强大的爆发力，但是也特别怕琉晶研究。",
+      "deck_url": "https://topdeck.gg/deck/baked-ziti-3/B1yctEd4MvYogwWDAwqY53tLT4K2",
+      "updated_at": "2026-07-26T15:03:48.446Z",
+      "commanders": [
+        {
+          "cn": "始霸埃泰力",
+          "en": "Etali, Primal Conqueror // Etali, Primal Sickness",
+          "scryfall_id": "95c14c4d-6c16-4826-8d93-d89ad04aee09",
+          "image": "assets/cards/95c14c4d-6c16-4826-8d93-d89ad04aee09.jpg",
+          "scryfall_url": "https://scryfall.com/card/mom/137/etali-primal-conqueror-etali-primal-sickness?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "ishai-rograkh",
+      "name_zh": "依谢 + 罗噶克",
+      "name_en": "Ishai & Rograkh",
+      "tier": "t1",
+      "order": 7,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo",
+        "战斗压力",
+        "琉晶研究"
+      ],
+      "summary": "用零费伙伴支撑爆发资源，并由依谢提供持续战斗压力的洁斯凯原型。",
+      "win_conditions": [
+        "冥界裂隙线"
+      ],
+      "strengths": [
+        "稳定的研究导师"
+      ],
+      "weaknesses": [
+        "非常的吃环境理解"
+      ],
+      "analysis": "新晋的搭档主将，游戏计划主要就是围绕着琉晶研究、神秘印鱼展开。",
+      "deck_url": "https://topdeck.gg/deck/summer-classic-3/xzbsPerPxyRegrjBo0kEjfk04lT2",
+      "updated_at": "2026-07-26T15:03:46.747Z",
+      "commanders": [
+        {
+          "cn": "欧祝泰族龙语者依谢",
+          "en": "Ishai, Ojutai Dragonspeaker",
+          "scryfall_id": "2e89ce6a-6bc9-427f-a8b2-c07a9fc3218f",
+          "image": "assets/cards/2e89ce6a-6bc9-427f-a8b2-c07a9fc3218f.jpg",
+          "scryfall_url": "https://scryfall.com/card/cm2/12/ishai-ojutai-dragonspeaker?utm_source=api"
+        },
+        {
+          "cn": "罗噶之子罗噶克",
+          "en": "Rograkh, Son of Rohgahh",
+          "scryfall_id": "a4fab67f-00c2-4125-9262-d21a29411797",
+          "image": "assets/cards/a4fab67f-00c2-4125-9262-d21a29411797.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmr/197/rograkh-son-of-rohgahh?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "ob-nixilis-captive-kingpin",
+      "name_zh": "受困魔头欧尼希兹",
+      "name_en": "Ob Nixilis, Captive Kingpin",
+      "tier": "t3",
+      "order": 15,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "组合技 Combo",
+        "拉铎司",
+        "伤害引擎"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/weekly-mulligans-february-1st/xgoFcKyBmNMBHadFuS5eGzPiBGD2",
+      "updated_at": "2026-07-27T14:14:38.809Z",
+      "commanders": [
+        {
+          "cn": "受困魔头欧尼希兹",
+          "en": "Ob Nixilis, Captive Kingpin",
+          "scryfall_id": "ddb68233-3683-41bd-9b6e-4f07a1b54244",
+          "image": "assets/cards/ddb68233-3683-41bd-9b6e-4f07a1b54244.jpg",
+          "scryfall_url": "https://scryfall.com/card/mat/41/ob-nixilis-captive-kingpin?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "lumra-bellow-of-the-woods",
+      "name_zh": "林间嚎吼卢玛拉",
+      "name_en": "Lumra, Bellow of the Woods",
+      "tier": "t3",
+      "order": 9,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "坟场",
+        "地牌引擎",
+        "单绿色"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/njcedh-presents-sinkhole-2/taEVTzIjSPg5jvcKLDLD3VYZ7lk1",
+      "updated_at": "2026-07-27T14:14:26.608Z",
+      "commanders": [
+        {
+          "cn": "林间嚎吼卢玛拉",
+          "en": "Lumra, Bellow of the Woods",
+          "scryfall_id": "ae4f3aaf-3960-48cd-b34b-32e4ae5ae088",
+          "image": "assets/cards/ae4f3aaf-3960-48cd-b34b-32e4ae5ae088.jpg",
+          "scryfall_url": "https://scryfall.com/card/blb/183/lumra-bellow-of-the-woods?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "malcolm-vial-smasher",
+      "name_zh": "马科姆 + 砸瓶女汉子",
+      "name_en": "Malcolm & Vial Smasher",
+      "tier": "t3",
+      "order": 14,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "海盗",
+        "格利极"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/land-go-expo-nashville-hot-redemption-event/kVD4ADHTRrbeoimFWT9qWjcVOsk2",
+      "updated_at": "2026-07-27T14:14:37.176Z",
+      "commanders": [
+        {
+          "cn": "锐目领航员马科姆",
+          "en": "Malcolm, Keen-Eyed Navigator",
+          "scryfall_id": "51187cdb-85ee-4f68-9e29-d84d296f0825",
+          "image": "assets/cards/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg",
+          "scryfall_url": "https://scryfall.com/card/lcc/161/malcolm-keen-eyed-navigator?utm_source=api"
+        },
+        {
+          "cn": "砸瓶女汉子",
+          "en": "Vial Smasher the Fierce",
+          "scryfall_id": "cc7be939-2202-40fe-8899-a05682d76190",
+          "image": "assets/cards/cc7be939-2202-40fe-8899-a05682d76190.jpg",
+          "scryfall_url": "https://scryfall.com/card/dsc/239/vial-smasher-the-fierce?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "winota-joiner-of-forces",
+      "name_zh": "聚力领袖薇诺塔",
+      "name_en": "Winota, Joiner of Forces",
+      "tier": "t3",
+      "order": 13,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "锁牌 Stax",
+        "战斗",
+        "波洛斯"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/best-in-the-west-platinum-qualifier-3k/jAoxgyuEIWXvpCLXzXg1haW5Vp62",
+      "updated_at": "2026-07-27T14:14:35.640Z",
+      "commanders": [
+        {
+          "cn": "聚力领袖薇诺塔",
+          "en": "Winota, Joiner of Forces",
+          "scryfall_id": "5dd13a6c-23d3-44ce-a628-cb1c19d777c4",
+          "image": "assets/cards/5dd13a6c-23d3-44ce-a628-cb1c19d777c4.jpg",
+          "scryfall_url": "https://scryfall.com/card/iko/216/winota-joiner-of-forces?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "inalla-archmage-ritualist",
+      "name_zh": "仪法大师因娜拉",
+      "name_en": "Inalla, Archmage Ritualist",
+      "tier": "t2",
+      "order": 6,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo",
+        "法术师",
+        "格利极"
+      ],
+      "summary": "利用显赫异能复制法术师并串联确定性组合的格利极 Turbo。",
+      "win_conditions": [
+        "围绕主将异能的法术师组合技"
+      ],
+      "strengths": [
+        "核心异能无需施放指挥官",
+        "致胜路线紧凑且导师密度高"
+      ],
+      "weaknesses": [
+        "组合路线操作复杂",
+        "组合技会吃任意的阻抗"
+      ],
+      "analysis": "快速直接的组合技，但是整个链条背下来简单，灵活使用十分困难，面对不同场景需要大量练习，最近多了kfk的中速路线，稍微好了一些。",
+      "deck_url": "https://topdeck.gg/deck/mtm-series-iii-european-qualifier/wYNiB0N21fSXpdcCkVpLOR4lAUE2",
+      "updated_at": "2026-07-26T15:10:31.074Z",
+      "commanders": [
+        {
+          "cn": "仪法大师因娜拉",
+          "en": "Inalla, Archmage Ritualist",
+          "scryfall_id": "7c6e803a-451c-4aa6-97a2-400077f32c47",
+          "image": "assets/cards/7c6e803a-451c-4aa6-97a2-400077f32c47.jpg",
+          "scryfall_url": "https://scryfall.com/card/c17/38/inalla-archmage-ritualist?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "glarb-calamitys-augur",
+      "name_zh": "灾祸卜算师格拉布",
+      "name_en": "Glarb, Calamity's Augur",
+      "tier": "t3",
+      "order": 19,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "苏勒台",
+        "牌库顶"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/802cedh-presents-hot-heels-of-summer-part-2/zpMQwKAsSgfy59edol38iIKIz932",
+      "updated_at": "2026-07-27T14:14:44.209Z",
+      "commanders": [
+        {
+          "cn": "灾祸卜算师格拉布",
+          "en": "Glarb, Calamity's Augur",
+          "scryfall_id": "ffc70b2d-5a3a-49ea-97db-175a62248302",
+          "image": "assets/cards/ffc70b2d-5a3a-49ea-97db-175a62248302.jpg",
+          "scryfall_url": "https://scryfall.com/card/blb/215/glarb-calamitys-augur?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "terra-magical-adept",
+      "name_zh": "魔导战士蒂娜",
+      "name_en": "Terra, Magical Adept",
+      "tier": "t2",
+      "order": 8,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "五色"
+      ],
+      "summary": "围绕蒂娜进场异能，配合冥界裂隙的五色套牌。",
+      "win_conditions": [
+        "主要是走冥界裂隙路线"
+      ],
+      "strengths": [
+        "主将进场异能填坟带来的更容易达成的冥界裂隙组合技"
+      ],
+      "weaknesses": [
+        "操作复杂"
+      ],
+      "analysis": "围绕蒂娜进场异能，配合冥界裂隙的五色套牌。",
+      "deck_url": "https://topdeck.gg/deck/curio-caverns-tavern-brawl-3-cedh-15k/LG1FIIInnobc28qEox3TAAEG9LI3",
+      "updated_at": "2026-07-26T15:18:34.364Z",
+      "commanders": [
+        {
+          "cn": "魔导战士蒂娜",
+          "en": "Terra, Magical Adept // Esper Terra",
+          "scryfall_id": "fbd447aa-588d-4c4d-925e-a7d3bdf6a65c",
+          "image": "assets/cards/fbd447aa-588d-4c4d-925e-a7d3bdf6a65c.jpg",
+          "scryfall_url": "https://scryfall.com/card/fin/245/terra-magical-adept-esper-terra?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "brigid-clachans-heart",
+      "name_zh": "小村之心布莉姬",
+      "name_en": "Brigid, Clachan's Heart",
+      "tier": "t2",
+      "order": 13,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "法术力爆发",
+        "苗地",
+        "绿色哥们儿"
+      ],
+      "summary": "围绕布莉姬双面异能构建的苗地类型套牌。",
+      "win_conditions": [
+        "指挥官翻面之后可以产出大量费用。",
+        "配合苗地和大量低费生物可以产出很多费用。"
+      ],
+      "strengths": [
+        "费用多",
+        "路线上全是生物难以互动"
+      ],
+      "weaknesses": [
+        "路线成熟度仍需验证",
+        "容易受到永久物去除影响"
+      ],
+      "analysis": "速度比较快的白绿主将，可以在主将变身回合具有高爆发能力，一回合可以出很多永久物。路线比较特殊，组件如果桌上其他人没见过可能就会赢的很突然。",
+      "deck_url": "https://topdeck.gg/deck/k-town-beatdown-4/iUApsHTjYoQiJLI1ej7WdEomp7M2",
+      "updated_at": "2026-07-27T14:13:48.077Z",
+      "commanders": [
+        {
+          "cn": "小村之心布莉姬",
+          "en": "Brigid, Clachan's Heart // Brigid, Doun's Mind",
+          "scryfall_id": "cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8",
+          "image": "assets/cards/cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8.jpg",
+          "scryfall_url": "https://scryfall.com/card/ecl/7/brigid-clachans-heart-brigid-douns-mind?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "thrasios-vial-smasher",
+      "name_zh": "萨拉希洛斯 + 砸瓶女汉子",
+      "name_en": "Thrasios & Vial Smasher",
+      "tier": "t4",
+      "order": 0,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "四色",
+        "法术力出口"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/mana-masters-x-red-bull-summer-2026/anttRGkYwtaHrvP58XWHXYGpk962",
+      "updated_at": "2026-07-27T14:14:47.708Z",
+      "commanders": [
+        {
+          "cn": "屈东英雄萨拉希洛斯",
+          "en": "Thrasios, Triton Hero",
+          "scryfall_id": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+          "image": "assets/cards/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/46/thrasios-triton-hero?utm_source=api"
+        },
+        {
+          "cn": "砸瓶女汉子",
+          "en": "Vial Smasher the Fierce",
+          "scryfall_id": "cc7be939-2202-40fe-8899-a05682d76190",
+          "image": "assets/cards/cc7be939-2202-40fe-8899-a05682d76190.jpg",
+          "scryfall_url": "https://scryfall.com/card/dsc/239/vial-smasher-the-fierce?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "wandering-minstrel",
+      "name_zh": "异国的诗人",
+      "name_en": "The Wandering Minstrel",
+      "tier": "t3",
+      "order": 11,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "地牌引擎",
+        "新原型",
+        "五色出口"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/from-the-vault-anniversary-3-mox-ruby/xblLwsycN3fTTV5W284gwPUXBRa2",
+      "updated_at": "2026-07-27T14:14:32.475Z",
+      "commanders": [
+        {
+          "cn": "异国的诗人",
+          "en": "The Wandering Minstrel",
+          "scryfall_id": "77bc419d-ff69-4e7c-afe6-faca383a5ed7",
+          "image": "assets/cards/77bc419d-ff69-4e7c-afe6-faca383a5ed7.jpg",
+          "scryfall_url": "https://scryfall.com/card/fin/249/the-wandering-minstrel?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "aang-at-the-crossroads",
+      "name_zh": "身处十字路口的安昂",
+      "name_en": "Aang, at the Crossroads",
+      "tier": "t2",
+      "order": 5,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "围绕主将构筑"
+      ],
+      "summary": "围绕安昂变身与多色协同构建的组合技。",
+      "win_conditions": [
+        "围绕指挥官异能构筑的一整套链条"
+      ],
+      "strengths": [
+        "生物与异能为主，不容易被互动"
+      ],
+      "weaknesses": [
+        "游戏计划稍显局限"
+      ],
+      "analysis": "完全围绕主将异能构筑的100张牌，游戏计划线性单一，一旦大家都熟悉这套牌就变得特别难赢。",
+      "deck_url": "https://topdeck.gg/deck/commander-invitational-qualifier-riddle-rune-1/yDmurQQALDMAZ5XelLf8KibSaaB3",
+      "updated_at": "2026-07-26T15:08:38.947Z",
+      "commanders": [
+        {
+          "cn": "身处十字路口的安昂",
+          "en": "Aang, at the Crossroads // Aang, Destined Savior",
+          "scryfall_id": "fea89ca0-8070-4f28-9851-994314f9d248",
+          "image": "assets/cards/fea89ca0-8070-4f28-9851-994314f9d248.jpg",
+          "scryfall_url": "https://scryfall.com/card/tla/203/aang-at-the-crossroads-aang-destined-savior?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "yuriko-tigers-shadow",
+      "name_zh": "虎影百合子",
+      "name_en": "Yuriko, the Tiger's Shadow",
+      "tier": "t3",
+      "order": 1,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "节奏 Tempo",
+        "忍者",
+        "牌库顶"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/1-path-to-exile-cedh-tournament-european-qualifier/VVmovbr8EqPsmZ4DOsyZLNqvZQy2",
+      "updated_at": "2026-07-27T14:14:10.543Z",
+      "commanders": [
+        {
+          "cn": "虎影百合子",
+          "en": "Yuriko, the Tiger's Shadow",
+          "scryfall_id": "fe9be3e0-076c-4703-9750-2a6b0a178bc9",
+          "image": "assets/cards/fe9be3e0-076c-4703-9750-2a6b0a178bc9.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmm/364/yuriko-the-tigers-shadow?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "marneus-calgar",
+      "name_zh": "玛尔涅斯·寇卡尔",
+      "name_en": "Marneus Calgar",
+      "tier": "t3",
+      "order": 17,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "衍生物",
+        "艾斯波"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/la-giostra-del-regno-1758571809304/BfmiooAwwNgtNw9Y2hXDMTBCu8B2",
+      "updated_at": "2026-07-27T14:14:41.475Z",
+      "commanders": [
+        {
+          "cn": "玛尔涅斯·寇卡尔",
+          "en": "Marneus Calgar",
+          "scryfall_id": "e7517e8e-b424-4731-ba9d-6132bdefa6bf",
+          "image": "assets/cards/e7517e8e-b424-4731-ba9d-6132bdefa6bf.jpg",
+          "scryfall_url": "https://scryfall.com/card/40k/8/marneus-calgar?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "atraxa-grand-unifier",
+      "name_zh": "大一统飞将亚崔夏",
+      "name_en": "Atraxa, Grand Unifier",
+      "tier": "t3",
+      "order": 16,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "四色",
+        "进场价值"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/black-sun-games-western-maryland-cedh-showdown-2/zMz87gNhecYPt1oHbGsWJQ76O112",
+      "updated_at": "2026-07-27T14:14:40.007Z",
+      "commanders": [
+        {
+          "cn": "大一统飞将亚崔夏",
+          "en": "Atraxa, Grand Unifier",
+          "scryfall_id": "4a1f905f-1d55-4d02-9d24-e58070793d3f",
+          "image": "assets/cards/4a1f905f-1d55-4d02-9d24-e58070793d3f.jpg",
+          "scryfall_url": "https://scryfall.com/card/one/196/atraxa-grand-unifier?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "cabbage-merchant",
+      "name_zh": "卷心菜商",
+      "name_en": "The Cabbage Merchant",
+      "tier": "t2",
+      "order": 4,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "神器",
+        "食物",
+        "绿色哥们儿"
+      ],
+      "summary": "将对手的非生物咒语转化为食物，并利用食物提供法术力。",
+      "win_conditions": [
+        "食品组合技",
+        "高法术力出口或场面终结"
+      ],
+      "strengths": [
+        "能被对手正常施法被动推进",
+        "食物同时提供法术力与组合材料"
+      ],
+      "weaknesses": [
+        "对生物密集桌面的触发较少",
+        "单绿色保护与检索范围有限"
+      ],
+      "analysis": "AI 初步建议，已根据近期 EDHTop16 常见度纳入待审核区。具体构筑路线与 Tier 位置由 cEDH小屋人工核验后确定。",
+      "deck_url": "https://topdeck.gg/deck/its-gonna-be-may-part-2-electric-boogaloocedh-tourney/aq61gCRnzKb2YNjsxE82u5LVJKW2",
+      "updated_at": "2026-07-27T16:14:58.454Z",
+      "commanders": [
+        {
+          "cn": "卷心菜商",
+          "en": "The Cabbage Merchant",
+          "scryfall_id": "2fea0356-6684-4730-9eb4-0262856bc1f9",
+          "image": "assets/cards/2fea0356-6684-4730-9eb4-0262856bc1f9.jpg",
+          "scryfall_url": "https://scryfall.com/card/tle/134/the-cabbage-merchant?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "stella-lee-wild-card",
+      "name_zh": "狂野王牌史黛拉李",
+      "name_en": "Stella Lee, Wild Card",
+      "tier": "t2",
+      "order": 7,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "Turbo"
+      ],
+      "summary": "通过连续施放咒语开启复制能力，通过无限复制重置的咒语来循环制胜。",
+      "win_conditions": [
+        "可反复重置史黛拉的咒语复制循环",
+        "冥界裂隙咒语链"
+      ],
+      "strengths": [
+        "指挥官兼具选牌和组合能力",
+        "低曲线与蓝色保护自然契合"
+      ],
+      "weaknesses": [
+        "依赖指挥官横置启动",
+        "第三个咒语的条件公开且可被针对"
+      ],
+      "analysis": "AI 初步建议，已根据近期 EDHTop16 常见度纳入待审核区。具体构筑路线与 Tier 位置由 cEDH小屋人工核验后确定。",
+      "deck_url": "https://topdeck.gg/deck/mulligan-championship-series-february-5k/aLSCW1qFOEPuimuhzaqgbu6AdDw1",
+      "updated_at": "2026-07-26T15:12:55.024Z",
+      "commanders": [
+        {
+          "cn": "狂野王牌史黛拉李",
+          "en": "Stella Lee, Wild Card",
+          "scryfall_id": "2a8a7696-b5d9-4378-9d5c-2c9007e4df63",
+          "image": "assets/cards/2a8a7696-b5d9-4378-9d5c-2c9007e4df63.jpg",
+          "scryfall_url": "https://scryfall.com/card/otc/3/stella-lee-wild-card?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "urza-lord-high-artificer",
+      "name_zh": "铸物勋爵克撒",
+      "name_en": "Urza, Lord High Artificer",
+      "tier": "t3",
+      "order": 18,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "神器",
+        "控制 Control",
+        "单蓝"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/spokane-spring-open-cedh/R9HvO8Mck7hmRrXJosPt9HrTCBu1",
+      "updated_at": "2026-07-27T14:14:42.895Z",
+      "commanders": [
+        {
+          "cn": "铸物勋爵克撒",
+          "en": "Urza, Lord High Artificer",
+          "scryfall_id": "7b7a348a-51f7-4dc5-8fe7-1c70fea5e050",
+          "image": "assets/cards/7b7a348a-51f7-4dc5-8fe7-1c70fea5e050.jpg",
+          "scryfall_url": "https://scryfall.com/card/cmm/130/urza-lord-high-artificer?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "norman-osborn",
+      "name_zh": "诺曼·奥斯本",
+      "name_en": "Norman Osborn",
+      "tier": "t4",
+      "order": 5,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "新原型",
+        "变身",
+        "中速 Midrange"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/commander-invitational-qualifier-gamer-geeks-warrior-5k/SuUFynNyU2aS73BZbvj1N2uWSwn2",
+      "updated_at": "2026-07-27T14:15:12.024Z",
+      "commanders": [
+        {
+          "cn": "诺曼·奥斯本",
+          "en": "Norman Osborn // Green Goblin",
+          "scryfall_id": "d5c53af9-7150-4e78-8771-2de7980aa307",
+          "image": "assets/cards/d5c53af9-7150-4e78-8771-2de7980aa307.jpg",
+          "scryfall_url": "https://scryfall.com/card/spm/39/norman-osborn-green-goblin?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "malcolm-tana",
+      "name_zh": "马科姆 + 塔娜",
+      "name_en": "Malcolm & Tana",
+      "tier": "t4",
+      "order": 4,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "中速 Midrange",
+        "海盗",
+        "铁木尔"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/march-14th-cedh-3k/cBuYamMaaXdVpzJEeG0PVQtifA43",
+      "updated_at": "2026-07-27T14:14:54.295Z",
+      "commanders": [
+        {
+          "cn": "锐目领航员马科姆",
+          "en": "Malcolm, Keen-Eyed Navigator",
+          "scryfall_id": "51187cdb-85ee-4f68-9e29-d84d296f0825",
+          "image": "assets/cards/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg",
+          "scryfall_url": "https://scryfall.com/card/lcc/161/malcolm-keen-eyed-navigator?utm_source=api"
+        },
+        {
+          "cn": "沃血塔娜",
+          "en": "Tana, the Bloodsower",
+          "scryfall_id": "a3d8d64f-a403-42a7-881b-4f70e9fe15a2",
+          "image": "assets/cards/a3d8d64f-a403-42a7-881b-4f70e9fe15a2.jpg",
+          "scryfall_url": "https://scryfall.com/card/c16/45/tana-the-bloodsower?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "scion-ur-dragon",
+      "name_zh": "太初龙后裔",
+      "name_en": "Scion of the Ur-Dragon",
+      "tier": "t4",
+      "order": 3,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "五色",
+        "坟场",
+        "龙"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/njcedh-presents-sinkhole-2/TdXy6jQ5i2U0AdoDDYW7mrjxO4Q2",
+      "updated_at": "2026-07-27T14:14:52.362Z",
+      "commanders": [
+        {
+          "cn": "太初龙后裔",
+          "en": "Scion of the Ur-Dragon",
+          "scryfall_id": "565b2a40-57b1-451f-8c2a-e02222502288",
+          "image": "assets/cards/565b2a40-57b1-451f-8c2a-e02222502288.jpg",
+          "scryfall_url": "https://scryfall.com/card/c17/192/scion-of-the-ur-dragon?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "raph-mikey-troublemakers",
+      "name_zh": "经常捣乱的拉夫与麦奇",
+      "name_en": "Raph & Mikey, Troublemakers",
+      "tier": "t4",
+      "order": 1,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "新原型",
+        "生物组合",
+        "待验证"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/the-beatdown/USgKs5gu0xYq7T61b6rld4JuP6S2",
+      "updated_at": "2026-07-27T14:14:51.042Z",
+      "commanders": [
+        {
+          "cn": "经常捣乱的拉夫与麦奇",
+          "en": "Raph & Mikey, Troublemakers",
+          "scryfall_id": "8795fba4-0ff3-4c04-a81c-60408608a00c",
+          "image": "assets/cards/8795fba4-0ff3-4c04-a81c-60408608a00c.jpg",
+          "scryfall_url": "https://scryfall.com/card/tmt/167/raph-&-mikey-troublemakers?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "gwenom-remorseless",
+      "name_zh": "无悔的毒液格温",
+      "name_en": "Gwenom, Remorseless",
+      "tier": "t2",
+      "order": 11,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "新原型",
+        "生物组合",
+        "待验证"
+      ],
+      "summary": "围绕毒液格温异能的资源能力构建的新套牌。",
+      "win_conditions": [
+        "指挥官协同的永久物组合",
+        "资源引擎建立优势后终结"
+      ],
+      "strengths": [
+        "指挥官提供独特构筑轴线",
+        "近期环境中具备一定存在感"
+      ],
+      "weaknesses": [
+        "线路单一",
+        "被熟悉了之后就很难赢了"
+      ],
+      "analysis": "简单直接的套牌，主将异能触发之后，会惩罚所有不熟悉这套牌的玩家，但是于此同时，如果这套牌被所有人都熟悉，就很难制胜了。",
+      "deck_url": "https://topdeck.gg/deck/curio-caverns-tavern-brawl-4-cedh-16k/TW1P4nx2FecEfyFPEr0Y8WND9ME2",
+      "updated_at": "2026-07-26T15:33:07.390Z",
+      "commanders": [
+        {
+          "cn": "无悔的毒液格温",
+          "en": "Gwenom, Remorseless",
+          "scryfall_id": "46b6cc5d-7a37-4e8b-a1a5-9a573056610c",
+          "image": "assets/cards/46b6cc5d-7a37-4e8b-a1a5-9a573056610c.jpg",
+          "scryfall_url": "https://scryfall.com/card/spm/56/gwenom-remorseless?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "leonardo-michelangelo",
+      "name_zh": "衡心定盘莱昂纳多 / 乐天真心米开朗基罗",
+      "name_en": "Leonardo, the Balance / Michelangelo, the Heart",
+      "tier": "t3",
+      "order": 20,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "五色",
+        "衍生物",
+        "拍档"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/gamer-geeks-fbb-beatdown/dU1r3vb0vTbj52udXh01aBiKmS92",
+      "updated_at": "2026-07-27T14:15:09.078Z",
+      "commanders": [
+        {
+          "cn": "衡心定盘莱昂纳多",
+          "en": "Leonardo, the Balance",
+          "scryfall_id": "72e637db-7112-406f-809b-0eda248488b5",
+          "image": "assets/cards/72e637db-7112-406f-809b-0eda248488b5.jpg",
+          "scryfall_url": "https://scryfall.com/card/tmc/1/leonardo-the-balance?utm_source=api"
+        },
+        {
+          "cn": "乐天真心米开朗基罗",
+          "en": "Michelangelo, the Heart",
+          "scryfall_id": "bac2d744-db65-4b56-8634-c87fd00c090e",
+          "image": "assets/cards/bac2d744-db65-4b56-8634-c87fd00c090e.jpg",
+          "scryfall_url": "https://scryfall.com/card/tmc/5/michelangelo-the-heart?utm_source=api"
+        }
+      ]
+    },
+    {
+      "id": "april-oneil-leonardo",
+      "name_zh": "现场直击的艾普·奥尼尔 / 衡心定盘莱昂纳多",
+      "name_en": "April O'Neil, Live on the Scene / Leonardo, the Balance",
+      "tier": "t3",
+      "order": 21,
+      "status": "reviewed",
+      "source": "mixed",
+      "archived": false,
+      "tags": [
+        "五色",
+        "线索",
+        "拍档"
+      ],
+      "summary": "",
+      "win_conditions": [],
+      "strengths": [],
+      "weaknesses": [],
+      "analysis": "",
+      "deck_url": "https://topdeck.gg/deck/commandergeddon-10-brought-to-you-by-jenes-mtg/N04neeQn7LMLFkYxG5CzehkmuKC3",
+      "updated_at": "2026-07-27T14:15:07.509Z",
+      "commanders": [
+        {
+          "cn": "现场直击的艾普·奥尼尔",
+          "en": "April O'Neil, Live on the Scene",
+          "scryfall_id": "7265ab42-5434-4127-acd6-8905ab63d62d",
+          "image": "assets/cards/7265ab42-5434-4127-acd6-8905ab63d62d.jpg",
+          "scryfall_url": "https://scryfall.com/card/tmc/9/april-oneil-live-on-the-scene?utm_source=api"
+        },
+        {
+          "cn": "衡心定盘莱昂纳多",
+          "en": "Leonardo, the Balance",
+          "scryfall_id": "72e637db-7112-406f-809b-0eda248488b5",
+          "image": "assets/cards/72e637db-7112-406f-809b-0eda248488b5.jpg",
+          "scryfall_url": "https://scryfall.com/card/tmc/1/leonardo-the-balance?utm_source=api"
+        }
+      ]
+    }
+  ],
+  "publication": {
+    "id": "2026.07.28-1",
+    "title": "2026年7月cedh梯度表",
+    "notes": "做了一个方便自己进行编辑与发布的网页，用于今后cedh套牌梯度的调整",
+    "published_at": "2026-07-28T00:23:00+08:00"
+  }
+}

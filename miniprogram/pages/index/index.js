@@ -131,4 +131,10 @@ Page({
       url: '/pages/bracket/bracket',
     });
   },
+
+  goMeta() {
+    wx.navigateTo({
+      url: '/pages/meta/meta',
+    });
+  },
 });

@@ -1,0 +1,141 @@
+<view class="page meta">
+  <particle-background palette="bracket"></particle-background>
+
+  <view class="content-layer meta-shell">
+    <view class="meta-head surface" wx:if="{{summary}}">
+      <view class="meta-kicker mono">{{summary.brand}} 编辑</view>
+      <view class="meta-title">{{summary.publicationTitle}}</view>
+      <view class="meta-meta mono">{{summary.publishedLabel}}　收录 {{summary.entryCount}} 个原型　快照 {{summary.publicationId}}</view>
+      <view
+        class="methodology-toggle"
+        aria-role="button"
+        aria-expanded="{{methodologyOpen}}"
+        aria-label="展开评级方法与免责说明"
+        hover-class="pressable-active"
+        hover-stay-time="120"
+        bindtap="toggleMethodology"
+      >{{methodologyOpen ? '收起评级方法' : '评级方法与免责'}}</view>
+      <view class="methodology" wx:if="{{methodologyOpen}}">{{summary.methodology}}</view>
+      <view class="snapshot-note" wx:if="{{methodologyOpen}}">本页为随小程序发布的快照，不联网刷新；梯度更新后需更新小程序版本。</view>
+    </view>
+
+    <view class="tier-block" wx:for="{{tierGroups}}" wx:key="id" style="--tier-rgb: {{item.rgb}};">
+      <view class="tier-head">
+        <text class="tier-label">{{item.label}}</text>
+        <text class="tier-desc">{{item.description}}</text>
+      </view>
+
+      <view
+        class="deck-row surface"
+        wx:for="{{item.entries}}"
+        wx:for-item="deck"
+        wx:key="id"
+        aria-role="button"
+        aria-label="{{deck.nameZh}}，查看详情"
+        hover-class="pressable-active"
+        hover-stay-time="120"
+        data-id="{{deck.id}}"
+        bindtap="openDetail"
+      >
+        <view class="deck-art deck-art-{{deck.art.mode}}" wx:if="{{deck.art.mode !== 'none'}}" aria-hidden="true">
+          <image
+            wx:for="{{deck.art.images}}"
+            wx:for-item="face"
+            wx:key="en"
+            class="deck-art-image"
+            src="{{face.art}}"
+            mode="aspectFill"
+            lazy-load="{{true}}"
+          ></image>
+        </view>
+        <view class="deck-body">
+          <view class="deck-name">{{deck.nameZh}}</view>
+          <view class="deck-en mono" wx:if="{{deck.showEnName}}">{{deck.nameEn}}</view>
+          <view class="deck-commanders">{{deck.commanderLine}}</view>
+          <view class="deck-tags">
+            <text class="deck-tag mono" wx:for="{{deck.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
+    <view class="meta-foot">
+      <view class="meta-credit">梯度判断由 {{summary.brand}} 人工编辑，本小程序仅作转载展示，不代表本工具的强度分级结论</view>
+      <view class="image-credit">图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师</view>
+    </view>
+  </view>
+
+  <view class="detail-mask" wx:if="{{detail}}" bindtap="closeDetail">
+    <view class="detail-panel surface" catchtap="stopPropagation">
+      <view class="detail-head">
+        <view class="detail-name">{{detail.nameZh}}</view>
+        <view class="detail-en mono" wx:if="{{detail.showEnName}}">{{detail.nameEn}}</view>
+      </view>
+
+      <view class="detail-commanders">
+        <view
+          class="detail-commander"
+          wx:for="{{detail.art.images}}"
+          wx:key="en"
+          aria-role="button"
+          aria-label="查看 {{item.cn}} 卡图"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          data-url="{{item.normal}}"
+          bindtap="previewCommander"
+        >
+          <image class="detail-commander-art" src="{{item.art}}" mode="aspectFill" lazy-load="{{true}}"></image>
+          <view class="detail-commander-name">{{item.cn}}</view>
+          <view class="detail-commander-en mono">{{item.en}}</view>
+        </view>
+      </view>
+
+      <scroll-view class="detail-scroll" scroll-y="{{true}}">
+        <view class="detail-section" wx:if="{{detail.summary}}">
+          <view class="detail-section-title mono">概述</view>
+          <view class="detail-text">{{detail.summary}}</view>
+        </view>
+
+        <view class="detail-section" wx:if="{{detail.winConditions.length}}">
+          <view class="detail-section-title mono">制胜路线</view>
+          <view class="detail-item" wx:for="{{detail.winConditions}}" wx:key="*this">{{item}}</view>
+        </view>
+
+        <view class="detail-section" wx:if="{{detail.strengths.length}}">
+          <view class="detail-section-title mono">优势</view>
+          <view class="detail-item" wx:for="{{detail.strengths}}" wx:key="*this">{{item}}</view>
+        </view>
+
+        <view class="detail-section" wx:if="{{detail.weaknesses.length}}">
+          <view class="detail-section-title mono">劣势</view>
+          <view class="detail-item" wx:for="{{detail.weaknesses}}" wx:key="*this">{{item}}</view>
+        </view>
+
+        <view class="detail-section" wx:if="{{detail.analysis}}">
+          <view class="detail-section-title mono">详细评价</view>
+          <view class="detail-text">{{detail.analysis}}</view>
+        </view>
+      </scroll-view>
+
+      <view class="detail-actions">
+        <view
+          class="secondary-button detail-button"
+          wx:if="{{detail.hasDeckUrl}}"
+          aria-role="button"
+          aria-label="复制参考牌表链接"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="copyDeckUrl"
+        >复制牌表链接</view>
+        <view
+          class="secondary-button detail-button"
+          aria-role="button"
+          aria-label="关闭详情"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="closeDetail"
+        >关闭</view>
+      </view>
+    </view>
+  </view>
+</view>

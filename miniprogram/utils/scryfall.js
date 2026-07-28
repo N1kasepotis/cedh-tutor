@@ -1,4 +1,5 @@
 const SCRYFALL_NAMED_API = 'https://api.scryfall.com/cards/named?fuzzy=';
+const SCRYFALL_CARD_API = 'https://api.scryfall.com/cards/';
 const SCRYFALL_REQUEST_TIMEOUT_MS = 8000;
 const IMAGE_REQUEST_CACHE_LIMIT = 64;
 const MAX_CONCURRENT_IMAGE_REQUESTS = 4;
@@ -70,6 +71,15 @@ function buildScryfallImageUrl(cardName, version) {
   return `${buildScryfallNamedUrl(cardName)}&format=image&version=${version || 'normal'}`;
 }
 
+// 按 Scryfall ID 取图：比 ?fuzzy= 名字模糊匹配精确，不受中英文卡名与印次歧义影响。
+// 环境梯度里每位指挥官都带经编辑核对过的 scryfall_id，走这条路不会取错卡；
+// 同样是 <image> 直连 302 到 CDN，不经 wx.request。
+function buildScryfallImageUrlById(scryfallId, version) {
+  const id = encodeURIComponent(String(scryfallId || '').trim());
+  if (!id) return '';
+  return `${SCRYFALL_CARD_API}${id}?format=image&version=${version || 'normal'}`;
+}
+
 function extractCardImageUris(card) {
   const imageUris = card && (card.image_uris
     || (card.card_faces && card.card_faces[0] && card.card_faces[0].image_uris))
@@ -138,11 +148,13 @@ function fetchCardImageUris(cardName) {
 
 module.exports = {
   SCRYFALL_NAMED_API,
+  SCRYFALL_CARD_API,
   SCRYFALL_REQUEST_TIMEOUT_MS,
   MAX_CONCURRENT_IMAGE_REQUESTS,
   normalizeCardName,
   buildScryfallNamedUrl,
   buildScryfallImageUrl,
+  buildScryfallImageUrlById,
   extractCardImageUris,
   fetchCardImageUris,
 };

@@ -6,7 +6,7 @@
 
 界面改动的判据见 `docs/ux-goals.md`（产品体验准则）：提改动时先说明它服务哪一条准则、又牺牲了哪一条；该文档同时记录了首次逐条对照审计的结论。
 
-## 当前模块（11 页）
+## 当前模块（12 页）
 
 1. **首页** `pages/index`
    单屏酸性**粗野主义**索引：满版 `#D0F03C`，不使用渐变、纹理、玻璃或图片，不加载粒子组件或连接动画。全页色板为荧光黄绿 + 纯黑 `#0A0A0A` + 纯白 `#FFFFFF` + 一枚「事故色」电光蓝 `#00B3FF` + 半透明黑双档（`rgba(0,0,0,0.35)` 装饰 / `rgba(0,0,0,0.55)` 信息），无任何投影、圆角、渐变。上方 45vh 是整墙工业注释：九句全大写英文规则宣言（EDH 规则、cEDH 竞技与社交默契各成段落），7px Courier 半透明黑、行距极密、整块轻微逆时针倾斜 1.3°，其中一整行被「审查涂黑」——每次进页随机选一行（`onShow` 掷 `redactionLine`），给该行挂 `is-redacted` 把它自己的文字盒染成实心黑、字色同底而隐去，左右各外扩 6rpx 作马克笔涂抹感。黑条即文字盒本身，因此与文字天然等宽等高、必定盖住，不做任何像素定位（字体回退与屏高断点都不会让它悬空），像被临时涂黑的一条规则，营造满墙涂鸦式信息过载（每句 ≤46 字符、任何机型不折行，测试锁定），只用字母数字与空格。hero 底部锚定被横向拉伸变形（`scaleX(1.18)` + `skewX(-10deg)`）的超粗纯白 `cEDH Tutor`（内嵌 Archivo Black，48px，字号留边以保证品牌名在窄机型不被右缘裁切，窄屏 / 矮屏 42px、600px 以下 38px）与点阵「竞技指挥官导师」，与下方点阵目录形成「喊叫 vs 低语」的字体对比。下方 55vh 是八行目录，刻意打破常规排版：行高不等（tall/short 用不同 `flex-grow`）、第 02 与 06 行整体右移打破左对齐线、编号做成巨号（28–38px 纯黑）且偏移行编号负位移压到文字上；**编号有四种字面「声音」，按每行本来就有的角色分配**，而不是八行八种或八行一种——`heavy` 行 01/05 用与 `cEDH Tutor` 字标同源的超粗 Archivo Black（`home-index-shout`）、`shift` 行 02/06 用纯黑块反白 `#D0F03C`（`home-index-redacted`，延续注释墙「审查涂黑」的语汇，这两行本就负位移压字）、`plain` 行 03/07 用点阵 HomePixel（`home-index-whisper`，30px 落在 10px 网格整数倍上保证锐利，对比来自「点阵 vs 实心」的肌理而非缩小）、`short` 行 04 用 Courier 横向 `scaleX(1.5)` 拉伸（`home-index-stretch`，呼应被拉变形的字标），08 未启用行保持 Courier 原样。全部复用已内嵌的两套字体与既有六色色板，不新增资源；**不使用 `-webkit-text-stroke` 空心描边**——真机不支持时数字会连同 `color: transparent` 一起消失，属于会静默失败的做法。涂黑编号在 glitch 行须单独反相为电光蓝，否则黑底黑字整枚消失、分割线粗暴混用（顶栏 5px 粗黑线、01/05 行 5px 粗黑底线、02 行下方用一整行字符 `/////` 当分隔）。每行编号、点阵中文（20px，点阵字体 10px 网格整数倍保证锐利）与右对齐英文副标题之间只以留白区隔（space-between）；按「认识偏好 → 构筑验证 → 桌面对局 → 记录复盘」排列：人格测试、火花觉醒、强度分级、套牌试玩、血量记录、混沌工具、我的主将、环境梯度，英文副标题依次为 `EDHTI PROFILE`、`COMMANDER FINDER`、`BRACKET ANALYSIS`、`DECK SANDBOX`、`LIFE COUNTER`、`CHAOS TOOLKIT`、`COMMANDER LOG`、`META TIER LIST`。**事故色 glitch**：每次进入首页随机让其中一行「故障」成电光蓝底黑字（`glitchIndex` 在 `onShow` 重掷，八行皆可命中），打破纯黄+黑的安全感。**暴力按压**：按下整行在 60ms 内反相为纯黑底 + 电光蓝字，不弹跳、不缩放。cEDH 精神题词 `PLAY TO WIN | PLAY FOR THE GAME` 不再中置底部，而是竖排贴在页面右侧脊边（`position:fixed` + `writing-mode:vertical-rl`，Courier 半透明黑、`aria-hidden`）；页面底部三段版权 imprint `BY CPP123 + 345`（分隔符用 `+` 普通字符，避免 `&` 在 WXML 里的实体/转义歧义）、`MIT LICENSE`、`SCRYFALL API` 缩到 6px 近乎隐形的 fine print（三列网格左中右对称）。侧脊题词与底部版权的左右边界都用 `env(safe-area-inset-*)` 加大内缩，避免贴边被屏幕圆角吞掉。自定义导航按微信胶囊实测位置留出顶部空间。全页文字均不使用阴影。700px 以下屏高标题区收至 40vh。环境梯度（08）**不可点击**：可点击即承诺可用，因此它不带 `bindtap` 与按压反馈，改为 `is-pending` 半透明态加一枚黑底荧光的 `SOON` 标记，保住八行构图但不让用户点一下才发现没有；八行里只有 7 个入口带 `home-index-active` 按压反馈。英文副标题是每行**唯一说明「点进去会发生什么」的功能文本**，因此不按装饰文本的标准处理：10px、`rgba(0,0,0,0.7)`，在 `#D0F03C` 上约 7.5:1，过 WCAG AA 正文 4.5:1（此前 9px / 0.55 只有约 4.46:1，窄屏还降到 8px）；窄屏只收紧字距不再降字号。
@@ -39,6 +39,15 @@
 
 8. **套牌试玩** `pages/playtest`
    粘贴 MTGO / MTGGoldfish / Moxfield 纯文本牌表本机开局。支持 `Commander / Deck / Mainboard` 区段标题或空行分隔指挥官。六区（牌库/手牌/战场/主将区/坟场/放逐），抓牌、打出、拖放、横置、Token、长按手牌/战场卡放大查看卡图（战场卡自定义拖拽会打断系统长按，用计时器兜底稳定触发）、长按牌库查找（带搜索框，40 张一页按需加载，选牌后自动洗牌关库；内含 **展示库顶** 开关，开启后牌库按钮以库顶卡 `art_crop` 无字大画铺底，服务 Bolas's Citadel / Mystic Forge 类「可见并从牌库顶施放」效应，随抓牌/洗牌实时跟随、新开局自动回隐藏）。**战场指示物**：战场卡右上角显示指示物计数角标（`pointer-events:none` 纯展示层，不截获卡面的单击横置/拖拽/长按），数量在长按详视弹窗内以 `[−] N [+]` 步进器（64rpx 触控）增减；夹在 0–999，归零即隐藏角标、删字段。指示物只属于战场卡（token 长按是删除，走不到详视故不支持），离开战场随卡对象重建而丢失（符合规则）；`counters` 以 `{类型:数量}` 存、当前只暴露通用一类，随对局版本化持久化。**区域芯片卡图**：主将区按结算页方式呈现主将卡图（单主将居中、双拍档左右分屏），坟场/放逐区恒显最上方一张（最近置入）的 `art_crop` 大画。非牌库区卡面使用 `small` 尺寸 Scryfall 卡图，Token 离场即消失；收到系统内存告警后自动撤下非必要卡图并保留文字操作。导入限制为 50,000 字符、250 张总牌与最多 3 张主将，避免异常数量展开占满内存。**战场下方横向五色+无色法术力栏**（WUBRG 惯例横排、回收战场满宽，零值时半透明；+/- 增减，牌表与法术力池均经版本化存储持久化）。右上角按钮：撤销（有上一步时显示）/ Token / 刷新 / 随机弃（手牌非空时显示，确认后随机弃一张至坟场）/ 重置。**一步撤销**：抓牌、打出、横置、拖放、收回手牌、随机弃与面板移动都先经 `captureUndo(label)` 用 `utils/playtest.js` 的 `cloneGame` 留一份六区快照（`counters` 是唯一嵌套字段，单独浅拷贝以与现局面完全脱钩），撤销即把快照装回去；只保留一步、不引入历史栈，新开局与已确认的「刷新」都会清掉快照。导入页另有「从剪贴板粘贴」，与强度分级同一口径；它与「清除现套牌」并排放在 `.import-actions` 一行内，因为 `.deck-input` 用 `height: calc(100vh - 480rpx)` + `min-height: 600rpx` 按「下方固定两行」预留高度、且不能被 flex 压缩，**再往下堆一行按钮就会被 `.playtest` 的 `overflow: hidden` 裁出屏幕**——要加控件先改这两个值（强度分级用的是可压缩的 `flex: 1 1 0` + `min-height: 0`，没有这个限制）。
+
+9. **环境梯度 / Meta Tier List** `pages/meta`
+   收录 **cEDH小屋**（`BY CPP123 + 345` 里的 345，即本项目合作方）人工编辑的 cEDH 套牌梯度表，**经作者授权**。按 T0–T4 分档列出 56 个原型，每条含中英名、指挥官、标签，点开看概述 / 制胜路线 / 优势 / 劣势 / 详细评价。指挥官卡图按 `scryfall_id` 直连 Scryfall（比 `?fuzzy=` 名字匹配精确，不受中英卡名与印次歧义影响）；参考牌表是 topdeck.gg 外链，个人主体不能用 `web-view`，因此**只复制到剪贴板**，与推荐结果页同一做法。
+
+   **快照而非实时**：数据随小程序包发布，不联网拉取——本项目不引入 Scryfall 之外的第二个请求域名。梯度更新流程是「覆盖 `tools/meta-tier/current.json` → 跑 `node scripts/build-meta-tier.js` → 重新提审」。页面顶部常驻版本号与发布日期，展开可见评级方法与「本页为快照」的说明。
+
+   **导入时强制过滤**（`scripts/build-meta-tier.js`，测试逐条守住）：只收 `status === 'reviewed'` 且未下架、且档位在已声明列表内的条目——上游 `unranked` 是编辑区，绝不能公开；剥掉 QQ 群号一类站外导流（提审敏感），但**署名与免责声明必须保留**，那是随数据走的义务；丢掉本地图片路径等运行时用不到的字段。
+
+   **与强度分级刻意解耦**：梯度是署名的人工判断，强度分级是本地确定性规则 + 可审计判定链。把前者注入后者会毁掉判定链的可审计性，也会让同一副牌的档位随第三方编辑改动而变。因此评估器侧禁止 `require` 梯度数据（有测试守），B5 也**不再承诺**「待 meta 分析加入后提供」。页面署名写明「不代表本工具的强度分级结论」。
 
 ## 技术约束
 
@@ -82,6 +91,7 @@ miniprogram/
   config/tracker.js                战绩配置
   config/random.js / stickers.js   随机数先手 / 贴纸池
   config/bracket-data.js           Bracket 规则版本、Game Changers、禁牌、组合与效率信号
+  config/meta-tier.js              环境梯度快照（生成物，勿手改）
   config/cabbage.js                卷心菜引擎表（仅卡名）
   config/izzet-storm.js            伊捷引擎表（仅 Ral, Monsoon Mage）
   config/particle.js / performance.js  粒子与性能分档
@@ -105,7 +115,7 @@ miniprogram/
   utils/quiz-flow.js               答题流程纯函数（quiz/edhti 共用）
   utils/share.js                   全页转发/朋友圈菜单
 
-  pages/{index,edhti,quiz,result,tracker,bracket,random,life-tracker,cabbage,izzet,playtest}/
+  pages/{index,edhti,quiz,result,tracker,bracket,random,life-tracker,cabbage,izzet,playtest,meta}/
 
   assets/cT_logo_v.2.jpg           cT 小程序码（微信后台 258px 导出原件，勿重采样），EDHTI 导出图底部用
   assets/cedh-house-qr.jpg         cedh小屋二维码，EDHTI 导出图用
@@ -117,7 +127,9 @@ tools/logo-export.html             logo/字标 PNG 导出器（144×144，微信
 tools/edhti-title-export.html      EDHTI 海报标题 PNG 导出器（Multiverse EDHTI；缺图时页面回退实时文字）
 tools/fonts/                       首页字体受控 TTF 子集 + OFL 开发副本
 external/edhti/                    EDHTI 来源仓库，仅备查，不入包
+tools/meta-tier/current.json       环境梯度源快照（cEDH小屋发布工具链导出，非小程序包内容）
 scripts/build-home-pixel-font.js   从受控 TTF 子集重建首页 base64 模块
+scripts/build-meta-tier.js         从 tools/meta-tier/current.json 生成环境梯度配置（含过滤与导流剥离）
 scripts/diagnose-coverage.js       推荐覆盖率与视觉复杂度自检
 scripts/check-syntax.js            零依赖 JS 语法门禁（含未被 Node require 的页面脚本）
 scripts/edhti-odds.js              EDHTI 人格出现率蒙特卡洛重算（改题库后重跑贴回 config/edhti.js）
@@ -169,13 +181,14 @@ Deck
 要求 Node.js 18 或更高版本；项目无 npm 运行时依赖，不需要安装依赖即可执行检查。
 
 ```bash
+node scripts/build-meta-tier.js     # 更新环境梯度快照后重新生成 config/meta-tier.js
 npm run check                       # 语法门禁 + 全部测试 + 覆盖率/视觉复杂度诊断
 npm test                            # 仅运行全部测试
 npm run syntax                      # 仅检查全部 JavaScript 语法
 npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊断
 ```
 
-当前基线：79 个 JavaScript 文件通过语法门禁，298 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`。
+当前基线：84 个 JavaScript 文件通过语法门禁，304 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`。
 
 诊断默认使用确定性的基准覆盖集：基线/单项变化、按主将标签构造的目标画像、固定种子的组合画像，以及颜色/资源引擎组合。排序复用生产逻辑中的拍档惩罚和低使用率多样性尾位，避免诊断模型与实际推荐分叉。需要离线穷举全部单选组合时使用 `node scripts/diagnose-coverage.js --mode=full`；该模式组合量很大，不用于日常 CI。
 

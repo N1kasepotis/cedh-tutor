@@ -5,6 +5,7 @@
 .random,
 .playtest,
 .bracket,
+.meta,
 .cabbage-page,
 .izzet-page {
   min-height: 100vh;
@@ -72,11 +73,24 @@
   --cedh-input-glass: rgba(var(--module-accent-rgb), 0.09);
 }
 
+/* 环境梯度：中性石板灰。档位颜色来自 cEDH小屋数据（T0 红→T4 灰），
+   页面强调色必须让位，否则会和数据自带的档位色打架 */
+.meta {
+  --module-accent-rgb: 150, 160, 168;
+  --cedh-accent: #96a0a8;
+  --cedh-accent-ink: #dde4e9;
+  --cedh-accent-soft: rgba(var(--module-accent-rgb), 0.14);
+  --cedh-accent-line: rgba(var(--module-accent-rgb), 0.4);
+  --cedh-line: rgba(var(--module-accent-rgb), 0.2);
+  --cedh-line-strong: rgba(var(--module-accent-rgb), 0.38);
+}
+
 /* 玻璃面板：继承 tracker .deck-card 的顶部高光效果 */
 .tracker .surface,
 .random .surface,
 .playtest .surface,
 .bracket .surface,
+.meta .surface,
 .cabbage-page .surface,
 .izzet-page .surface {
   box-shadow: var(--cedh-shadow-soft), inset 0 1rpx 0 rgba(255, 255, 255, 0.72);

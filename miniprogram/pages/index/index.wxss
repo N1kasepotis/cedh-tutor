@@ -276,26 +276,6 @@ page {
   text-transform: uppercase;
 }
 
-/* 未启用入口：可点击即承诺可用，所以不给 hover / bindtap，
-   改成看得见的未启用态——保住八行构图，也不骗用户点一下才发现没有 */
-.home-button.is-pending {
-  opacity: 0.55;
-}
-
-.home-button-pending {
-  flex: 0 0 auto;
-  margin-left: 16rpx;
-  padding: 2px 6px;
-  color: #D0F03C;
-  background: #0A0A0A;
-  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 1px;
-  line-height: 1.2;
-  white-space: nowrap;
-}
-
 /* 粗暴分割：字符 /// 一整行当分隔线 */
 .home-rule-slash {
   flex: 0 0 auto;
