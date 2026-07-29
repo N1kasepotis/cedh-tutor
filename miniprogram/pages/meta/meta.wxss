@@ -8,56 +8,70 @@
   padding-bottom: calc(var(--cedh-space-6) + env(safe-area-inset-bottom));
 }
 
-/* ===== 版本抬头 ===== */
+/* ===== 版本抬头 =====
+   刻意不套 .surface：套牌行已经是 surface，抬头再用同一种卡片处理就变成「又一张卡」，
+   层级被抹平。这里用一条发丝分割线收尾即可，抬头是标题不是内容。 */
 .meta-head {
-  padding: var(--cedh-space-4);
-}
-
-.meta-kicker {
-  color: var(--cedh-accent);
-  font-size: var(--cedh-text-11);
-  letter-spacing: 0.16em;
-  text-transform: uppercase;
+  padding-bottom: var(--cedh-space-3);
+  border-bottom: 1rpx solid var(--cedh-line);
 }
 
 .meta-title {
-  margin-top: var(--cedh-space-2);
   color: var(--cedh-text);
   font-size: var(--cedh-text-18);
   font-weight: 700;
   line-height: 1.3;
 }
 
-.meta-meta {
-  margin-top: var(--cedh-space-2);
-  color: var(--cedh-text-faint);
-  font-size: var(--cedh-text-11);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.08em;
+/* 事实行与展开入口同处一行：baseline 对齐，右侧入口不换行 */
+.meta-line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--cedh-space-3);
 }
 
-/* 触控热区 ≥88rpx（44pt）：视觉上仍是一行下划线文字，靠 padding 把热区撑起来 */
+.meta-facts {
+  flex: 1 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-11);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.04em;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 触控热区 ≥88rpx（44pt）：视觉上只是一行小字，靠 padding 把热区撑起来 */
 .methodology-toggle {
   display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
   min-height: 88rpx;
-  margin-top: var(--cedh-space-2);
-  padding: 0 8rpx 0 0;
+  padding-left: 16rpx;
   color: var(--cedh-accent-ink);
-  font-size: var(--cedh-text-12);
+  font-size: var(--cedh-text-11);
+  white-space: nowrap;
   text-decoration: underline;
 }
 
-.methodology,
-.snapshot-note {
-  margin-top: var(--cedh-space-2);
+.methodology {
+  display: block;
+  padding-bottom: var(--cedh-space-2);
+}
+
+.methodology-text,
+.methodology-note {
+  display: block;
   color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-12);
+  font-size: var(--cedh-text-11);
   line-height: 1.7;
   white-space: pre-line;
 }
 
-.snapshot-note {
+.methodology-note {
+  margin-top: var(--cedh-space-2);
   color: var(--cedh-text-faint);
 }
 

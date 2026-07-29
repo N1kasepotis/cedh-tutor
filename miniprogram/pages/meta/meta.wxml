@@ -2,21 +2,24 @@
   <particle-background palette="bracket"></particle-background>
 
   <view class="content-layer meta-shell">
-    <view class="meta-head surface" wx:if="{{summary}}">
-      <view class="meta-kicker mono">{{summary.brand}} 编辑</view>
+    <view class="meta-head" wx:if="{{summary}}">
       <view class="meta-title">{{summary.publicationTitle}}</view>
-      <view class="meta-meta mono">{{summary.publishedLabel}}　收录 {{summary.entryCount}} 个原型　快照 {{summary.publicationId}}</view>
-      <view
-        class="methodology-toggle"
-        aria-role="button"
-        aria-expanded="{{methodologyOpen}}"
-        aria-label="展开评级方法与免责说明"
-        hover-class="pressable-active"
-        hover-stay-time="120"
-        bindtap="toggleMethodology"
-      >{{methodologyOpen ? '收起评级方法' : '评级方法与免责'}}</view>
-      <view class="methodology" wx:if="{{methodologyOpen}}">{{summary.methodology}}</view>
-      <view class="snapshot-note" wx:if="{{methodologyOpen}}">本页为随小程序发布的快照，不联网刷新；梯度更新后需更新小程序版本。</view>
+      <view class="meta-line">
+        <text class="meta-facts mono">{{summary.factsLine}}</text>
+        <view
+          class="methodology-toggle"
+          aria-role="button"
+          aria-expanded="{{methodologyOpen}}"
+          aria-label="评级方法与免责说明"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="toggleMethodology"
+        >{{methodologyOpen ? '收起' : '评级方法'}}</view>
+      </view>
+      <view class="methodology" wx:if="{{methodologyOpen}}">
+        <text class="methodology-text">{{summary.methodology}}</text>
+        <text class="methodology-note">本页随小程序版本发布，不会自动更新（快照 {{summary.publicationId}}）。</text>
+      </view>
     </view>
 
     <view class="tier-block" wx:for="{{tierGroups}}" wx:key="id" style="--tier-rgb: {{item.rgb}};">

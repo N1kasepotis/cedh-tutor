@@ -217,3 +217,33 @@ test('环境梯度：触控热区、对比度、动效与安全区', () => {
   assert.match(wxss, /\.meta-shell\s*{[^}]*env\(safe-area-inset-bottom\)/);
   assert.match(wxss, /\.detail-panel\s*{[^}]*env\(safe-area-inset-bottom\)/);
 });
+
+// 这是个「翻榜单」的页面，抬头越短越早看到正文。曾经抬头占了首屏近一半：
+// kicker / 标题 / meta 三行里日期出现 3 次、署名出现 3 次（含页脚），
+// 且抬头与套牌行同样套 .surface，层级被抹平成「又一张卡」。
+test('环境梯度抬头保持精简，不重复日期与署名', () => {
+  const wxml = readMini('pages/meta/meta.wxml');
+  const wxss = readMini('pages/meta/meta.wxss');
+  const summary = buildMetaSummary();
+
+  // 收起状态只允许两行：标题 + 事实行（含展开入口）
+  assert.match(wxml, /class="meta-title">\{\{summary\.publicationTitle\}\}/);
+  assert.match(wxml, /class="meta-facts mono">\{\{summary\.factsLine\}\}/);
+  assert.doesNotMatch(wxml, /meta-kicker/, '独立署名 kicker 与方法论首行、页脚重复，应已移除');
+
+  // 快照 id 不出现在收起态的门面上，只在展开区里作排查线索
+  assert.doesNotMatch(wxml, /class="meta-facts[^>]*>[^<]*publicationId/);
+  const fold = wxml.slice(wxml.indexOf('class="methodology"'));
+  assert.match(fold, /summary\.publicationId/, '快照 id 应保留在展开区，便于排查');
+
+  // 事实行一行内说完署名、条目数、日期，用 · 分隔而不是全角空格
+  assert.match(summary.factsLine, /^cEDH小屋 编辑 · \d+ 个原型 · \d{4}\.\d{2}\.\d{2}$/);
+
+  // 抬头不套 .surface：套牌行已经是 surface，抬头再用同款会把层级抹平
+  assert.doesNotMatch(wxml, /class="meta-head[^"]*surface/);
+  assert.match(wxss, /\.meta-head\s*{[^}]*border-bottom/);
+
+  // 说明文案面向用户，不写「需更新小程序版本」这类开发者口吻
+  assert.doesNotMatch(wxml, /需更新小程序版本|不联网刷新/);
+  assert.match(wxml, /不会自动更新/);
+});

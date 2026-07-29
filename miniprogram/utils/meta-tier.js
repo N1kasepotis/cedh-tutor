@@ -78,13 +78,23 @@ function tierOf(entryId) {
 }
 
 function buildMetaSummary() {
+  const publishedLabel = formatPublishedAt(metaTierConfig.publishedAt);
+  const entryCount = (metaTierEntries || []).length;
   return {
     brand: metaTierConfig.brand,
     methodology: metaTierConfig.methodology,
     publicationTitle: metaTierConfig.publicationTitle,
     publicationId: metaTierConfig.publicationId,
-    publishedLabel: formatPublishedAt(metaTierConfig.publishedAt),
-    entryCount: (metaTierEntries || []).length,
+    publishedLabel,
+    entryCount,
+    // 抬头只留一行事实：署名 + 条目数 + 日期。
+    // 原先分了 kicker / 标题 / meta 三行，日期出现 3 次、署名出现 3 次（含页脚），
+    // 而这是个「翻榜单」的页面——抬头越短，越早看到正文。
+    factsLine: [
+      `${metaTierConfig.brand} 编辑`,
+      `${entryCount} 个原型`,
+      publishedLabel,
+    ].filter(Boolean).join(' · '),
   };
 }
 
