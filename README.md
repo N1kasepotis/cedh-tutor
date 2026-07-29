@@ -47,6 +47,8 @@
 
    **导入时强制过滤**（`scripts/build-meta-tier.js`，测试逐条守住）：只收 `status === 'reviewed'` 且未下架、且档位在已声明列表内的条目——上游 `unranked` 是编辑区，绝不能公开；剥掉 QQ 群号一类站外导流（提审敏感），但**署名与免责声明必须保留**，那是随数据走的义务；丢掉本地图片路径等运行时用不到的字段。
 
+   **字面分工**：档位标签用首页那套内嵌点阵字体（`HomePixel`），页面其余部分保持等宽——「点阵＝排名刻度、等宽＝元信息」。选点阵不是为了呼应首页好看，而是点阵网格本身就是「一格一格排下来」的分层形态，与榜单内容同构。字号必须用 `px` 且落在 10px 网格整数倍上（当前 20px），用 `rpx` 会随屏宽缩放、破坏点阵网格。字体是页级注册（`global: false`），首页那次注册在本页无效，`meta.js` 必须自己再注册一次；包内已有该字体，重复注册不产生额外下载，失败则回退等宽栈。
+
    **与强度分级刻意解耦**：梯度是署名的人工判断，强度分级是本地确定性规则 + 可审计判定链。把前者注入后者会毁掉判定链的可审计性，也会让同一副牌的档位随第三方编辑改动而变。因此评估器侧禁止 `require` 梯度数据（有测试守），B5 也**不再承诺**「待 meta 分析加入后提供」。页面署名写明「不代表本工具的强度分级结论」。
 
 ## 技术约束
@@ -56,6 +58,7 @@
 - **标题字体**：首页中文与入口使用 Fusion Pixel Font 10px Monospaced `zh_hans` 2026.07.01 的受控子集，包含主页所需中文、ASCII 与数字（顶部注释与底部 imprint 使用 Courier 等宽栈）；`assets/home-pixel-font.js` 内嵌约 14KB TTF 并注册为 `HomePixel`。`cEDH Tutor` 单独使用 `assets/title-font.js` 内嵌的 Archivo Black WOFF2，注册为 `cEDHDisplay`，并以系统粗体栈兜底。两种字体均由 `pages/index/index.js` 本地加载，失败时直接显示回退字体，不遮挡首帧。Fusion Pixel 完整 OFL 随发布包放在 `assets/FUSION_PIXEL_OFL.txt`，源子集、授权副本与再生成脚本分别位于 `tools/fonts/`、`scripts/build-home-pixel-font.js`；Archivo 也继续供 EDHTI 导出海报与血量数字使用。
 - **Scryfall 卡图 / 元数据**：`utils/scryfall.js` 用 `?fuzzy=` + `format=image` 直连图片。`normalizeCardName` 把弯引号（Moxfield 导出）归一化为直引号，并把撇号编码为 `%27`（裸撇号会让微信 `<image>` 加载失败）。JSON 卡图请求设 8 秒超时、全局最多 4 个并发请求，并校验 HTTP 状态与响应结构；同卡并发请求复用 Promise，成功缓存上限 64 项，失败会清缓存以允许重试。`utils/bracket-metadata.js` 通过 `/cards/collection` 以 75 张为上限顺序分批读取 `cmc`、正面 `type_line`、`oracle_id` 与 `prices.usd`；只对超时、请求失败、408、429 和 5xx 做一次受控重试。当前印次没有非闪 USD 时，以多个 Oracle ID 合并搜索其他纸牌非闪印次；成功、明确未找到和本轮无价结果会话内去重，网络失败仍允许下次重试。
 - **本地存储**：页面不直接读写 `wx.*StorageSync`，统一经 `utils/storage.js`。当前键：`quizResult` / `quizDraft`（问卷结果与在答草稿）、`edhtiState`（EDHTI 进度与完成态）、`bracketDeckText` / `playtestDeckText`（两页各自的牌表）、战绩、血量、法术力池与贴纸。**长流程一律可中断可恢复**：多步问卷与需要粘贴长文本的页面都必须落盘，中途切后台不该让用户白干。新数据保存为 `{ schemaVersion, updatedAt, data }` envelope；历史裸值自动升级，损坏数据安全回退，未来版本数据禁止被旧版覆盖。写入/删除失败返回显式结果，由页面提示用户而非静默丢数据。
+- **设计 token 必须先定义再使用**：`var(--x)` 取不到值不会报错，只会悄悄回退成继承值——字号、间距、颜色都会静默失真，Node 测试和真机都看不出「本该是多少」。`--cedh-text-11` 曾被随机工具与环境梯度用了却从未定义。`shared.suite.js` 有全项目门禁扫描未定义的 `--cedh-*`。
 - **异步 wx API 一律显式传回调**：微信的异步 API 无参调用（`wx.hideKeyboard()`、`wx.hideLoading()`）会返回 Promise，拒绝时没人 catch 就冒成框架级的 `Error: timeout`——栈里全是 `WAServiceMainContext`、没有任何应用帧，极难定位。典型触发：用「粘贴」按钮填入牌表时键盘从未升起，`hideKeyboard` 无键盘可收即拒绝。`shared.suite.js` 有全项目门禁扫描无参异步调用（同步 API 如 `getWindowInfo` 在白名单内）。
 - **异步一致性**：推荐结果页用「主将 + 分数 + 契合度」签名识别当前结果；强度分级用递增请求编号识别当前牌表。旧 Scryfall 请求即使延迟返回，也不会写入新一轮问卷卡位或已修改的牌表。
 - **分享**：全部页面声明 `onShareAppMessage` / `onShareTimeline`，经 `utils/share.js` 调 `wx.showShareMenu`。
@@ -188,7 +191,7 @@ npm run syntax                      # 仅检查全部 JavaScript 语法
 npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊断
 ```
 
-当前基线：84 个 JavaScript 文件通过语法门禁，304 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`。
+当前基线：85 个 JavaScript 文件通过语法门禁，309 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`。
 
 诊断默认使用确定性的基准覆盖集：基线/单项变化、按主将标签构造的目标画像、固定种子的组合画像，以及颜色/资源引擎组合。排序复用生产逻辑中的拍档惩罚和低使用率多样性尾位，避免诊断模型与实际推荐分叉。需要离线穷举全部单选组合时使用 `node scripts/diagnose-coverage.js --mode=full`；该模式组合量很大，不用于日常 CI。
 

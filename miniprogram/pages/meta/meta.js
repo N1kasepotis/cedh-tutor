@@ -7,6 +7,7 @@ const {
 const { enableShareMenu } = require('../../utils/share');
 const { writeStorage } = require('../../utils/storage');
 const { META_TIER_VERSION } = require('../../config/meta-tier-version');
+const { homePixelFontBase64 } = require('../../assets/home-pixel-font');
 
 // 记下「这一期看过了」，首页的 NEW 角标据此熄灭；下一期梯度换了版本号会重新亮起
 const META_SEEN_STORAGE_KEY = 'metaTierSeenVersion';
@@ -21,6 +22,18 @@ Page({
 
   onLoad() {
     enableShareMenu();
+    // 首页那次 loadFontFace 是 global: false 的页级注册，本页拿不到，必须自己再注册一次。
+    // 字体文件已在包内，重复注册不产生额外下载；失败则回退等宽栈，不遮挡首帧。
+    if (typeof wx.loadFontFace === 'function') {
+      wx.loadFontFace({
+        family: 'HomePixel',
+        source: `url("data:font/ttf;base64,${homePixelFontBase64}")`,
+        global: false,
+        scopes: ['webview'],
+        success: () => {},
+        fail: () => {},
+      });
+    }
     this.setData({
       tierGroups: buildTierGroups(metaTierEntries),
       summary: buildMetaSummary(),

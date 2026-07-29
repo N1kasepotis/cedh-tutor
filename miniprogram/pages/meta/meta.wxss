@@ -46,13 +46,18 @@
   padding-bottom: var(--cedh-space-2);
 }
 
+/* 档位标签用首页那套点阵字面：点阵网格本身就是「一格一格排下来」的分层形态，
+   与榜单的内容形态同构，比再挑一款无关的展示字体更有理由。
+   字号必须用 px 且落在 10px 网格整数倍上，否则点阵会糊——与首页目录同一约束。
+   页面其余部分保持等宽，构成「点阵＝排名刻度、等宽＝元信息」的分工。 */
 .tier-label {
   flex: 0 0 auto;
   color: rgb(var(--tier-rgb));
-  font-size: 34rpx;
-  font-weight: 700;
+  font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
+  font-size: 20px;
+  font-weight: 400;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.14em;
 }
 
 .tier-rule {

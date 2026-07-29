@@ -245,6 +245,22 @@ test('环境梯度版面保持精简：只有标题与一行署名，无免责�
   assert.match(wxml, /class="tier-count mono">\{\{item\.count\}\}/);
   assert.match(wxss, /\.tier-rule\s*{[^}]*background:\s*rgba\(var\(--tier-rgb\)/);
 
+  // 档位标签用首页那套点阵字面：点阵网格与「一档一档排下来」的内容形态同构。
+  // 页面其余部分保持等宽，构成「点阵＝排名刻度、等宽＝元信息」的分工。
+  const labelRule = wxss.match(/\.tier-label\s*\{[^}]*\}/)[0];
+  assert.match(labelRule, /font-family:\s*"HomePixel"/);
+  // 点阵必须用 px 且落在 10px 网格整数倍上，否则真机上糊（与首页目录同一约束）
+  const labelSize = labelRule.match(/font-size:\s*(\d+)px/);
+  assert.ok(labelSize, '点阵档位标签必须用 px 而不是 rpx，rpx 会随屏宽缩放、破坏点阵网格');
+  assert.equal(Number(labelSize[1]) % 10, 0, `点阵字号需为 10 的整数倍，当前 ${labelSize[1]}px`);
+
+  // 字体是页级注册（global: false），首页那次注册在本页无效，必须自己再注册
+  const js = readMini('pages/meta/meta.js');
+  assert.match(js, /wx\.loadFontFace\(\{[\s\S]*family: 'HomePixel'/);
+  assert.match(js, /fail: \(\) => \{\}/, '字体加载失败要回退等宽栈，不能遮挡首帧');
+  // 点阵只用在档位标签这一处，避免变成满页装饰
+  assert.equal((wxss.match(/HomePixel/g) || []).length, 1, '点阵字面只应用于档位标签');
+
   // 套牌行不再各自带彩色左边框，避免 56 条彩线与档位标记抢注意力
   assert.doesNotMatch(wxss, /\.deck-row\s*{[^}]*border-left/);
 });

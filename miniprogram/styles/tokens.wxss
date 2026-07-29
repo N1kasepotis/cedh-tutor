@@ -25,6 +25,9 @@ page {
   --cedh-font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --cedh-text-10: 20rpx;
+  /* 10 与 12 之间的补档。随机工具与环境梯度一直在用它，但从未定义过，
+     var() 取不到值就悄悄回退成继承字号——由 shared.suite.js 的 token 门禁守住 */
+  --cedh-text-11: 22rpx;
   --cedh-text-12: 24rpx;
   --cedh-text-14: 28rpx;
   --cedh-text-16: 32rpx;

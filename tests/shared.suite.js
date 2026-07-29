@@ -363,3 +363,35 @@ test('非导出页面不使用 radial-gradient 背景光斑（血量记录玩家
   assert.equal(glows.length, 1, '血量记录只应有一处玩家分区光晕');
   assert.match(glows[0], /--player-rgb/, '该光晕必须由 --player-rgb 驱动（每位玩家一色），否则就是普通装饰光斑');
 });
+
+// var(--x) 取不到值不会报错，只会悄悄回退成继承值——字号、间距、颜色全都会静默失真，
+// 而且 Node 测试和真机都看不出「本该是 22rpx」。曾经 --cedh-text-11 被两页用了却从未定义。
+test('WXSS 不得使用未定义的设计 token', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+
+  const files = [];
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) walk(full);
+    else if (entry.name.endsWith('.wxss')) files.push(full);
+  });
+  walk(path.join(root, 'miniprogram'));
+
+  const defined = new Set();
+  const used = new Map();
+  files.forEach((file) => {
+    const source = fs.readFileSync(file, 'utf8');
+    Array.from(source.matchAll(/(--cedh-[a-z0-9-]+)\s*:/g))
+      .forEach((match) => defined.add(match[1]));
+    Array.from(source.matchAll(/var\((--cedh-[a-z0-9-]+)/g)).forEach((match) => {
+      if (!used.has(match[1])) used.set(match[1], new Set());
+      used.get(match[1]).add(path.relative(root, file).split(path.sep).join('/'));
+    });
+  });
+
+  const missing = Array.from(used.keys()).filter((token) => !defined.has(token)).sort()
+    .map((token) => `${token} ← ${Array.from(used.get(token)).join(', ')}`);
+  assert.deepEqual(missing, [], `这些 token 被使用却从未定义：\n${missing.join('\n')}`);
+});
