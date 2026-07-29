@@ -164,7 +164,9 @@ test('环境梯度页面：注册齐全、署名可见、外链只复制不内�
 
   // 页面按要求不再承载版权与界限论述；署名收敛为一行 byline（谁 + 何时）
   assert.match(wxml, /class="meta-byline mono">\{\{summary\.bylineLine\}\}/);
-  assert.match(buildMetaSummary().bylineLine, /^cEDH小屋 编辑\s\d{4}\.\d{2}\.\d{2}$/);
+  assert.match(buildMetaSummary().bylineLine, /^cEDH小屋\s\d{4}\.\d{2}\.\d{2}$/);
+  // 列表末尾的收尾语
+  assert.match(wxml, /class="meta-tail mono">持续更新中\.\.\.</);
   assert.doesNotMatch(wxml, /meta-credit|image-credit|不代表本工具|图像来自 Scryfall|免责/);
 
   // 详情面板点内部不应关闭：遮罩关闭 + 内部 catchtap 阻止冒泡

@@ -46,6 +46,8 @@
         </view>
       </view>
     </view>
+
+    <view class="meta-tail mono">持续更新中...</view>
   </view>
 
   <view class="detail-mask" wx:if="{{detail}}" bindtap="closeDetail" catchtouchmove="stopPropagation">

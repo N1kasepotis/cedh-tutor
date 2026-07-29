@@ -168,6 +168,15 @@
   white-space: nowrap;
 }
 
+/* 收尾语：与顶部署名行同为等宽小字，一头一尾把列表夹住 */
+.meta-tail {
+  margin-top: var(--cedh-space-5);
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-11);
+  letter-spacing: 0.14em;
+  text-align: center;
+}
+
 /* ===== 详情面板 ===== */
 .detail-mask {
   position: fixed;

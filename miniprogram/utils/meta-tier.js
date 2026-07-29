@@ -171,7 +171,7 @@ function buildMetaSummary() {
     // 署名行只回答「谁 + 何时」。条目数移到各档位自己身上——
     // 分布本身就是信息（T0 只有 2 个、T3 有 22 个），放在总计里反而看不出来。
     // 不用 · 分隔：全页已去掉点号，靠空格与 tabular-nums 的数字形态区分即可。
-    bylineLine: `${metaTierConfig.brand} 编辑　${publishedLabel}`,
+    bylineLine: `${metaTierConfig.brand}　${publishedLabel}`,
   };
 }
 
