@@ -194,7 +194,7 @@ test('环境梯度：触控热区、对比度、动效与安全区', () => {
     assert.ok(matched, `未找到 .${name} 的样式规则`);
     return matched[0];
   };
-  ['meta-byline', 'deck-name', 'deck-commanders'].forEach((name) => {
+  ['meta-byline', 'deck-name', 'deck-en'].forEach((name) => {
     assert.doesNotMatch(ruleOf(name), /--cedh-text-faint/,
       `.${name} 承载含义，不能用未达 AA 的 faint 色`);
   });
@@ -252,7 +252,7 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
   const wxss = readMini('pages/meta/meta.wxss');
   const { particleConfig } = require('../miniprogram/config/particle');
   const {
-    buildCommanderLine, shortCommanderName, englishProperNoun, COMMANDER_LINE_MAX,
+    shortenPartnerZh, shortenPartnerEn, englishProperNoun, fitClass, decorateEntry,
   } = require('../miniprogram/utils/meta-tier');
 
   // 粒子与连线走红色（取 T0 档位色一族）
@@ -268,27 +268,51 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
   assert.doesNotMatch(wxss, /content:\s*"·/, '详情条目不应再用点号做项目符号');
   assert.doesNotMatch(buildMetaSummary().bylineLine, /·/, '署名行不应再用点号分隔');
 
-  // 中文全名过长时换成只留专名的短名
-  const long = [
-    { cn: '现场直击的艾普·奥尼尔', en: "April O'Neil, Live on the Scene" },
-    { cn: '衡心定盘莱昂纳多', en: 'Leonardo, the Balance' },
-  ];
-  assert.equal(buildCommanderLine(long), '奥尼尔 + 莱昂纳多');
-  // 短到不需要缩写时保持全名，不要无谓地砍
-  assert.equal(buildCommanderLine([{ cn: '风雨法师拉尔', en: 'Ral, Monsoon Mage' }]), '风雨法师拉尔');
-
-  // 未收录的长名走英文专名兜底，至少不会断在词中间
-  assert.equal(englishProperNoun('Kraum, Ludevic\'s Opus'), 'Kraum');
+  // 双拍档全名过长时换成短名，与编辑在别处已用的「罗噶克 + 萨拉希洛斯」体例一致
+  assert.equal(
+    shortenPartnerZh('现场直击的艾普·奥尼尔 / 衡心定盘莱昂纳多'),
+    '奥尼尔 + 莱昂纳多',
+  );
+  assert.equal(shortenPartnerEn("April O'Neil, Live on the Scene / Leonardo, the Balance"),
+    "April O'Neil + Leonardo");
+  // 单主将不动：缩写单个名字会丢信息，那种情况交给降字号
+  assert.equal(shortenPartnerZh('持绊逸才季宁'), '持绊逸才季宁');
+  assert.equal(shortenPartnerEn('Kinnan, Bonder Prodigy'), 'Kinnan, Bonder Prodigy');
+  assert.equal(englishProperNoun("Kraum, Ludevic's Opus"), 'Kraum');
   assert.equal(englishProperNoun('Tymna the Weaver'), 'Tymna');
-  assert.equal(shortCommanderName({ cn: '', en: 'Thrasios, Triton Hero' }), 'Thrasios');
 
-  // 收录表覆盖当前所有超长行——漏一个就会被截断
-  metaTierEntries.forEach((entry) => {
-    const line = buildCommanderLine(entry.commanders);
-    assert.ok(line.length <= COMMANDER_LINE_MAX,
-      `${entry.nameZh} 的主将行缩短后仍有 ${line.length} 字：${line}`);
+  // 只有两行：第三行（主将行）与第一行重复（单主将时）或缺失（中英同名时），已删除
+  assert.doesNotMatch(wxml, /deck-commanders|commanderLine/);
+  assert.match(wxml, /class="deck-name \{\{deck\.nameZhClass\}\}">\{\{deck\.displayNameZh\}\}/);
+  assert.match(wxml, /class="deck-en mono \{\{deck\.nameEnClass\}\}"[^>]*>\{\{deck\.displayNameEn\}\}/);
+
+  // 一律单行：不换行、不省略号，长了降字号
+  ['deck-name', 'deck-en'].forEach((name) => {
+    const rule = wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`))[0];
+    assert.match(rule, /white-space:\s*nowrap/);
+    assert.doesNotMatch(rule, /text-overflow/, `.${name} 不应再用省略号`);
+  });
+  ['name-compact', 'name-tight'].forEach((step) => {
+    assert.match(wxss, new RegExp(`\\.deck-name\\.${step}\\s*\\{[^}]*font-size`));
+    assert.match(wxss, new RegExp(`\\.deck-en\\.${step}\\s*\\{[^}]*font-size`));
   });
 
-  // 中文名下方要有英文原名（中英同名时才省略）
-  assert.match(wxml, /class="deck-name">\{\{deck\.nameZh\}\}[\s\S]{0,120}class="deck-en mono" wx:if="\{\{deck\.showEnName\}\}">\{\{deck\.nameEn\}\}/);
+  // 降级阶梯本身要能触发（当前数据靠缩短已全部塞下，机制仍须可用）
+  assert.equal(fitClass(5, 14, 17), '');
+  assert.equal(fitClass(15, 14, 17), 'name-compact');
+  assert.equal(fitClass(20, 14, 17), 'name-tight');
+
+  // 全部 56 行按估算宽度都能单行放下（中日文≈1 字号，拉丁≈0.5 字号）
+  const ZH = { '': 28, 'name-compact': 26, 'name-tight': 24 };
+  const EN = { '': 20, 'name-compact': 18, 'name-tight': 16 };
+  const widthOf = (text, size) => Array.from(String(text))
+    .reduce((sum, ch) => sum + (/[一-鿿　-〿＀-￯]/.test(ch) ? size : size * 0.5), 0);
+  metaTierEntries.map(decorateEntry).forEach((deck) => {
+    assert.ok(widthOf(deck.displayNameZh, ZH[deck.nameZhClass]) <= 396,
+      `${deck.displayNameZh} 中文名单行放不下`);
+    if (deck.showEnName) {
+      assert.ok(widthOf(deck.displayNameEn, EN[deck.nameEnClass]) <= 396,
+        `${deck.displayNameEn} 英文名单行放不下`);
+    }
+  });
 });

@@ -38,9 +38,8 @@
           ></image>
         </view>
         <view class="deck-body">
-          <view class="deck-name">{{deck.nameZh}}</view>
-          <view class="deck-en mono" wx:if="{{deck.showEnName}}">{{deck.nameEn}}</view>
-          <view class="deck-commanders">{{deck.commanderLine}}</view>
+          <view class="deck-name {{deck.nameZhClass}}">{{deck.displayNameZh}}</view>
+          <view class="deck-en mono {{deck.nameEnClass}}" wx:if="{{deck.showEnName}}">{{deck.displayNameEn}}</view>
         </view>
         <view class="deck-tags">
           <text class="deck-tag mono" wx:for="{{deck.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>

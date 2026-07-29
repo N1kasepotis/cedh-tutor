@@ -58,24 +58,50 @@ function shortCommanderName(commander) {
   return englishProperNoun(commander && commander.en);
 }
 
-// 中文全名连起来超过这个字数就换短名。约等于列表行留给主将的可视宽度。
-const COMMANDER_LINE_MAX = 16;
+// 列表行留给文字的宽度约 396rpx。中日文按 1 字≈1 字号估算，拉丁字母约 0.5 字号。
+// 超出就先换短名（语义层面），仍超出再降字号（排版层面），两级都用完才算到头——
+// 一律不换行、不省略号：断在词中间比小一号更难认。
+const NAME_ZH_FIT = 14;
+const NAME_EN_FIT = 38;
 
-function buildCommanderLine(commanders) {
-  const list = commanders || [];
-  const full = list.map((commander) => commander.cn || commander.en).filter(Boolean);
-  const joined = full.join(' + ');
-  if (joined.length <= COMMANDER_LINE_MAX) return joined;
-  return list.map(shortCommanderName).filter(Boolean).join(' + ');
+// 双拍档牌组名在源数据里是两个主将全名用 / 拼的。编辑自己在别处已经用
+// 「罗噶克 + 萨拉希洛斯」这种短名写法，这里只是把漏写短名的那几条补齐成同一体例。
+function shortenPartnerZh(nameZh) {
+  const parts = String(nameZh || '').split('/').map((part) => part.trim()).filter(Boolean);
+  if (parts.length < 2) return nameZh;
+  return parts.map((part) => COMMANDER_SHORT_NAMES[part] || part).join(' + ');
+}
+
+function shortenPartnerEn(nameEn) {
+  const parts = String(nameEn || '').split('/').map((part) => part.trim()).filter(Boolean);
+  if (parts.length < 2) return nameEn;
+  return parts.map(englishProperNoun).filter(Boolean).join(' + ');
+}
+
+// 字号档位与「我的主将」页同一套做法：按字数挂类名，样式表里逐级降字号
+function fitClass(length, compactAt, tightAt) {
+  if (length > tightAt) return 'name-tight';
+  if (length > compactAt) return 'name-compact';
+  return '';
 }
 
 function decorateEntry(entry) {
+  const nameZh = entry.nameZh && entry.nameZh.length > NAME_ZH_FIT
+    ? shortenPartnerZh(entry.nameZh)
+    : entry.nameZh;
+  const nameEn = entry.nameEn && entry.nameEn.length > NAME_EN_FIT
+    ? shortenPartnerEn(entry.nameEn)
+    : entry.nameEn;
+
   return {
     ...entry,
     art: buildCommanderArt(entry.commanders),
+    displayNameZh: nameZh,
+    displayNameEn: nameEn,
     // 中英同名时不重复显示（源数据里不少条目 name_zh === name_en）
-    showEnName: Boolean(entry.nameEn) && entry.nameEn !== entry.nameZh,
-    commanderLine: buildCommanderLine(entry.commanders),
+    showEnName: Boolean(nameEn) && nameEn !== nameZh,
+    nameZhClass: fitClass(String(nameZh || '').length, NAME_ZH_FIT, NAME_ZH_FIT + 3),
+    nameEnClass: fitClass(String(nameEn || '').length, 26, 34),
     hasDeckUrl: Boolean(entry.deckUrl),
   };
 }
@@ -142,10 +168,13 @@ function buildMetaSummary() {
 module.exports = {
   buildTierGroups,
   buildCommanderArt,
-  buildCommanderLine,
+  shortenPartnerZh,
+  shortenPartnerEn,
   shortCommanderName,
   englishProperNoun,
-  COMMANDER_LINE_MAX,
+  fitClass,
+  NAME_ZH_FIT,
+  NAME_EN_FIT,
   decorateEntry,
   findEntry,
   tierOf,
