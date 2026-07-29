@@ -319,11 +319,19 @@
   margin-top: var(--cedh-space-3);
 }
 
+/* 透明按钮：去掉填充与投影，只留发丝描边。
+   描边必须保留——没有边框就成了两行普通文字，按钮的可点性就没了。
+   同时去掉 .secondary-button 默认的 inset 高光，那是给浅色填充准备的，
+   放在透明底上会变成一条无来由的亮线。 */
 .detail-button {
   flex: 1 1 0;
   min-width: 0;
   margin: 0;
   overflow: hidden;
+  color: var(--cedh-text-soft);
+  background: transparent;
+  border: 1rpx solid var(--cedh-line-strong);
+  box-shadow: none;
   font-size: var(--cedh-text-12);
   white-space: nowrap;
 }

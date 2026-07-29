@@ -321,6 +321,13 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
   assert.match(wxml, /class="deck-name \{\{deck\.nameZhClass\}\}">\{\{deck\.displayNameZh\}\}/);
   assert.match(wxml, /class="deck-en mono \{\{deck\.nameEnClass\}\}"[^>]*>\{\{deck\.displayNameEn\}\}/);
 
+  // 小窗里的两个按钮做透明化：去填充去投影，但必须保留描边——
+  // 没有边框就成了两行普通文字，按钮的可点性就没了
+  const buttonRule = wxss.match(/\.detail-button\s*\{[^}]*\}/)[0];
+  assert.match(buttonRule, /background:\s*transparent/);
+  assert.match(buttonRule, /box-shadow:\s*none/);
+  assert.match(buttonRule, /border:\s*1rpx solid/, '透明按钮仍需描边以保住可点的观感');
+
   // 一律单行：不换行、不省略号，长了降字号
   ['deck-name', 'deck-en'].forEach((name) => {
     const rule = wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`))[0];
