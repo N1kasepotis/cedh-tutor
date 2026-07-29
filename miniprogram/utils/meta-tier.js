@@ -85,13 +85,23 @@ function fitClass(length, compactAt, tightAt) {
   return '';
 }
 
+// 第二行的职责是「这到底是哪套牌」。通常是中文名对应的英文原名；
+// 但牌组名本身就是英文原型代号时（Blue Farm 这类，name_zh 与 name_en 逐字相同），
+// 显示英文原名等于把第一行重抄一遍，于是被 showEnName 抑制、整行只剩一个代号——
+// 看不出是哪两位主将。这种情况改用主将英文名兜底。
+function buildSecondaryName(entry) {
+  if (entry.nameEn && entry.nameEn !== entry.nameZh) return entry.nameEn;
+  return (entry.commanders || []).map((commander) => commander.en).filter(Boolean).join(' / ');
+}
+
 function decorateEntry(entry) {
   const nameZh = entry.nameZh && entry.nameZh.length > NAME_ZH_FIT
     ? shortenPartnerZh(entry.nameZh)
     : entry.nameZh;
-  const nameEn = entry.nameEn && entry.nameEn.length > NAME_EN_FIT
-    ? shortenPartnerEn(entry.nameEn)
-    : entry.nameEn;
+  const secondary = buildSecondaryName(entry);
+  const nameEn = secondary.length > NAME_EN_FIT
+    ? shortenPartnerEn(secondary)
+    : secondary;
 
   return {
     ...entry,
@@ -170,6 +180,7 @@ module.exports = {
   buildCommanderArt,
   shortenPartnerZh,
   shortenPartnerEn,
+  buildSecondaryName,
   shortCommanderName,
   englishProperNoun,
   fitClass,

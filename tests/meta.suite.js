@@ -283,6 +283,29 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
 
   // 只有两行：第三行（主将行）与第一行重复（单主将时）或缺失（中英同名时），已删除
   assert.doesNotMatch(wxml, /deck-commanders|commanderLine/);
+
+  // 删掉第三行后暴露的坑：牌组名是英文原型代号时（Blue Farm，name_zh === name_en），
+  // 第二行原本会被「中英同名不重复显示」抑制，整行只剩一个代号、看不出是哪两位主将。
+  // 这种情况第二行必须退回主将英文名。
+  const { buildSecondaryName } = require('../miniprogram/utils/meta-tier');
+  assert.equal(
+    buildSecondaryName({
+      nameZh: 'Blue Farm',
+      nameEn: 'Blue Farm',
+      commanders: [{ en: 'Tymna the Weaver' }, { en: "Kraum, Ludevic's Opus" }],
+    }),
+    "Tymna the Weaver / Kraum, Ludevic's Opus",
+  );
+  // 中英不同名时仍用英文原名，不要无谓地换成主将名
+  assert.equal(
+    buildSecondaryName({ nameZh: '持绊逸才季宁', nameEn: 'Kinnan, Bonder Prodigy', commanders: [] }),
+    'Kinnan, Bonder Prodigy',
+  );
+  // 不变量：每一行都必须有第二行，否则那一行只剩一个认不出来的代号
+  metaTierEntries.map(decorateEntry).forEach((deck) => {
+    assert.ok(deck.showEnName && deck.displayNameEn,
+      `${deck.nameZh} 没有第二行，只剩代号认不出是哪套牌`);
+  });
   assert.match(wxml, /class="deck-name \{\{deck\.nameZhClass\}\}">\{\{deck\.displayNameZh\}\}/);
   assert.match(wxml, /class="deck-en mono \{\{deck\.nameEnClass\}\}"[^>]*>\{\{deck\.displayNameEn\}\}/);
 
