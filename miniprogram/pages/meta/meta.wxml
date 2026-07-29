@@ -65,7 +65,7 @@
     </view>
   </view>
 
-  <view class="detail-mask" wx:if="{{detail}}" bindtap="closeDetail">
+  <view class="detail-mask" wx:if="{{detail}}" bindtap="closeDetail" catchtouchmove="stopPropagation">
     <view class="detail-panel surface" catchtap="stopPropagation">
       <view class="detail-head">
         <view class="detail-name">{{detail.nameZh}}</view>
@@ -84,7 +84,9 @@
           data-url="{{item.normal}}"
           bindtap="previewCommander"
         >
-          <image class="detail-commander-art" src="{{item.art}}" mode="aspectFill" lazy-load="{{true}}"></image>
+          <view class="detail-commander-art-box">
+            <image class="detail-commander-art" src="{{item.art}}" mode="widthFix" lazy-load="{{true}}"></image>
+          </view>
           <view class="detail-commander-name">{{item.cn}}</view>
           <view class="detail-commander-en mono">{{item.en}}</view>
         </view>

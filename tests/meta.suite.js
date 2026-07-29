@@ -171,4 +171,49 @@ test('环境梯度页面：注册齐全、署名可见、外链只复制不内�
   // 详情面板点内部不应关闭：遮罩关闭 + 内部 catchtap 阻止冒泡
   assert.match(wxml, /class="detail-mask"[^>]*bindtap="closeDetail"/);
   assert.match(wxml, /class="detail-panel[^"]*"[^>]*catchtap="stopPropagation"/);
+
+  // 详情大图不得用 aspectFill：那是居中裁切，在宽扁窗口里会把 art_crop 上下各切掉
+  // 约 23%，而卡图人物头部几乎总在最上缘。必须 widthFix + 顶部对齐 + 容器裁下缘。
+  const wxss = readMini('pages/meta/meta.wxss');
+  assert.match(wxml, /class="detail-commander-art"[^>]*mode="widthFix"/);
+  assert.doesNotMatch(wxml, /class="detail-commander-art"[^>]*mode="aspectFill"/);
+  assert.match(wxss, /\.detail-commander-art-box\s*{[^}]*overflow:\s*hidden/);
+  // 图本身不能再被写死高度，否则 widthFix 的比例自适应失效、又变回拉伸或裁切
+  const artRule = wxss.match(/\n\.detail-commander-art\s*{[^}]*}/)[0];
+  assert.doesNotMatch(artRule, /height:/, '.detail-commander-art 不应写死高度，裁切交给外层盒子');
+});
+
+test('环境梯度：触控热区、对比度、动效与安全区', () => {
+  const wxss = readMini('pages/meta/meta.wxss');
+  const wxml = readMini('pages/meta/meta.wxml');
+
+  // 展开评级方法是纯文字链接，视觉上一行，但热区必须够 44pt
+  assert.match(wxss, /\.methodology-toggle\s*{[^}]*min-height:\s*88rpx/);
+
+  // --cedh-text-faint 是 0.46 alpha，在近黑底上只有 4.42:1，差 0.08 未达 AA 正文。
+  // 有含义的文本（档位说明）与随数据走的义务文本（署名 / 图像版权）都不许用它。
+  // 选择器可能是并列的（.meta-credit, .image-credit {…}），故允许 { 前有其他选择器
+  const ruleOf = (name) => {
+    const matched = wxss.match(new RegExp(`\\.${name}[^{]*\\{[^}]*\\}`));
+    assert.ok(matched, `未找到 .${name} 的样式规则`);
+    return matched[0];
+  };
+  ['tier-desc', 'meta-credit'].forEach((name) => {
+    assert.doesNotMatch(ruleOf(name), /--cedh-text-faint/,
+      `.${name} 承载含义，不能用未达 AA 的 faint 色`);
+  });
+
+  // 底部面板从底部滑入，保持空间连续性；只动 transform/opacity，不触发重排
+  assert.match(wxss, /@keyframes meta-sheet-in[\s\S]*transform:\s*translateY/);
+  const sheetKeyframes = wxss.match(/@keyframes meta-sheet-in\s*{[\s\S]*?\n}/)[0];
+  assert.doesNotMatch(sheetKeyframes, /\b(width|height|top|left|margin)\s*:/,
+    '入场动画只能动 transform/opacity，不能动布局属性');
+  assert.match(wxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.detail-panel[\s\S]*animation:\s*none/);
+
+  // 遮罩必须吃掉 touchmove，否则背后的长列表会跟着滚（微信固定遮罩的老毛病）
+  assert.match(wxml, /class="detail-mask"[^>]*catchtouchmove="stopPropagation"/);
+
+  // 列表末尾与面板底部都要让开 home indicator
+  assert.match(wxss, /\.meta-shell\s*{[^}]*env\(safe-area-inset-bottom\)/);
+  assert.match(wxss, /\.detail-panel\s*{[^}]*env\(safe-area-inset-bottom\)/);
 });

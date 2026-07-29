@@ -4,7 +4,8 @@
   display: flex;
   flex-direction: column;
   gap: var(--cedh-space-4);
-  padding-bottom: var(--cedh-space-6);
+  /* 手势条区域要留出，否则最后一条套牌会压在 home indicator 底下 */
+  padding-bottom: calc(var(--cedh-space-6) + env(safe-area-inset-bottom));
 }
 
 /* ===== 版本抬头 ===== */
@@ -35,10 +36,13 @@
   letter-spacing: 0.08em;
 }
 
+/* 触控热区 ≥88rpx（44pt）：视觉上仍是一行下划线文字，靠 padding 把热区撑起来 */
 .methodology-toggle {
-  display: inline-block;
-  margin-top: var(--cedh-space-3);
-  padding: 12rpx 0;
+  display: inline-flex;
+  align-items: center;
+  min-height: 88rpx;
+  margin-top: var(--cedh-space-2);
+  padding: 0 8rpx 0 0;
   color: var(--cedh-accent-ink);
   font-size: var(--cedh-text-12);
   text-decoration: underline;
@@ -80,10 +84,12 @@
   letter-spacing: 0.06em;
 }
 
+/* 档位说明是有含义的正文，不能用 --cedh-text-faint（0.46 alpha 在近黑底上仅 4.42:1，
+   差 0.08 未达 AA 正文 4.5:1）；提到 soft（0.68）后是 9.08:1 */
 .tier-desc {
   flex: 1 1 auto;
   min-width: 0;
-  color: var(--cedh-text-faint);
+  color: var(--cedh-text-soft);
   font-size: var(--cedh-text-11);
   line-height: 1.5;
 }
@@ -166,10 +172,12 @@
   margin-top: var(--cedh-space-2);
 }
 
+/* 署名与图像版权是随数据走的义务，必须真的看得清：同样避开 4.42:1 的 faint，
+   字号也提到 11 而不是 10 —— 这不是可以退让的装饰文本 */
 .meta-credit,
 .image-credit {
-  color: var(--cedh-text-faint);
-  font-size: var(--cedh-text-10);
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-11);
   line-height: 1.6;
 }
 
@@ -188,8 +196,11 @@
   display: flex;
   align-items: flex-end;
   background: rgba(0, 0, 0, 0.72);
+  animation: meta-mask-in 160ms ease-out;
 }
 
+/* 从底部滑入，而不是「啪」地出现：面板由底部触发、也从底部来，
+   保持空间连续性。只动 transform / opacity，不触发重排。 */
 .detail-panel {
   display: flex;
   flex-direction: column;
@@ -197,6 +208,30 @@
   max-height: 86vh;
   padding: var(--cedh-space-4);
   padding-bottom: calc(var(--cedh-space-4) + env(safe-area-inset-bottom));
+  animation: meta-sheet-in 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes meta-mask-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes meta-sheet-in {
+  from {
+    opacity: 0;
+    transform: translateY(8%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-mask,
+  .detail-panel {
+    animation: none;
+  }
 }
 
 .detail-name {
@@ -224,11 +259,21 @@
   min-width: 0;
 }
 
-.detail-commander-art {
+/* 卡图构图里人物头部几乎总在最上缘，而 aspectFill 是「居中裁切」：
+   在约 2.5:1 的窗口里看 1.37:1 的 art_crop，上下各被切掉约 23%，切掉的正好是头。
+   改为 widthFix（按宽缩放、高度随原图比例）+ 顶部对齐 + 容器裁下缘——只切脚不切头。 */
+.detail-commander-art-box {
+  position: relative;
   width: 100%;
-  height: 132rpx;
+  height: 168rpx;
+  overflow: hidden;
   border-radius: var(--cedh-radius-1);
   background: rgba(0, 0, 0, 0.45);
+}
+
+.detail-commander-art {
+  display: block;
+  width: 100%;
 }
 
 .detail-commander-name {
