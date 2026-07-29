@@ -51,8 +51,9 @@
   </view>
 
   <view class="detail-mask" wx:if="{{detail}}" bindtap="closeDetail" catchtouchmove="stopPropagation">
-    <view class="detail-panel surface" catchtap="stopPropagation">
+    <view class="detail-panel surface" catchtap="stopPropagation" style="--tier-rgb: {{detail.tierRgb}};">
       <view class="detail-head">
+        <view class="detail-kicker mono">{{detail.tierLabel}}</view>
         <view class="detail-name">{{detail.nameZh}}</view>
         <view class="detail-en mono" wx:if="{{detail.showEnName}}">{{detail.nameEn}}</view>
       </view>
@@ -104,7 +105,7 @@
 
       <view class="detail-actions">
         <view
-          class="secondary-button detail-button"
+          class="secondary-button detail-button detail-button-primary"
           wx:if="{{detail.hasDeckUrl}}"
           aria-role="button"
           aria-label="复制参考牌表链接"

@@ -166,8 +166,11 @@
   gap: 4rpx;
 }
 
+/* 原型标签取所在档位的颜色：让每一行都带一点自己那档的彩度，
+   而不是 56 行清一色的灰。字号小、位置靠右，不会与档位标记抢注意力。
+   最暗的 T4 在页面底色上也有 6.28:1，全部过 AA。 */
 .deck-tag {
-  color: var(--cedh-text-faint);
+  color: rgba(var(--tier-rgb), 0.88);
   font-size: var(--cedh-text-10);
   letter-spacing: 0.04em;
   white-space: nowrap;
@@ -231,7 +234,16 @@
   }
 }
 
+/* 档位标记：小窗唯一的强彩度，也交代「这是从哪一档点进来的」 */
+.detail-kicker {
+  color: rgb(var(--tier-rgb));
+  font-size: var(--cedh-text-11);
+  font-weight: 700;
+  letter-spacing: 0.18em;
+}
+
 .detail-name {
+  margin-top: 4rpx;
   color: var(--cedh-text);
   font-size: var(--cedh-text-18);
   font-weight: 700;
@@ -240,7 +252,7 @@
 
 .detail-en {
   margin-top: 2rpx;
-  color: var(--cedh-text-faint);
+  color: var(--cedh-text-soft);
   font-size: var(--cedh-text-11);
   letter-spacing: 0.06em;
 }
@@ -290,16 +302,21 @@
   margin-top: var(--cedh-space-3);
 }
 
+/* 段标题跟随该牌组的档位色，而不是页面那个中性石板灰——
+   小窗里没有档位分组做参照，用中性色等于没有颜色 */
 .detail-section-title {
-  color: var(--cedh-accent);
+  color: rgb(var(--tier-rgb));
   font-size: var(--cedh-text-10);
+  font-weight: 700;
   letter-spacing: 0.18em;
   text-transform: uppercase;
 }
 
+/* 正文提到满值：原来 soft（8.74:1）虽然过 AA，但小窗里所有字都挤在同一档灰度上，
+   读起来就是「一片灰」。真正要读的内容给最高对比，层级靠亮度差拉开。 */
 .detail-text {
-  margin-top: 6rpx;
-  color: var(--cedh-text-soft);
+  margin-top: 8rpx;
+  color: var(--cedh-text);
   font-size: var(--cedh-text-12);
   line-height: 1.75;
 }
@@ -308,7 +325,7 @@
    靠行距与左侧留白成列即可。 */
 .detail-item {
   margin-top: 8rpx;
-  color: var(--cedh-text-soft);
+  color: var(--cedh-text);
   font-size: var(--cedh-text-12);
   line-height: 1.6;
 }
@@ -334,4 +351,11 @@
   box-shadow: none;
   font-size: var(--cedh-text-12);
   white-space: nowrap;
+}
+
+/* 复制牌表是真动作，关闭只是退出：前者取档位色，后者保持安静。
+   两个都仍是透明按钮，区分靠描边与字色而不是填充。 */
+.detail-button-primary {
+  color: rgb(var(--tier-rgb));
+  border-color: rgba(var(--tier-rgb), 0.55);
 }

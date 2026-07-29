@@ -328,6 +328,25 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
   assert.match(buttonRule, /box-shadow:\s*none/);
   assert.match(buttonRule, /border:\s*1rpx solid/, '透明按钮仍需描边以保住可点的观感');
 
+  // 小窗里没有档位分组做参照，用中性石板灰等于没有颜色：把该牌组的档位色带进去
+  assert.match(wxml, /class="detail-panel surface"[^>]*style="--tier-rgb: \{\{detail\.tierRgb\}\};"/);
+  ['detail-kicker', 'detail-section-title'].forEach((name) => {
+    assert.match(wxss, new RegExp(`\\.${name}\\s*\\{[^}]*color:\\s*rgb\\(var\\(--tier-rgb\\)\\)`),
+      `.${name} 应跟随档位色`);
+  });
+  // 复制牌表是真动作，取档位色；关闭保持安静
+  assert.match(wxml, /detail-button detail-button-primary[\s\S]{0,200}bindtap="copyDeckUrl"/);
+  assert.match(wxss, /\.detail-button-primary\s*\{[^}]*color:\s*rgb\(var\(--tier-rgb\)\)/);
+
+  // 正文提到满值：原来全挤在 soft 一档灰度上，读起来是「一片灰」
+  ['detail-text', 'detail-item'].forEach((name) => {
+    const rule = wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`))[0];
+    assert.match(rule, /color:\s*var\(--cedh-text\)/, `.${name} 是要读的正文，应给最高对比`);
+  });
+
+  // 列表行的标签也取所在档位的颜色，避免 56 行清一色的灰
+  assert.match(wxss, /\.deck-tag\s*\{[^}]*color:\s*rgba\(var\(--tier-rgb\)/);
+
   // 一律单行：不换行、不省略号，长了降字号
   ['deck-name', 'deck-en'].forEach((name) => {
     const rule = wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`))[0];

@@ -146,9 +146,18 @@ function hexToRgbTriplet(hex) {
   /* eslint-enable no-bitwise */
 }
 
+// 详情面板里没有任何档位分组做参照，若再用页面那个中性石板灰做强调色，
+// 整个小窗就一点彩度都没有。把该牌组所属档位的颜色带进去：既补上彩度，
+// 也让人一眼知道「这是从哪一档点进来的」。
 function findEntry(entryId) {
   const entry = (metaTierEntries || []).find((item) => item.id === entryId);
-  return entry ? decorateEntry(entry) : null;
+  if (!entry) return null;
+  const tier = tierOf(entryId);
+  return {
+    ...decorateEntry(entry),
+    tierLabel: tier ? tier.label : '',
+    tierRgb: tier ? hexToRgbTriplet(tier.color) : hexToRgbTriplet(''),
+  };
 }
 
 function tierOf(entryId) {
