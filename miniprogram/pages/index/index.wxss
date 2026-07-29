@@ -276,6 +276,31 @@ page {
   text-transform: uppercase;
 }
 
+/* NEW 角标：用事故色电光蓝——全页唯一的第五色，只在 glitch 行和按压反相时出现，
+   因此它一现身就是全页最扎眼的东西，不需要动效也够抢眼。
+   斜切 -12deg 呼应被 skewX 拉变形的 cEDH Tutor 字标，不是随便贴一个圆角标签。 */
+.home-button-flag {
+  flex: 0 0 auto;
+  margin-left: 16rpx;
+  padding: 3px 8px;
+  color: #0A0A0A;
+  background: #00B3FF;
+  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  line-height: 1.2;
+  transform: skewX(-12deg);
+  white-space: nowrap;
+}
+
+/* 该行被随机 glitch 命中时整行已是电光蓝底，角标必须反相，
+   否则蓝底蓝块直接糊成一片（与涂黑编号同一类坑） */
+.home-button.is-glitch .home-button-flag {
+  color: #00B3FF;
+  background: #0A0A0A;
+}
+
 /* 粗暴分割：字符 /// 一整行当分隔线 */
 .home-rule-slash {
   flex: 0 0 auto;

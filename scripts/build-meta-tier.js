@@ -25,6 +25,9 @@ const path = require('node:path');
 const root = path.join(__dirname, '..');
 const SOURCE = path.join(root, 'tools/meta-tier/current.json');
 const TARGET = path.join(root, 'miniprogram/config/meta-tier.js');
+// 版本号单独成文件：首页只为判断「要不要亮 NEW」而读它，
+// 不该为一个字符串把 50KB 的梯度数据拖进首页启动路径
+const VERSION_TARGET = path.join(root, 'miniprogram/config/meta-tier-version.js');
 
 // 外部导流：QQ / 微信群 / 加群 等整句剔除，避免提审风险
 const OUTREACH_LINE = /(^|\n)[^\n]*(qq\s*群|QQ群|微信群|加群|群号|\d{6,})[^\n]*/gi;
@@ -106,6 +109,13 @@ function build() {
     + `module.exports = {\n  metaTierConfig,\n  metaTierEntries,\n};\n`;
 
   fs.writeFileSync(TARGET, banner + body, 'utf8');
+
+  fs.writeFileSync(VERSION_TARGET,
+    '// 由 scripts/build-meta-tier.js 生成，请勿手改。\n'
+    + '// 单独成文件：首页只为判断「环境梯度要不要亮 NEW」而读它，\n'
+    + '// 不该为一个版本字符串把整份梯度数据拖进首页启动路径。\n\n'
+    + `const META_TIER_VERSION = ${JSON.stringify(config.publicationId)};\n\n`
+    + 'module.exports = {\n  META_TIER_VERSION,\n};\n', 'utf8');
 
   const byTier = {};
   entries.forEach((entry) => { byTier[entry.tier] = (byTier[entry.tier] || 0) + 1; });
