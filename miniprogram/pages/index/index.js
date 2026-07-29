@@ -1,13 +1,6 @@
 const { enableShareMenu } = require('../../utils/share');
-const { readStorage } = require('../../utils/storage');
-const { META_TIER_VERSION } = require('../../config/meta-tier-version');
 const { homePixelFontBase64 } = require('../../assets/home-pixel-font');
 const { titleFontBase64 } = require('../../assets/title-font');
-
-// NEW 角标绑定梯度快照版本，而不是「用户没点过就一直亮」：
-// 永久常亮的角标是注意力税，会训练用户忽略所有角标；绑版本则每次梯度真更新时重新亮起，
-// 角标从此有稳定含义——「有新一期梯度」，而不是「这个功能比较新」。
-const META_SEEN_STORAGE_KEY = 'metaTierSeenVersion';
 
 function getHomeNavClearancePx() {
   let windowInfo = {};
@@ -51,7 +44,6 @@ Page({
     // 事故色 glitch 行：每次进首页随机让一个功能入口"故障"成电光蓝，制造不可预测的粗野破坏感
     glitchIndex: 0,
     redactionLine: 3,
-    metaIsNew: false,
   },
 
   onLoad() {
@@ -78,18 +70,10 @@ Page({
     }
   },
 
-  // 在 onShow 而非 onLoad 判定：从环境梯度返回首页时角标要当场熄灭，
-  // 不能等到下次冷启动才更新
   onShow() {
-    const seen = readStorage(META_SEEN_STORAGE_KEY, {
-      schemaVersion: 1,
-      defaultValue: '',
-      validate: (value) => typeof value === 'string',
-    });
     this.setData({
       glitchIndex: Math.floor(Math.random() * HOME_ACTION_COUNT),
       redactionLine: Math.floor(Math.random() * REDACTION_LINE_COUNT),
-      metaIsNew: seen.value !== META_TIER_VERSION,
     });
   },
 

@@ -84,7 +84,7 @@
           <text class="home-button-zh">环境梯度</text>
           <text class="home-button-en">META TIER LIST</text>
         </view>
-        <text class="home-button-flag" wx:if="{{metaIsNew}}">NEW</text>
+        <text class="home-button-flag">NEW</text>
       </view>
     </view>
 

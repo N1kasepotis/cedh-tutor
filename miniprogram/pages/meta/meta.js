@@ -5,12 +5,7 @@ const {
   findEntry,
 } = require('../../utils/meta-tier');
 const { enableShareMenu } = require('../../utils/share');
-const { writeStorage } = require('../../utils/storage');
-const { META_TIER_VERSION } = require('../../config/meta-tier-version');
 const { homePixelFontBase64 } = require('../../assets/home-pixel-font');
-
-// 记下「这一期看过了」，首页的 NEW 角标据此熄灭；下一期梯度换了版本号会重新亮起
-const META_SEEN_STORAGE_KEY = 'metaTierSeenVersion';
 
 Page({
   data: {
@@ -37,10 +32,6 @@ Page({
     this.setData({
       tierGroups: buildTierGroups(metaTierEntries),
       summary: buildMetaSummary(),
-    });
-    writeStorage(META_SEEN_STORAGE_KEY, META_TIER_VERSION, {
-      schemaVersion: 1,
-      validate: (value) => typeof value === 'string',
     });
   },
 

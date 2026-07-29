@@ -115,33 +115,27 @@ test('环境梯度：分组、派生与详情查找', () => {
   assert.match(summary.publishedLabel, /^\d{4}\.\d{2}\.\d{2}$/);
 });
 
-// NEW 角标绑快照版本，而不是「没点过就一直亮」。永久常亮的角标是注意力税，
-// 会训练用户忽略所有角标；绑版本后它有稳定含义——「有新一期梯度」。
-test('首页 NEW 角标绑定梯度版本，看过即熄、换期重亮', () => {
+// NEW 角标按产品要求常驻，不随「看过」熄灭。既然不再需要判断是否看过，
+// 版本追踪的那一套（meta-tier-version 模块、双端存储键、onShow 比对）也一并移除——
+// 留着只会是没人读的存储写入。
+test('首页 NEW 角标常驻，且不残留版本追踪机制', () => {
   const indexJs = readMini('pages/index/index.js');
   const indexWxml = readMini('pages/index/index.wxml');
   const indexWxss = readMini('pages/index/index.wxss');
   const metaJs = readMini('pages/meta/meta.js');
-  const { META_TIER_VERSION } = require('../miniprogram/config/meta-tier-version');
 
-  // 版本号必须与梯度数据同源，不能各写各的
-  assert.equal(META_TIER_VERSION, metaTierConfig.publicationId);
-  assert.match(readMini('config/meta-tier-version.js'), /请勿手改/);
+  // 常驻：无条件渲染
+  assert.match(indexWxml, /class="home-button-flag">NEW</);
+  assert.doesNotMatch(indexWxml, /metaIsNew/);
 
-  // 首页只读版本号模块，不得为了一个字符串把 50KB 梯度数据拖进启动路径
-  assert.match(indexJs, /require\('\.\.\/\.\.\/config\/meta-tier-version'\)/);
-  assert.doesNotMatch(indexJs, /require\('\.\.\/\.\.\/config\/meta-tier'\)/);
-
-  // 判定放在 onShow：从梯度页返回时角标要当场熄灭，不能等下次冷启动
-  assert.match(indexJs, /onShow\(\)\s*{[\s\S]*metaIsNew: seen\.value !== META_TIER_VERSION/);
-  assert.match(metaJs, /writeStorage\(META_SEEN_STORAGE_KEY, META_TIER_VERSION/);
-  // 两侧必须用同一个 key，否则角标永远熄不掉
-  const keyOf = (source) => (source.match(/META_SEEN_STORAGE_KEY = '([^']+)'/) || [])[1];
-  assert.ok(keyOf(indexJs), '首页应声明 NEW 角标的存储键');
-  assert.equal(keyOf(indexJs), keyOf(metaJs), '首页与梯度页的存储键必须一致');
-
-  // 角标是条件渲染，不是常驻
-  assert.match(indexWxml, /class="home-button-flag" wx:if="\{\{metaIsNew\}\}">NEW</);
+  // 版本追踪机制已彻底移除，不留下没人读的存储写入
+  [indexJs, metaJs].forEach((source) => {
+    assert.doesNotMatch(source, /META_SEEN_STORAGE_KEY|metaTierSeenVersion|META_TIER_VERSION/);
+  });
+  assert.ok(!fs.existsSync(path.join(root, 'miniprogram/config/meta-tier-version.js')),
+    '版本号模块已无人使用，应删除');
+  assert.doesNotMatch(readMini('../scripts/build-meta-tier.js'), /VERSION_TARGET/,
+    '构建脚本不应再生成版本号模块');
 
   // 事故色电光蓝；被 glitch 命中时必须反相，否则蓝底蓝块糊成一片
   assert.match(indexWxss, /\.home-button-flag\s*{[^}]*background:\s*#00B3FF/);
