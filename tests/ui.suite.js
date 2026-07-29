@@ -746,6 +746,9 @@ test('particle and performance configs use champagne dust defaults with per-page
       bracket: ['#49B380', '#BDEBD2', '#7FCCA6'],
       cabbage: ['#2FA75D', '#B2E3C4', '#5BBF6A'],
       izzet: ['#5AA9FF', '#BCD9FF', '#8CC0FF'],
+      // 环境梯度是唯一不跟自身模块强调色（中性石板灰）走的页面：
+      // 背景取 T0 档位色一族的红，把「最高档」的色彩身份让给数据
+      meta: ['#EF5B4C', '#F5B3AC', '#E07A6E'],
     },
     '粒子 palette 应与各页面主题色一致',
   );

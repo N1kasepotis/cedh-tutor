@@ -92,6 +92,9 @@ const particleConfig = {
     bracket: { accentColor: '#49B380', neutralColor: '#BDEBD2', connectionColor: '#7FCCA6' },
     cabbage: { accentColor: '#2FA75D', neutralColor: '#B2E3C4', connectionColor: '#5BBF6A' },
     izzet: { accentColor: '#5AA9FF', neutralColor: '#BCD9FF', connectionColor: '#8CC0FF' },
+    // 环境梯度：取 T0 档位色 #EF5B4C 一族的红——背景与「最高档」同色系，
+    // 页面强调色仍是中性石板灰，不与数据自带的档位色打架
+    meta: { accentColor: '#EF5B4C', neutralColor: '#F5B3AC', connectionColor: '#E07A6E' },
   },
 
   bounds: {

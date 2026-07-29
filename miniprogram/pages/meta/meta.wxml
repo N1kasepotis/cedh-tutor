@@ -1,5 +1,5 @@
 <view class="page meta">
-  <particle-background palette="bracket"></particle-background>
+  <particle-background palette="meta"></particle-background>
 
   <view class="content-layer meta-shell">
     <view class="meta-head" wx:if="{{summary}}">
@@ -39,6 +39,7 @@
         </view>
         <view class="deck-body">
           <view class="deck-name">{{deck.nameZh}}</view>
+          <view class="deck-en mono" wx:if="{{deck.showEnName}}">{{deck.nameEn}}</view>
           <view class="deck-commanders">{{deck.commanderLine}}</view>
         </view>
         <view class="deck-tags">

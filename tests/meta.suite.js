@@ -164,7 +164,7 @@ test('环境梯度页面：注册齐全、署名可见、外链只复制不内�
 
   // 页面按要求不再承载版权与界限论述；署名收敛为一行 byline（谁 + 何时）
   assert.match(wxml, /class="meta-byline mono">\{\{summary\.bylineLine\}\}/);
-  assert.match(buildMetaSummary().bylineLine, /^cEDH小屋 编辑 · \d{4}\.\d{2}\.\d{2}$/);
+  assert.match(buildMetaSummary().bylineLine, /^cEDH小屋 编辑\s\d{4}\.\d{2}\.\d{2}$/);
   assert.doesNotMatch(wxml, /meta-credit|image-credit|不代表本工具|图像来自 Scryfall|免责/);
 
   // 详情面板点内部不应关闭：遮罩关闭 + 内部 catchtap 阻止冒泡
@@ -245,4 +245,50 @@ test('环境梯度版面保持精简：只有标题与一行署名，无免责�
 
   // 套牌行不再各自带彩色左边框，避免 56 条彩线与档位标记抢注意力
   assert.doesNotMatch(wxss, /\.deck-row\s*{[^}]*border-left/);
+});
+
+test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下带英文原名', () => {
+  const wxml = readMini('pages/meta/meta.wxml');
+  const wxss = readMini('pages/meta/meta.wxss');
+  const { particleConfig } = require('../miniprogram/config/particle');
+  const {
+    buildCommanderLine, shortCommanderName, englishProperNoun, COMMANDER_LINE_MAX,
+  } = require('../miniprogram/utils/meta-tier');
+
+  // 粒子与连线走红色（取 T0 档位色一族）
+  assert.match(wxml, /<particle-background palette="meta">/);
+  const red = particleConfig.palettes.meta;
+  assert.equal(red.accentColor, '#EF5B4C');
+  ['accentColor', 'neutralColor', 'connectionColor'].forEach((key) => {
+    const [r, , b] = [1, 3, 5].map((i) => parseInt(red[key].substr(i, 2), 16));
+    assert.ok(r > b, `${key} 应是红调（R 高于 B），当前 ${red[key]}`);
+  });
+
+  // 全页去掉点号：署名分隔与详情项目符号都不再用 ·
+  assert.doesNotMatch(wxss, /content:\s*"·/, '详情条目不应再用点号做项目符号');
+  assert.doesNotMatch(buildMetaSummary().bylineLine, /·/, '署名行不应再用点号分隔');
+
+  // 中文全名过长时换成只留专名的短名
+  const long = [
+    { cn: '现场直击的艾普·奥尼尔', en: "April O'Neil, Live on the Scene" },
+    { cn: '衡心定盘莱昂纳多', en: 'Leonardo, the Balance' },
+  ];
+  assert.equal(buildCommanderLine(long), '奥尼尔 + 莱昂纳多');
+  // 短到不需要缩写时保持全名，不要无谓地砍
+  assert.equal(buildCommanderLine([{ cn: '风雨法师拉尔', en: 'Ral, Monsoon Mage' }]), '风雨法师拉尔');
+
+  // 未收录的长名走英文专名兜底，至少不会断在词中间
+  assert.equal(englishProperNoun('Kraum, Ludevic\'s Opus'), 'Kraum');
+  assert.equal(englishProperNoun('Tymna the Weaver'), 'Tymna');
+  assert.equal(shortCommanderName({ cn: '', en: 'Thrasios, Triton Hero' }), 'Thrasios');
+
+  // 收录表覆盖当前所有超长行——漏一个就会被截断
+  metaTierEntries.forEach((entry) => {
+    const line = buildCommanderLine(entry.commanders);
+    assert.ok(line.length <= COMMANDER_LINE_MAX,
+      `${entry.nameZh} 的主将行缩短后仍有 ${line.length} 字：${line}`);
+  });
+
+  // 中文名下方要有英文原名（中英同名时才省略）
+  assert.match(wxml, /class="deck-name">\{\{deck\.nameZh\}\}[\s\S]{0,120}class="deck-en mono" wx:if="\{\{deck\.showEnName\}\}">\{\{deck\.nameEn\}\}/);
 });

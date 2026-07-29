@@ -26,16 +26,56 @@ function buildCommanderArt(commanders) {
   };
 }
 
+// 双拍档的中文全名连起来能到 22 字，一行放不下就被截成「…艾普·奥尼尔 / 衡心…」，
+// 断在词中间反而更难认。这里退回「只留专名」的短名。
+//
+// 短名无法从数据推导：中文卡名的修饰语与专名之间没有分隔符（织命使堤谟娜、
+// 屈东英雄萨拉希洛斯），按字数切必然切错。因此人工维护下表——全部 56 条里只有
+// 9 行超长、涉及 11 个名字，规模可控。新增长名未收录时走英文专名兜底，
+// 至少不会断在词中间。
+const COMMANDER_SHORT_NAMES = Object.freeze({
+  '现场直击的艾普·奥尼尔': '奥尼尔',
+  衡心定盘莱昂纳多: '莱昂纳多',
+  乐天真心米开朗基罗: '米开朗基罗',
+  屈东英雄萨拉希洛斯: '萨拉希洛斯',
+  愚者末日泰维司刹特: '泰维司刹特',
+  欧祝泰族龙语者依谢: '依谢',
+  织命使堤谟娜: '堤谟娜',
+  罗噶之子罗噶克: '罗噶克',
+  致知专家赛拉司雷恩: '赛拉司雷恩',
+  锐目领航员马科姆: '马科姆',
+});
+
+// 英文卡名的专名一律在首个逗号前，没有逗号则在 " the " 前——这条是可靠的
+function englishProperNoun(nameEn) {
+  return String(nameEn || '').split(',')[0].split(' the ')[0].trim();
+}
+
+function shortCommanderName(commander) {
+  const cn = (commander && commander.cn) || '';
+  if (COMMANDER_SHORT_NAMES[cn]) return COMMANDER_SHORT_NAMES[cn];
+  if (cn) return cn;
+  return englishProperNoun(commander && commander.en);
+}
+
+// 中文全名连起来超过这个字数就换短名。约等于列表行留给主将的可视宽度。
+const COMMANDER_LINE_MAX = 16;
+
+function buildCommanderLine(commanders) {
+  const list = commanders || [];
+  const full = list.map((commander) => commander.cn || commander.en).filter(Boolean);
+  const joined = full.join(' + ');
+  if (joined.length <= COMMANDER_LINE_MAX) return joined;
+  return list.map(shortCommanderName).filter(Boolean).join(' + ');
+}
+
 function decorateEntry(entry) {
   return {
     ...entry,
     art: buildCommanderArt(entry.commanders),
     // 中英同名时不重复显示（源数据里不少条目 name_zh === name_en）
     showEnName: Boolean(entry.nameEn) && entry.nameEn !== entry.nameZh,
-    commanderLine: (entry.commanders || [])
-      .map((commander) => commander.cn || commander.en)
-      .filter(Boolean)
-      .join(' + '),
+    commanderLine: buildCommanderLine(entry.commanders),
     hasDeckUrl: Boolean(entry.deckUrl),
   };
 }
@@ -94,13 +134,18 @@ function buildMetaSummary() {
     entryCount: (metaTierEntries || []).length,
     // 署名行只回答「谁 + 何时」。条目数移到各档位自己身上——
     // 分布本身就是信息（T0 只有 2 个、T3 有 22 个），放在总计里反而看不出来。
-    bylineLine: `${metaTierConfig.brand} 编辑 · ${publishedLabel}`,
+    // 不用 · 分隔：全页已去掉点号，靠空格与 tabular-nums 的数字形态区分即可。
+    bylineLine: `${metaTierConfig.brand} 编辑　${publishedLabel}`,
   };
 }
 
 module.exports = {
   buildTierGroups,
   buildCommanderArt,
+  buildCommanderLine,
+  shortCommanderName,
+  englishProperNoun,
+  COMMANDER_LINE_MAX,
   decorateEntry,
   findEntry,
   tierOf,

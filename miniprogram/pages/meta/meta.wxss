@@ -118,8 +118,22 @@
   line-height: 1.35;
 }
 
+/* 中文名下方的英文原名：等宽、退一档，作注记而不与中文名争主次 */
+.deck-en {
+  margin-top: 2rpx;
+  overflow: hidden;
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-10);
+  letter-spacing: 0.04em;
+  line-height: 1.35;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* 主将名是有含义的内容，保持 soft（9.08:1）；与上方英文原名靠字号和等宽区分，
+   不靠压暗——压到 faint 只有 4.42:1，未达 AA 正文 */
 .deck-commanders {
-  margin-top: 4rpx;
+  margin-top: 6rpx;
   overflow: hidden;
   color: var(--cedh-text-soft);
   font-size: var(--cedh-text-11);
@@ -267,18 +281,13 @@
   line-height: 1.75;
 }
 
+/* 不用点号做项目符号：条目本身已经断行分开，圆点只是多一层噪声。
+   靠行距与左侧留白成列即可。 */
 .detail-item {
-  margin-top: 6rpx;
-  padding-left: 20rpx;
+  margin-top: 8rpx;
   color: var(--cedh-text-soft);
   font-size: var(--cedh-text-12);
   line-height: 1.6;
-  text-indent: -20rpx;
-}
-
-.detail-item::before {
-  content: "· ";
-  color: var(--cedh-accent);
 }
 
 .detail-actions {
