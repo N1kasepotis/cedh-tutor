@@ -49,11 +49,15 @@ function buildTierGroups(entries) {
   });
 
   return metaTierConfig.tiers
-    .map((tier) => ({
-      ...tier,
-      rgb: hexToRgbTriplet(tier.color),
-      entries: byTier.get(tier.id) || [],
-    }))
+    .map((tier) => {
+      const entries = byTier.get(tier.id) || [];
+      return {
+        ...tier,
+        rgb: hexToRgbTriplet(tier.color),
+        entries,
+        count: entries.length,
+      };
+    })
     .filter((tier) => tier.entries.length);
 }
 
@@ -77,24 +81,20 @@ function tierOf(entryId) {
   return metaTierConfig.tiers.find((tier) => tier.id === entry.tier) || null;
 }
 
+// 展示标题：上游标题是「2026年7月cedh梯度表」，页面上改用季节说法。换期时改这里。
+const DISPLAY_TITLE = '夏末梯度表';
+
 function buildMetaSummary() {
   const publishedLabel = formatPublishedAt(metaTierConfig.publishedAt);
-  const entryCount = (metaTierEntries || []).length;
   return {
     brand: metaTierConfig.brand,
-    methodology: metaTierConfig.methodology,
-    publicationTitle: metaTierConfig.publicationTitle,
+    title: DISPLAY_TITLE,
     publicationId: metaTierConfig.publicationId,
     publishedLabel,
-    entryCount,
-    // 抬头只留一行事实：署名 + 条目数 + 日期。
-    // 原先分了 kicker / 标题 / meta 三行，日期出现 3 次、署名出现 3 次（含页脚），
-    // 而这是个「翻榜单」的页面——抬头越短，越早看到正文。
-    factsLine: [
-      `${metaTierConfig.brand} 编辑`,
-      `${entryCount} 个原型`,
-      publishedLabel,
-    ].filter(Boolean).join(' · '),
+    entryCount: (metaTierEntries || []).length,
+    // 署名行只回答「谁 + 何时」。条目数移到各档位自己身上——
+    // 分布本身就是信息（T0 只有 2 个、T3 有 22 个），放在总计里反而看不出来。
+    bylineLine: `${metaTierConfig.brand} 编辑 · ${publishedLabel}`,
   };
 }
 

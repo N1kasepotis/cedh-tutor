@@ -162,11 +162,10 @@ test('环境梯度页面：注册齐全、署名可见、外链只复制不内�
   assert.match(js, /copyDeckUrl\(\)[\s\S]*wx\.setClipboardData/);
   assert.match(wxml, /bindtap="copyDeckUrl"/);
 
-  // 署名与「这不是本工具的结论」的界线必须常驻页面，不能只藏在折叠区里
-  assert.match(wxml, /meta-credit[\s\S]*人工编辑[\s\S]*不代表本工具的强度分级结论/);
-  assert.match(wxml, /图像来自 Scryfall/);
-  // 快照性质要写明，否则用户会以为是实时榜
-  assert.match(wxml, /快照/);
+  // 页面按要求不再承载版权与界限论述；署名收敛为一行 byline（谁 + 何时）
+  assert.match(wxml, /class="meta-byline mono">\{\{summary\.bylineLine\}\}/);
+  assert.match(buildMetaSummary().bylineLine, /^cEDH小屋 编辑 · \d{4}\.\d{2}\.\d{2}$/);
+  assert.doesNotMatch(wxml, /meta-credit|image-credit|不代表本工具|图像来自 Scryfall|免责/);
 
   // 详情面板点内部不应关闭：遮罩关闭 + 内部 catchtap 阻止冒泡
   assert.match(wxml, /class="detail-mask"[^>]*bindtap="closeDetail"/);
@@ -187,18 +186,15 @@ test('环境梯度：触控热区、对比度、动效与安全区', () => {
   const wxss = readMini('pages/meta/meta.wxss');
   const wxml = readMini('pages/meta/meta.wxml');
 
-  // 展开评级方法是纯文字链接，视觉上一行，但热区必须够 44pt
-  assert.match(wxss, /\.methodology-toggle\s*{[^}]*min-height:\s*88rpx/);
-
   // --cedh-text-faint 是 0.46 alpha，在近黑底上只有 4.42:1，差 0.08 未达 AA 正文。
-  // 有含义的文本（档位说明）与随数据走的义务文本（署名 / 图像版权）都不许用它。
-  // 选择器可能是并列的（.meta-credit, .image-credit {…}），故允许 { 前有其他选择器
+  // 承载含义的文本不许用它；只有次要分类标签可以退到 faint。
+  // 选择器可能并列（.a, .b {…}），故允许 { 前有其他选择器
   const ruleOf = (name) => {
     const matched = wxss.match(new RegExp(`\\.${name}[^{]*\\{[^}]*\\}`));
     assert.ok(matched, `未找到 .${name} 的样式规则`);
     return matched[0];
   };
-  ['tier-desc', 'meta-credit'].forEach((name) => {
+  ['meta-byline', 'deck-name', 'deck-commanders'].forEach((name) => {
     assert.doesNotMatch(ruleOf(name), /--cedh-text-faint/,
       `.${name} 承载含义，不能用未达 AA 的 faint 色`);
   });
@@ -218,32 +214,35 @@ test('环境梯度：触控热区、对比度、动效与安全区', () => {
   assert.match(wxss, /\.detail-panel\s*{[^}]*env\(safe-area-inset-bottom\)/);
 });
 
-// 这是个「翻榜单」的页面，抬头越短越早看到正文。曾经抬头占了首屏近一半：
-// kicker / 标题 / meta 三行里日期出现 3 次、署名出现 3 次（含页脚），
-// 且抬头与套牌行同样套 .surface，层级被抹平成「又一张卡」。
-test('环境梯度抬头保持精简，不重复日期与署名', () => {
+// 这是个「翻榜单」的页面：抬头越短越早看到正文，版面上只应有标题与一行署名。
+// 页面按要求不承载任何版权 / 免责 / 界限论述。
+test('环境梯度版面保持精简：只有标题与一行署名，无免责论述', () => {
   const wxml = readMini('pages/meta/meta.wxml');
   const wxss = readMini('pages/meta/meta.wxss');
   const summary = buildMetaSummary();
 
-  // 收起状态只允许两行：标题 + 事实行（含展开入口）
-  assert.match(wxml, /class="meta-title">\{\{summary\.publicationTitle\}\}/);
-  assert.match(wxml, /class="meta-facts mono">\{\{summary\.factsLine\}\}/);
-  assert.doesNotMatch(wxml, /meta-kicker/, '独立署名 kicker 与方法论首行、页脚重复，应已移除');
+  assert.match(wxml, /class="meta-title">\{\{summary\.title\}\}/);
+  assert.match(wxml, /class="meta-byline mono">\{\{summary\.bylineLine\}\}/);
+  assert.doesNotMatch(wxml, /meta-kicker|meta-facts|methodology/,
+    '抬头不应再有 kicker、事实行或方法论折叠区');
 
-  // 快照 id 不出现在收起态的门面上，只在展开区里作排查线索
-  assert.doesNotMatch(wxml, /class="meta-facts[^>]*>[^<]*publicationId/);
-  const fold = wxml.slice(wxml.indexOf('class="methodology"'));
-  assert.match(fold, /summary\.publicationId/, '快照 id 应保留在展开区，便于排查');
+  // 所有免责 / 版权 / 快照界限论述都已移除
+  assert.doesNotMatch(wxml, /免责|版权|不代表|不联网|不会自动更新|需更新小程序版本|快照/);
 
-  // 事实行一行内说完署名、条目数、日期，用 · 分隔而不是全角空格
-  assert.match(summary.factsLine, /^cEDH小屋 编辑 · \d+ 个原型 · \d{4}\.\d{2}\.\d{2}$/);
+  // 展示标题用季节说法，与上游数据标题解耦（上游是「2026年7月cedh梯度表」）
+  assert.equal(summary.title, '夏末梯度表');
+  assert.notEqual(summary.title, metaTierConfig.publicationTitle);
 
-  // 抬头不套 .surface：套牌行已经是 surface，抬头再用同款会把层级抹平
-  assert.doesNotMatch(wxml, /class="meta-head[^"]*surface/);
-  assert.match(wxss, /\.meta-head\s*{[^}]*border-bottom/);
+  // 抬头与套牌行都不套 .surface：全页只有详情面板是卡片
+  assert.doesNotMatch(wxml, /class="meta-head[^"]*surface|class="deck-row[^"]*surface/);
+  assert.equal((wxml.match(/surface/g) || []).length, 1, '仅详情面板允许使用 surface');
 
-  // 说明文案面向用户，不写「需更新小程序版本」这类开发者口吻
-  assert.doesNotMatch(wxml, /需更新小程序版本|不联网刷新/);
-  assert.match(wxml, /不会自动更新/);
+  // 签名元素：每档一处强标记——档位标签 + 延伸发丝线 + 该档数量
+  assert.match(wxml, /class="tier-label mono">\{\{item\.label\}\}/);
+  assert.match(wxml, /class="tier-rule"/);
+  assert.match(wxml, /class="tier-count mono">\{\{item\.count\}\}/);
+  assert.match(wxss, /\.tier-rule\s*{[^}]*background:\s*rgba\(var\(--tier-rgb\)/);
+
+  // 套牌行不再各自带彩色左边框，避免 56 条彩线与档位标记抢注意力
+  assert.doesNotMatch(wxss, /\.deck-row\s*{[^}]*border-left/);
 });

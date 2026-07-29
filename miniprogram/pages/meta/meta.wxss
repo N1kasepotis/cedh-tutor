@@ -8,113 +8,80 @@
   padding-bottom: calc(var(--cedh-space-6) + env(safe-area-inset-bottom));
 }
 
-/* ===== 版本抬头 =====
-   刻意不套 .surface：套牌行已经是 surface，抬头再用同一种卡片处理就变成「又一张卡」，
-   层级被抹平。这里用一条发丝分割线收尾即可，抬头是标题不是内容。 */
+/* ===== 抬头 =====
+   只有标题与署名两行，不套 .surface：抬头是标题不是内容，
+   与下方列表用留白区隔即可，不需要卡片。 */
 .meta-head {
-  padding-bottom: var(--cedh-space-3);
-  border-bottom: 1rpx solid var(--cedh-line);
+  padding: var(--cedh-space-4) 0 var(--cedh-space-2);
 }
 
 .meta-title {
   color: var(--cedh-text);
-  font-size: var(--cedh-text-18);
+  font-size: 44rpx;
   font-weight: 700;
-  line-height: 1.3;
+  letter-spacing: 0.02em;
+  line-height: 1.2;
 }
 
-/* 事实行与展开入口同处一行：baseline 对齐，右侧入口不换行 */
-.meta-line {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--cedh-space-3);
-}
-
-.meta-facts {
-  flex: 1 1 auto;
-  min-width: 0;
-  overflow: hidden;
+.meta-byline {
+  margin-top: 10rpx;
   color: var(--cedh-text-soft);
   font-size: var(--cedh-text-11);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0.04em;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-/* 触控热区 ≥88rpx（44pt）：视觉上只是一行小字，靠 padding 把热区撑起来 */
-.methodology-toggle {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  min-height: 88rpx;
-  padding-left: 16rpx;
-  color: var(--cedh-accent-ink);
-  font-size: var(--cedh-text-11);
-  white-space: nowrap;
-  text-decoration: underline;
-}
-
-.methodology {
-  display: block;
-  padding-bottom: var(--cedh-space-2);
-}
-
-.methodology-text,
-.methodology-note {
-  display: block;
-  color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-11);
-  line-height: 1.7;
-  white-space: pre-line;
-}
-
-.methodology-note {
-  margin-top: var(--cedh-space-2);
-  color: var(--cedh-text-faint);
-}
-
-/* ===== 档位分组 ===== */
-.tier-block {
-  display: flex;
-  flex-direction: column;
-  gap: var(--cedh-space-2);
-}
-
-.tier-head {
-  display: flex;
-  align-items: baseline;
-  gap: var(--cedh-space-3);
-  padding-left: 18rpx;
-  border-left: 8rpx solid rgb(var(--tier-rgb));
-}
-
-.tier-label {
-  color: rgb(var(--tier-rgb));
-  font-size: var(--cedh-text-20);
-  font-weight: 800;
   font-variant-numeric: tabular-nums;
   letter-spacing: 0.06em;
 }
 
-/* 档位说明是有含义的正文，不能用 --cedh-text-faint（0.46 alpha 在近黑底上仅 4.42:1，
-   差 0.08 未达 AA 正文 4.5:1）；提到 soft（0.68）后是 9.08:1 */
-.tier-desc {
-  flex: 1 1 auto;
-  min-width: 0;
-  color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-11);
-  line-height: 1.5;
+/* ===== 档位分组 =====
+   页面的签名元素：每档只有一处强标记——档位色的大号等宽标签 + 延伸到右缘的发丝线
+   + 该档数量。全页 5 个标记，其余一律安静。数量放在档位上而不是总计里，因为分布
+   本身就是信息（T0 只有 2 个、T3 有 22 个）。 */
+.tier-block {
+  margin-top: var(--cedh-space-5);
 }
 
-/* ===== 套牌行 ===== */
+.tier-head {
+  display: flex;
+  align-items: center;
+  gap: var(--cedh-space-3);
+  padding-bottom: var(--cedh-space-2);
+}
+
+.tier-label {
+  flex: 0 0 auto;
+  color: rgb(var(--tier-rgb));
+  font-size: 34rpx;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.12em;
+}
+
+.tier-rule {
+  flex: 1 1 auto;
+  height: 1rpx;
+  background: rgba(var(--tier-rgb), 0.42);
+}
+
+.tier-count {
+  flex: 0 0 auto;
+  color: rgba(var(--tier-rgb), 0.72);
+  font-size: var(--cedh-text-11);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.08em;
+}
+
+/* ===== 套牌行 =====
+   刻意不套 .surface、不加彩色左边框：56 张卡片加 56 条彩线会跟档位标记抢注意力。
+   行间只用一条发丝线，层级交给留白与字号。 */
 .deck-row {
   display: flex;
   align-items: center;
   gap: var(--cedh-space-3);
-  padding: var(--cedh-space-3);
-  border-left: 4rpx solid rgba(var(--tier-rgb), 0.55);
+  padding: 20rpx 0;
+  border-bottom: 1rpx solid var(--cedh-line);
+}
+
+.deck-row:last-child {
+  border-bottom: 0;
 }
 
 .deck-art {
@@ -151,52 +118,31 @@
   line-height: 1.35;
 }
 
-.deck-en {
-  margin-top: 2rpx;
-  color: var(--cedh-text-faint);
-  font-size: var(--cedh-text-10);
-  letter-spacing: 0.06em;
-}
-
 .deck-commanders {
-  margin-top: 6rpx;
+  margin-top: 4rpx;
+  overflow: hidden;
   color: var(--cedh-text-soft);
   font-size: var(--cedh-text-11);
-  line-height: 1.5;
+  line-height: 1.45;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
+/* 原型标签移到行尾右对齐：它是分类而不是标题的一部分，
+   放在名字下方会和主将名挤成三行，行高忽高忽低 */
 .deck-tags {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8rpx;
-  margin-top: 8rpx;
+  flex: 0 0 auto;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4rpx;
 }
 
 .deck-tag {
-  padding: 2rpx 10rpx;
-  color: var(--cedh-accent-ink);
-  background: var(--cedh-accent-soft);
-  border: 1rpx solid var(--cedh-accent-line);
+  color: var(--cedh-text-faint);
   font-size: var(--cedh-text-10);
   letter-spacing: 0.04em;
-}
-
-/* ===== 页脚署名 ===== */
-.meta-foot {
-  margin-top: var(--cedh-space-2);
-}
-
-/* 署名与图像版权是随数据走的义务，必须真的看得清：同样避开 4.42:1 的 faint，
-   字号也提到 11 而不是 10 —— 这不是可以退让的装饰文本 */
-.meta-credit,
-.image-credit {
-  color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-11);
-  line-height: 1.6;
-}
-
-.image-credit {
-  margin-top: 6rpx;
+  white-space: nowrap;
 }
 
 /* ===== 详情面板 ===== */
@@ -295,12 +241,6 @@
   color: var(--cedh-text);
   font-size: var(--cedh-text-12);
   line-height: 1.4;
-}
-
-.detail-commander-en {
-  color: var(--cedh-text-faint);
-  font-size: var(--cedh-text-10);
-  letter-spacing: 0.04em;
 }
 
 .detail-scroll {
