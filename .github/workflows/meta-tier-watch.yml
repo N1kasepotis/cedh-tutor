@@ -24,11 +24,15 @@ jobs:
   watch:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      # v5 系列的 action 本体跑在 node24 上。v4 本体是 node20，GitHub 已宣布弃用该运行时，
+      # 会被强制拉到 node24 并每次告警。这里的版本是「action 自己用什么 Node 跑」，
+      # 与下面 node-version（项目代码用什么 Node 跑）是两件事。
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v5
         with:
-          node-version: '20'
+          # 与本地开发环境同一大版本，门禁跑的就是平时跑的那个 Node
+          node-version: '24'
 
       - name: 拉取上游快照并比对
         id: fetch
