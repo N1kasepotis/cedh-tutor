@@ -521,3 +521,47 @@ test('playtest exposes one-step undo on the board without multi-level history', 
   // 新开局与已确认的刷新都不该还能撤回上一局面
   assert.match(js, /this\.undoSnapshot = null;\s*\n\s*this\.setData\(\{ canUndo: false \}\)/);
 });
+
+// 打出第一张牌后「撤销」出现，顶栏按钮从 4 颗变 5 颗。这一行原本就只剩 22rpx 余量，
+// 多一颗直接溢出 82rpx，而 min-width 挡住收缩，于是 CJK 标签在按钮内断字
+// （随机弃 → 随机/弃），看着就是换行加不对称。
+test('对局顶栏在「撤销」出现后仍能单行放下，且标签不断字', () => {
+  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/playtest/playtest.wxss'), 'utf8');
+  const T = 24; // --cedh-text-12
+  const width = (text) => Array.from(text)
+    .reduce((sum, ch) => sum + (/[一-鿿]/.test(ch) ? T : T * 0.5), 0);
+
+  // 用 indexOf 切规则块，不用拼正则——避免转义在不同写入路径下被吃掉
+  const rule = (name) => {
+    const start = wxss.indexOf(`.${name} {`);
+    assert.notEqual(start, -1, `未找到 .${name} 规则`);
+    return wxss.slice(start, wxss.indexOf('}', start) + 1);
+  };
+  const num = (source, prop) => {
+    const matched = source.split('\n').find((line) => line.trim().startsWith(`${prop}:`));
+    assert.ok(matched, `规则里没有 ${prop}`);
+    return Number(matched.replace(/[^0-9]/g, ''));
+  };
+
+  const actionRule = rule('board-action');
+  // 标签绝不允许在按钮内断字——这是这个 bug 的硬保证
+  assert.match(actionRule, /white-space:\s*nowrap/);
+  // 读数区不能被按钮挤窄
+  assert.match(rule('board-left'), /flex-shrink:\s*0/);
+  // 兜底：真机字体度量与估算有出入时整块换行，而不是挤压
+  assert.match(rule('board-top'), /flex-wrap:\s*wrap/);
+  assert.match(rule('board-actions'), /flex-wrap:\s*wrap/);
+
+  const minW = num(actionRule, 'min-width');
+  const padX = Number(actionRule.match(/padding:\s*0\s+(\d+)rpx/)[1]);
+  const gap = 8; // --cedh-space-1
+  const button = (label) => Math.max(minW, width(label) + padX * 2);
+
+  const readouts = width('手牌 7') + 16 + (56 + 4 + 56 + 4 + 56);
+  const available = 750 - 24 * 2; // 页面左右各 --cedh-space-4
+  const labels = ['撤销', 'Token', '随机弃', '刷新', '重置'];
+  const actions = labels.reduce((sum, label) => sum + button(label), 0) + (labels.length - 1) * gap;
+
+  assert.ok(readouts + actions <= available,
+    `五颗按钮时顶栏需 ${readouts + actions}rpx，超过可用 ${available}rpx——会挤压出断字`);
+});

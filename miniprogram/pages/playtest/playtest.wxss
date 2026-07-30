@@ -83,15 +83,22 @@
   min-height: 0;
 }
 
+/* 打出第一张牌后「撤销」出现，按钮从 4 颗变 5 颗，这一行就从 680rpx 涨到 784rpx，
+   超过可用的 702rpx（750 减两侧 24rpx 内边距）。允许换行是兜底：真机字体度量与估算
+   有出入时，按钮区整块落到第二行，而不是挤压出「随机弃 → 随机/弃」那种断字。 */
 .board-top {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
+  row-gap: var(--cedh-space-2);
   min-height: 56rpx;
 }
 
+/* 手牌数与血量是读数，不能被按钮挤窄 */
 .board-left {
   display: flex;
+  flex-shrink: 0;
   align-items: center;
   gap: var(--cedh-space-3);
 }
@@ -131,16 +138,21 @@
 
 .board-actions {
   display: flex;
-  gap: var(--cedh-space-2);
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: var(--cedh-space-1);
 }
 
+/* min-width 92→72、内边距 16→12、间距改 space-1：五颗按钮加读数区合计 692rpx，
+   落回 702rpx 之内。nowrap 是硬保证——宁可整块换行，也不许标签在按钮里断字。 */
 .board-action {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: 92rpx;
+  min-width: 72rpx;
   min-height: 44rpx;
-  padding: 0 16rpx;
+  padding: 0 12rpx;
+  white-space: nowrap;
   color: var(--cedh-text-soft);
   background: var(--cedh-surface-muted);
   border: var(--cedh-hairline);
