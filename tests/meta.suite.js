@@ -377,3 +377,62 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
     }
   });
 });
+
+// 每周巡检脚本：判定「上游变了没」必须比规范化后的 JSON，不能比原始字节——
+// 仓库里的 current.json 经 git 换行符转换后可能是 CRLF、上游直出是 LF，
+// 逐字节比会每周误报一次「有更新」，巡检很快就没人看了。
+test('上游巡检比对：忽略格式差异、识别真实变化、拦下坏数据', () => {
+  const os = require('node:os');
+  const { execFileSync } = require('node:child_process');
+
+  const localPath = path.join(root, 'tools/meta-tier/current.json');
+  const local = JSON.parse(fs.readFileSync(localPath, 'utf8'));
+  const tmp = fs.mkdtempSync(path.join(os.tmpdir(), 'metadiff-'));
+  const write = (name, value) => {
+    const file = path.join(tmp, name);
+    fs.writeFileSync(file, typeof value === 'string' ? value : JSON.stringify(value, null, 2), 'utf8');
+    return file;
+  };
+  const run = (file) => execFileSync('node', ['scripts/meta-tier-diff.js', file],
+    { cwd: root, encoding: 'utf8' });
+  const field = (out, key) => (out.match(new RegExp(`^${key}=(.*)$`, 'm')) || [])[1];
+  const rejects = (file) => {
+    try {
+      execFileSync('node', ['scripts/meta-tier-diff.js', file], { cwd: root, stdio: 'pipe' });
+      return false;
+    } catch (error) { return true; }
+  };
+
+  try {
+    // 字段顺序与缩进不同但内容一致 → 不算变化
+    const shuffled = JSON.parse(JSON.stringify(local));
+    shuffled.entries = shuffled.entries.map((entry) => Object.fromEntries(
+      Object.keys(entry).reverse().map((key) => [key, entry[key]]),
+    ));
+    assert.equal(field(run(write('shuffled.json', shuffled)), 'changed'), 'false',
+      '仅字段顺序/格式不同不应判为变化，否则每周误报');
+
+    // 换期：版本号变且少一条
+    const next = JSON.parse(JSON.stringify(local));
+    next.publication.id = '2026.08.15-1';
+    const dropped = next.entries.pop();
+    const nextOut = run(write('next.json', next));
+    assert.equal(field(nextOut, 'changed'), 'true');
+    assert.equal(field(nextOut, 'after'), '2026.08.15-1');
+    assert.equal(field(nextOut, 'removed'), dropped.id);
+
+    // 新增条目要能报出 id，便于 PR 里直接看出加了什么
+    const added = JSON.parse(JSON.stringify(local));
+    added.entries.push({ ...dropped, id: 'brand-new-deck' });
+    assert.equal(field(run(write('added.json', added)), 'added'), 'brand-new-deck');
+
+    // 上游挂掉时 raw.githubusercontent 会返回 HTML；结构不符也要拦，
+    // 否则会把错误页当快照写进仓库
+    assert.ok(rejects(write('bad.html', '<html><body>404: Not Found</body></html>')),
+      'HTML 错误页必须被拦下');
+    assert.ok(rejects(write('shape.json', { publication: { id: 'x' } })),
+      '缺 entries 的合法 JSON 也必须被拦下');
+  } finally {
+    fs.rmSync(tmp, { recursive: true, force: true });
+  }
+});

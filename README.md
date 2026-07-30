@@ -43,7 +43,9 @@
 9. **环境梯度 / Meta Tier List** `pages/meta`
    收录 **cEDH小屋**（`BY CPP123 + 345` 里的 345，即本项目合作方）人工编辑的 cEDH 套牌梯度表，**经作者授权**。按 T0–T4 分档列出 56 个原型，每条含中英名、指挥官、标签，点开看概述 / 制胜路线 / 优势 / 劣势 / 详细评价。指挥官卡图按 `scryfall_id` 直连 Scryfall（比 `?fuzzy=` 名字匹配精确，不受中英卡名与印次歧义影响）；参考牌表是 topdeck.gg 外链，个人主体不能用 `web-view`，因此**只复制到剪贴板**，与推荐结果页同一做法。
 
-   **快照而非实时**：数据随小程序包发布，不联网拉取——本项目不引入 Scryfall 之外的第二个请求域名。梯度更新流程是「覆盖 `tools/meta-tier/current.json` → 跑 `node scripts/build-meta-tier.js` → 重新提审」。页面顶部常驻版本号与发布日期，展开可见评级方法与「本页为快照」的说明。
+   **快照而非实时**：数据随小程序包发布，不联网拉取——本项目不引入 Scryfall 之外的第二个请求域名。梯度更新流程是「覆盖 `tools/meta-tier/current.json` → 跑 `node scripts/build-meta-tier.js` → 重新提审」。页面顶部常驻发布日期。
+
+   **每周自动巡检**：`.github/workflows/meta-tier-watch.yml` 每周一 05:23 UTC 拉一次上游 `current.json`（也支持手动触发），有变化就重新生成配置、跑 `npm run check`，然后**开 PR 而不是直接推 main**。两条理由：其一快照必须重新提审才会到用户手上，自动提交并不等于上线；其二上游一变就可能触发本地门禁——最常见是新增了很长的双拍档名而 `COMMANDER_SHORT_NAMES` 没收录，导致列表行宽度断言失败，那正是需要人补一条短名的信号，不该自动绕过，所以**门禁失败时照样开 PR**，把原因写进正文。比对逻辑在 `scripts/meta-tier-diff.js`：比的是规范化后的 JSON 而非原始字节（仓库文件可能是 CRLF、上游是 LF，逐字节比会每周误报一次「有更新」），并会拦下上游返回 HTML 错误页的情况。
 
    **导入时强制过滤**（`scripts/build-meta-tier.js`，测试逐条守住）：只收 `status === 'reviewed'` 且未下架、且档位在已声明列表内的条目——上游 `unranked` 是编辑区，绝不能公开；剥掉 QQ 群号一类站外导流（提审敏感），但**署名与免责声明必须保留**，那是随数据走的义务；丢掉本地图片路径等运行时用不到的字段。
 
@@ -133,6 +135,8 @@ external/edhti/                    EDHTI 来源仓库，仅备查，不入包
 tools/meta-tier/current.json       环境梯度源快照（cEDH小屋发布工具链导出，非小程序包内容）
 scripts/build-home-pixel-font.js   从受控 TTF 子集重建首页 base64 模块
 scripts/build-meta-tier.js         从 tools/meta-tier/current.json 生成环境梯度配置（含过滤与导流剥离）
+scripts/meta-tier-diff.js          比对上游与本地快照（规范化 JSON + 结构校验），供每周巡检调用
+.github/workflows/meta-tier-watch.yml  每周巡检上游梯度表，有更新则开 PR（非小程序包内容）
 scripts/diagnose-coverage.js       推荐覆盖率与视觉复杂度自检
 scripts/check-syntax.js            零依赖 JS 语法门禁（含未被 Node require 的页面脚本）
 scripts/edhti-odds.js              EDHTI 人格出现率蒙特卡洛重算（改题库后重跑贴回 config/edhti.js）
@@ -191,7 +195,7 @@ npm run syntax                      # 仅检查全部 JavaScript 语法
 npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊断
 ```
 
-当前基线：84 个 JavaScript 文件通过语法门禁，309 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`。
+当前基线：85 个 JavaScript 文件通过语法门禁，311 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`。
 
 诊断默认使用确定性的基准覆盖集：基线/单项变化、按主将标签构造的目标画像、固定种子的组合画像，以及颜色/资源引擎组合。排序复用生产逻辑中的拍档惩罚和低使用率多样性尾位，避免诊断模型与实际推荐分叉。需要离线穷举全部单选组合时使用 `node scripts/diagnose-coverage.js --mode=full`；该模式组合量很大，不用于日常 CI。
 

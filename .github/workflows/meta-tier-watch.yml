@@ -1,0 +1,118 @@
+name: 环境梯度快照巡检
+
+# 每周一 05:23 UTC（北京时间 13:23）。刻意不用整点：GitHub 的定时任务在 :00 严重拥塞，
+# 排队会被推迟很久。也留了手动触发，随时可以自己跑一次。
+on:
+  schedule:
+    - cron: '23 5 * * 1'
+  workflow_dispatch:
+
+# 只申请够用的权限：改分支、开 PR。不给 admin，也不碰 main。
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  group: meta-tier-watch
+  cancel-in-progress: false
+
+env:
+  UPSTREAM: https://raw.githubusercontent.com/Kuuusoda/cedh_tier_list/main/tier-list/public/data/current.json
+  SNAPSHOT: tools/meta-tier/current.json
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: 拉取上游快照并比对
+        id: fetch
+        run: |
+          set -euo pipefail
+          curl -fsSL --retry 3 --retry-delay 5 "$UPSTREAM" -o /tmp/upstream.json
+          # 比对与结构校验都在 scripts/meta-tier-diff.js 里：
+          # 它比的是规范化后的 JSON 而不是原始字节（仓库文件可能是 CRLF、上游是 LF，
+          # 逐字节比会每周误报），并会拦下上游返回 HTML 错误页的情况。
+          node scripts/meta-tier-diff.js /tmp/upstream.json | tee /tmp/diff.out >> "$GITHUB_OUTPUT"
+          if grep -q '^changed=true' /tmp/diff.out; then
+            cp /tmp/upstream.json "$SNAPSHOT"
+          fi
+
+      - name: 重新生成配置
+        if: steps.fetch.outputs.changed == 'true'
+        id: build
+        run: |
+          set -euo pipefail
+          node scripts/build-meta-tier.js | tee /tmp/build.log
+
+      # 不用 continue-on-error 掩盖失败——门禁红了照样开 PR，把原因写进 PR 正文。
+      # 最常见的红因是上游新增了很长的双拍档名，而 utils/meta-tier.js 的短名表没收录，
+      # 于是列表行宽度断言失败。那正是需要人补一条短名的信号，不该自动绕过。
+      - name: 跑门禁
+        if: steps.fetch.outputs.changed == 'true'
+        id: gate
+        continue-on-error: true
+        run: |
+          set -o pipefail
+          npm run check 2>&1 | tee /tmp/check.log
+
+      - name: 开 PR
+        if: steps.fetch.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          BEFORE: ${{ steps.fetch.outputs.before }}
+          AFTER: ${{ steps.fetch.outputs.after }}
+          GATE: ${{ steps.gate.outcome }}
+        run: |
+          set -euo pipefail
+          branch="meta-tier/${AFTER//[^0-9A-Za-z.-]/-}"
+          git config user.name  'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+          git checkout -B "$branch"
+          git add "$SNAPSHOT" miniprogram/config/meta-tier.js
+          git commit \
+            -m "环境梯度：快照更新 ${BEFORE} → ${AFTER}" \
+            -m "由 .github/workflows/meta-tier-watch.yml 自动生成。门禁结果：${GATE}。合并后仍需重新提审小程序，快照才会到用户手上。"
+          git push -f origin "$branch"
+
+          if [ "$GATE" = success ]; then
+            gate_line='✅ `npm run check` 全绿'
+            todo='- [ ] 复核判定依据无异常\n- [ ] 重新提审小程序（快照随包发布，不合并到线上就不会更新）'
+          else
+            gate_line='❌ `npm run check` 失败——**需要人工处理**'
+            todo='- [ ] 看下方门禁输出定位原因\n- [ ] 最常见：上游新增了很长的双拍档名，需在 `utils/meta-tier.js` 的 `COMMANDER_SHORT_NAMES` 补一条短名\n- [ ] 也可能是上游新增了未声明的档位，或方法论里出现了新的站外导流文案\n- [ ] 修好后再重新提审'
+          fi
+
+          {
+            printf '上游梯度表有更新：`%s` → `%s`\n\n' "$BEFORE" "$AFTER"
+            printf '条目数 %s → %s' "${{ steps.fetch.outputs.before_count }}" "${{ steps.fetch.outputs.after_count }}"
+            [ -n "${{ steps.fetch.outputs.added }}" ] && printf '　新增：`%s`' "${{ steps.fetch.outputs.added }}"
+            [ -n "${{ steps.fetch.outputs.removed }}" ] && printf '　移除：`%s`' "${{ steps.fetch.outputs.removed }}"
+            printf '\n\n'
+            printf '%s\n\n' "$gate_line"
+            printf '### 待办\n'
+            printf '%b\n\n' "$todo"
+            printf '### 导入脚本输出\n```\n'
+            cat /tmp/build.log 2>/dev/null || echo '(无)'
+            printf '```\n\n'
+            if [ "$GATE" != success ]; then
+              printf '### 门禁输出（末 60 行）\n```\n'
+              tail -60 /tmp/check.log 2>/dev/null || echo '(无)'
+              printf '```\n'
+            fi
+          } > /tmp/body.md
+
+          gh pr create \
+            --title "环境梯度：快照更新 ${BEFORE} → ${AFTER}" \
+            --body-file /tmp/body.md \
+            --base main --head "$branch" \
+            || gh pr edit "$branch" --body-file /tmp/body.md
+
+      - name: 无变化时留个痕
+        if: steps.fetch.outputs.changed == 'false'
+        run: echo "上游快照未变（${{ steps.fetch.outputs.before }}），本周无需处理。" >> "$GITHUB_STEP_SUMMARY"
