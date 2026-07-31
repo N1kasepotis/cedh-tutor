@@ -116,12 +116,38 @@ function decorateEntry(entry) {
   };
 }
 
+// 列表投影：只带列表真正渲染的字段。
+//
+// setData 是小程序里唯一的跨线程通道，推过去的每个字节都要序列化。此前列表直接推
+// decorateEntry 的完整结果（内含 summary / winConditions / strengths / weaknesses /
+// analysis / commanders / deckUrl），56 行合计 67KB，其中 34.7KB 列表一个字都不渲染。
+// 详情面板本来就走 findEntry(id) 从 metaTierEntries 重新取完整条目，列表里那份副本
+// 从来没有被任何代码读过——纯粹是过桥运费。
+//
+// 卡图同理：列表只用 art（art_crop），normal 与 cn 是详情面板放大用的，不必随列表过桥。
+function toListItem(entry) {
+  const full = decorateEntry(entry);
+  return {
+    id: full.id,
+    tags: full.tags,
+    displayNameZh: full.displayNameZh,
+    displayNameEn: full.displayNameEn,
+    showEnName: full.showEnName,
+    nameZhClass: full.nameZhClass,
+    nameEnClass: full.nameEnClass,
+    art: {
+      mode: full.art.mode,
+      images: full.art.images.map((image) => ({ en: image.en, art: image.art })),
+    },
+  };
+}
+
 // 按档位分组；空档位不渲染，避免出现只有标题的空行
 function buildTierGroups(entries) {
   const byTier = new Map();
   (entries || []).forEach((entry) => {
     if (!byTier.has(entry.tier)) byTier.set(entry.tier, []);
-    byTier.get(entry.tier).push(decorateEntry(entry));
+    byTier.get(entry.tier).push(toListItem(entry));
   });
 
   return metaTierConfig.tiers
@@ -186,6 +212,7 @@ function buildMetaSummary() {
 
 module.exports = {
   buildTierGroups,
+  toListItem,
   buildCommanderArt,
   shortenPartnerZh,
   shortenPartnerEn,

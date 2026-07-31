@@ -76,6 +76,56 @@ test('环境梯度与强度分级保持解耦：评估器不得依赖梯度数�
   assert.doesNotMatch(readMini('utils/bracket.js'), /待 meta 分析加入后提供/);
 });
 
+// setData 是小程序唯一的跨线程通道，推过去的每个字节都要序列化。列表此前直接推
+// decorateEntry 的完整结果，56 行 67KB，其中 34.7KB 是列表根本不渲染的详情字段
+// （summary / analysis / commanders …）——而详情面板本来就走 findEntry 重新取，
+// 列表里那份副本从没被读过。
+test('环境梯度列表只推渲染所需字段，详情仍取得到完整数据', () => {
+  const { toListItem } = require('../miniprogram/utils/meta-tier');
+  const groups = buildTierGroups(metaTierEntries);
+  const listed = groups.flatMap((group) => group.entries);
+
+  // 列表项不得携带只有详情面板才用的重字段
+  const detailOnly = ['summary', 'winConditions', 'strengths', 'weaknesses', 'analysis',
+    'commanders', 'deckUrl', 'hasDeckUrl', 'nameZh', 'nameEn', 'tier'];
+  listed.forEach((item) => {
+    detailOnly.forEach((key) => {
+      assert.ok(!(key in item),
+        `列表项 ${item.id} 仍带着详情字段 ${key}——它不会被渲染，只是白过一次桥`);
+    });
+  });
+
+  // 卡图在列表里只需要 art_crop；normal 与 cn 是详情放大用的
+  listed.forEach((item) => {
+    item.art.images.forEach((image) => {
+      assert.ok(image.art, '列表卡图缺 art_crop');
+      assert.ok(!('normal' in image) && !('cn' in image),
+        '列表卡图不应携带详情才用的 normal / cn');
+    });
+  });
+
+  // 传输量守一个上限：现约 23.5KB，留出余量到 40KB。数据涨到触线时应先想投影，
+  // 而不是默默让首帧越来越重。
+  const payload = Buffer.byteLength(JSON.stringify({ tierGroups: groups }), 'utf8');
+  assert.ok(payload < 40 * 1024,
+    `列表 setData 已达 ${(payload / 1024).toFixed(1)}KB，超过 40KB 上限`);
+
+  // 详情侧必须仍然完整——投影只减列表，不减详情
+  const detail = findEntry(metaTierEntries[0].id);
+  detailOnly.forEach((key) => {
+    assert.ok(key in detail, `详情面板缺字段 ${key}`);
+  });
+  assert.ok(detail.art.images[0].normal, '详情放大需要 normal 尺寸');
+
+  // toListItem 与 decorateEntry 在共有字段上必须一致，避免两条路径漂移
+  const sample = metaTierEntries[0];
+  const slim = toListItem(sample);
+  const full = decorateEntry(sample);
+  ['displayNameZh', 'displayNameEn', 'showEnName', 'nameZhClass', 'nameEnClass'].forEach((key) => {
+    assert.deepEqual(slim[key], full[key], `${key} 在列表投影与完整派生之间不一致`);
+  });
+});
+
 test('环境梯度：分组、派生与详情查找', () => {
   const groups = buildTierGroups(metaTierEntries);
   assert.ok(groups.length, '应至少有一个非空档位');
