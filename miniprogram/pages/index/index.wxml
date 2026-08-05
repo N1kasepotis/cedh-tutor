@@ -1,4 +1,22 @@
 <view class="page home">
+  <view class="home-field" aria-hidden="true">
+    <view class="home-field-drift">
+      <view
+        class="home-field-line"
+        wx:for="{{fieldLines}}"
+        wx:key="k"
+        style="left: {{item.x}}%; top: {{item.y}}%; width: {{item.len}}%; transform: rotate({{item.deg}}deg);"
+      ></view>
+      <view
+        class="home-field-node"
+        wx:for="{{fieldNodes}}"
+        wx:for-item="node"
+        wx:key="k"
+        style="left: {{node.x}}%; top: {{node.y}}%;"
+      ></view>
+    </view>
+  </view>
+
   <view class="home-content">
     <view class="home-hero" style="padding-top: {{homeNavClearancePx}}px;">
       <view class="home-format-notes" aria-label="Commander format annotations">

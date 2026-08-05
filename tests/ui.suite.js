@@ -814,3 +814,71 @@ test('non-home interface surfaces use translucent glass tokens so particles rema
   assert.doesNotMatch(pageWxss, /background:\s*rgba\(255,\s*254,\s*250,\s*0\.(8[6-9]|9\d)\)/);
   assert.doesNotMatch(pageWxss, /radial-gradient/);
 });
+
+// 首页背景的 Voronoi 线场。选它不是审美偏好，是约束推出来的：
+// border-radius 锁死为唯一一条 0，渐变/背景图/裁切路径全在禁用之列，
+// 只剩「直线段 + transform + 既有色板」——而 Voronoi 的胞元边恰好全是直线段，
+// 且天然不规则、没有可重复的单元。
+test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', () => {
+  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.js'), 'utf8');
+  const { HOME_VORONOI_EDGES, HOME_VORONOI_NODES } = require('../miniprogram/config/home-voronoi');
+
+  // 几何在构建期算好，运行时不算
+  assert.match(fs.readFileSync(path.join(root, 'miniprogram/config/home-voronoi.js'), 'utf8'),
+    /由 scripts\/build-home-voronoi\.js 生成，请勿手改/);
+  assert.ok(HOME_VORONOI_EDGES.length >= 20, '线段太少，构不成胞元结构');
+  HOME_VORONOI_EDGES.forEach((edge) => {
+    ['x', 'y', 'len', 'deg'].forEach((key) => assert.equal(typeof edge[key], 'number'));
+  });
+
+  // 不规则性要能被验证：线段长度必须显著参差，否则就成了规则网格
+  const lens = HOME_VORONOI_EDGES.map((e) => e.len);
+  assert.ok(Math.max(...lens) / Math.min(...lens) > 5,
+    '线段长度过于均匀，看起来会像网格而不是 Voronoi');
+
+  // 传输量：静态几何一次推完，不该膨胀
+  const payload = Buffer.byteLength(JSON.stringify({ HOME_VORONOI_EDGES, HOME_VORONOI_NODES }), 'utf8');
+  assert.ok(payload < 6 * 1024, `线场数据 ${(payload / 1024).toFixed(1)}KB，超过 6KB 上限`);
+
+  // 动效必须是纯 CSS：JS 里不得有定时器逐帧改线场数据（那要每帧 setData 过桥）
+  assert.doesNotMatch(js, /setInterval|requestAnimationFrame/);
+  assert.doesNotMatch(js, /fieldLines:\s*\[\s*\]/);
+  assert.match(js, /fieldLines: HOME_VORONOI_EDGES\.map/);
+
+  // 只动 transform，不碰布局属性。用 indexOf 切块而不是拼正则，避免转义在写入路径上被吃掉。
+  ['home-field-turn', 'home-field-drift'].forEach((name) => {
+    const start = wxss.indexOf(`@keyframes ${name}`);
+    assert.notEqual(start, -1, `找不到 @keyframes ${name}`);
+    const frames = wxss.slice(start, wxss.indexOf('\n}', start) + 2);
+    assert.match(frames, /transform:/);
+    assert.doesNotMatch(frames, /\b(width|height|top|left|margin|padding)\s*:/,
+      `${name} 不得动布局属性`);
+  });
+
+  // 不规律靠两层互质周期叠加，而不是每帧重算
+  const period = (name) => {
+    const line = wxss.split('\n').find((row) => row.includes(`animation: ${name} `));
+    assert.ok(line, `找不到 ${name} 的 animation 声明`);
+    return Number(line.match(/ (\d+)s/)[1]);
+  };
+  const turn = period('home-field-turn');
+  const drift = period('home-field-drift');
+  assert.notEqual(turn, drift, '两层周期相同就会同步，合成运动变得规律');
+  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
+  assert.equal(gcd(turn, drift), 1, `周期 ${turn}s 与 ${drift}s 必须互质，否则会较快回到同一相位`);
+
+  // 减弱动态效果时停下
+  assert.match(wxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.home-field[\s\S]*animation:\s*none/);
+
+  // 纯装饰：不进无障碍树、不吃触摸
+  assert.match(wxml, /class="home-field" aria-hidden="true"/);
+  assert.match(wxss, /\.home-field\s*\{[^}]*pointer-events:\s*none/);
+
+  // 容器必须是正方形：线段长度在 100×100 坐标系里算的，非正方形会把长度拉伸错
+  const fieldRule = wxss.match(/\.home-field\s*\{[^}]*\}/)[0];
+  const w = fieldRule.match(/width:\s*(\d+)vw/)[1];
+  const h = fieldRule.match(/height:\s*(\d+)vw/)[1];
+  assert.equal(w, h, '线场容器必须是正方形，否则百分比长度会被拉伸成错误比例');
+});

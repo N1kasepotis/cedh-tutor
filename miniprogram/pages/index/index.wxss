@@ -5,6 +5,7 @@ page {
 }
 
 .home {
+  position: relative; /* 背景线场按它定位，不能依赖默认的初始包含块 */
   box-sizing: border-box;
   width: 100%;
   height: 100vh;
@@ -18,7 +19,66 @@ page {
   font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
 }
 
+/* ===== 背景：Voronoi 线场 =====
+   选它是因为首页的约束把别的路都堵死了：border-radius 锁死为唯一一条 0，圆形画不了；
+   渐变、背景图、裁切路径也全在禁用之列（测试连注释一起扫，所以这里只能中文描述）。
+   只剩「直线段 + transform + 既有色板」，而 Voronoi 的胞元边恰好全是直线段，
+   又天然不规则、没有可重复的单元。线段坐标由 scripts/build-home-voronoi.js 构建期算好。
+
+   容器取正方形（边长按视口宽算）：线段长度是在 100×100 的方形坐标系里算的，
+   若容器非正方形，百分比宽度会被拉伸成错误长度。做成正方形并允许溢出，
+   胞元自然被 .home 的 overflow:hidden 裁掉，读起来像「更大结构的一角」而不是一张完整图案。 */
+.home-field {
+  position: absolute;
+  top: -30vw;
+  right: -25vw;
+  width: 120vw;
+  height: 120vw;
+  opacity: 0.55;
+  pointer-events: none;
+  animation: home-field-turn 71s ease-in-out infinite alternate;
+}
+
+.home-field-drift {
+  width: 100%;
+  height: 100%;
+  animation: home-field-drift 97s ease-in-out infinite alternate;
+}
+
+.home-field-line {
+  position: absolute;
+  height: 1px;
+  background: rgba(0,0,0,0.35);
+  transform-origin: left center;
+}
+
+/* 结点：Black Orbit 母题里的 junction spark。全页唯一的事故色在这里只用两枚 2px 方点，
+   小到不与 glitch 行抢注意力，但让线场有「交汇处」而不只是一堆线。 */
+.home-field-node {
+  position: absolute;
+  width: 2px;
+  height: 2px;
+  margin: -1px 0 0 -1px;
+  background: #00B3FF;
+}
+
+/* 两层动效的周期刻意取互质的 71s 与 97s，且都是 alternate（实际周期 142s 与 194s）。
+   两者最小公倍数约 3.8 小时，合成运动在一次使用里永远走不完一轮——这是不靠每帧重算
+   就能得到「不规律」的办法。真正的 Voronoi 动画（种子移动、胞元重算）在移动端并不简单：
+   要每帧重算 38 条线再 setData 过桥，正是该避免的做法；而这里两个 transform 走合成器，
+   不碰数据层。 */
+@keyframes home-field-turn {
+  from { transform: rotate(-2.4deg); }
+  to { transform: rotate(2.4deg); }
+}
+
+@keyframes home-field-drift {
+  from { transform: translate3d(-1.6%, 1.1%, 0); }
+  to { transform: translate3d(1.6%, -1.1%, 0); }
+}
+
 .home-content {
+  position: relative;
   display: flex;
   width: 100%;
   height: 100%;
@@ -471,5 +531,11 @@ page {
 @media (prefers-reduced-motion: reduce) {
   .home-button {
     transition: none;
+  }
+
+  /* 线场停在中位，图形本身仍在，只是不再漂移 */
+  .home-field,
+  .home-field-drift {
+    animation: none;
   }
 }
