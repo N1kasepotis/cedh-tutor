@@ -50,7 +50,7 @@ test('home exposes the Life Tracker as the fifth unified index entry', () => {
   assert.match(wxml, /class="home-button home-button-life[^>]*bindtap="goLifeTracker"/);
   assert.match(wxml, /血量记录/);
   assert.match(wxml, /LIFE COUNTER/);
-  assert.match(wxml, /home-button-life[^>]*>[\s\S]*?home-button-index[^"]*">05<\/text>/);
+  assert.match(wxml, /home-button-life[^>]*>[\s\S]*?home-button-index[^"]*"\s+aria-label="05"/);
   assert.match(js, /goLifeTracker\(\)\s*{[\s\S]*?navigateTo\([\s\S]*?\/pages\/life-tracker\/life-tracker/);
   assert.doesNotMatch(wxss, /--home-accent|\.home-button-life\s*{/);
   assert.match(wxss, /\.home-index-active\s*{[\s\S]*background:\s*#0A0A0A/);

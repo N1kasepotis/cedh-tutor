@@ -96,9 +96,10 @@ test('home is a single-screen acid index with the eight existing actions', () =>
       'META TIER LIST',
     ],
   );
-  // 编号与 key 后可跟随巨号/偏移/粗分割等破坏性修饰类，提取放宽到 key 边界
+  // 编号已拆成两位各自处置的数字，序号不再是单一文本节点，改从 aria-label 取
+  // （这个 aria-label 同时修好读屏：拆开后原本会被念成「零 五」）
   assert.deepEqual(
-    Array.from(wxml.matchAll(/class="home-button-index[^"]*">(\d{2})<\/text>/g), (match) => match[1]),
+    Array.from(wxml.matchAll(/class="home-button-index[^"]*"\s+aria-label="(\d{2})"/g), (match) => match[1]),
     ['01', '02', '03', '04', '05', '06', '07', '08'],
   );
   assert.deepEqual(
@@ -209,28 +210,68 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 编号提为纯黑巨号（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
   assert.match(wxss, /\.home-button-index\s*{[^}]*color:\s*#0A0A0A/);
 
-  // 编号有四种字面「声音」，按行的既有角色分配（heavy / shift / plain / short），
-  // 不是八行八种、也不是八行一种——避免退回「只有字号差别、没有字体对比」的状态
-  const indexVoices = {
-    'home-index-shout': ['01', '05'],
-    'home-index-redacted': ['02', '06'],
-    // 08 是 tall 但非 heavy，与 03/07 一样没有额外角色修饰，归入点阵
-    'home-index-whisper': ['03', '07', '08'],
-    'home-index-stretch': ['04'],
-  };
-  Object.entries(indexVoices).forEach(([voice, numbers]) => {
-    numbers.forEach((n) => {
-      assert.match(wxml, new RegExp(`class="home-button-index[^"]*${voice}">${n}<`),
-        `${n} 应使用 ${voice} 字面`);
-    });
+  // 编号拆成两位、每位单独处置：八行八副配方，且同一枚编号里两位也不相同。
+  // 这条锁的是「混乱」本身——退回任何两行同款，或退回整枚编号一种字面，都会断。
+  const indexRecipes = [...wxml.matchAll(
+    /class="home-button-index[^"]*"\s+aria-label="(\d{2})">([\s\S]*?)<\/text>\s*<view/g,
+  )].map(([, number, inner]) => ({
+    number,
+    digits: [...inner.matchAll(/class="home-digit([^"]*)">(\d)</g)].map((m) => m[1].trim()),
+  }));
+  assert.equal(indexRecipes.length, 8, '八行编号都要拆成两位数字');
+  assert.deepEqual(indexRecipes.map((r) => r.number),
+    ['01', '02', '03', '04', '05', '06', '07', '08']);
+  indexRecipes.forEach((r) => {
+    assert.equal(r.digits.length, 2, `${r.number} 应为两位各自带处置的数字`);
+    assert.notEqual(r.digits[0], r.digits[1],
+      `${r.number} 两位处置相同，编号又变回铁板一块`);
   });
-  // 三套字面必须真的不同族：超粗 / 点阵 / 等宽
-  assert.match(wxss, /\.home-index-shout\s*{[^}]*font-family:\s*"cEDHDisplay"/);
-  assert.match(wxss, /\.home-index-whisper\s*{[^}]*font-family:\s*"HomePixel"/);
-  // 点阵放大必须落在 10px 网格整数倍上，否则真机糊
-  const whisperSize = Number(wxss.match(/\.home-index-whisper\s*{[^}]*font-size:\s*(\d+)px/)[1]);
-  assert.equal(whisperSize % 10, 0, `点阵编号字号需为 10 的整数倍，当前 ${whisperSize}px`);
-  assert.ok(whisperSize >= 28, '点阵编号仍须是巨号，对比来自肌理而不是缩小');
+  const recipeKeys = indexRecipes.map((r) => r.digits.join('|'));
+  assert.equal(new Set(recipeKeys).size, 8,
+    `有两行编号用了同一副配方，混乱度掉回去了：${recipeKeys.join('  ')}`);
+
+  // 编号必须真的用满三种不同族的字面，而不是靠字号和位移糊弄
+  assert.match(wxss, /\.home-digit-shout\s*{[^}]*font-family:\s*"cEDHDisplay"/);
+  assert.match(wxss, /\.home-digit-pixel\s*{[^}]*font-family:\s*"HomePixel"/);
+  ['home-digit-shout', 'home-digit-pixel'].forEach((face) => {
+    assert.ok(recipeKeys.some((k) => k.includes(face)), `编号里必须出现 ${face}`);
+  });
+  assert.ok(recipeKeys.some((k) => k.split('|').some((d) => d === '')),
+    '至少留一位不加处置的等宽数字，三种字面才都在场');
+
+  // 点阵字号必须落在 10px 网格整数倍上，否则真机糊。tiny 是缩小档，只要求落格
+  [['home-digit-pixel', 28], ['home-digit-tiny', 0]].forEach(([cls, min]) => {
+    const size = Number(wxss.match(new RegExp(`\\.${cls}\\s*{[^}]*font-size:\\s*(\\d+)px`))[1]);
+    assert.equal(size % 10, 0, `${cls} 字号需为 10 的整数倍，当前 ${size}px`);
+    assert.ok(size >= min, `${cls} 字号 ${size}px 太小`);
+  });
+  // 尺度断裂要真的拉得开，否则「缩小」读不出来
+  const pixelSize = Number(wxss.match(/\.home-digit-pixel\s*{[^}]*font-size:\s*(\d+)px/)[1]);
+  const tinySize = Number(wxss.match(/\.home-digit-tiny\s*{[^}]*font-size:\s*(\d+)px/)[1]);
+  assert.ok(pixelSize / tinySize >= 2.5,
+    `同一枚编号里的尺度差只有 ${(pixelSize / tinySize).toFixed(1)} 倍，断裂感不够`);
+
+  // transform 对非替换行内元素无效，数字必须是 inline-block，否则倾倒/翻转/拉伸全部静默失效
+  assert.match(wxss, /\.home-digit\s*{[^}]*display:\s*inline-block/);
+
+  // 位移只能走 transform：改用 top/left 或 margin 上下会顶开行高，八行布局会被撑破
+  ['home-digit-tiny', 'home-digit-tilt', 'home-digit-lift', 'home-digit-flip',
+    'home-digit-wide', 'home-digit-tall'].forEach((cls) => {
+    const rule = wxss.match(new RegExp(`\\.${cls}\\s*\\{[^}]*\\}`))[0];
+    assert.match(rule, /transform:/, `${cls} 应该靠 transform 形变`);
+    assert.doesNotMatch(rule, /\b(top|bottom|height|margin-top|margin-bottom)\s*:/,
+      `${cls} 不得用参与布局的属性做位移，会改行高`);
+  });
+
+  // 半透明黑的那位数字在按压态会黑底黑字消失，必须与涂黑编号一样单独反相
+  assert.match(wxss, /\.home-digit-ghost\s*{[^}]*color:\s*rgba\(0,0,0,0\.35\)/);
+  assert.match(wxss, /\.home-index-active \.home-digit-ghost\s*{[^}]*color:\s*#00B3FF/);
+
+  // 旧的四声音类已下岗，不留孤儿样式
+  ['home-index-shout', 'home-index-whisper', 'home-index-stretch'].forEach((dead) => {
+    assert.doesNotMatch(wxss, new RegExp(`\\.${dead}\\s*{`), `${dead} 已不再使用，应删除`);
+    assert.doesNotMatch(wxml, new RegExp(dead), `${dead} 已不再使用，应从模板移除`);
+  });
   // 涂黑编号在 glitch 行必须另行反相，否则黑底黑字整枚消失
   assert.match(wxss, /\.home-button\.is-glitch \.home-index-redacted\s*{[^}]*color:\s*#00B3FF/);
   // 实心黑块比字形宽出左右各 10rpx，会吃掉原本靠字形侧边距留出的间隙、直接顶到中文；

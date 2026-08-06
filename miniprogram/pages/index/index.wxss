@@ -269,43 +269,94 @@ page {
   margin-left: -40rpx;
 }
 
-/* 编号的四种字面「声音」：不按行号随机换字体，而是跟着每行本来就有的角色走
-   （heavy / shift / plain / short），让差异读起来是系统而不是杂音。
-   全部复用已内嵌的两套字体与既有色板，不新增资源、不引入会静默失败的描边。 */
+/* ===== 编号的字面：八行八副处置，两位数字互相不合 =====
+   上一版是「四种声音按行的角色分配」——那是个系统，八行读下来齐整。这一版把编号本身拆开：
+   每枚编号是两位数字，两位各受不同处置，且八行没有任何两行重样。
+   处置来自同一套形变词汇（超粗 / 点阵 / 缩小 / 涂黑 / 倾倒 / 压扁 / 抻高 / 翻转 / 淡出 / 咬合），
+   所以这是有词汇表的混乱，不是随机噪声。
 
-/* 喊叫（heavy 行 01/05）：与 cEDH Tutor 字标同源的超粗，字标喊、编号也喊 */
-.home-index-shout {
+   三条自加的红线，保证「更混乱」不等于「更失控」：
+   · 不新增字体与颜色，仍是已内嵌的两套字体 + Courier 栈 + 六色色板；
+   · 每位数字都不超过所在行原有的最大字号，行高与八行布局分毫不变；
+   · 位移一律走 transform（不参与布局），只有「咬合」用负边距——它只会收窄，不会撑破。 */
+.home-digit {
+  display: inline-block; /* transform 对非替换的行内元素无效，必须转成 inline-block */
+  vertical-align: baseline;
+  line-height: 0.8;
+}
+
+/* 超粗：与 cEDH Tutor 字标同源，字标喊、这位数字也喊 */
+.home-digit-shout {
   font-family: "cEDHDisplay", "Arial Black", Impact, "Avenir Next Condensed", "DIN Condensed", sans-serif;
   font-weight: 900;
   letter-spacing: -0.04em;
 }
 
-/* 涂黑（shift 行 02/06）：这两行本来就负位移压在文字上，改成实心黑块反白，
-   与注释墙的「审查涂黑」同一语汇，压得更狠 */
-.home-index-redacted {
-  padding: 2rpx 10rpx;
-  /* 黑块比字形宽出 10rpx，会吃掉原本靠字形侧边距留出的间隙、顶到中文；
-     这里把间隙还回来，让实心块与中文之间仍有可呼吸的留白 */
-  margin-right: 18rpx;
-  color: #D0F03C;
-  background: #0A0A0A;
-  letter-spacing: 0.04em;
-}
-
-/* 点阵（plain 行 03/07）：与下方点阵中文目录同族。对比来自「点阵 vs 实心」的肌理，
-   不是靠缩小，所以仍保持巨号；30px 是 10px 网格的整数倍，放大后依然锐利 */
-.home-index-whisper {
+/* 点阵：与下方点阵中文目录同族。对比来自「点阵 vs 实心」的肌理而不是缩小，所以仍是巨号；
+   30px 是 10px 网格的整数倍，放大后依然锐利 */
+.home-digit-pixel {
   font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
   font-size: 30px;
   font-weight: 400;
   letter-spacing: 0.08em;
 }
 
-/* 变形（short 行 04）：横向拉伸，呼应被 scaleX 拉变形的字标 */
-.home-index-stretch {
-  transform: scaleX(1.5);
+/* 缩小并抬到肩上：同一枚编号里拉开近三倍的尺度断裂。
+   必须排在 pixel 之后——两者同为单类选择器，靠源码顺序决定字号谁说了算。
+   10px 是点阵字体的原生尺寸，仍落在 10px 网格上 */
+.home-digit-tiny {
+  font-size: 10px;
+  letter-spacing: 0;
+  transform: translateY(-13px);
+}
+
+/* 涂黑：延续注释墙的「审查涂黑」语汇，但只吃掉两位里的一位，另一位裸露在外 */
+.home-index-redacted {
+  padding: 2rpx 10rpx;
+  /* 黑块比字形宽出 10rpx，会吃掉原本靠字形侧边距留出的间隙、顶到相邻文字；
+     这里把间隙还回来，让实心块与右邻仍有可呼吸的留白 */
+  margin-right: 18rpx;
+  color: #D0F03C;
+  background: #0A0A0A;
+  letter-spacing: 0.04em;
+}
+
+/* 倾倒：转出基线并下坠，像没站稳 */
+.home-digit-tilt {
+  transform: translateY(6px) rotate(13deg);
+}
+
+/* 压扁：横向拉伸两倍。scaleX 是视觉放大不占位，右边要手动让出被撑开的那一半，
+   否则会直接压到同一枚编号里的下一位 */
+.home-digit-wide {
+  margin-right: 10px;
+  transform: scaleX(2);
   transform-origin: left center;
-  letter-spacing: -0.02em;
+}
+
+/* 抻高：纵向拉长，与同一枚编号里被压扁的那位构成两个相反的形变 */
+.home-digit-tall {
+  transform: scaleY(1.45);
+  transform-origin: bottom center;
+}
+
+/* 翻转：6 转 180° 读作 9——混沌工具把自己倒了过来 */
+.home-digit-flip {
+  transform: rotate(180deg);
+}
+
+/* 淡出：退到装饰档的半透明黑，让另一位独自承担这枚编号 */
+.home-digit-ghost {
+  color: rgba(0,0,0,0.35);
+}
+
+/* 抬升 + 咬合：两位不再并排，而是错位叠住 */
+.home-digit-lift {
+  transform: translateY(-9px);
+}
+
+.home-digit-bite {
+  margin-left: -6px;
 }
 
 .home-button-text {
@@ -415,6 +466,12 @@ page {
 .home-index-active .home-button-index,
 .home-index-active .home-button-zh,
 .home-index-active .home-button-en {
+  color: #00B3FF;
+}
+
+/* 淡出的那位数字自带半透明黑，按压时整行翻成纯黑底，它会黑底黑字整枚消失。
+   与涂黑编号同理，必须单独反相——只在按压态放弃「淡出」，静止态仍是幽灵。 */
+.home-index-active .home-digit-ghost {
   color: #00B3FF;
 }
 
