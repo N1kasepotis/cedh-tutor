@@ -269,79 +269,94 @@ page {
   margin-left: -40rpx;
 }
 
-/* ===== 编号的字面：八行八种字体，差异只由字体承担 =====
-   上一版把编号拆成两位、各自缩放旋转涂黑，读下来是错乱而不是丰富。这一版收回：
-   编号仍是一枚完整的两位数，**同一枚编号内两位数字字号完全一致**，不做任何形变、位移、
-   反白与淡出——八行之间唯一的差别就是字体本身。
+/* ===== 编号的字面：八行八种字体 × 八种赛博朋克处置 =====
+   编号仍是一枚完整的两位数，**同一枚编号内两位字号完全一致**，不做缩放、旋转与位移——
+   八行之间的差别只来自「字体 + 投影」这两样。
 
-   凑齐八种字体的办法：两套已内嵌的字体（超粗 Archivo Black / 点阵 Fusion Pixel）打底，
-   其余六种走系统字体族。难点在安卓：WeChat 能拿到的系统字体远比 iOS 少，多条栈最终会落到
-   同一个通用族上。所以这六种是按「通用族 × 字重」两两错开排的——
-   窄体700 / 等宽700 / 等宽400 / 衬线700 / 衬线400 / 无衬线200，
-   即便安卓只给出 Roboto、Roboto Condensed、Noto Serif、Droid Sans Mono 四款，
-   八行仍然两两可辨。iOS 上还能各自落到 Avenir Next Condensed、Courier、Menlo、
-   Georgia、Times、Helvetica Neue Thin 这些真正不同的设计上。
+   投影是这一版唯一新增的手段，也只开放给编号（ui.suite 校验：全页别处仍禁 text-shadow）。
+   颜色一律取自既有六色板：电光蓝 #00B3FF 与纯黑 #0A0A0A 打在酸性黄绿底上，本身就是
+   霓虹管 + 硬阴影的配色，不需要再引入紫红。八种处置各取一种赛博语汇：
+   立体挤出 / 霓虹辉光 / 色差错位 / 空心描边 / CRT 泛光 / 残影拖尾 / 扫描线错行 / 硬投影。
 
-   不使用斜体：首页整体禁斜体（ui.suite 有全页断言），且系统合成的伪斜体在真机上很廉价。
-   字号一律由行的档位类（-xl / -xxl / -over）给，字面类不碰 font-size——唯一例外是点阵那行，
-   点阵字体必须落在 10px 网格整数倍上才锐利，该行档位 38px 会糊，所以取整到 40px。 */
+   两条纪律：
+   · 偏移一律 ≤4px、模糊 ≤14px——投影不参与布局，但视觉上会越界撞到右侧中文；
+   · 反相态（glitch 行 / 按压）统一收掉投影：那两种状态下底色正是影色，留着会糊成一团。
 
-/* 01 人格测试：与 cEDH Tutor 字标同源的超粗，开篇这行跟着字标一起喊 */
+   衬线在这一版被整体换掉了：Georgia / Times 这类读起来是编辑部而不是赛博，
+   八行现在只在超粗 / 窄体 / 等宽 / 点阵 / 细体之间分配。安卓系统字体少，
+   落到同一通用族的行靠「字重 + 投影」再分开，测试按这个组合键校验。
+
+   字号一律由行的档位类（-xl / -xxl / -over）给，字面类不碰 font-size——
+   唯一例外是点阵那行，点阵必须落在 10px 网格整数倍上才锐利，该行档位 38px 会糊，取整 40px。 */
+
+/* 01 人格测试：超粗 + 立体挤出。三层硬投影逐级推出，末层落电光蓝，像印歪的丝网海报 */
 .home-index-face-01 {
   font-family: "cEDHDisplay", "Arial Black", Impact, "Helvetica Neue", sans-serif;
   font-weight: 900;
   letter-spacing: -0.04em;
+  text-shadow: 1px 1px 0 #0A0A0A, 2px 2px 0 #0A0A0A, 3px 3px 0 #00B3FF;
 }
 
-/* 02 火花觉醒：窄体。这行本就负位移挂在左缘外，窄身让它更像被挤出去的 */
+/* 02 火花觉醒：窄体 + 霓虹辉光。两层同色模糊叠出灯管的散射，呼应「觉醒」那点亮起来的意思 */
 .home-index-face-02 {
   font-family: "Avenir Next Condensed", "DIN Condensed", Haettenschweiler, "Arial Narrow", "sans-serif-condensed", sans-serif;
   font-weight: 700;
   letter-spacing: 0.02em;
+  text-shadow: 0 0 6px #00B3FF, 0 0 14px #00B3FF;
 }
 
-/* 03 强度分级：打字机等宽，实验室口吻，与这行的分析属性对上 */
+/* 03 强度分级：打字机等宽 + 色差错位。左黑右蓝反向硬分离，就是通道没对齐的那种故障，
+   配这行的分析属性——数据读出来了，但信号是脏的 */
 .home-index-face-03 {
   font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
   font-weight: 700;
   letter-spacing: 0.04em;
+  text-shadow: 2px 0 0 #00B3FF, -2px 0 0 #0A0A0A;
 }
 
-/* 04 套牌试玩：粗衬线。满屏无衬线里唯二的衬线之一，扎眼 */
+/* 04 套牌试玩：无衬线特粗 + 空心描边。字身填成底色、四向 1px 硬投影描出轮廓，
+   得到一枚镂空的数字。这是 -webkit-text-stroke 的替代做法——真机不支持描边时，
+   text-stroke 会连同 color: transparent 一起把数字整枚吞掉，四向投影则不会静默失败 */
 .home-index-face-04 {
-  font-family: Georgia, "Songti SC", "Noto Serif", serif;
-  font-weight: 700;
-  letter-spacing: 0;
+  font-family: Impact, Haettenschweiler, "Arial Black", "Franklin Gothic Heavy", sans-serif;
+  font-weight: 900;
+  letter-spacing: 0.02em;
+  color: #D0F03C;
+  text-shadow: -1px -1px 0 #0A0A0A, 1px -1px 0 #0A0A0A, -1px 1px 0 #0A0A0A, 1px 1px 0 #0A0A0A;
 }
 
-/* 05 血量记录：点阵，与下方点阵中文同族，也正对「计数器读数」的意思。
-   40px 落在 10px 网格整数倍上，放大后依然锐利（该行档位 38px 会糊） */
+/* 05 血量记录：点阵 + CRT 泛光。贴身一层黑收住字形，外面罩一圈大范围蓝晕，
+   像老显像管上烧出来的读数。40px 落在 10px 网格整数倍上，放大后依然锐利 */
 .home-index-face-05 {
   font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
   font-size: 40px;
   font-weight: 400;
   letter-spacing: 0.08em;
+  text-shadow: 0 0 1px #0A0A0A, 0 0 12px #00B3FF;
 }
 
-/* 06 混沌工具：另一款等宽，现代无衬线骨架，与 03 的打字机拉开粗细与形态 */
+/* 06 混沌工具：现代等宽 + 残影拖尾。同向三级递减重影，像画面没刷干净拖出来的尾巴 */
 .home-index-face-06 {
   font-family: Menlo, Consolas, "Roboto Mono", "Droid Sans Mono", ui-monospace, monospace;
   font-weight: 400;
   letter-spacing: 0.06em;
+  text-shadow: 2px 0 0 #0A0A0A, 4px 0 0 #00B3FF, 6px 0 8px rgba(0,0,0,0.35);
 }
 
-/* 07 我的主将：细体。记录是安静的，这枚编号退到最轻 */
+/* 07 我的主将：细体 + 扫描线错行。上下两侧各推 2px 且异色，字身像被隔行扫描切开 */
 .home-index-face-07 {
   font-family: "Helvetica Neue", "PingFang SC", Roboto, "sans-serif-thin", sans-serif;
   font-weight: 200;
   letter-spacing: 0.06em;
+  text-shadow: 0 -2px 0 #00B3FF, 0 2px 0 #0A0A0A;
 }
 
-/* 08 环境梯度：细衬线。与 04 的粗衬线同族不同重，像一份排过版的榜单 */
+/* 08 环境梯度：几何无衬线 + 单层硬投影。最干脆的一枚，海报式的实心偏移，不模糊不分色 */
 .home-index-face-08 {
-  font-family: "Times New Roman", "Hoefler Text", "Noto Serif", serif;
+  font-family: Futura, "Century Gothic", "Trebuchet MS", "Questrial", sans-serif;
   font-weight: 400;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.08em;
+  text-shadow: 4px 4px 0 #00B3FF;
 }
 
 .home-button-text {
@@ -435,6 +450,22 @@ page {
 .home-button.is-glitch .home-button-zh,
 .home-button.is-glitch .home-button-en {
   color: #0A0A0A;
+}
+
+/* 反相态统一收掉编号的投影：glitch 行底色正是电光蓝、按压态底色正是纯黑，
+   而八种赛博处置的影色只有这两种，留着必然与底色同源、糊成一团。
+   04 那枚空心数字的字身填的是页面底色，反相后会陷进新底色里整枚消失，须单独填回实心。 */
+.home-button.is-glitch .home-button-index,
+.home-index-active .home-button-index {
+  text-shadow: none;
+}
+
+.home-button.is-glitch .home-index-face-04 {
+  color: #0A0A0A;
+}
+
+.home-index-active .home-index-face-04 {
+  color: #00B3FF;
 }
 
 /* 暴力按压：整块反相为黑底 + 电光蓝字，而非温柔缩放 */

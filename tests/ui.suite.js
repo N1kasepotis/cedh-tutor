@@ -246,28 +246,88 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   });
 
   // 安卓的系统字体远比 iOS 少，多条栈最终会落到同一个通用族上；
-  // 落到同族的两行必须靠字重分开，否则真机上会撞脸（首页全页禁斜体，斜体不是可用的分法）
-  const genericKey = ({ rule }) => {
-    const generic = (rule.match(/(serif|monospace|sans-serif)\s*;/) || [])[1] || '';
-    const weight = (rule.match(/font-weight:\s*(\d+)/) || [])[1] || '400';
-    return `${generic}-${weight}`;
-  };
+  // 落到同族的两行必须靠「字重 + 投影」分开，否则真机上会撞脸
+  //（首页禁斜体，斜体不是可用的分法）
+  const shadowOf = (rule) => (rule.match(/text-shadow:\s*([^;]+);/) || [])[1] || '';
   const androidKeys = faceRules
     .filter(({ rule }) => !/cEDHDisplay|HomePixel/.test(rule))
-    .map(genericKey);
+    .map(({ rule }) => [
+      (rule.match(/(serif|monospace|sans-serif)\s*;/) || [])[1] || '',
+      (rule.match(/font-weight:\s*(\d+)/) || [])[1] || '400',
+      shadowOf(rule),
+    ].join('-'));
   assert.equal(new Set(androidKeys).size, androidKeys.length,
-    `安卓上会有两行回退到完全一样的字体：${androidKeys.join('  ')}`);
+    `安卓上会有两行回退到完全一样的字面：${androidKeys.join('  ')}`);
 
-  // 只变字体：字面类不得改字号（点阵除外，见下）、不得形变、不得反白或淡出
+  // 每行都要有自己的赛博处置，且八种处置两两不同
+  const shadows = faceRules.map(({ face, rule }) => {
+    const shadow = shadowOf(rule);
+    assert.ok(shadow, `home-index-face-${face} 缺少 text-shadow 处置`);
+    return shadow;
+  });
+  assert.equal(new Set(shadows).size, 8,
+    `有两行编号用了同一种投影：${shadows.join('  /  ')}`);
+
+  // 投影只能取既有六色板；引入紫红一类「赛博标配」色会击穿全页色板契约
+  shadows.forEach((shadow, i) => {
+    const hexes = shadow.match(/#[0-9A-Fa-f]{3,8}|rgba?\([^)]*\)/g) || [];
+    hexes.forEach((c) => {
+      assert.ok(['#00B3FF', '#0A0A0A', '#D0F03C', '#FFFFFF', 'rgba(0,0,0,0.35)', 'rgba(0,0,0,0.7)']
+        .includes(c.toUpperCase().startsWith('RGBA') ? c.replace(/\s/g, '') : c.toUpperCase()),
+      `第 ${i + 1} 行投影用了色板外的 ${c}`);
+    });
+  });
+
+  // 投影不参与布局，但视觉上会越界撞到右侧中文。预算来自编号盒的余量：
+  // min-width 84–108rpx（约 44–56px）而数字本身约 30–50px 宽，右侧还有 flex 的
+  // space-between 间距，所以偏移放到 6px、模糊放到 14px 仍够用。
+  // 先把色值抠掉再按逗号分层——rgba() 内部也有逗号，直接 split 会把一层劈成三段；
+  // 且 `0 0 6px` 里的零不带单位，只匹配 px 会让 x/y/blur 的位次错乱
+  shadows.forEach((shadow, i) => {
+    shadow.replace(/rgba?\([^)]*\)|#[0-9A-Fa-f]{3,8}/g, '')
+      .split(',')
+      .map((layer) => layer.trim())
+      .filter(Boolean)
+      .forEach((layer) => {
+        (layer.match(/-?\d*\.?\d+/g) || []).forEach((raw, axis) => {
+          const px = Math.abs(Number(raw));
+          const limit = axis === 2 ? 14 : 6; // 每层依次是 x / y / blur
+          assert.ok(px <= limit,
+            `第 ${i + 1} 行投影「${layer}」的 ${raw}px 超出上限 ${limit}px，会压到中文`);
+        });
+      });
+  });
+
+  // 反相态必须收掉投影：glitch 行底色就是电光蓝、按压态底色就是纯黑，
+  // 而所有影色只有这两种，留着必然与底色同源糊成一团
+  assert.match(wxss,
+    /\.home-button\.is-glitch \.home-button-index,\s*\n\.home-index-active \.home-button-index\s*\{[^}]*text-shadow:\s*none/);
+
+  // 只变字体与投影：字面类不得形变、不得自定字号（点阵除外，见下）
   faceRules.forEach(({ face, rule }) => {
     assert.doesNotMatch(rule, /transform:/,
-      `home-index-face-${face} 不得形变——八行的差别只能是字体`);
-    assert.doesNotMatch(rule, /background|color:|padding|margin/,
-      `home-index-face-${face} 不得改配色或盒子，只能改字体`);
+      `home-index-face-${face} 不得形变——八行的差别只能是字体与投影`);
+    assert.doesNotMatch(rule, /background|padding|margin/,
+      `home-index-face-${face} 不得改盒子，只能改字体与投影`);
     if (!rule.includes('HomePixel')) {
       assert.doesNotMatch(rule, /font-size:/,
         `home-index-face-${face} 不得自定字号，字号只由行的档位类给`);
     }
+    // 空心描边那枚把字身填成页面底色，反相态会陷进新底色里消失，必须两处都填回来
+    if (/color:\s*#D0F03C/.test(rule)) {
+      assert.match(wxss, new RegExp(`\\.home-button\\.is-glitch \\.home-index-face-${face}\\s*\\{[^}]*color:`),
+        `空心编号 ${face} 在 glitch 行会整枚消失，须单独填回实心`);
+      assert.match(wxss, new RegExp(`\\.home-index-active \\.home-index-face-${face}\\s*\\{[^}]*color:`),
+        `空心编号 ${face} 在按压态会整枚消失，须单独填回实心`);
+    }
+  });
+  // 编号的空心效果必须走四向投影，不能用 text-stroke：真机不支持描边时，
+  // 「描边 + 字身填底色」会退化成一枚与底色同色的实心数字，整枚看不见，属于静默失败。
+  //（字标 .home-title-brand 上的 text-stroke 是另一回事：那里字身本就是实心白，
+  // 描边只是加粗，不支持时退回普通白字，不会消失。）
+  faceRules.forEach(({ face, rule }) => {
+    assert.doesNotMatch(rule, /text-stroke/,
+      `home-index-face-${face} 不得用 text-stroke 做空心，真机不支持时会整枚消失`);
   });
 
   // 点阵是唯一允许定字号的：点阵字体必须落在 10px 网格整数倍上才锐利，
@@ -324,8 +384,27 @@ test('home uses licensed embedded display and pixel fonts with device-safe fallb
   assert.match(wxss, /\.home-title-zh\s*{[\s\S]*font-size:\s*18px[\s\S]*letter-spacing:\s*5px/);
   assert.match(wxss, /\.home-button-zh\s*{[\s\S]*font-weight:\s*400[\s\S]*letter-spacing:\s*3px/);
   assert.match(wxss, /\.home-button-zh\s*{[^}]*font-size:\s*20px/);
-  // 全页文字均不使用 text-shadow（题词已改普通字体、加粗、无投影）；旧橙色双影配色不得复现
-  assert.doesNotMatch(wxss, /text-shadow|#8A7200|#F26A1B|#8F3A05/);
+  // text-shadow 只许出现在编号的字面类里（赛博朋克处置：色差错位 / 霓虹辉光 / 空心描边 …）。
+  // 其余全页文字一律无投影——注释墙、字标、中文入口、题词、imprint 都靠字体与字重立住，
+  // 一加投影就回到「发光大字」那类廉价效果。
+  // 按规则块切分再看归属：不能直接用「. 或 # 开头」找选择器，
+  // 那样 #0A0A0A 这样的色值也会被当成选择器开头
+  const wxssBare = wxss.replace(/\/\*[\s\S]*?\*\//g, '');
+  // 只管「加投影」的规则；`text-shadow: none` 是反相态的收尾复位，本来就该允许。
+  // 取出值再比对，不用负向先行断言——`\s*` 会回溯到零宽，(?!none) 就形同虚设
+  const shadowOwners = Array.from(wxssBare.matchAll(/([^{}]*)\{([^{}]*)\}/g))
+    .filter(([, , body]) => {
+      const value = (body.match(/text-shadow:\s*([^;]+)/) || [])[1];
+      return value !== undefined && value.trim() !== 'none';
+    })
+    .map(([, selector]) => selector.trim());
+  assert.ok(shadowOwners.length > 0, 'text-shadow 归属扫描没扫到任何规则，断言会空转');
+  shadowOwners.forEach((selector) => {
+    assert.match(selector, /home-index-face-\d{2}/,
+      `${selector} 不得使用 text-shadow，投影只留给编号字面`);
+  });
+  // 旧橙色双影配色不得复现
+  assert.doesNotMatch(wxss, /#8A7200|#F26A1B|#8F3A05/);
   // 侧脊题词：竖排贴右缘，Courier 工业注释体、无投影（位置/竖排在第一组测试锁定）
   const edgeTaglineRule = (wxss.match(/\.home-edge-tagline\s*{([^}]*)}/) || [])[1] || '';
   assert.match(edgeTaglineRule, /font-family:\s*"Courier New"/);
