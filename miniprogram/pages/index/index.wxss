@@ -239,111 +239,6 @@ page {
   border-bottom: 5px solid #0A0A0A;
 }
 
-.home-button-index {
-  display: block;
-  flex: 0 0 auto;
-  min-width: 84rpx;
-  color: #0A0A0A;
-  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
-  font-size: 16px;
-  font-weight: 700;
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-  line-height: 0.8;
-}
-
-.home-button-index-xl {
-  font-size: 28px;
-  min-width: 96rpx;
-}
-
-.home-button-index-xxl {
-  font-size: 38px;
-  min-width: 108rpx;
-}
-
-/* 偏移行的编号负位移，压到左缘外并叠上文字 */
-.home-button-index-over {
-  font-size: 24px;
-  min-width: 56rpx;
-  margin-left: -40rpx;
-}
-
-/* ===== 编号的字面：八行八种字体，差异只由字体承担 =====
-   编号是一枚完整的两位数，**同一枚编号内两位字号完全一致**，不做缩放、旋转、位移，
-   也**不加任何投影**——八行之间唯一的差别就是字体本身。
-
-   字体挑的是偏机械、偏工业的一路：超粗显示体 / 窄体 / 打字机等宽 / 特粗 Impact /
-   点阵 / 现代等宽 / 细体 / 几何无衬线。衬线（Georgia、Times 那类）不在其中，
-   它们读起来是编辑部而不是这套语汇。
-
-   难点在安卓：WeChat 能拿到的系统字体远比 iOS 少，多条栈最终会落到同一个通用族上。
-   所以这六种系统字体是按「通用族 × 字重」两两错开排的——
-   窄体700 / 等宽700 / 无衬线900 / 等宽400 / 无衬线200 / 无衬线400，
-   即便安卓只给出 Roboto、Roboto Condensed、Droid Sans Mono 几款，八行仍两两可辨。
-
-   不使用斜体：首页整体禁斜体，且系统合成的伪斜体在真机上很廉价。
-   字号一律由行的档位类（-xl / -xxl / -over）给，字面类不碰 font-size——
-   唯一例外是点阵那行，点阵必须落在 10px 网格整数倍上才锐利，该行档位 38px 会糊，取整 40px。 */
-
-/* 01 人格测试：超粗显示体，与 cEDH Tutor 字标同源，开篇跟着字标一起喊 */
-.home-index-face-01 {
-  font-family: "cEDHDisplay", "Arial Black", Impact, "Helvetica Neue", sans-serif;
-  font-weight: 900;
-  letter-spacing: -0.04em;
-}
-
-/* 02 火花觉醒：窄体。这行本就负位移挂在左缘外，窄身让它更像被挤出去的 */
-.home-index-face-02 {
-  font-family: "Avenir Next Condensed", "DIN Condensed", Haettenschweiler, "Arial Narrow", "sans-serif-condensed", sans-serif;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-}
-
-/* 03 强度分级：打字机等宽，实验室口吻，对上这行的分析属性 */
-.home-index-face-03 {
-  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
-  font-weight: 700;
-  letter-spacing: 0.04em;
-}
-
-/* 04 套牌试玩：Impact 一路的特粗窄身，八行里最重的一枚，靠纯粹的黑度压住 */
-.home-index-face-04 {
-  font-family: Impact, Haettenschweiler, "Arial Black", "Franklin Gothic Heavy", sans-serif;
-  font-weight: 900;
-  letter-spacing: 0.02em;
-}
-
-/* 05 血量记录：点阵，与下方点阵中文同族，也正对「计数器读数」的意思。
-   40px 落在 10px 网格整数倍上，放大后依然锐利（该行档位 38px 会糊） */
-.home-index-face-05 {
-  font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
-  font-size: 40px;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-}
-
-/* 06 混沌工具：现代等宽，无衬线骨架，与 03 的打字机拉开粗细与形态 */
-.home-index-face-06 {
-  font-family: Menlo, Consolas, "Roboto Mono", "Droid Sans Mono", ui-monospace, monospace;
-  font-weight: 400;
-  letter-spacing: 0.06em;
-}
-
-/* 07 我的主将：细体。记录是安静的，这枚编号退到最轻 */
-.home-index-face-07 {
-  font-family: "Helvetica Neue", "PingFang SC", Roboto, "sans-serif-thin", sans-serif;
-  font-weight: 200;
-  letter-spacing: 0.06em;
-}
-
-/* 08 环境梯度：几何无衬线，圆规画出来的骨架，与 07 的细体同族不同重也不同形 */
-.home-index-face-08 {
-  font-family: Futura, "Century Gothic", "Trebuchet MS", "Questrial", sans-serif;
-  font-weight: 400;
-  letter-spacing: 0.08em;
-}
-
 .home-button-text {
   display: flex;
   min-width: 0;
@@ -431,7 +326,6 @@ page {
   background: #00B3FF;
 }
 
-.home-button.is-glitch .home-button-index,
 .home-button.is-glitch .home-button-zh,
 .home-button.is-glitch .home-button-en {
   color: #0A0A0A;
@@ -442,7 +336,6 @@ page {
   background: #0A0A0A;
 }
 
-.home-index-active .home-button-index,
 .home-index-active .home-button-zh,
 .home-index-active .home-button-en {
   color: #00B3FF;

@@ -446,7 +446,11 @@ test('主页入口：playtest 导航完整，反馈模块已移除', () => {
 
   assert.match(wxml, /home-button-playtest/);
   assert.match(wxml, /套牌试玩/);
-  assert.match(wxml, /home-button-playtest[^>]*>[\s\S]*?home-button-index[^"]*">04<\/text>/);
+  // 首页入口排在第四位（01–08 序号文字已撤，改用行的 key 顺序定位）
+  assert.equal(
+    Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (m) => m[1])[3],
+    'playtest',
+  );
   assert.match(js, /goPlaytest/);
 
   // 反馈模块已清除，首页入口遵循统一的无装饰索引样式；标题可保留独立硬边投影

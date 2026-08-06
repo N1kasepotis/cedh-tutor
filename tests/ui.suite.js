@@ -96,11 +96,13 @@ test('home is a single-screen acid index with the eight existing actions', () =>
       'META TIER LIST',
     ],
   );
-  // 编号与 key 后可跟随巨号/偏移/字面等修饰类，提取放宽到 key 边界
-  assert.deepEqual(
-    Array.from(wxml.matchAll(/class="home-button-index[^"]*">(\d{2})<\/text>/g), (match) => match[1]),
-    ['01', '02', '03', '04', '05', '06', '07', '08'],
-  );
+  // 八行不再有 01–08 序号：试过四种声音、拆成两位各自形变、八种字体、八种赛博投影，
+  // 每一版都让这块更吵。序号本来也不承载信息（顺序由排版给，功能由中英文标题给），
+  // 撤掉之后每行只剩「中文名 + 英文副标题」，左缘也第一次真正对齐
+  //（此前编号盒 min-width 84–108rpx 不等，反倒把各行的中文推到了不同的起点）。
+  assert.doesNotMatch(wxml, /home-button-index|home-index-face/);
+  assert.doesNotMatch(wxss, /home-button-index|home-index-face/);
+  assert.doesNotMatch(wxml, /class="home-button[^"]*"[^>]*>\s*<text[^>]*>\s*0[1-8]\s*</);
   assert.deepEqual(
     Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (match) => match[1]),
     ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
@@ -159,7 +161,7 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.match(wxss, /\.home-button\s*{[\s\S]*flex:\s*1 1 0[\s\S]*border-bottom:\s*1px solid rgba\(0,0,0,0\.35\)[\s\S]*border-radius:\s*0/);
   // 暴力按压：整块黑底 + 电光蓝字（反相，非缩放/位移）
   assert.match(wxss, /\.home-index-active\s*{[^}]*background:\s*#0A0A0A/);
-  assert.match(wxss, /\.home-index-active \.home-button-index[\s\S]*?color:\s*#00B3FF/);
+  assert.match(wxss, /\.home-index-active \.home-button-zh[\s\S]*?color:\s*#00B3FF/);
   assert.match(wxss, /\.home-button\s*{[\s\S]*transition:\s*color 60ms linear,\s*background-color 60ms linear/);
   // 反相态只许改颜色：块内匹配（[^}]*）防跨块误命中，(?<!text-) 防 text-transform 子串误报
   assert.doesNotMatch(wxss, /\.home-index-active\s*{[^}]*(?:opacity:|scale:|(?<!text-)transform:)/);
@@ -168,13 +170,12 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   assert.match(wxss, /@media \(prefers-reduced-motion:\s*reduce\)[\s\S]*transition:\s*none/);
   assert.match(wxss, /\.home-button-text\s*{[^}]*align-items:\s*baseline[^}]*justify-content:\s*space-between/);
   assert.doesNotMatch(wxss, /home-button-leader|dotted/);
-  // 排版破坏 ①：不等行高、偏移打破左对齐线、巨号编号、部分行粗黑分割
+  // 排版破坏 ①：不等行高、偏移打破左对齐线、部分行粗黑分割。
+  // 「巨号编号」这一项已随 01–08 序号一并撤掉——破坏感现在只靠行高与偏移承担
   assert.match(wxss, /\.home-button-tall\s*{[^}]*flex-grow:\s*1\.45/);
   assert.match(wxss, /\.home-button-short\s*{[^}]*flex-grow:\s*0\.72/);
   assert.match(wxss, /\.home-button-shift\s*{[^}]*padding-left:\s*64rpx/);
   assert.match(wxss, /\.home-button-heavy\s*{[^}]*border-bottom:\s*5px solid #0A0A0A/);
-  assert.match(wxss, /\.home-button-index-xxl\s*{[^}]*font-size:\s*38px/);
-  assert.match(wxss, /\.home-button-index-over\s*{[^}]*margin-left:\s*-40rpx/);
   // 对比极端化 ②：标题横向拉伸变形 + 倾斜，"喊叫"压过点阵"低语"
   assert.match(wxss, /\.home-title-brand\s*{[^}]*transform:\s*scaleX\(1\.18\) skewX\(-10deg\)/);
   // 事故色 glitch ④：每个入口条件挂 is-glitch，随机行由 glitchIndex 决定、每次进页面重掷
@@ -206,92 +207,9 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', '#00B3FF', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.7)']),
     '首页色板：底色 + 黑 + 白 + 事故色电光蓝 + 半透明黑双档（0.35 装饰 / 0.7 功能文本）',
   );
-  // 编号提为纯黑巨号（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
-  assert.match(wxss, /\.home-button-index\s*{[^}]*color:\s*#0A0A0A/);
+  // 中文入口为纯黑（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
+  assert.match(wxss, /\.home-button-zh\s*{[^}]*color:\s*#0A0A0A/);
 
-  // 编号八行八种字体，且**差异只由字体承担**：同一枚编号内两位数字字号一致，
-  // 不做缩放、旋转、位移、反白与淡出。上一版把编号拆成两位各自形变，读下来是错乱而不是丰富。
-  const faceClasses = Array.from(
-    wxml.matchAll(/class="home-button-index[^"]*\bhome-index-face-(\d{2})[^"]*">(\d{2})<\/text>/g),
-    (m) => ({ face: m[1], text: m[2] }),
-  );
-  assert.equal(faceClasses.length, 8, '八行编号各挂一个字面类');
-  faceClasses.forEach((r) => {
-    assert.equal(r.face, r.text, `字面类 home-index-face-${r.face} 与编号 ${r.text} 对不上`);
-  });
-  assert.deepEqual(faceClasses.map((r) => r.text),
-    ['01', '02', '03', '04', '05', '06', '07', '08']);
-
-  // 编号必须是完整的一枚两位数，不能再被拆成两个各自带类的字符
-  assert.doesNotMatch(wxml, /home-digit/, '编号不得再拆成两位单独处置');
-
-  const faceRules = faceClasses.map((r) => ({
-    face: r.face,
-    rule: wxss.match(new RegExp(`\\.home-index-face-${r.face}\\s*\\{[^}]*\\}`))[0],
-  }));
-
-  // 八种字面必须落到八种真的不同的字体上：比较每条字体栈的首选族
-  const primaries = faceRules.map(({ face, rule }) => {
-    const stack = rule.match(/font-family:\s*([^;]+);/);
-    assert.ok(stack, `home-index-face-${face} 必须声明 font-family`);
-    return stack[1].split(',')[0].trim().replace(/^"|"$/g, '').toLowerCase();
-  });
-  assert.equal(new Set(primaries).size, 8,
-    `有两行编号用了同一款字体，八行没有各自的风格：${primaries.join('  ')}`);
-
-  // 两套已内嵌的字体都要用上，否则等于放着自带资源不用、全靠系统字体碰运气
-  ['cEDHDisplay', 'HomePixel'].forEach((embedded) => {
-    assert.ok(faceRules.some(({ rule }) => rule.includes(embedded)),
-      `八种字面里必须用上已内嵌的 ${embedded}`);
-  });
-
-  // 安卓的系统字体远比 iOS 少，多条栈最终会落到同一个通用族上；
-  // 落到同族的两行必须靠字重分开，否则真机上会撞脸
-  //（首页禁斜体也禁投影，两者都不是可用的分法）
-  const androidKeys = faceRules
-    .filter(({ rule }) => !/cEDHDisplay|HomePixel/.test(rule))
-    .map(({ rule }) => [
-      (rule.match(/(serif|monospace|sans-serif)\s*;/) || [])[1] || '',
-      (rule.match(/font-weight:\s*(\d+)/) || [])[1] || '400',
-    ].join('-'));
-  assert.equal(new Set(androidKeys).size, androidKeys.length,
-    `安卓上会有两行回退到完全一样的字面：${androidKeys.join('  ')}`);
-
-  // 只变字体：字面类不得形变、不得改配色或盒子、不得自定字号（点阵除外，见下）
-  faceRules.forEach(({ face, rule }) => {
-    assert.doesNotMatch(rule, /transform:/,
-      `home-index-face-${face} 不得形变——八行的差别只能是字体`);
-    assert.doesNotMatch(rule, /background|color:|padding|margin/,
-      `home-index-face-${face} 不得改配色或盒子，只能改字体`);
-    if (!rule.includes('HomePixel')) {
-      assert.doesNotMatch(rule, /font-size:/,
-        `home-index-face-${face} 不得自定字号，字号只由行的档位类给`);
-    }
-    // 编号不得靠描边做空心：真机不支持 text-stroke 时，「描边 + 字身填底色」
-    // 会退化成一枚与底色同色的实心数字、整枚看不见，属于静默失败。
-    //（字标 .home-title-brand 上的 text-stroke 是另一回事：那里字身本就是实心白，
-    // 描边只是加粗，不支持时退回普通白字，不会消失。）
-    assert.doesNotMatch(rule, /text-stroke/,
-      `home-index-face-${face} 不得用 text-stroke 做空心，真机不支持时会整枚消失`);
-  });
-
-  // 点阵是唯一允许定字号的：点阵字体必须落在 10px 网格整数倍上才锐利，
-  // 该行档位是 38px，会糊，所以显式取整到 10 的倍数
-  const pixelRule = faceRules.find(({ rule }) => rule.includes('HomePixel')).rule;
-  const pixelSize = Number(pixelRule.match(/font-size:\s*(\d+)px/)[1]);
-  assert.equal(pixelSize % 10, 0, `点阵编号字号需为 10 的整数倍，当前 ${pixelSize}px`);
-  assert.ok(pixelSize >= 28, '点阵编号仍须是巨号，对比来自肌理而不是缩小');
-  // 取整不能变成偷偷放大：与该行原本的档位字号差不得超过一档
-  const xxlSize = Number(wxss.match(/\.home-button-index-xxl\s*{[^}]*font-size:\s*(\d+)px/)[1]);
-  assert.ok(Math.abs(pixelSize - xxlSize) <= 4,
-    `点阵编号 ${pixelSize}px 与该行档位 ${xxlSize}px 差太多，等于改了编号之间的相对大小`);
-
-  // 旧方案的类已下岗，不留孤儿样式
-  ['home-index-shout', 'home-index-whisper', 'home-index-stretch', 'home-index-redacted']
-    .forEach((dead) => {
-      assert.doesNotMatch(wxss, new RegExp(`\\.${dead}\\s*[{,]`), `${dead} 已不再使用，应删除`);
-      assert.doesNotMatch(wxml, new RegExp(dead), `${dead} 已不再使用，应从模板移除`);
-    });
   // 功能文本（入口副标题）按正文对比度要求：10px + 0.7 alpha 在 #D0F03C 上约 7.5:1，过 AA 4.5:1
   assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.7\)[^}]*font-size:\s*10px/);
   // 窄屏只收紧字距，不把说明文本降回 8px
