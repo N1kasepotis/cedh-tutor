@@ -5,14 +5,7 @@
         class="home-field-line"
         wx:for="{{fieldLines}}"
         wx:key="k"
-        style="left: {{item.x}}%; top: {{item.y}}%; width: {{item.len}}%; transform: rotate({{item.deg}}deg);"
-      ></view>
-      <view
-        class="home-field-node"
-        wx:for="{{fieldNodes}}"
-        wx:for-item="node"
-        wx:key="k"
-        style="left: {{node.x}}%; top: {{node.y}}%;"
+        style="left: {{item.x}}vw; top: {{item.y}}vw; width: {{item.len}}vw; transform: rotate({{item.deg}}deg);"
       ></view>
     </view>
   </view>

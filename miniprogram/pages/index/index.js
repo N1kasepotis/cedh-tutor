@@ -1,5 +1,5 @@
 const { enableShareMenu } = require('../../utils/share');
-const { HOME_VORONOI_EDGES, HOME_VORONOI_NODES } = require('../../config/home-voronoi');
+const { HOME_VORONOI_EDGES } = require('../../config/home-voronoi');
 const { homePixelFontBase64 } = require('../../assets/home-pixel-font');
 const { titleFontBase64 } = require('../../assets/title-font');
 
@@ -45,10 +45,9 @@ Page({
     // 事故色 glitch 行：每次进首页随机让一个功能入口"故障"成电光蓝，制造不可预测的粗野破坏感
     glitchIndex: 0,
     redactionLine: 3,
-    // 背景 Voronoi 线场：构建期算好的静态几何，进页面推一次就不再动数据。
+    // 整页背景 Voronoi 线场：构建期算好的静态几何，进页面推一次就不再动数据。
     // 动效全部交给 CSS transform，不走 setData——每帧过桥重算是移动端最贵的做法。
     fieldLines: HOME_VORONOI_EDGES.map((edge, index) => ({ ...edge, k: `l${index}` })),
-    fieldNodes: HOME_VORONOI_NODES.map((node, index) => ({ ...node, k: `n${index}` })),
   },
 
   onLoad() {

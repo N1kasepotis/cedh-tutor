@@ -823,15 +823,20 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
   const js = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.js'), 'utf8');
-  const { HOME_VORONOI_EDGES, HOME_VORONOI_NODES } = require('../miniprogram/config/home-voronoi');
+  const { HOME_VORONOI_EDGES } = require('../miniprogram/config/home-voronoi');
 
   // 几何在构建期算好，运行时不算
   assert.match(fs.readFileSync(path.join(root, 'miniprogram/config/home-voronoi.js'), 'utf8'),
     /由 scripts\/build-home-voronoi\.js 生成，请勿手改/);
-  assert.ok(HOME_VORONOI_EDGES.length >= 20, '线段太少，构不成胞元结构');
+  assert.ok(HOME_VORONOI_EDGES.length >= 50, '线段太少，铺不满整页');
   HOME_VORONOI_EDGES.forEach((edge) => {
     ['x', 'y', 'len', 'deg'].forEach((key) => assert.equal(typeof edge[key], 'number'));
   });
+
+  // 铺的是整页，不是某一屏区域：纵向必须画到 2.1 倍屏宽以下，
+  // 否则长屏手机的下半页会空着（390×844 的可见高度约 216vw）
+  const lowest = Math.max(...HOME_VORONOI_EDGES.map((e) => e.y));
+  assert.ok(lowest > 210, `线段最低只到 ${lowest.toFixed(0)}vw，长屏手机下半页会空`);
 
   // 不规则性要能被验证：线段长度必须显著参差，否则就成了规则网格
   const lens = HOME_VORONOI_EDGES.map((e) => e.len);
@@ -839,7 +844,7 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
     '线段长度过于均匀，看起来会像网格而不是 Voronoi');
 
   // 传输量：静态几何一次推完，不该膨胀
-  const payload = Buffer.byteLength(JSON.stringify({ HOME_VORONOI_EDGES, HOME_VORONOI_NODES }), 'utf8');
+  const payload = Buffer.byteLength(JSON.stringify(HOME_VORONOI_EDGES), 'utf8');
   assert.ok(payload < 6 * 1024, `线场数据 ${(payload / 1024).toFixed(1)}KB，超过 6KB 上限`);
 
   // 动效必须是纯 CSS：JS 里不得有定时器逐帧改线场数据（那要每帧 setData 过桥）
@@ -876,9 +881,22 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   assert.match(wxml, /class="home-field" aria-hidden="true"/);
   assert.match(wxss, /\.home-field\s*\{[^}]*pointer-events:\s*none/);
 
-  // 容器必须是正方形：线段长度在 100×100 坐标系里算的，非正方形会把长度拉伸错
+  // 线段的三个几何量必须同单位（vw）。这是整页铺开后几何不变形的唯一依赖：
+  // 换成百分比就会横向按容器宽、纵向按容器高分别解析，容器不是正方形时端点就对不上，
+  // 胞元在交汇处裂开——而整页容器天然不是正方形。
+  const lineStyle = wxml.match(/class="home-field-line"[\s\S]*?style="([^"]+)"/)[1];
+  ['left', 'top', 'width'].forEach((prop) => {
+    assert.match(lineStyle, new RegExp(`${prop}: \\{\\{item\\.\\w+\\}\\}vw`),
+      `线段的 ${prop} 必须用 vw；换成 % 会让纵横按不同基准解析，胞元会裂开`);
+  });
+
+  // 线场铺满整页，而不是只盖住某一屏区域
   const fieldRule = wxss.match(/\.home-field\s*\{[^}]*\}/)[0];
-  const w = fieldRule.match(/width:\s*(\d+)vw/)[1];
-  const h = fieldRule.match(/height:\s*(\d+)vw/)[1];
-  assert.equal(w, h, '线场容器必须是正方形，否则百分比长度会被拉伸成错误比例');
+  assert.match(fieldRule, /width:\s*100%/);
+  assert.match(fieldRule, /height:\s*100%/);
+
+  // 结点（junction spark）已撤除：不留孤儿样式，也不留没人用的数据
+  assert.doesNotMatch(wxss, /home-field-node/);
+  assert.doesNotMatch(wxml, /home-field-node/);
+  assert.doesNotMatch(js, /HOME_VORONOI_NODES|fieldNodes/);
 });
