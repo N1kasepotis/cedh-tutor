@@ -239,6 +239,32 @@ page {
   border-bottom: 5px solid #0A0A0A;
 }
 
+/* ===== 序号：八行同一副处置 =====
+   同一款字体、同一个字号、同一个颜色，min-width 也一致。此前反复试过让八行互不相同
+   （四种字面声音 / 拆成两位各自形变 / 八行八种字体 / 八行八种赛博投影），每一版都更吵——
+   「特异」该来自字体本身的形态，而不是来自八行彼此不同。
+
+   选点阵：它是包内唯一一款形态上真正特殊的字体（点阵网格，不是任何系统的默认字），
+   而且它**只有一个字重**——笔画粗细由像素网格决定，天生不会太粗也不会太细，
+   正好避开此前 Archivo Black 900 太重、细体 200 太轻的两头。
+   30px 是点阵原生 10px 的整数倍，放大后仍锐利；非整数倍会在真机上糊掉。
+
+   八行 min-width 一致是关键：上一版各行 84–108rpx 不等，反而把中文推到了不同起点，
+   那种参差本身就是「乱」的一部分。统一之后序号自成一列，中文左缘真正对齐。 */
+.home-button-index {
+  display: block;
+  flex: 0 0 auto;
+  min-width: 76rpx;
+  margin-right: 20rpx;
+  color: #0A0A0A;
+  font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
+  font-size: 30px;
+  font-weight: 400;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.1em;
+  line-height: 0.8;
+}
+
 .home-button-text {
   display: flex;
   min-width: 0;
@@ -326,6 +352,7 @@ page {
   background: #00B3FF;
 }
 
+.home-button.is-glitch .home-button-index,
 .home-button.is-glitch .home-button-zh,
 .home-button.is-glitch .home-button-en {
   color: #0A0A0A;
@@ -336,6 +363,7 @@ page {
   background: #0A0A0A;
 }
 
+.home-index-active .home-button-index,
 .home-index-active .home-button-zh,
 .home-index-active .home-button-en {
   color: #00B3FF;

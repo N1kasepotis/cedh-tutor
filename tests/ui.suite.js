@@ -96,13 +96,17 @@ test('home is a single-screen acid index with the eight existing actions', () =>
       'META TIER LIST',
     ],
   );
-  // 八行不再有 01–08 序号：试过四种声音、拆成两位各自形变、八种字体、八种赛博投影，
-  // 每一版都让这块更吵。序号本来也不承载信息（顺序由排版给，功能由中英文标题给），
-  // 撤掉之后每行只剩「中文名 + 英文副标题」，左缘也第一次真正对齐
-  //（此前编号盒 min-width 84–108rpx 不等，反倒把各行的中文推到了不同的起点）。
-  assert.doesNotMatch(wxml, /home-button-index|home-index-face/);
-  assert.doesNotMatch(wxss, /home-button-index|home-index-face/);
-  assert.doesNotMatch(wxml, /class="home-button[^"]*"[^>]*>\s*<text[^>]*>\s*0[1-8]\s*</);
+  // 01–08 序号：八行**同一副处置**，不带任何按行区分的修饰类。
+  // 此前四版（四种字面声音 / 拆成两位各自形变 / 八行八种字体 / 八行八种赛博投影）
+  // 都是靠「八行互不相同」求特异，每一版都更吵；现在特异只由字体形态承担。
+  const indexTags = Array.from(
+    wxml.matchAll(/<text class="(home-button-index[^"]*)">(\d{2})<\/text>/g),
+    (m) => ({ cls: m[1], num: m[2] }),
+  );
+  assert.deepEqual(indexTags.map((t) => t.num),
+    ['01', '02', '03', '04', '05', '06', '07', '08']);
+  assert.deepEqual([...new Set(indexTags.map((t) => t.cls))], ['home-button-index'],
+    '序号不得再带按行区分的修饰类，八行必须完全同款');
   assert.deepEqual(
     Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (match) => match[1]),
     ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
@@ -209,6 +213,30 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   );
   // 中文入口为纯黑（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
   assert.match(wxss, /\.home-button-zh\s*{[^}]*color:\s*#0A0A0A/);
+
+  // 序号的字面：只有一条规则，特异来自点阵形态本身
+  const indexRule = wxss.match(/\.home-button-index\s*\{[^}]*\}/)[0];
+  assert.equal((wxss.match(/\.home-button-index[^,{]*\{/g) || []).length, 1,
+    '序号只许有一条字面规则；再出现字号档位类或按行字面类就是又在往回走');
+  // 点阵是包内唯一形态上真正特殊的字体，且**只有一个字重**——笔画粗细由像素网格决定，
+  // 天生不会太粗也不会太细，正好避开 Archivo Black 900 太重、细体 200 太轻的两头
+  assert.match(indexRule, /font-family:\s*"HomePixel"/);
+  assert.match(indexRule, /font-weight:\s*400/);
+  // 点阵放大必须落在 10px 网格整数倍上，否则真机糊
+  const indexSize = Number(indexRule.match(/font-size:\s*(\d+)px/)[1]);
+  assert.equal(indexSize % 10, 0, `序号字号需为 10 的整数倍，当前 ${indexSize}px`);
+  // 既要有存在感、又不能压过中文标题：卡在中文 20px 的 1.2–1.8 倍之间
+  const zhSize = Number(wxss.match(/\.home-button-zh\s*{[^}]*font-size:\s*(\d+)px/)[1]);
+  assert.ok(indexSize >= zhSize * 1.2 && indexSize <= zhSize * 1.8,
+    `序号 ${indexSize}px 相对中文 ${zhSize}px 失衡，应在 1.2–1.8 倍之间`);
+  // 八行同宽的序号列是「中文左缘真正对齐」的前提——上一版 84–108rpx 不等，
+  // 反倒把各行中文推到了不同起点，那种参差本身就是「乱」的一部分
+  assert.match(indexRule, /min-width:\s*\d+rpx/);
+  assert.doesNotMatch(indexRule, /transform:|background|text-shadow|font-style:\s*italic/,
+    '序号不得再加形变、底色、投影或斜体');
+  // 序号没有自带色，两种反相态必须把它一起带上，否则 glitch 行与按压态下它会留在纯黑
+  assert.match(wxss, /\.home-button\.is-glitch \.home-button-index,/);
+  assert.match(wxss, /\.home-index-active \.home-button-index,/);
 
   // 功能文本（入口副标题）按正文对比度要求：10px + 0.7 alpha 在 #D0F03C 上约 7.5:1，过 AA 4.5:1
   assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.7\)[^}]*font-size:\s*10px/);
