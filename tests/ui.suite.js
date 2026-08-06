@@ -99,14 +99,18 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 01–08 序号：八行**同一副处置**，不带任何按行区分的修饰类。
   // 此前四版（四种字面声音 / 拆成两位各自形变 / 八行八种字体 / 八行八种赛博投影）
   // 都是靠「八行互不相同」求特异，每一版都更吵；现在特异只由字体形态承担。
+  // 每枚序号独占一行，且内部嵌了前导零那一层，所以按行贪婪匹配到最后一个 </text> 再剥标签
   const indexTags = Array.from(
-    wxml.matchAll(/<text class="(home-button-index[^"]*)">(\d{2})<\/text>/g),
-    (m) => ({ cls: m[1], num: m[2] }),
+    wxml.matchAll(/<text class="(home-button-index[^"]*)">(.*)<\/text>\s*$/gm),
+    (m) => ({ cls: m[1], num: m[2].replace(/<[^>]*>/g, '') }),
   );
   assert.deepEqual(indexTags.map((t) => t.num),
     ['01', '02', '03', '04', '05', '06', '07', '08']);
   assert.deepEqual([...new Set(indexTags.map((t) => t.cls))], ['home-button-index'],
     '序号不得再带按行区分的修饰类，八行必须完全同款');
+  // 前导零单独包一层并压暗：仪表读数里前导零是占位符而非数值。
+  // 八行同一条规则——这跟此前「拆成两位、每位各搞一套处置」是两回事
+  assert.equal((wxml.match(/<text class="home-index-lead">0<\/text>/g) || []).length, 8);
   assert.deepEqual(
     Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (match) => match[1]),
     ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
@@ -222,13 +226,28 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 天生不会太粗也不会太细，正好避开 Archivo Black 900 太重、细体 200 太轻的两头
   assert.match(indexRule, /font-family:\s*"HomePixel"/);
   assert.match(indexRule, /font-weight:\s*400/);
-  // 点阵放大必须落在 10px 网格整数倍上，否则真机糊
+  // 点阵尺寸必须落在 10px 网格整数倍上，否则真机糊——尺寸只能在 10 的整数倍里挑
   const indexSize = Number(indexRule.match(/font-size:\s*(\d+)px/)[1]);
   assert.equal(indexSize % 10, 0, `序号字号需为 10 的整数倍，当前 ${indexSize}px`);
-  // 既要有存在感、又不能压过中文标题：卡在中文 20px 的 1.2–1.8 倍之间
+  // 序号是参照标记不是标题：不得大于中文标题，否则又变回跟中文抢主角的巨号
   const zhSize = Number(wxss.match(/\.home-button-zh\s*{[^}]*font-size:\s*(\d+)px/)[1]);
-  assert.ok(indexSize >= zhSize * 1.2 && indexSize <= zhSize * 1.8,
-    `序号 ${indexSize}px 相对中文 ${zhSize}px 失衡，应在 1.2–1.8 倍之间`);
+  assert.ok(indexSize <= zhSize,
+    `序号 ${indexSize}px 大于中文 ${zhSize}px，会重新抢走主角位置`);
+  assert.ok(indexSize >= 20, `序号 ${indexSize}px 太小，点阵在这个尺寸下已读不清`);
+
+  // 技术标注的两个必要条件：宽字距 + 退一档的对比度。
+  // 宽字距是本项目 dark-table 工具页早已在用的「微标签」语汇，首页借过来
+  const tracking = Number(indexRule.match(/letter-spacing:\s*([\d.]+)em/)[1]);
+  assert.ok(tracking >= 0.18, `序号字距 ${tracking}em 太紧，读不出技术标注的意思`);
+  assert.match(indexRule, /color:\s*rgba\(0,0,0,0\.7\)/,
+    '序号退到 0.7 档：纯黑是标题的对比度，序号该落在参照物的位置');
+
+  // 前导零压暗用 opacity 而非换颜色：一条规则在常态、glitch 行、按压态三种底色下都成立。
+  // 改成写死颜色就必须为每种反相态各补一条，那正是此前踩过的坑（黑底黑字整枚消失）
+  const leadRule = wxss.match(/\.home-index-lead\s*\{[^}]*\}/)[0];
+  assert.match(leadRule, /opacity:\s*0?\.\d+/);
+  assert.doesNotMatch(leadRule, /color:/,
+    '前导零不得写死颜色，否则反相态下会与底色同源消失');
   // 八行同宽的序号列是「中文左缘真正对齐」的前提——上一版 84–108rpx 不等，
   // 反倒把各行中文推到了不同起点，那种参差本身就是「乱」的一部分
   assert.match(indexRule, /min-width:\s*\d+rpx/);
