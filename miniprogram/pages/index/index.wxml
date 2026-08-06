@@ -32,7 +32,7 @@
 
     <view class="home-actions" aria-role="navigation" aria-label="主要功能">
       <view class="home-button home-button-edhti home-button-tall home-button-heavy {{glitchIndex === 0 ? 'is-glitch' : ''}}" aria-role="button" aria-label="人格测试" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goEdhti">
-        <text class="home-button-index home-button-index-xl" aria-label="01"><text class="home-digit home-digit-shout">0</text><text class="home-digit home-digit-pixel home-digit-tiny">1</text></text>
+        <text class="home-button-index home-button-index-xl home-index-face-01">01</text>
         <view class="home-button-text">
           <text class="home-button-zh">人格测试</text>
           <text class="home-button-en">EDHTI PROFILE</text>
@@ -40,7 +40,7 @@
       </view>
 
       <view class="home-button home-button-match home-button-short home-button-shift {{glitchIndex === 1 ? 'is-glitch' : ''}}" aria-role="button" aria-label="火花觉醒，指挥官问卷" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goQuiz">
-        <text class="home-button-index home-button-index-over" aria-label="02"><text class="home-digit">0</text><text class="home-digit home-index-redacted">2</text></text>
+        <text class="home-button-index home-button-index-over home-index-face-02">02</text>
         <view class="home-button-text">
           <text class="home-button-zh">火花觉醒</text>
           <text class="home-button-en">COMMANDER FINDER</text>
@@ -50,7 +50,7 @@
       <view class="home-rule-slash" aria-hidden="true">/////////////////////////////</view>
 
       <view class="home-button home-button-bracket {{glitchIndex === 2 ? 'is-glitch' : ''}}" aria-role="button" aria-label="强度分级" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goBracket">
-        <text class="home-button-index home-button-index-xl" aria-label="03"><text class="home-digit home-digit-pixel">0</text><text class="home-digit home-digit-pixel home-digit-tilt">3</text></text>
+        <text class="home-button-index home-button-index-xl home-index-face-03">03</text>
         <view class="home-button-text">
           <text class="home-button-zh">强度分级</text>
           <text class="home-button-en">BRACKET ANALYSIS</text>
@@ -58,7 +58,7 @@
       </view>
 
       <view class="home-button home-button-playtest home-button-short {{glitchIndex === 3 ? 'is-glitch' : ''}}" aria-role="button" aria-label="套牌试玩" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goPlaytest">
-        <text class="home-button-index" aria-label="04"><text class="home-digit home-digit-wide">0</text><text class="home-digit home-digit-tall">4</text></text>
+        <text class="home-button-index home-index-face-04">04</text>
         <view class="home-button-text">
           <text class="home-button-zh home-button-zh-sm">套牌试玩</text>
           <text class="home-button-en">DECK SANDBOX</text>
@@ -66,7 +66,7 @@
       </view>
 
       <view class="home-button home-button-life home-button-tall home-button-heavy {{glitchIndex === 4 ? 'is-glitch' : ''}}" aria-role="button" aria-label="血量记录" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goLifeTracker">
-        <text class="home-button-index home-button-index-xxl" aria-label="05"><text class="home-digit home-digit-shout">0</text><text class="home-digit home-digit-shout home-digit-lift home-digit-bite">5</text></text>
+        <text class="home-button-index home-button-index-xxl home-index-face-05">05</text>
         <view class="home-button-text">
           <text class="home-button-zh">血量记录</text>
           <text class="home-button-en">LIFE COUNTER</text>
@@ -74,7 +74,7 @@
       </view>
 
       <view class="home-button home-button-random home-button-shift {{glitchIndex === 5 ? 'is-glitch' : ''}}" aria-role="button" aria-label="混沌工具" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goRandom">
-        <text class="home-button-index home-button-index-over" aria-label="06"><text class="home-digit home-index-redacted">0</text><text class="home-digit home-digit-flip">6</text></text>
+        <text class="home-button-index home-button-index-over home-index-face-06">06</text>
         <view class="home-button-text">
           <text class="home-button-zh">混沌工具</text>
           <text class="home-button-en">CHAOS TOOLKIT</text>
@@ -82,7 +82,7 @@
       </view>
 
       <view class="home-button home-button-tracker {{glitchIndex === 6 ? 'is-glitch' : ''}}" aria-role="button" aria-label="我的主将" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goTracker">
-        <text class="home-button-index home-button-index-xl" aria-label="07"><text class="home-digit home-digit-ghost">0</text><text class="home-digit home-digit-pixel">7</text></text>
+        <text class="home-button-index home-button-index-xl home-index-face-07">07</text>
         <view class="home-button-text">
           <text class="home-button-zh">我的主将</text>
           <text class="home-button-en">COMMANDER LOG</text>
@@ -90,7 +90,7 @@
       </view>
 
       <view class="home-button home-button-meta home-button-tall {{glitchIndex === 7 ? 'is-glitch' : ''}}" aria-role="button" aria-label="环境梯度" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goMeta">
-        <text class="home-button-index home-button-index-xl" aria-label="08"><text class="home-digit home-digit-shout">0</text><text class="home-digit home-digit-pixel home-digit-bite">8</text></text>
+        <text class="home-button-index home-button-index-xl home-index-face-08">08</text>
         <view class="home-button-text">
           <text class="home-button-zh">环境梯度</text>
           <text class="home-button-en">META TIER LIST</text>

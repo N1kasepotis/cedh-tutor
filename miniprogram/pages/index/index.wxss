@@ -269,94 +269,79 @@ page {
   margin-left: -40rpx;
 }
 
-/* ===== 编号的字面：八行八副处置，两位数字互相不合 =====
-   上一版是「四种声音按行的角色分配」——那是个系统，八行读下来齐整。这一版把编号本身拆开：
-   每枚编号是两位数字，两位各受不同处置，且八行没有任何两行重样。
-   处置来自同一套形变词汇（超粗 / 点阵 / 缩小 / 涂黑 / 倾倒 / 压扁 / 抻高 / 翻转 / 淡出 / 咬合），
-   所以这是有词汇表的混乱，不是随机噪声。
+/* ===== 编号的字面：八行八种字体，差异只由字体承担 =====
+   上一版把编号拆成两位、各自缩放旋转涂黑，读下来是错乱而不是丰富。这一版收回：
+   编号仍是一枚完整的两位数，**同一枚编号内两位数字字号完全一致**，不做任何形变、位移、
+   反白与淡出——八行之间唯一的差别就是字体本身。
 
-   三条自加的红线，保证「更混乱」不等于「更失控」：
-   · 不新增字体与颜色，仍是已内嵌的两套字体 + Courier 栈 + 六色色板；
-   · 每位数字都不超过所在行原有的最大字号，行高与八行布局分毫不变；
-   · 位移一律走 transform（不参与布局），只有「咬合」用负边距——它只会收窄，不会撑破。 */
-.home-digit {
-  display: inline-block; /* transform 对非替换的行内元素无效，必须转成 inline-block */
-  vertical-align: baseline;
-  line-height: 0.8;
-}
+   凑齐八种字体的办法：两套已内嵌的字体（超粗 Archivo Black / 点阵 Fusion Pixel）打底，
+   其余六种走系统字体族。难点在安卓：WeChat 能拿到的系统字体远比 iOS 少，多条栈最终会落到
+   同一个通用族上。所以这六种是按「通用族 × 字重」两两错开排的——
+   窄体700 / 等宽700 / 等宽400 / 衬线700 / 衬线400 / 无衬线200，
+   即便安卓只给出 Roboto、Roboto Condensed、Noto Serif、Droid Sans Mono 四款，
+   八行仍然两两可辨。iOS 上还能各自落到 Avenir Next Condensed、Courier、Menlo、
+   Georgia、Times、Helvetica Neue Thin 这些真正不同的设计上。
 
-/* 超粗：与 cEDH Tutor 字标同源，字标喊、这位数字也喊 */
-.home-digit-shout {
-  font-family: "cEDHDisplay", "Arial Black", Impact, "Avenir Next Condensed", "DIN Condensed", sans-serif;
+   不使用斜体：首页整体禁斜体（ui.suite 有全页断言），且系统合成的伪斜体在真机上很廉价。
+   字号一律由行的档位类（-xl / -xxl / -over）给，字面类不碰 font-size——唯一例外是点阵那行，
+   点阵字体必须落在 10px 网格整数倍上才锐利，该行档位 38px 会糊，所以取整到 40px。 */
+
+/* 01 人格测试：与 cEDH Tutor 字标同源的超粗，开篇这行跟着字标一起喊 */
+.home-index-face-01 {
+  font-family: "cEDHDisplay", "Arial Black", Impact, "Helvetica Neue", sans-serif;
   font-weight: 900;
   letter-spacing: -0.04em;
 }
 
-/* 点阵：与下方点阵中文目录同族。对比来自「点阵 vs 实心」的肌理而不是缩小，所以仍是巨号；
-   30px 是 10px 网格的整数倍，放大后依然锐利 */
-.home-digit-pixel {
+/* 02 火花觉醒：窄体。这行本就负位移挂在左缘外，窄身让它更像被挤出去的 */
+.home-index-face-02 {
+  font-family: "Avenir Next Condensed", "DIN Condensed", Haettenschweiler, "Arial Narrow", "sans-serif-condensed", sans-serif;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+}
+
+/* 03 强度分级：打字机等宽，实验室口吻，与这行的分析属性对上 */
+.home-index-face-03 {
+  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+/* 04 套牌试玩：粗衬线。满屏无衬线里唯二的衬线之一，扎眼 */
+.home-index-face-04 {
+  font-family: Georgia, "Songti SC", "Noto Serif", serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* 05 血量记录：点阵，与下方点阵中文同族，也正对「计数器读数」的意思。
+   40px 落在 10px 网格整数倍上，放大后依然锐利（该行档位 38px 会糊） */
+.home-index-face-05 {
   font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
-  font-size: 30px;
+  font-size: 40px;
   font-weight: 400;
   letter-spacing: 0.08em;
 }
 
-/* 缩小并抬到肩上：同一枚编号里拉开近三倍的尺度断裂。
-   必须排在 pixel 之后——两者同为单类选择器，靠源码顺序决定字号谁说了算。
-   10px 是点阵字体的原生尺寸，仍落在 10px 网格上 */
-.home-digit-tiny {
-  font-size: 10px;
-  letter-spacing: 0;
-  transform: translateY(-13px);
+/* 06 混沌工具：另一款等宽，现代无衬线骨架，与 03 的打字机拉开粗细与形态 */
+.home-index-face-06 {
+  font-family: Menlo, Consolas, "Roboto Mono", "Droid Sans Mono", ui-monospace, monospace;
+  font-weight: 400;
+  letter-spacing: 0.06em;
 }
 
-/* 涂黑：延续注释墙的「审查涂黑」语汇，但只吃掉两位里的一位，另一位裸露在外 */
-.home-index-redacted {
-  padding: 2rpx 10rpx;
-  /* 黑块比字形宽出 10rpx，会吃掉原本靠字形侧边距留出的间隙、顶到相邻文字；
-     这里把间隙还回来，让实心块与右邻仍有可呼吸的留白 */
-  margin-right: 18rpx;
-  color: #D0F03C;
-  background: #0A0A0A;
-  letter-spacing: 0.04em;
+/* 07 我的主将：细体。记录是安静的，这枚编号退到最轻 */
+.home-index-face-07 {
+  font-family: "Helvetica Neue", "PingFang SC", Roboto, "sans-serif-thin", sans-serif;
+  font-weight: 200;
+  letter-spacing: 0.06em;
 }
 
-/* 倾倒：转出基线并下坠，像没站稳 */
-.home-digit-tilt {
-  transform: translateY(6px) rotate(13deg);
-}
-
-/* 压扁：横向拉伸两倍。scaleX 是视觉放大不占位，右边要手动让出被撑开的那一半，
-   否则会直接压到同一枚编号里的下一位 */
-.home-digit-wide {
-  margin-right: 10px;
-  transform: scaleX(2);
-  transform-origin: left center;
-}
-
-/* 抻高：纵向拉长，与同一枚编号里被压扁的那位构成两个相反的形变 */
-.home-digit-tall {
-  transform: scaleY(1.45);
-  transform-origin: bottom center;
-}
-
-/* 翻转：6 转 180° 读作 9——混沌工具把自己倒了过来 */
-.home-digit-flip {
-  transform: rotate(180deg);
-}
-
-/* 淡出：退到装饰档的半透明黑，让另一位独自承担这枚编号 */
-.home-digit-ghost {
-  color: rgba(0,0,0,0.35);
-}
-
-/* 抬升 + 咬合：两位不再并排，而是错位叠住 */
-.home-digit-lift {
-  transform: translateY(-9px);
-}
-
-.home-digit-bite {
-  margin-left: -6px;
+/* 08 环境梯度：细衬线。与 04 的粗衬线同族不同重，像一份排过版的榜单 */
+.home-index-face-08 {
+  font-family: "Times New Roman", "Hoefler Text", "Noto Serif", serif;
+  font-weight: 400;
+  letter-spacing: 0.02em;
 }
 
 .home-button-text {
@@ -452,12 +437,6 @@ page {
   color: #0A0A0A;
 }
 
-/* 涂黑编号在 glitch 行要单独反相：该行整行已是电光蓝底 + 纯黑字，
-   而这枚编号自带纯黑块，沿用黑字会变成黑底黑字直接消失 */
-.home-button.is-glitch .home-index-redacted {
-  color: #00B3FF;
-}
-
 /* 暴力按压：整块反相为黑底 + 电光蓝字，而非温柔缩放 */
 .home-index-active {
   background: #0A0A0A;
@@ -469,11 +448,6 @@ page {
   color: #00B3FF;
 }
 
-/* 淡出的那位数字自带半透明黑，按压时整行翻成纯黑底，它会黑底黑字整枚消失。
-   与涂黑编号同理，必须单独反相——只在按压态放弃「淡出」，静止态仍是幽灵。 */
-.home-index-active .home-digit-ghost {
-  color: #00B3FF;
-}
 
 /* 版权：极小近乎隐形的 fine print；左右加大内缩 + 安全区，避免贴边被屏幕圆角吞掉 */
 .home-colophon {
