@@ -96,21 +96,19 @@ test('home is a single-screen acid index with the eight existing actions', () =>
       'META TIER LIST',
     ],
   );
-  // 01–08 序号：八行**同一副处置**，不带任何按行区分的修饰类。
-  // 此前四版（四种字面声音 / 拆成两位各自形变 / 八行八种字体 / 八行八种赛博投影）
-  // 都是靠「八行互不相同」求特异，每一版都更吵；现在特异只由字体形态承担。
-  // 每枚序号独占一行，且内部嵌了前导零那一层，所以按行贪婪匹配到最后一个 </text> 再剥标签
+  // 01–08 序号：字体与字号跟英文副标题走（同为一行里的小标记），
+  // 唯一按行变化的是颜色——取该入口目标页自己的主题色，详见下方的色板与对比度校验。
+  // 形态本身仍是八行同款：不得再出现按行的字号、形变或字体差异。
   const indexTags = Array.from(
-    wxml.matchAll(/<text class="(home-button-index[^"]*)">(.*)<\/text>\s*$/gm),
-    (m) => ({ cls: m[1], num: m[2].replace(/<[^>]*>/g, '') }),
+    wxml.matchAll(/<text class="home-button-index([^"]*)">(\d{2})<\/text>/g),
+    (m) => ({ extra: m[1].trim(), num: m[2] }),
   );
   assert.deepEqual(indexTags.map((t) => t.num),
     ['01', '02', '03', '04', '05', '06', '07', '08']);
-  assert.deepEqual([...new Set(indexTags.map((t) => t.cls))], ['home-button-index'],
-    '序号不得再带按行区分的修饰类，八行必须完全同款');
-  // 前导零单独包一层并压暗：仪表读数里前导零是占位符而非数值。
-  // 八行同一条规则——这跟此前「拆成两位、每位各搞一套处置」是两回事
-  assert.equal((wxml.match(/<text class="home-index-lead">0<\/text>/g) || []).length, 8);
+  indexTags.forEach((t) => {
+    assert.match(t.extra, /^home-index-[a-z]+$/,
+      `序号只许再挂一枚按行的主题色类，实际是「${t.extra}」`);
+  });
   assert.deepEqual(
     Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (match) => match[1]),
     ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
@@ -206,10 +204,16 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     ['0'],
   );
 
+  // 序号的八枚入口主题色是色板上唯一的例外，单独收在一处、逐条校验（见下），
+  // 不许散到别处；剔掉它们之后，全页其余部分仍必须只用那六个字面量
+  const entryHues = Array.from(
+    wxss.matchAll(/\.home-index-[a-z]+\s*\{\s*color:\s*(#[0-9A-F]{6});/gi),
+    (match) => match[1].toUpperCase(),
+  );
   const colorLiterals = Array.from(
     wxss.matchAll(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi),
     (match) => match[0].replace(/\s/g, '').toUpperCase(),
-  );
+  ).filter((c) => !entryHues.includes(c));
   assert.deepEqual(
     new Set(colorLiterals),
     new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', '#00B3FF', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.7)']),
@@ -218,42 +222,66 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 中文入口为纯黑（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
   assert.match(wxss, /\.home-button-zh\s*{[^}]*color:\s*#0A0A0A/);
 
-  // 序号的字面：只有一条规则，特异来自点阵形态本身
+  // 序号与英文副标题同款：同一套等宽字体栈、同一字号、同一字距。
+  // 两者是这一行仅有的两枚小标记，一左一右，用同一副字面才读得出是一对
   const indexRule = wxss.match(/\.home-button-index\s*\{[^}]*\}/)[0];
-  assert.equal((wxss.match(/\.home-button-index[^,{]*\{/g) || []).length, 1,
-    '序号只许有一条字面规则；再出现字号档位类或按行字面类就是又在往回走');
-  // 点阵是包内唯一形态上真正特殊的字体，且**只有一个字重**——笔画粗细由像素网格决定，
-  // 天生不会太粗也不会太细，正好避开 Archivo Black 900 太重、细体 200 太轻的两头
-  assert.match(indexRule, /font-family:\s*"HomePixel"/);
-  assert.match(indexRule, /font-weight:\s*400/);
-  // 点阵尺寸必须落在 10px 网格整数倍上，否则真机糊——尺寸只能在 10 的整数倍里挑
-  const indexSize = Number(indexRule.match(/font-size:\s*(\d+)px/)[1]);
-  assert.equal(indexSize % 10, 0, `序号字号需为 10 的整数倍，当前 ${indexSize}px`);
-  // 序号是参照标记不是标题：不得大于中文标题，否则又变回跟中文抢主角的巨号
-  const zhSize = Number(wxss.match(/\.home-button-zh\s*{[^}]*font-size:\s*(\d+)px/)[1]);
-  assert.ok(indexSize <= zhSize,
-    `序号 ${indexSize}px 大于中文 ${zhSize}px，会重新抢走主角位置`);
-  assert.ok(indexSize >= 20, `序号 ${indexSize}px 太小，点阵在这个尺寸下已读不清`);
+  const enRule = wxss.match(/\.home-button-en\s*\{[^}]*\}/)[0];
+  const faceOf = (rule) => ({
+    family: (rule.match(/font-family:\s*([^;]+);/) || [])[1],
+    size: (rule.match(/font-size:\s*([^;]+);/) || [])[1],
+    tracking: (rule.match(/letter-spacing:\s*([^;]+);/) || [])[1],
+  });
+  assert.deepEqual(faceOf(indexRule), faceOf(enRule),
+    '序号必须与英文副标题同字体、同字号、同字距');
 
-  // 技术标注的两个必要条件：宽字距 + 退一档的对比度。
-  // 宽字距是本项目 dark-table 工具页早已在用的「微标签」语汇，首页借过来
-  const tracking = Number(indexRule.match(/letter-spacing:\s*([\d.]+)em/)[1]);
-  assert.ok(tracking >= 0.18, `序号字距 ${tracking}em 太紧，读不出技术标注的意思`);
-  assert.match(indexRule, /color:\s*rgba\(0,0,0,0\.7\)/,
-    '序号退到 0.7 档：纯黑是标题的对比度，序号该落在参照物的位置');
+  // 基类不得自带颜色：颜色只能来自下面八条按行的主题色，
+  // 漏掉一行会直接继承成黑色，这条断言就是为了让那种遗漏立刻暴露
+  assert.doesNotMatch(indexRule, /(^|[^-])color:/,
+    '序号基类不得设 color，颜色只从按行主题色来');
+  assert.doesNotMatch(indexRule, /transform:|background|text-shadow|font-style:\s*italic/);
+  assert.match(indexRule, /min-width:\s*\d+rpx/, '序号仍需等宽成列，中文左缘才对得齐');
 
-  // 前导零压暗用 opacity 而非换颜色：一条规则在常态、glitch 行、按压态三种底色下都成立。
-  // 改成写死颜色就必须为每种反相态各补一条，那正是此前踩过的坑（黑底黑字整枚消失）
-  const leadRule = wxss.match(/\.home-index-lead\s*\{[^}]*\}/)[0];
-  assert.match(leadRule, /opacity:\s*0?\.\d+/);
-  assert.doesNotMatch(leadRule, /color:/,
-    '前导零不得写死颜色，否则反相态下会与底色同源消失');
-  // 八行同宽的序号列是「中文左缘真正对齐」的前提——上一版 84–108rpx 不等，
-  // 反倒把各行中文推到了不同起点，那种参差本身就是「乱」的一部分
-  assert.match(indexRule, /min-width:\s*\d+rpx/);
-  assert.doesNotMatch(indexRule, /transform:|background|text-shadow|font-style:\s*italic/,
-    '序号不得再加形变、底色、投影或斜体');
-  // 序号没有自带色，两种反相态必须把它一起带上，否则 glitch 行与按压态下它会留在纯黑
+  // 八行各取目标页自己的主题色，八色互不重复
+  const hueRules = Array.from(
+    wxss.matchAll(/\.home-index-([a-z]+)\s*\{\s*color:\s*(#[0-9A-F]{6});\s*\}/gi),
+    (m) => ({ slug: m[1], hex: m[2].toUpperCase() }),
+  );
+  const rowSlugs = Array.from(
+    wxml.matchAll(/class="home-button home-button-([a-z]+)/g),
+    (m) => m[1],
+  );
+  assert.equal(hueRules.length, 8, '八行序号各需一条主题色');
+  assert.deepEqual(hueRules.map((h) => h.slug).sort(), [...rowSlugs].sort(),
+    '序号的主题色必须与八个入口一一对应');
+  assert.equal(new Set(hueRules.map((h) => h.hex)).size, 8,
+    `八枚序号颜色不得重复：${hueRules.map((h) => h.hex).join(' ')}`);
+  // 每一行的模板都要真的挂上自己那条色类
+  rowSlugs.forEach((slug) => {
+    assert.match(wxml, new RegExp(`home-button-${slug}[\\s\\S]*?home-button-index home-index-${slug}`),
+      `${slug} 行的序号没挂上自己的主题色`);
+  });
+
+  // 对比度：粒子主题色是给各自页面的深色底调的，直接搬到首页这块酸性黄绿上
+  // 全部不可读（实测 1.53–2.72:1，最差的 tracker 金只有 1.53:1，10px 下几乎看不见）。
+  // 这里保住色相与饱和度、只压明度到刚过 AA。改任何一条都必须重新验算。
+  const luminance = (hex) => {
+    const chan = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2];
+  };
+  const contrast = (a, b) => {
+    const [x, y] = [luminance(a), luminance(b)];
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  };
+  hueRules.forEach(({ slug, hex }) => {
+    const ratio = contrast('#D0F03C', hex);
+    assert.ok(ratio >= 4.5,
+      `${slug} 的序号色 ${hex} 在 #D0F03C 上只有 ${ratio.toFixed(2)}:1，未过 AA 4.5:1`);
+  });
+
+  // 反相态要盖过按行主题色：glitch 行是电光蓝底、按压态是纯黑底，
+  // 八种主题色在这两种底上都会糊掉。靠选择器权重压过去（三类 / 两类 > 一类），
+  // 所以这两条规则不能被改回单类选择器
   assert.match(wxss, /\.home-button\.is-glitch \.home-button-index,/);
   assert.match(wxss, /\.home-index-active \.home-button-index,/);
 

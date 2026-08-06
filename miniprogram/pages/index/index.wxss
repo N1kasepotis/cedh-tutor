@@ -263,21 +263,34 @@ page {
 .home-button-index {
   display: block;
   flex: 0 0 auto;
-  min-width: 60rpx;
-  margin-right: 24rpx;
-  color: rgba(0,0,0,0.7);
-  font-family: "HomePixel", "Fusion Pixel 10px Monospaced SC", "Zpix", ui-monospace, monospace;
-  font-size: 20px;
-  font-weight: 400;
+  min-width: 40rpx;
+  margin-right: 20rpx;
+  /* 不写 font-family：英文副标题也没写，两者一同继承 .home 的点阵字体。
+     显式写死 Courier 反而会让这一对小标记分家。10px 正好是点阵的原生尺寸，天然锐利 */
+  font-size: 10px;
+  font-weight: 700;
   font-variant-numeric: tabular-nums;
-  letter-spacing: 0.24em;
-  line-height: 0.8;
+  letter-spacing: 1.5px;
+  line-height: 1;
 }
 
-/* 前导零：占位符，不是数值。opacity 而非改色——常态、glitch 行、按压态三种底色通吃 */
-.home-index-lead {
-  opacity: 0.5;
-}
+/* 每行的序号取该入口目标页自己的主题色（与 config/particle.js 的 palettes 同源），
+   八行八色互不重复，序号因此成了「这一行通向哪个世界」的色标。
+   基类刻意不设 color——颜色只从下面八条里来，漏掉一行会直接继承成黑色而露馅。
+
+   **色相沿用，明度重算**：粒子主题色是为各自页面的深色底调的，直接搬到首页这块
+   酸性黄绿上全部不可读——实测 1.53–2.72:1，最差的 tracker 金只有 1.53:1，
+   10px 下几乎看不见。这里保住色相与饱和度、只压明度，压到刚过 AA 4.5:1 为止，
+   于是每行仍读得出是「那个页面的颜色」，同时真的看得见。
+   重算脚本与实测值见 README；改任何一条都要重新验算对比度（测试逐条卡 4.5:1）。 */
+.home-index-edhti    { color: #C20071; } /* 人格测试：neon-arcade 粉 */
+.home-index-match    { color: #99520E; } /* 火花觉醒：noir-gold 橙金 */
+.home-index-bracket  { color: #28704E; } /* 强度分级：翡翠 */
+.home-index-playtest { color: #465DC0; } /* 套牌试玩：长春花 */
+.home-index-life     { color: #C61A28; } /* 血量记录：血红 */
+.home-index-random   { color: #A2427B; } /* 混沌工具：玫红 */
+.home-index-tracker  { color: #776225; } /* 我的主将：金 */
+.home-index-meta     { color: #C71807; } /* 环境梯度：meta 红 */
 
 .home-button-text {
   display: flex;
