@@ -268,6 +268,7 @@ page {
   /* 不写 font-family：英文副标题也没写，两者一同继承 .home 的点阵字体。
      显式写死 Courier 反而会让这一对小标记分家。10px 正好是点阵的原生尺寸，天然锐利 */
   font-size: 10px;
+  font-style: italic;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
   letter-spacing: 1.5px;
@@ -283,14 +284,14 @@ page {
    10px 下几乎看不见。这里保住色相与饱和度、只压明度，压到刚过 AA 4.5:1 为止，
    于是每行仍读得出是「那个页面的颜色」，同时真的看得见。
    重算脚本与实测值见 README；改任何一条都要重新验算对比度（测试逐条卡 4.5:1）。 */
-.home-index-edhti    { color: #C20071; } /* 人格测试：neon-arcade 粉 */
-.home-index-match    { color: #99520E; } /* 火花觉醒：noir-gold 橙金 */
-.home-index-bracket  { color: #28704E; } /* 强度分级：翡翠 */
-.home-index-playtest { color: #465DC0; } /* 套牌试玩：长春花 */
-.home-index-life     { color: #C61A28; } /* 血量记录：血红 */
-.home-index-random   { color: #A2427B; } /* 混沌工具：玫红 */
-.home-index-tracker  { color: #776225; } /* 我的主将：金 */
-.home-index-meta     { color: #C71807; } /* 环境梯度：meta 红 */
+.home-index-edhti    { color: #C00080; } /* 人格测试：品红 */
+.home-index-match    { color: #804B07; } /* 火花觉醒：橙棕 */
+.home-index-bracket  { color: #1A705F; } /* 强度分级：翡翠 */
+.home-index-playtest { color: #305ECB; } /* 套牌试玩：长春花蓝 */
+.home-index-life     { color: #6A0C1F; } /* 血量记录：深绯 */
+.home-index-random   { color: #920FB3; } /* 混沌工具：紫罗兰 */
+.home-index-tracker  { color: #4B6600; } /* 我的主将：橄榄 */
+.home-index-meta     { color: #B6210A; } /* 环境梯度：朱砂 */
 
 .home-button-text {
   display: flex;

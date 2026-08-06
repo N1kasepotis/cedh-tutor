@@ -238,7 +238,10 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 漏掉一行会直接继承成黑色，这条断言就是为了让那种遗漏立刻暴露
   assert.doesNotMatch(indexRule, /(^|[^-])color:/,
     '序号基类不得设 color，颜色只从按行主题色来');
-  assert.doesNotMatch(indexRule, /transform:|background|text-shadow|font-style:\s*italic/);
+  assert.doesNotMatch(indexRule, /transform:|background|text-shadow/);
+  // 斜化用 font-style 而不是 transform: skewX()：两者都是切变，但 transform 会让这枚
+  // 标记脱离行内布局、还要额外补右侧间距；font-style 由排版引擎处理，宽度自动算进去
+  assert.match(indexRule, /font-style:\s*italic/);
   assert.match(indexRule, /min-width:\s*\d+rpx/, '序号仍需等宽成列，中文左缘才对得齐');
 
   // 八行各取目标页自己的主题色，八色互不重复
@@ -278,6 +281,32 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     assert.ok(ratio >= 4.5,
       `${slug} 的序号色 ${hex} 在 #D0F03C 上只有 ${ratio.toFixed(2)}:1，未过 AA 4.5:1`);
   });
+
+  // 八色之间必须**看得出**不同，而不只是数值上不重复。用 CIE Lab ΔE 量，
+  // 「色相差多少度」在深色端根本不可靠——初版 life #C61A28 与 meta #C71807
+  // 是两个不同的十六进制值、色相也差 12°，实际 ΔE 只有 14.7，肉眼就是同一枚红。
+  const toLab = (hex) => {
+    const linear = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
+      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    const [r, g, b] = linear;
+    const xyz = [
+      (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047,
+      r * 0.2126 + g * 0.7152 + b * 0.0722,
+      (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883,
+    ].map((t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116));
+    return [116 * xyz[1] - 16, 500 * (xyz[0] - xyz[1]), 200 * (xyz[1] - xyz[2])];
+  };
+  const deltaE = (a, b) => {
+    const [A, B] = [toLab(a), toLab(b)];
+    return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+  };
+  let closest = { gap: Infinity, pair: '' };
+  hueRules.forEach((a, i) => hueRules.slice(i + 1).forEach((b) => {
+    const gap = deltaE(a.hex, b.hex);
+    if (gap < closest.gap) closest = { gap, pair: `${a.slug} ${a.hex} / ${b.slug} ${b.hex}` };
+  }));
+  assert.ok(closest.gap >= 30,
+    `最接近的两枚序号色差 ΔE 只有 ${closest.gap.toFixed(1)}，看上去会是同一个色：${closest.pair}`);
 
   // 反相态要盖过按行主题色：glitch 行是电光蓝底、按压态是纯黑底，
   // 八种主题色在这两种底上都会糊掉。靠选择器权重压过去（三类 / 两类 > 一类），
@@ -343,7 +372,14 @@ test('home uses licensed embedded display and pixel fonts with device-safe fallb
   assert.match(wxss, /home-colophon-item[^}]*font-size:\s*6px[^}]*font-weight:\s*700[^}]*font-variant-numeric:\s*tabular-nums[^}]*letter-spacing:\s*0\.5px[^}]*line-height:\s*1\.3[^}]*text-transform:\s*uppercase/);
   assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*home-format-note[^}]*font-size:\s*6px[^}]*letter-spacing:\s*0\.2px/);
   assert.match(wxss, /@media \(max-height:\s*600px\)[\s\S]*home-title-brand[^}]*font-size:\s*38px/);
-  assert.doesNotMatch(wxss, /font-style:\s*italic/);
+  // 斜体只许用在序号上——它是全页最小的一枚标记，右倾是为了跟同字号的英文副标题拉开。
+  // 其余任何地方都不许斜：标题、中文入口、注释墙、题词、imprint 都靠字重与字距立住，
+  // 而且点阵字体没有真正的斜体字面，系统只能靠切变合成，字号一大就露出锯齿
+  const italicOwners = Array.from(
+    wxss.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*)\{([^{}]*)\}/g),
+  ).filter(([, , body]) => /font-style:\s*italic/.test(body)).map(([, sel]) => sel.trim());
+  assert.deepEqual(italicOwners, ['.home-button-index'],
+    `斜体只许留给序号，实际出现在：${italicOwners.join(' / ')}`);
 
   assert.match(js, /homePixelFontBase64/);
   assert.match(js, /titleFontBase64/);
