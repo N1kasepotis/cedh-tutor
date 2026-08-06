@@ -843,6 +843,24 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   assert.ok(Math.max(...lens) / Math.min(...lens) > 5,
     '线段长度过于均匀，看起来会像网格而不是 Voronoi');
 
+  // 胞元必须闭合。Voronoi 的内部顶点度数恒为 3，出现 2 度顶点就说明有边被丢掉了，
+  // 那个交汇处在真机上看着就是空的——之前按「太短就是碎屑」丢边，丢的全是真实的短边。
+  // 直接跑生成器算未补长的原始几何来判，不去反推已补长的坐标（那要靠容差聚类，不可靠）。
+  const { computeGeometry } = require('../scripts/build-home-voronoi');
+  const geometry = computeGeometry();
+  assert.equal(geometry.emptyCells, 0, '有种子的胞元被裁空了，那一片会整块缺失');
+  const openJunctions = [];
+  geometry.vertices.forEach((arms, k) => {
+    const [x, y] = k.split(',').map(Number);
+    if (x < 2 || x > 98 || y < 2 || y > 214) return; // 只看 390×844 的可见区，避开裁剪边缘
+    if (arms.length !== 3) openJunctions.push(`(${x}, ${y}) ${arms.length}度`);
+  });
+  assert.deepEqual(openJunctions, [], `顶点度数不是 3，胞元没闭合：${openJunctions.slice(0, 3).join(' / ')}`);
+
+  // 仓库里的 config 必须就是当前脚本的产物：漏跑生成器或手改过都会在这里断
+  assert.deepEqual(HOME_VORONOI_EDGES, geometry.edges,
+    'config/home-voronoi.js 与生成器输出不一致，请重跑 node scripts/build-home-voronoi.js');
+
   // 传输量：静态几何一次推完，不该膨胀
   const payload = Buffer.byteLength(JSON.stringify(HOME_VORONOI_EDGES), 'utf8');
   assert.ok(payload < 6 * 1024, `线场数据 ${(payload / 1024).toFixed(1)}KB，超过 6KB 上限`);
@@ -862,17 +880,48 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
       `${name} 不得动布局属性`);
   });
 
-  // 不规律靠两层互质周期叠加，而不是每帧重算
-  const period = (name) => {
+  // 动效必须真的看得见。这是真机上翻过车的地方：往返式 ease-in-out 在两端速度归零，
+  // 而开屏正好停在起点，最该被看到的头十几秒恰恰最慢，肉眼读不出任何位移。
+  // 所以直接按关键帧算出实际线速度，卡在「看得见但不抢戏」的区间里。
+  const declaration = (name) => {
     const line = wxss.split('\n').find((row) => row.includes(`animation: ${name} `));
     assert.ok(line, `找不到 ${name} 的 animation 声明`);
-    return Number(line.match(/ (\d+)s/)[1]);
+    return line;
   };
-  const turn = period('home-field-turn');
-  const drift = period('home-field-drift');
-  assert.notEqual(turn, drift, '两层周期相同就会同步，合成运动变得规律');
+  const driftDecl = declaration('home-field-drift');
+  const driftPeriod = Number(driftDecl.match(/ (\d+)s/)[1]);
+
+  const driftStart = wxss.indexOf('@keyframes home-field-drift');
+  const driftFrames = wxss.slice(driftStart, wxss.indexOf('\n}', driftStart));
+  const stops = [...driftFrames.matchAll(/translate3d\(\s*(-?[\d.]+)vw,\s*(-?[\d.]+)vw/g)]
+    .map((m) => [Number(m[1]), Number(m[2])]);
+  assert.ok(stops.length >= 4, 'drift 只有两个关键帧就是一条往返直线，正是看不出在动的那种');
+  let pathVw = 0;
+  for (let i = 1; i < stops.length; i += 1) {
+    pathVw += Math.hypot(stops[i][0] - stops[i - 1][0], stops[i][1] - stops[i - 1][1]);
+  }
+  const vwPerSecond = pathVw / driftPeriod;
+  // 0.35–1.2 vw/s ≈ 390 宽机型上的 1.4–4.7 px/s：下限保证十秒内能看出位移，上限保证不晃眼
+  assert.ok(vwPerSecond > 0.35,
+    `线场只有 ${(vwPerSecond * 3.9).toFixed(2)}px/s，真机上看不出在动`);
+  assert.ok(vwPerSecond < 1.2,
+    `线场 ${(vwPerSecond * 3.9).toFixed(2)}px/s 太快，背景会抢注意力`);
+
+  // 主运动不能用 alternate：往返到端点速度归零，开屏那一刻恰好停在最慢处
+  assert.doesNotMatch(driftDecl, /alternate/, 'drift 是主运动，用 alternate 会在两端出现看不见的死区');
+  assert.match(driftDecl, /linear/, 'drift 用缓动会在每个关键帧附近造出减速死区');
+
+  // 两层周期互质，合成轨迹一次使用里走不完一轮（alternate 的实际周期要翻倍）
+  const effective = (name) => {
+    const line = declaration(name);
+    return Number(line.match(/ (\d+)s/)[1]) * (/alternate/.test(line) ? 2 : 1);
+  };
   const gcd = (a, b) => (b ? gcd(b, a % b) : a);
-  assert.equal(gcd(turn, drift), 1, `周期 ${turn}s 与 ${drift}s 必须互质，否则会较快回到同一相位`);
+  const turnEff = effective('home-field-turn');
+  const driftEff = effective('home-field-drift');
+  const combined = (turnEff * driftEff) / gcd(turnEff, driftEff);
+  assert.ok(combined > 3600,
+    `两层合成周期只有 ${(combined / 60).toFixed(0)} 分钟，会看出重复；实际周期 ${turnEff}s 与 ${driftEff}s 需互质`);
 
   // 减弱动态效果时停下
   assert.match(wxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.home-field[\s\S]*animation:\s*none/);

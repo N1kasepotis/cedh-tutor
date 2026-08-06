@@ -39,13 +39,15 @@ page {
   height: 100%;
   opacity: 0.45;
   pointer-events: none;
+  will-change: transform;
   animation: home-field-turn 71s ease-in-out infinite alternate;
 }
 
 .home-field-drift {
   width: 100%;
   height: 100%;
-  animation: home-field-drift 97s ease-in-out infinite alternate;
+  will-change: transform;
+  animation: home-field-drift 53s linear infinite;
 }
 
 .home-field-line {
@@ -55,21 +57,39 @@ page {
   transform-origin: left center;
 }
 
-/* 两层动效的周期刻意取互质的 71s 与 97s，且都是 alternate（实际周期 142s 与 194s）。
-   两者最小公倍数约 3.8 小时，合成运动在一次使用里永远走不完一轮——这是不靠每帧重算
-   就能得到「不规律」的办法。真正的 Voronoi 动画（种子移动、胞元重算）在移动端并不简单：
-   要每帧重算七十多条线再 setData 过桥，正是该避免的做法；而这里两个 transform 走合成器，
-   不碰数据层，线段数量再多也不额外付代价。
-   旋转绕整页中心：离中心最远的页角约 119vw，2.4° 下位移约 5vw，远小于构建期留的外扩量。
-   位移量也用 vw，与线段坐标同单位，动效幅度才不随屏幕高矮变化。 */
+/* 两层动效叠加出不规律，都不碰数据层：真正的 Voronoi 动画（种子移动、胞元重算）
+   要每帧重算七十多条线再 setData 过桥，是移动端最贵的做法；这里两个 transform 走合成器，
+   线段再多也不额外付代价。
+
+   主运动是 drift 这条封闭回路，53s linear 无限循环。三处刻意的选择：
+   · 不用 alternate。往返式动画在两端速度归零，而开屏那一刻正好停在起点，
+     用户最可能盯着看的头十几秒恰恰是最慢的一段——上一版就是这么「看着没动」的
+     （71s ease-in-out ±2.4°，开屏 15 秒内页面中心只移动约 0.7px，肉眼根本读不出来）。
+     闭合回路从第一帧起就是匀速的，且永不折返。
+   · 用 linear 而非 ease。缓动会在每个关键帧附近造出减速区，同样是看不见的死区。
+   · 回路本身是不规则多边形，六个关键帧的时间间距也不等（14/15/18/14/22/17），
+     段速在 0.41–0.79 vw/s 之间差近两倍，因此不会读成一个匀速转圈。
+   周长 32.1vw / 53s ≈ 0.6vw/s，在 390 宽的机型上约 2.4px/s、十秒走 24px：
+   看得出在动，又不会抢注意力。
+
+   turn 那层是次要的差分运动：绕整页中心慢转 ±2.4°，让上下不是整块平移的死板感。
+   它用 alternate（实际周期 142s），与 drift 的 53s 互质，合成轨迹约 2.1 小时才回到
+   同一相位——一次使用里永远走不完一轮。
+   离中心最远的页角约 119vw，2.4° 下位移约 5vw，加上 drift 的 5.6vw 仍远小于构建期
+   留的 26vw 外扩量，扫到边角不会露白。位移量用 vw，与线段坐标同单位，幅度不随屏高变化。 */
 @keyframes home-field-turn {
   from { transform: rotate(-2.4deg); }
   to { transform: rotate(2.4deg); }
 }
 
 @keyframes home-field-drift {
-  from { transform: translate3d(-1.6vw, 1.4vw, 0); }
-  to { transform: translate3d(1.6vw, -1.4vw, 0); }
+  0% { transform: translate3d(5.2vw, -1.4vw, 0); }
+  14% { transform: translate3d(2.1vw, 3.6vw, 0); }
+  29% { transform: translate3d(-3.4vw, 5.1vw, 0); }
+  47% { transform: translate3d(-5.6vw, 0.8vw, 0); }
+  61% { transform: translate3d(-2.8vw, -4.2vw, 0); }
+  83% { transform: translate3d(1.9vw, -5.3vw, 0); }
+  100% { transform: translate3d(5.2vw, -1.4vw, 0); }
 }
 
 .home-content {
