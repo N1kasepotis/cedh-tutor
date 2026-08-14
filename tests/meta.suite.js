@@ -211,7 +211,12 @@ test('环境梯度页面：注册齐全、署名可见、外链只复制不内�
   assert.match(buildMetaSummary().bylineLine, /^cEDH小屋\s\d{4}\.\d{2}\.\d{2}$/);
   // 列表末尾的收尾语
   assert.match(wxml, /class="meta-tail mono">持续更新中\.\.\.</);
-  assert.doesNotMatch(wxml, /meta-credit|image-credit|不代表本工具|图像来自 Scryfall|免责/);
+  // 禁的是「论述」——整段免责、界限、方法论说明；不是禁一切法律必需的署名。
+  // 卡面美术署名一行由 shared.suite 的发布门禁强制（渲染卡图的页面都必须带），
+  // 与要清掉的那类段落是两回事，所以按具体措辞禁，不按关键字一刀切。
+  assert.doesNotMatch(wxml, /meta-credit|不代表本工具|免责/);
+  assert.equal((wxml.match(/card-art-credit/g) || []).length, 1,
+    '卡面署名只留一行，不得又长回一段');
 
   // 详情面板点内部不应关闭：遮罩关闭 + 内部 catchtap 阻止冒泡
   assert.match(wxml, /class="detail-mask"[^>]*bindtap="closeDetail"/);
@@ -272,8 +277,13 @@ test('环境梯度版面保持精简：只有标题与一行署名，无免责�
   assert.doesNotMatch(wxml, /meta-kicker|meta-facts|methodology/,
     '抬头不应再有 kicker、事实行或方法论折叠区');
 
-  // 所有免责 / 版权 / 快照界限论述都已移除
-  assert.doesNotMatch(wxml, /免责|版权|不代表|不联网|不会自动更新|需更新小程序版本|快照/);
+  // 所有免责 / 快照界限 / 更新方式的论述都已移除。
+  // 「版权」二字不再一刀切禁——卡面美术署名那一行里有「美术版权归…」，
+  // 那是发布门禁强制的法律署名，不是这里要清的论述；改为只禁成段的界限说明。
+  assert.doesNotMatch(wxml, /免责|不代表|不联网|不会自动更新|需更新小程序版本|快照/);
+  const copyrightMentions = wxml.match(/版权/g) || [];
+  assert.ok(copyrightMentions.length <= 1,
+    `页面里出现了 ${copyrightMentions.length} 处「版权」，只允许卡面署名那一处`);
 
   // 展示标题用季节说法，与上游数据标题解耦（上游是「2026年7月cedh梯度表」）
   assert.equal(summary.title, '夏末梯度表');

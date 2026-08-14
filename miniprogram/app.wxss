@@ -164,3 +164,17 @@ button[disabled].pressable-active,
     transform: none;
   }
 }
+
+/* ===== 卡图署名 =====
+   凡是渲染 Scryfall 卡图的页面都必须带这一行。这不是装饰：卡面美术的版权属于
+   Wizards of the Coast 与画师，Scryfall 只是图源；缺署名在商用语境下是实打实的风险。
+   此前只有结算页写了，其余五个渲染卡图的页面（强度分级 / 人格测试 / 套牌试玩 /
+   我的主将 / 环境梯度）都漏了，shared.suite 现按「模板里出现卡图就必须出现署名」逐页校验。
+   样式走既有 token，不新增视觉语汇：最faint 的文字色 + 10px，安静地待在内容末尾。 */
+.card-art-credit {
+  padding: 0 var(--cedh-space-3);
+  color: var(--cedh-text-faint);
+  font-size: var(--cedh-text-10);
+  line-height: 1.45;
+  text-align: center;
+}

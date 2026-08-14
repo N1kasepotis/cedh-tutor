@@ -235,4 +235,5 @@
       <text>用这副牌试玩</text>
     </button>
   </view>
+  <view class="card-art-credit">卡面图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师所有</view>
 </view>

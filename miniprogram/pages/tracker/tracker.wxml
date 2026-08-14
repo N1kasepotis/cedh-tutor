@@ -149,4 +149,5 @@
       <view class="secondary-button debug-action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="clearData">清空数据</view>
     </view>
   </view>
+  <view class="card-art-credit">卡面图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师所有</view>
 </view>

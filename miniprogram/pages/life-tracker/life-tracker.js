@@ -207,10 +207,18 @@ Page({
     if (this.persistTimer) clearTimeout(this.persistTimer);
     this.persistTimer = null;
     if (!this.gameState) return;
-    writeStorage(lifeTrackerConfig.storageKey, this.gameState, {
+    const stored = writeStorage(lifeTrackerConfig.storageKey, this.gameState, {
       schemaVersion: lifeTrackerConfig.schemaVersion,
       validate: isLifeTrackerState,
     });
+    // 存盘失败此前是完全静默的：屏幕上的血量照常在变，用户毫不知情，
+    // 直到切后台被回收、回来发现整局归零。落盘是这一页唯一的持久化，不能只当它成功。
+    // 只提示一次：这是每次加减血都会跑的防抖自动存盘，逐次弹窗会盖住计数本身。
+    // 本局内存态仍然正确，所以措辞是「别切后台」而不是「已丢失」。
+    if (!stored.ok && !this.storageWarned) {
+      this.storageWarned = true;
+      wx.showToast({ title: '本地存储写入失败，切后台可能丢失本局', icon: 'none', duration: 3000 });
+    }
   },
 
   toggleDropdown() {

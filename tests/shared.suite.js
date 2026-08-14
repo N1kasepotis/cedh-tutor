@@ -395,3 +395,46 @@ test('WXSS 不得使用未定义的设计 token', () => {
     .map((token) => `${token} ← ${Array.from(used.get(token)).join(', ')}`);
   assert.deepEqual(missing, [], `这些 token 被使用却从未定义：\n${missing.join('\n')}`);
 });
+
+// 卡面美术的版权属于 Wizards of the Coast 与画师，Scryfall 只是图源。
+// 凡是把卡图渲染给用户看的页面都必须带署名——这是发布门禁，不是文案偏好。
+// 此前只有结算页写了，另外五个渲染卡图的页面全漏了（强度分级 / 人格测试 /
+// 套牌试玩 / 我的主将 / 环境梯度），靠人工记住显然不成立，所以改成按模板自动判定。
+test('渲染 Scryfall 卡图的页面都必须带美术署名', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+  const pagesDir = path.join(root, 'miniprogram/pages');
+
+  // 判定「这一页是否把卡图渲染给用户」：模板里的 <image> 绑定了卡图字段。
+  // 只看 wxml 而不看 js——js 里有卡图字段不等于用户看得见，模板才是最终呈现。
+  const ART_BINDINGS = /<image[\s\S]{0,400}?src="\{\{[^"]*(art|Art|scryfall|Scryfall|cardImage|normal)[^"]*\}\}"/;
+
+  const rendersArt = [];
+  const missingCredit = [];
+  fs.readdirSync(pagesDir).forEach((page) => {
+    const wxmlPath = path.join(pagesDir, page, `${page}.wxml`);
+    if (!fs.existsSync(wxmlPath)) return;
+    const wxml = fs.readFileSync(wxmlPath, 'utf8');
+    if (!ART_BINDINGS.test(wxml)) return;
+    rendersArt.push(page);
+    const credited = /card-art-credit|image-credit/.test(wxml)
+      && /Scryfall/.test(wxml) && /Wizards of the Coast/.test(wxml);
+    if (!credited) missingCredit.push(page);
+  });
+
+  // 断言不能空转：真有页面在渲染卡图，这条才有意义
+  assert.ok(rendersArt.length >= 5,
+    `只识别出 ${rendersArt.length} 个渲染卡图的页面，卡图绑定的判定式可能已失效`);
+  assert.deepEqual(missingCredit, [],
+    `这些页面渲染了卡图却没有美术署名：${missingCredit.join(', ')}`);
+
+  // 署名必须同时点明图源与版权方，只写其一不够
+  rendersArt.forEach((page) => {
+    const wxml = fs.readFileSync(path.join(pagesDir, page, `${page}.wxml`), 'utf8');
+    const line = (wxml.match(/<view class="(?:card-art-credit|image-credit)">([^<]*)</)
+      || wxml.match(/class="image-credit">([^<]*)</) || [])[1] || '';
+    assert.match(line, /Scryfall/, `${page} 的署名缺图源 Scryfall`);
+    assert.match(line, /Wizards of the Coast/, `${page} 的署名缺版权方 Wizards of the Coast`);
+  });
+});
