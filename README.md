@@ -78,7 +78,9 @@
 ## 上线合规
 
 - **相册保存**：在 mp 后台 `设置 → 服务内容声明 → 用户隐私保护指引` 声明「相册（写入）」并发布；EDHTI「导出分析」的 `wx.saveImageToPhotosAlbum`（隐私接口）上线可正常保存。（备查：未声明时「开发者工具能存、上线后存不了」，属隐私指引缺失而非代码 bug，画布与保存流程本身正确；如需更稳可加 `wx.getPrivacySetting` + `wx.requirePrivacyAuthorize` 兜底。）
-- **合法域名**：配置 **request 合法域名** `https://api.scryfall.com`（`wx.request` JSON）、**downloadFile 合法域名** `https://api.scryfall.com` 与重定向目标 `https://cards.scryfall.io`（卡图经 `<image>` / 画布）。
+- **合法域名**：配置 **request 合法域名** `https://api.scryfall.com`（`wx.request` JSON：卡牌元数据、批量取图链）、**downloadFile 合法域名** `https://cards.scryfall.io` 与 `https://api.scryfall.com`。
+  - `cards.scryfall.io` 现在是卡图的**主路径而不是重定向目标**——卡图已全部改为直连 CDN，少配这一条会让画布导出取不到图。
+  - `api.scryfall.com` 在 downloadFile 里仍要保留：批量解析失败时按卡名取图的回落路径仍走它（`?format=image` 会 302 到 CDN）。
 - **AppID**：配置正式 AppID （根目录 `project.config.json`），非游客，可正常提审。
 
 ## 目录结构
@@ -200,7 +202,7 @@ npm run syntax                      # 仅检查全部 JavaScript 语法
 npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊断
 ```
 
-当前基线：85 个 JavaScript 文件通过语法门禁，312 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`。
+当前基线：88 个 JavaScript 文件通过语法门禁，321 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 174,196 个画像）。发布包 `miniprogram/` 约 1.4MB，主包上限 2MB。
 
 诊断默认使用确定性的基准覆盖集：基线/单项变化、按主将标签构造的目标画像、固定种子的组合画像，以及颜色/资源引擎组合。排序复用生产逻辑中的拍档惩罚和低使用率多样性尾位，避免诊断模型与实际推荐分叉。需要离线穷举全部单选组合时使用 `node scripts/diagnose-coverage.js --mode=full`；该模式组合量很大，不用于日常 CI。
 
@@ -212,6 +214,8 @@ npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊
 
 | 项 | 看什么 |
 | --- | --- |
+| **卡图请求数** | 开发者工具 Network 面板导入一副百张牌：请求条数应约为 **2**（两批 `cards/collection`），而不是每张一条。这个数字比耗时读数更能证明直连生效，且不受网络环境影响 |
+| **卡图直链可达** | 环境梯度列表的主将图能正常显示（直链是构建期烤进快照的，若 `cards.scryfall.io` 未进 downloadFile 白名单或直链失效，这里会最先暴露） |
 | 触摸 / 拖拽 | 套牌试玩跨区拖放、长按详视、战场卡指示器步进 |
 | 相册授权 | EDHTI「导出分析」保存到相册（需 mp 后台已发布隐私指引） |
 | Canvas 导出 | 高分屏真机 `canvasToTempFilePath` 是否成功、海报排版无溢出 |
