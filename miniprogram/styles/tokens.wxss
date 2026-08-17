@@ -4,6 +4,11 @@ page {
   --cedh-surface: rgba(255, 254, 250, 0.68);
   --cedh-surface-raised: rgba(255, 254, 250, 0.76);
   --cedh-surface-muted: rgba(248, 245, 238, 0.5);
+  /* 网络图的占位底。命名出来是因为它承担两件事，都不是装饰：
+     ① 图在解码完成前不闪白；② 加载失败时露出的是这块底色而不是一个透明洞。
+     加在 <image> 自身即可——图一旦画出来就盖住它，与外层结构无关。
+     深色页（环境梯度）自带更深的底，不用这个值。 */
+  --cedh-image-placeholder: rgba(248, 245, 238, 0.5);
   --cedh-input-glass: rgba(255, 254, 250, 0.6);
   --cedh-overlay-glass: rgba(255, 254, 250, 0.82);
   --cedh-surface-solid: rgba(255, 254, 250, 0.82);

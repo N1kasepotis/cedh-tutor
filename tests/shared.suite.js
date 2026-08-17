@@ -473,3 +473,73 @@ test('项目配置只有一份，且带 miniprogramRoot 与 urlCheck', () => {
     'urlCheck 必须开着——漏配合法域名全靠它在开发者工具里暴露');
   assert.ok(config.appid && !/^tourist/i.test(config.appid), 'AppID 必须是正式号，不能是游客号');
 });
+
+// 图片加载的「丝滑」不是一个模糊感受，它由几件互不相同的事组成。
+// 这条门禁只管其中能可靠判定的两件：
+//   ① 有占位底  —— 解码完成前不闪白；加载失败时露出的是底色而不是一个透明洞
+//   ② 挂 lazy-load —— 不在视野里的图不抢带宽
+// 逐页人工记这两件事是记不住的（这次审出 7 处缺占位底、1 处缺 lazy），所以按模板自动判。
+//
+// **第三件「高度确定」（图到位时不顶开下方内容）没有做成门禁**，是刻意的：
+// 判定它需要理解完整的祖先链——譬如强度分级的 hero 底图，图自身是 height:100%、
+// 父容器 .hero-art-split 也是 height:100%，再上一层 .hero-art 才是 position:absolute
+// （脱离文档流，定义上就顶不开任何东西）。静态正则解析 WXML 嵌套做不可靠，
+// 初版就把这三处正确代码误报成了违规。与其留一条会误伤的门禁让人跟它打架，不如撤掉。
+// 当前 19 处网络图已人工逐个核过：高度全部确定或本就脱离文档流，无布局抖动。
+// 新增图片时请自行确认这一点（README「视觉规则」有记）。
+test('全站网络图：有占位底、挂 lazy-load', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+  const pagesDir = path.join(root, 'miniprogram/pages');
+  const appWxss = fs.readFileSync(path.join(root, 'miniprogram/app.wxss'), 'utf8');
+
+  // 取出所有命中该 class 的规则体（含复合选择器）
+  const rulesFor = (css, cls) => {
+    const out = [];
+    const re = /([^{}]+)\{([^{}]*)\}/g;
+    let m = re.exec(css);
+    while (m) {
+      if (new RegExp(`\\.${cls}(?![\\w-])`).test(m[1])) out.push(m[2]);
+      m = re.exec(css);
+    }
+    return out.join('\n');
+  };
+
+  const missingPlaceholder = [];
+  const missingLazy = [];
+  let checked = 0;
+
+  fs.readdirSync(pagesDir).forEach((page) => {
+    const wxmlPath = path.join(pagesDir, page, `${page}.wxml`);
+    const wxssPath = path.join(pagesDir, page, `${page}.wxss`);
+    if (!fs.existsSync(wxmlPath)) return;
+    const wxml = fs.readFileSync(wxmlPath, 'utf8');
+    const wxss = fs.existsSync(wxssPath) ? fs.readFileSync(wxssPath, 'utf8') : '';
+
+    (wxml.match(/<image[\s\S]{0,500}?>/g) || []).forEach((tag) => {
+      const src = (tag.match(/src="([^"]*)"/) || [])[1] || '';
+      if (!src.includes('{{')) return; // 只管网络图；本地静态图不走加载态
+      const cls = ((tag.match(/class="([^"]+)"/) || [])[1] || '').split(/\s+/)[0];
+      if (!cls) return;
+      checked += 1;
+      const own = rulesFor(wxss, cls) + rulesFor(appWxss, cls);
+      // 容器：模板里紧挨着这枚 image 的上一个 class
+      const parentCls = ((wxml.slice(0, wxml.indexOf(tag)).match(/class="([^"]+)"[^<]*$/) || [])[1] || '')
+        .split(/\s+/)[0];
+      const parent = parentCls ? rulesFor(wxss, parentCls) + rulesFor(appWxss, parentCls) : '';
+
+      const label = `${page}/.${cls}`;
+      if (!/background/.test(own) && !/background/.test(parent)) missingPlaceholder.push(label);
+      if (!/lazy-load/.test(tag)) missingLazy.push(label);
+    });
+  });
+
+  // 断言不能空转：真有网络图，这三条才有意义
+  assert.ok(checked >= 15, `只扫到 ${checked} 处网络图，模板判定式可能已失效`);
+
+  assert.deepEqual(missingPlaceholder, [],
+    `这些图没有占位底，加载中会闪白、失败会留透明洞：${missingPlaceholder.join(', ')}`);
+  assert.deepEqual(missingLazy, [],
+    `这些图没挂 lazy-load，不在视野里也会抢带宽：${missingLazy.join(', ')}`);
+});

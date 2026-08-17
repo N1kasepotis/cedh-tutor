@@ -317,6 +317,8 @@
 }
 
 .zone-top-art {
+  /* 占位底：解码完成前不闪白，加载失败时露出的是底色而不是透明洞 */
+  background: var(--cedh-image-placeholder);
   position: absolute;
   inset: 0;
   width: 100%;
@@ -331,6 +333,8 @@
 }
 
 .zone-art-half {
+  /* 占位底：解码完成前不闪白，加载失败时露出的是底色而不是透明洞 */
+  background: var(--cedh-image-placeholder);
   flex: 1;
   min-width: 0;
   height: 100%;

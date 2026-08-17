@@ -42,7 +42,8 @@
       <view class="persona-grid">
         <view class="persona-panel commander-panel surface">
           <view class="commander-art-panel" wx:if="{{result.commanderArt.artCrop || result.commanderArt.normal}}">
-            <image class="commander-art-image" src="{{result.commanderArt.artCrop || result.commanderArt.normal}}" mode="widthFix"></image>
+            <image class="commander-art-image"
+            lazy-load="{{true}}" src="{{result.commanderArt.artCrop || result.commanderArt.normal}}" mode="widthFix"></image>
           </view>
           <view class="commander-content {{result.commanderArt.artCrop || result.commanderArt.normal ? 'with-art' : ''}}">
             <view class="section-label mono">推荐主将</view>

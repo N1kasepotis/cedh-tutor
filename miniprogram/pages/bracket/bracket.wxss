@@ -441,6 +441,8 @@
 }
 
 .hero-art-image {
+  /* 占位底：解码完成前不闪白，加载失败时露出的是底色而不是透明洞 */
+  background: var(--cedh-image-placeholder);
   width: 100%;
   height: 100%;
   opacity: 0.66;
