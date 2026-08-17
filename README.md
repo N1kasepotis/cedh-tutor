@@ -227,4 +227,4 @@ npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊
 
 ## 导入微信开发者工具
 
-导入项目目录 `...\Documents\xcx`（`project.config.json` 已设 `miniprogramRoot = miniprogram/`）；真机预览卡图与保存前，按上面「上线合规」配好域名与隐私指引。
+导入项目目录 `...\Documents\xcx`（**仓库根目录**，不是 `miniprogram/`）。根目录的 `project.config.json` 已设 `miniprogramRoot = miniprogram/`，全仓只此一份——`shared.suite.js` 有门禁守着，因为开发者工具若被从子目录打开会自己生成一份，而那份不带 `urlCheck`（「检查安全域名」开关，漏配合法域名全靠它暴露）。真机预览卡图与保存前，按上面「上线合规」配好域名与隐私指引。

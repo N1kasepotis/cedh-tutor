@@ -438,3 +438,38 @@ test('渲染 Scryfall 卡图的页面都必须带美术署名', () => {
     assert.match(line, /Wizards of the Coast/, `${page} 的署名缺版权方 Wizards of the Coast`);
   });
 });
+
+// 项目配置只能有一份。此前根目录与 miniprogram/ 各有一份、同一个 AppID，
+// 且已经漂移：内层那份缺 miniprogramRoot 与 urlCheck，却多了 minifyWXML。
+// 危险的是 urlCheck——它是「检查安全域名」开关，漏配白名单全靠它在开发者工具里暴露；
+// 从内层那份打开项目就少了这道保护，而卡图刚改成直连 cards.scryfall.io，
+// 正是最需要这道检查的时候。开发者工具在子目录被打开时会自动生成配置，
+// 所以这条必须是门禁而不是口头约定。
+test('项目配置只有一份，且带 miniprogramRoot 与 urlCheck', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+
+  // external/ 下是第三方参考仓库，各自独立，不在本项目的约束范围内
+  const found = [];
+  const walk = (dir, depth) => {
+    if (depth > 2) return;
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((item) => {
+      if (item.name === 'node_modules' || item.name === 'external' || item.name === '.git') return;
+      const full = path.join(dir, item.name);
+      if (item.isDirectory()) walk(full, depth + 1);
+      else if (item.name === 'project.config.json') found.push(path.relative(root, full));
+    });
+  };
+  walk(root, 0);
+
+  assert.deepEqual(found, ['project.config.json'],
+    `project.config.json 只能有根目录这一份，实际找到：${found.join(', ')}`);
+
+  const config = JSON.parse(fs.readFileSync(path.join(root, 'project.config.json'), 'utf8'));
+  assert.equal(config.miniprogramRoot, 'miniprogram/',
+    '必须声明 miniprogramRoot，否则打包根目录会错');
+  assert.equal(config.setting.urlCheck, true,
+    'urlCheck 必须开着——漏配合法域名全靠它在开发者工具里暴露');
+  assert.ok(config.appid && !/^tourist/i.test(config.appid), 'AppID 必须是正式号，不能是游客号');
+});
