@@ -525,8 +525,55 @@ test('主将卡图：构建期烤入 CDN 直链，运行时零 API 请求', () =
   const fs = require('node:fs');
   const path = require('node:path');
   const util = fs.readFileSync(path.join(__dirname, '..', 'miniprogram/utils/meta-tier.js'), 'utf8');
-  assert.match(util, /art: commander\.art \|\| buildScryfallImageUrlById/);
+  assert.match(util, /buildScryfallImageUrlById\(commander\.scryfallId, dual \? 'small' : 'art_crop'\)/);
   assert.match(util, /normal: commander\.normal \|\| buildScryfallImageUrlById/);
+
+  // 列表缩略图按格子形状选档：双拍档每格只有 66rpx 宽，用 626×457 的 art_crop
+  // 是 18 倍超配；small 是 146×204、17KB，长宽比与格子几乎一致，换过去零视觉损失。
+  // 单主将那格是 132×96 横格，art_crop 的 1.37:1 正好铺满，保持不动。
+  assert.match(util, /art: \(dual \? commander\.small : commander\.art\)/,
+    '双拍档缩略图必须用 small，单主将保持 art_crop');
+  const smalls = commanders.filter((c) => c.small);
+  assert.equal(smalls.length, commanders.length, '每位主将都要烤上 small 直链');
+  smalls.forEach((c) => {
+    assert.match(c.small, /^https:\/\/cards\.scryfall\.io\/small\//,
+      `${c.en} 的 small 不是 CDN 直链：${c.small}`);
+  });
+});
+
+// 低档位默认收起，是为了首屏流量而不是排版偏好：全表 71 张缩略图里 T3+T4 占 36 张。
+// 微信的 lazy-load 在这里救不了——预载窗口是上下三屏，一屏十几行，三屏就把大半张表拉了。
+test('环境梯度：T3/T4 默认收起，收起的档位整块不进渲染树', () => {
+  const { buildTierGroups, COLLAPSED_TIERS } = require('../miniprogram/utils/meta-tier');
+  const { metaTierEntries } = require('../miniprogram/config/meta-tier');
+  const fs = require('node:fs');
+  const path = require('node:path');
+
+  const groups = buildTierGroups(metaTierEntries);
+  const collapsed = groups.filter((tier) => !tier.expanded).map((tier) => tier.id);
+  assert.deepEqual(collapsed.sort(), ['t3', 't4']);
+  assert.deepEqual([...COLLAPSED_TIERS].sort(), ['t3', 't4']);
+
+  // 收起后首屏进渲染树的图必须显著少于全表，否则这条改动等于没做
+  const countImages = (list) => list.reduce(
+    (sum, tier) => sum + tier.entries.reduce((n, e) => n + (e.art.images || []).length, 0), 0,
+  );
+  const shown = countImages(groups.filter((tier) => tier.expanded));
+  const total = countImages(groups);
+  assert.ok(shown / total < 0.6,
+    `首屏仍要渲染 ${shown}/${total} 张图，收起没起到作用`);
+
+  const wxml = fs.readFileSync(path.join(__dirname, '..', 'miniprogram/pages/meta/meta.wxml'), 'utf8');
+  // 必须是 wx:if 而不是 hidden：hidden 只是不显示，image 照样会发请求
+  assert.match(wxml, /class="deck-row"\s*\n\s*wx:if="\{\{item\.expanded\}\}"/);
+  assert.doesNotMatch(wxml, /class="deck-row"[^>]*hidden=/);
+  // 档位标题要能点开、要有可读的无障碍标签
+  assert.match(wxml, /class="tier-head"[\s\S]{0,300}?bindtap="toggleTier"/);
+  assert.match(wxml, /aria-label="\{\{item\.label\}\} 档，\{\{item\.count\}\} 套/);
+
+  const js = fs.readFileSync(path.join(__dirname, '..', 'miniprogram/pages/meta/meta.js'), 'utf8');
+  // 只翻 expanded，不重建 entries——重建会把整份列表再过一次桥
+  assert.match(js, /tier\.id === id \? \{ \.\.\.tier, expanded: !tier\.expanded \} : tier/);
 });
 
 // 这条锁的是构建脚本本身。Scryfall 会用 400 generic_user_agent 拒掉使用 HTTP 库

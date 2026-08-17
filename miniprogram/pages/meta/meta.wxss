@@ -359,3 +359,13 @@
   color: rgb(var(--tier-rgb));
   border-color: rgba(var(--tier-rgb), 0.55);
 }
+
+/* 档位展开/收起标记。与 tier-count 同一档字号与色，只是更淡一点：
+   它是操作提示不是数据，不该跟条目数抢注意力。
+   减号用 U+2212 而不是连字符——连字符在等宽栈里比加号短一截，两态会跳宽。 */
+.tier-toggle {
+  margin-left: var(--cedh-space-2);
+  color: rgba(var(--tier-rgb), 0.55);
+  font-size: var(--cedh-text-11);
+  line-height: 1;
+}

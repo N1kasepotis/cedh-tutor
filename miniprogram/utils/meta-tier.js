@@ -15,17 +15,28 @@ function formatPublishedAt(value) {
 function buildCommanderArt(commanders) {
   const named = (commanders || []).filter((commander) => commander && commander.scryfallId).slice(0, 2);
   if (!named.length) return { mode: 'none', images: [] };
+  const dual = named.length === 2;
   return {
-    mode: named.length === 2 ? 'dual' : 'single',
+    mode: dual ? 'dual' : 'single',
     // 优先用构建期烤进快照的 cards.scryfall.io 直链：梯度表一屏就有十几张图，
     // 按 ID 取图会打 api.scryfall.com/cards/<id>?format=image，那是 API 端点，
     // 每张图先查表再回 302 跳到 CDN，等于两次建连，全部叠在首屏上。
     // 快照是构建期产物，这步没有理由留到运行时——现在是零 API 请求、直连 CDN。
     // 回落保留：万一某条没烤上（构建时没网），仍按 ID 取图，不至于开天窗。
+    //
+    // **列表缩略图按格子形状选档，不跟详情面板共用一张**：
+    // 双拍档时每格只有 66rpx 宽（约 103 device px @3x），却在下发 626×457 的
+    // art_crop（124KB）——超配 18 倍。small 是 146×204、17KB，长宽比 0.716
+    // 与格子的 0.69 几乎一致，aspectFill 几乎不裁，换过去零视觉损失、省 86%。
+    // 单主将保持 art_crop：那格是 132×96 的横格（1.375:1），art_crop 的 1.37:1
+    // 正好铺满、显示的是纯画作；换成竖版整卡会裁出卡面中段（画作下沿 + 类别行），
+    // 那是拿主视觉换流量，不划算。
     images: named.map((commander) => ({
       cn: commander.cn || commander.en,
       en: commander.en,
-      art: commander.art || buildScryfallImageUrlById(commander.scryfallId, 'art_crop'),
+      art: (dual ? commander.small : commander.art)
+        || commander.art
+        || buildScryfallImageUrlById(commander.scryfallId, dual ? 'small' : 'art_crop'),
       normal: commander.normal || buildScryfallImageUrlById(commander.scryfallId, 'normal'),
     })),
   };
@@ -148,6 +159,8 @@ function toListItem(entry) {
 }
 
 // 按档位分组；空档位不渲染，避免出现只有标题的空行
+const COLLAPSED_TIERS = new Set(['t3', 't4']);
+
 function buildTierGroups(entries) {
   const byTier = new Map();
   (entries || []).forEach((entry) => {
@@ -163,6 +176,13 @@ function buildTierGroups(entries) {
         rgb: hexToRgbTriplet(tier.color),
         entries,
         count: entries.length,
+        // 低档位默认收起。这不是排版偏好，是首屏流量：全表 71 张缩略图，
+        // 按档位分是 T0 3 / T1 14 / T2 18 / T3 28 / T4 8——T3 一档就占了四成。
+        // 收起的档位整块不进渲染树，图自然不会请求。
+        // 微信的 lazy-load 在这里救不了：它的预载窗口是上下三屏，一行约 110rpx、
+        // 一屏十几行，三屏就把大半张表都拉了。
+        // 选 T3/T4 是因为「先看谁最强」是这页的真实用法，低档位是查得着就行。
+        expanded: !COLLAPSED_TIERS.has(tier.id),
       };
     })
     .filter((tier) => tier.entries.length);
@@ -216,6 +236,7 @@ function buildMetaSummary() {
 }
 
 module.exports = {
+  COLLAPSED_TIERS,
   buildTierGroups,
   toListItem,
   buildCommanderArt,

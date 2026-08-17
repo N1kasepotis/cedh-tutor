@@ -8,14 +8,26 @@
     </view>
 
     <view class="tier-block" wx:for="{{tierGroups}}" wx:key="id" style="--tier-rgb: {{item.rgb}};">
-      <view class="tier-head">
+      <view
+        class="tier-head"
+        aria-role="button"
+        aria-label="{{item.label}} 档，{{item.count}} 套，{{item.expanded ? '收起' : '展开'}}"
+        hover-class="pressable-active"
+        hover-stay-time="120"
+        data-id="{{item.id}}"
+        bindtap="toggleTier"
+      >
         <text class="tier-label mono">{{item.label}}</text>
         <view class="tier-rule"></view>
         <text class="tier-count mono">{{item.count}}</text>
+        <text class="tier-toggle mono">{{item.expanded ? '−' : '+'}}</text>
       </view>
 
+      <!-- 收起的档位整块不进渲染树。必须用 wx:if 而不是 hidden：
+           hidden 只是不显示，image 照样会发请求，省不到任何流量。 -->
       <view
         class="deck-row"
+        wx:if="{{item.expanded}}"
         wx:for="{{item.entries}}"
         wx:for-item="deck"
         wx:key="id"

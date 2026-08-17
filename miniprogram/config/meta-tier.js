@@ -74,6 +74,7 @@ const metaTierEntries = [
         "cn": "织命使堤谟娜",
         "en": "Tymna the Weaver",
         "scryfallId": "bc7cbe9b-324e-42b8-94e2-36e91cb32163",
+        "small": "https://cards.scryfall.io/small/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081"
       },
@@ -81,6 +82,7 @@ const metaTierEntries = [
         "cn": "卢德维佳作寇姆",
         "en": "Kraum, Ludevic's Opus",
         "scryfallId": "557fcd17-6cb3-414a-b2b1-ea9ae32e5aec",
+        "small": "https://cards.scryfall.io/small/front/5/5/557fcd17-6cb3-414a-b2b1-ea9ae32e5aec.jpg?1783937084",
         "art": "https://cards.scryfall.io/art_crop/front/5/5/557fcd17-6cb3-414a-b2b1-ea9ae32e5aec.jpg?1783937084",
         "normal": "https://cards.scryfall.io/normal/front/5/5/557fcd17-6cb3-414a-b2b1-ea9ae32e5aec.jpg?1783937084"
       }
@@ -116,6 +118,7 @@ const metaTierEntries = [
         "cn": "持绊逸才季宁",
         "en": "Kinnan, Bonder Prodigy",
         "scryfallId": "63cda4a0-0dff-4edb-ae67-a2b7e2971350",
+        "small": "https://cards.scryfall.io/small/front/6/3/63cda4a0-0dff-4edb-ae67-a2b7e2971350.jpg?1783931023",
         "art": "https://cards.scryfall.io/art_crop/front/6/3/63cda4a0-0dff-4edb-ae67-a2b7e2971350.jpg?1783931023",
         "normal": "https://cards.scryfall.io/normal/front/6/3/63cda4a0-0dff-4edb-ae67-a2b7e2971350.jpg?1783931023"
       }
@@ -149,6 +152,7 @@ const metaTierEntries = [
         "cn": "风雨法师拉尔",
         "en": "Ral, Monsoon Mage // Ral, Leyline Prodigy",
         "scryfallId": "438d8a26-ddc9-4829-8aff-22d6af6575cf",
+        "small": "https://cards.scryfall.io/small/front/4/3/438d8a26-ddc9-4829-8aff-22d6af6575cf.jpg?1783911228",
         "art": "https://cards.scryfall.io/art_crop/front/4/3/438d8a26-ddc9-4829-8aff-22d6af6575cf.jpg?1783911228",
         "normal": "https://cards.scryfall.io/normal/front/4/3/438d8a26-ddc9-4829-8aff-22d6af6575cf.jpg?1783911228"
       }
@@ -184,6 +188,7 @@ const metaTierEntries = [
         "cn": "罗噶之子罗噶克",
         "en": "Rograkh, Son of Rohgahh",
         "scryfallId": "a4fab67f-00c2-4125-9262-d21a29411797",
+        "small": "https://cards.scryfall.io/small/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807",
         "art": "https://cards.scryfall.io/art_crop/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807",
         "normal": "https://cards.scryfall.io/normal/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807"
       },
@@ -191,6 +196,7 @@ const metaTierEntries = [
         "cn": "屈东英雄萨拉希洛斯",
         "en": "Thrasios, Triton Hero",
         "scryfallId": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+        "small": "https://cards.scryfall.io/small/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081"
       }
@@ -224,6 +230,7 @@ const metaTierEntries = [
         "cn": "晴空号船长西赛",
         "en": "Sisay, Weatherlight Captain",
         "scryfallId": "5a293c45-1e73-4527-be2f-2dcd5c47b610",
+        "small": "https://cards.scryfall.io/small/front/5/a/5a293c45-1e73-4527-be2f-2dcd5c47b610.jpg?1783933156",
         "art": "https://cards.scryfall.io/art_crop/front/5/a/5a293c45-1e73-4527-be2f-2dcd5c47b610.jpg?1783933156",
         "normal": "https://cards.scryfall.io/normal/front/5/a/5a293c45-1e73-4527-be2f-2dcd5c47b610.jpg?1783933156"
       }
@@ -257,6 +264,7 @@ const metaTierEntries = [
         "cn": "罗噶之子罗噶克",
         "en": "Rograkh, Son of Rohgahh",
         "scryfallId": "a4fab67f-00c2-4125-9262-d21a29411797",
+        "small": "https://cards.scryfall.io/small/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807",
         "art": "https://cards.scryfall.io/art_crop/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807",
         "normal": "https://cards.scryfall.io/normal/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807"
       },
@@ -264,6 +272,7 @@ const metaTierEntries = [
         "cn": "致知专家赛拉司雷恩",
         "en": "Silas Renn, Seeker Adept",
         "scryfallId": "4e3fe912-1374-47c7-b73f-89ef55c479c1",
+        "small": "https://cards.scryfall.io/small/front/4/e/4e3fe912-1374-47c7-b73f-89ef55c479c1.jpg?1783937082",
         "art": "https://cards.scryfall.io/art_crop/front/4/e/4e3fe912-1374-47c7-b73f-89ef55c479c1.jpg?1783937082",
         "normal": "https://cards.scryfall.io/normal/front/4/e/4e3fe912-1374-47c7-b73f-89ef55c479c1.jpg?1783937082"
       }
@@ -298,6 +307,7 @@ const metaTierEntries = [
         "cn": "织命使堤谟娜",
         "en": "Tymna the Weaver",
         "scryfallId": "bc7cbe9b-324e-42b8-94e2-36e91cb32163",
+        "small": "https://cards.scryfall.io/small/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081"
       },
@@ -305,6 +315,7 @@ const metaTierEntries = [
         "cn": "屈东英雄萨拉希洛斯",
         "en": "Thrasios, Triton Hero",
         "scryfallId": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+        "small": "https://cards.scryfall.io/small/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081"
       }
@@ -337,6 +348,7 @@ const metaTierEntries = [
         "cn": "始霸埃泰力",
         "en": "Etali, Primal Conqueror // Etali, Primal Sickness",
         "scryfallId": "95c14c4d-6c16-4826-8d93-d89ad04aee09",
+        "small": "https://cards.scryfall.io/small/front/9/5/95c14c4d-6c16-4826-8d93-d89ad04aee09.jpg?1783916997",
         "art": "https://cards.scryfall.io/art_crop/front/9/5/95c14c4d-6c16-4826-8d93-d89ad04aee09.jpg?1783916997",
         "normal": "https://cards.scryfall.io/normal/front/9/5/95c14c4d-6c16-4826-8d93-d89ad04aee09.jpg?1783916997"
       }
@@ -371,6 +383,7 @@ const metaTierEntries = [
         "cn": "宫廷魔法师凯夫卡",
         "en": "Kefka, Court Mage // Kefka, Ruler of Ruin",
         "scryfallId": "8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8",
+        "small": "https://cards.scryfall.io/small/front/8/f/8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8.jpg?1783906572",
         "art": "https://cards.scryfall.io/art_crop/front/8/f/8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8.jpg?1783906572",
         "normal": "https://cards.scryfall.io/normal/front/8/f/8fcf3fbb-1ddd-437e-81c1-f5a3133f5ee8.jpg?1783906572"
       }
@@ -403,6 +416,7 @@ const metaTierEntries = [
         "cn": "欧祝泰族龙语者依谢",
         "en": "Ishai, Ojutai Dragonspeaker",
         "scryfallId": "2e89ce6a-6bc9-427f-a8b2-c07a9fc3218f",
+        "small": "https://cards.scryfall.io/small/front/2/e/2e89ce6a-6bc9-427f-a8b2-c07a9fc3218f.jpg?1783934777",
         "art": "https://cards.scryfall.io/art_crop/front/2/e/2e89ce6a-6bc9-427f-a8b2-c07a9fc3218f.jpg?1783934777",
         "normal": "https://cards.scryfall.io/normal/front/2/e/2e89ce6a-6bc9-427f-a8b2-c07a9fc3218f.jpg?1783934777"
       },
@@ -410,6 +424,7 @@ const metaTierEntries = [
         "cn": "罗噶之子罗噶克",
         "en": "Rograkh, Son of Rohgahh",
         "scryfallId": "a4fab67f-00c2-4125-9262-d21a29411797",
+        "small": "https://cards.scryfall.io/small/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807",
         "art": "https://cards.scryfall.io/art_crop/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807",
         "normal": "https://cards.scryfall.io/normal/front/a/4/a4fab67f-00c2-4125-9262-d21a29411797.jpg?1783928807"
       }
@@ -444,6 +459,7 @@ const metaTierEntries = [
         "cn": "莽勇狂徒玛格妲",
         "en": "Magda, Brazen Outlaw",
         "scryfallId": "079e6263-e54c-4899-a336-5315909b9322",
+        "small": "https://cards.scryfall.io/small/front/0/7/079e6263-e54c-4899-a336-5315909b9322.jpg?1783928229",
         "art": "https://cards.scryfall.io/art_crop/front/0/7/079e6263-e54c-4899-a336-5315909b9322.jpg?1783928229",
         "normal": "https://cards.scryfall.io/normal/front/0/7/079e6263-e54c-4899-a336-5315909b9322.jpg?1783928229"
       }
@@ -479,6 +495,7 @@ const metaTierEntries = [
         "cn": "约格莫夫之子格锐克",
         "en": "K'rrik, Son of Yawgmoth",
         "scryfallId": "4f087b1c-97e0-4379-a94d-beac53685314",
+        "small": "https://cards.scryfall.io/small/front/4/f/4f087b1c-97e0-4379-a94d-beac53685314.jpg?1783911216",
         "art": "https://cards.scryfall.io/art_crop/front/4/f/4f087b1c-97e0-4379-a94d-beac53685314.jpg?1783911216",
         "normal": "https://cards.scryfall.io/normal/front/4/f/4f087b1c-97e0-4379-a94d-beac53685314.jpg?1783911216"
       }
@@ -515,6 +532,7 @@ const metaTierEntries = [
         "cn": "密报商棣维特",
         "en": "Tivit, Seller of Secrets",
         "scryfallId": "9235977e-a999-4ed0-83a3-742be87b13bb",
+        "small": "https://cards.scryfall.io/small/front/9/2/9235977e-a999-4ed0-83a3-742be87b13bb.jpg?1783923378",
         "art": "https://cards.scryfall.io/art_crop/front/9/2/9235977e-a999-4ed0-83a3-742be87b13bb.jpg?1783923378",
         "normal": "https://cards.scryfall.io/normal/front/9/2/9235977e-a999-4ed0-83a3-742be87b13bb.jpg?1783923378"
       }
@@ -549,6 +567,7 @@ const metaTierEntries = [
         "cn": "织命使堤谟娜",
         "en": "Tymna the Weaver",
         "scryfallId": "bc7cbe9b-324e-42b8-94e2-36e91cb32163",
+        "small": "https://cards.scryfall.io/small/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081"
       },
@@ -556,6 +575,7 @@ const metaTierEntries = [
         "cn": "碎船巨人达戈",
         "en": "Dargo, the Shipwrecker",
         "scryfallId": "5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b",
+        "small": "https://cards.scryfall.io/small/front/5/c/5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b.jpg?1783928817",
         "art": "https://cards.scryfall.io/art_crop/front/5/c/5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b.jpg?1783928817",
         "normal": "https://cards.scryfall.io/normal/front/5/c/5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b.jpg?1783928817"
       }
@@ -587,6 +607,7 @@ const metaTierEntries = [
         "cn": "比比·奥尼提尔",
         "en": "Vivi Ornitier",
         "scryfallId": "ecc1027a-8c07-44a0-bdde-fa2844cff694",
+        "small": "https://cards.scryfall.io/small/front/e/c/ecc1027a-8c07-44a0-bdde-fa2844cff694.jpg?1783906561",
         "art": "https://cards.scryfall.io/art_crop/front/e/c/ecc1027a-8c07-44a0-bdde-fa2844cff694.jpg?1783906561",
         "normal": "https://cards.scryfall.io/normal/front/e/c/ecc1027a-8c07-44a0-bdde-fa2844cff694.jpg?1783906561"
       }
@@ -622,6 +643,7 @@ const metaTierEntries = [
         "cn": "忠犬义丸",
         "en": "Yoshimaru, Ever Faithful",
         "scryfallId": "aa409269-3698-42a2-8c51-75557b27a6f6",
+        "small": "https://cards.scryfall.io/small/front/a/a/aa409269-3698-42a2-8c51-75557b27a6f6.jpg?1783923987",
         "art": "https://cards.scryfall.io/art_crop/front/a/a/aa409269-3698-42a2-8c51-75557b27a6f6.jpg?1783923987",
         "normal": "https://cards.scryfall.io/normal/front/a/a/aa409269-3698-42a2-8c51-75557b27a6f6.jpg?1783923987"
       },
@@ -629,6 +651,7 @@ const metaTierEntries = [
         "cn": "屈东英雄萨拉希洛斯",
         "en": "Thrasios, Triton Hero",
         "scryfallId": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+        "small": "https://cards.scryfall.io/small/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081"
       }
@@ -664,6 +687,7 @@ const metaTierEntries = [
         "cn": "卷心菜商",
         "en": "The Cabbage Merchant",
         "scryfallId": "2fea0356-6684-4730-9eb4-0262856bc1f9",
+        "small": "https://cards.scryfall.io/small/front/2/f/2fea0356-6684-4730-9eb4-0262856bc1f9.jpg?1783904816",
         "art": "https://cards.scryfall.io/art_crop/front/2/f/2fea0356-6684-4730-9eb4-0262856bc1f9.jpg?1783904816",
         "normal": "https://cards.scryfall.io/normal/front/2/f/2fea0356-6684-4730-9eb4-0262856bc1f9.jpg?1783904816"
       }
@@ -694,6 +718,7 @@ const metaTierEntries = [
         "cn": "身处十字路口的安昂",
         "en": "Aang, at the Crossroads // Aang, Destined Savior",
         "scryfallId": "fea89ca0-8070-4f28-9851-994314f9d248",
+        "small": "https://cards.scryfall.io/small/front/f/e/fea89ca0-8070-4f28-9851-994314f9d248.jpg?1783904940",
         "art": "https://cards.scryfall.io/art_crop/front/f/e/fea89ca0-8070-4f28-9851-994314f9d248.jpg?1783904940",
         "normal": "https://cards.scryfall.io/normal/front/f/e/fea89ca0-8070-4f28-9851-994314f9d248.jpg?1783904940"
       }
@@ -728,6 +753,7 @@ const metaTierEntries = [
         "cn": "仪法大师因娜拉",
         "en": "Inalla, Archmage Ritualist",
         "scryfallId": "7c6e803a-451c-4aa6-97a2-400077f32c47",
+        "small": "https://cards.scryfall.io/small/front/7/c/7c6e803a-451c-4aa6-97a2-400077f32c47.jpg?1783935937",
         "art": "https://cards.scryfall.io/art_crop/front/7/c/7c6e803a-451c-4aa6-97a2-400077f32c47.jpg?1783935937",
         "normal": "https://cards.scryfall.io/normal/front/7/c/7c6e803a-451c-4aa6-97a2-400077f32c47.jpg?1783935937"
       }
@@ -761,6 +787,7 @@ const metaTierEntries = [
         "cn": "狂野王牌史黛拉李",
         "en": "Stella Lee, Wild Card",
         "scryfallId": "2a8a7696-b5d9-4378-9d5c-2c9007e4df63",
+        "small": "https://cards.scryfall.io/small/front/2/a/2a8a7696-b5d9-4378-9d5c-2c9007e4df63.jpg?1783911971",
         "art": "https://cards.scryfall.io/art_crop/front/2/a/2a8a7696-b5d9-4378-9d5c-2c9007e4df63.jpg?1783911971",
         "normal": "https://cards.scryfall.io/normal/front/2/a/2a8a7696-b5d9-4378-9d5c-2c9007e4df63.jpg?1783911971"
       }
@@ -791,6 +818,7 @@ const metaTierEntries = [
         "cn": "魔导战士蒂娜",
         "en": "Terra, Magical Adept // Esper Terra",
         "scryfallId": "fbd447aa-588d-4c4d-925e-a7d3bdf6a65c",
+        "small": "https://cards.scryfall.io/small/front/f/b/fbd447aa-588d-4c4d-925e-a7d3bdf6a65c.jpg?1783906567",
         "art": "https://cards.scryfall.io/art_crop/front/f/b/fbd447aa-588d-4c4d-925e-a7d3bdf6a65c.jpg?1783906567",
         "normal": "https://cards.scryfall.io/normal/front/f/b/fbd447aa-588d-4c4d-925e-a7d3bdf6a65c.jpg?1783906567"
       }
@@ -824,6 +852,7 @@ const metaTierEntries = [
         "cn": "复归国王肯理斯",
         "en": "Kenrith, the Returned King",
         "scryfallId": "0e259db1-14db-4314-998c-6a076a28d8cb",
+        "small": "https://cards.scryfall.io/small/front/0/e/0e259db1-14db-4314-998c-6a076a28d8cb.jpg?1783916113",
         "art": "https://cards.scryfall.io/art_crop/front/0/e/0e259db1-14db-4314-998c-6a076a28d8cb.jpg?1783916113",
         "normal": "https://cards.scryfall.io/normal/front/0/e/0e259db1-14db-4314-998c-6a076a28d8cb.jpg?1783916113"
       }
@@ -858,6 +887,7 @@ const metaTierEntries = [
         "cn": "受诅国王寇沃",
         "en": "Korvold, Fae-Cursed King",
         "scryfallId": "607c1793-8e5a-4ebf-87c6-7f9c99bbd29a",
+        "small": "https://cards.scryfall.io/small/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027",
         "art": "https://cards.scryfall.io/art_crop/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027",
         "normal": "https://cards.scryfall.io/normal/front/6/0/607c1793-8e5a-4ebf-87c6-7f9c99bbd29a.jpg?1783906027"
       }
@@ -893,6 +923,7 @@ const metaTierEntries = [
         "cn": "无悔的毒液格温",
         "en": "Gwenom, Remorseless",
         "scryfallId": "46b6cc5d-7a37-4e8b-a1a5-9a573056610c",
+        "small": "https://cards.scryfall.io/small/front/4/6/46b6cc5d-7a37-4e8b-a1a5-9a573056610c.jpg?1783905344",
         "art": "https://cards.scryfall.io/art_crop/front/4/6/46b6cc5d-7a37-4e8b-a1a5-9a573056610c.jpg?1783905344",
         "normal": "https://cards.scryfall.io/normal/front/4/6/46b6cc5d-7a37-4e8b-a1a5-9a573056610c.jpg?1783905344"
       }
@@ -925,6 +956,7 @@ const metaTierEntries = [
         "cn": "穹光策士德蕾薇",
         "en": "Derevi, Empyrial Tactician",
         "scryfallId": "3a1d0dad-18a8-489e-ac11-08f64b72fda4",
+        "small": "https://cards.scryfall.io/small/front/3/a/3a1d0dad-18a8-489e-ac11-08f64b72fda4.jpg?1783936231",
         "art": "https://cards.scryfall.io/art_crop/front/3/a/3a1d0dad-18a8-489e-ac11-08f64b72fda4.jpg?1783936231",
         "normal": "https://cards.scryfall.io/normal/front/3/a/3a1d0dad-18a8-489e-ac11-08f64b72fda4.jpg?1783936231"
       }
@@ -960,6 +992,7 @@ const metaTierEntries = [
         "cn": "小村之心布莉姬",
         "en": "Brigid, Clachan's Heart // Brigid, Doun's Mind",
         "scryfallId": "cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8",
+        "small": "https://cards.scryfall.io/small/front/c/b/cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8.jpg?1783904517",
         "art": "https://cards.scryfall.io/art_crop/front/c/b/cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8.jpg?1783904517",
         "normal": "https://cards.scryfall.io/normal/front/c/b/cb7d5bbb-4f68-4e38-8bb0-a95af21b24c8.jpg?1783904517"
       }
@@ -995,6 +1028,7 @@ const metaTierEntries = [
         "cn": "灿光谜兽塔亚姆",
         "en": "Tayam, Luminous Enigma",
         "scryfallId": "05b837a2-5773-4340-87f9-b4d6a43deb27",
+        "small": "https://cards.scryfall.io/small/front/0/5/05b837a2-5773-4340-87f9-b4d6a43deb27.jpg?1783931228",
         "art": "https://cards.scryfall.io/art_crop/front/0/5/05b837a2-5773-4340-87f9-b4d6a43deb27.jpg?1783931228",
         "normal": "https://cards.scryfall.io/normal/front/0/5/05b837a2-5773-4340-87f9-b4d6a43deb27.jpg?1783931228"
       }
@@ -1030,6 +1064,7 @@ const metaTierEntries = [
         "cn": "阿肯达格森",
         "en": "Arcum Dagsson",
         "scryfallId": "f5ecf811-2efc-4fa6-9af8-ef09f559ec1a",
+        "small": "https://cards.scryfall.io/small/front/f/5/f5ecf811-2efc-4fa6-9af8-ef09f559ec1a.jpg?1783930205",
         "art": "https://cards.scryfall.io/art_crop/front/f/5/f5ecf811-2efc-4fa6-9af8-ef09f559ec1a.jpg?1783930205",
         "normal": "https://cards.scryfall.io/normal/front/f/5/f5ecf811-2efc-4fa6-9af8-ef09f559ec1a.jpg?1783930205"
       }
@@ -1056,6 +1091,7 @@ const metaTierEntries = [
         "cn": "碎船巨人达戈",
         "en": "Dargo, the Shipwrecker",
         "scryfallId": "5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b",
+        "small": "https://cards.scryfall.io/small/front/5/c/5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b.jpg?1783928817",
         "art": "https://cards.scryfall.io/art_crop/front/5/c/5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b.jpg?1783928817",
         "normal": "https://cards.scryfall.io/normal/front/5/c/5cd87cf8-4d5d-4aba-8dfa-800b1fb3799b.jpg?1783928817"
       },
@@ -1063,6 +1099,7 @@ const metaTierEntries = [
         "cn": "东树木灵",
         "en": "Kodama of the East Tree",
         "scryfallId": "af5105ee-09e2-4344-ab39-00f0e9034c47",
+        "small": "https://cards.scryfall.io/small/front/a/f/af5105ee-09e2-4344-ab39-00f0e9034c47.jpg?1783928789",
         "art": "https://cards.scryfall.io/art_crop/front/a/f/af5105ee-09e2-4344-ab39-00f0e9034c47.jpg?1783928789",
         "normal": "https://cards.scryfall.io/normal/front/a/f/af5105ee-09e2-4344-ab39-00f0e9034c47.jpg?1783928789"
       }
@@ -1089,6 +1126,7 @@ const metaTierEntries = [
         "cn": "虎影百合子",
         "en": "Yuriko, the Tiger's Shadow",
         "scryfallId": "fe9be3e0-076c-4703-9750-2a6b0a178bc9",
+        "small": "https://cards.scryfall.io/small/front/f/e/fe9be3e0-076c-4703-9750-2a6b0a178bc9.jpg?1783915606",
         "art": "https://cards.scryfall.io/art_crop/front/f/e/fe9be3e0-076c-4703-9750-2a6b0a178bc9.jpg?1783915606",
         "normal": "https://cards.scryfall.io/normal/front/f/e/fe9be3e0-076c-4703-9750-2a6b0a178bc9.jpg?1783915606"
       }
@@ -1114,6 +1152,7 @@ const metaTierEntries = [
         "cn": "熠晓灵狐泽尔达",
         "en": "Zirda, the Dawnwaker",
         "scryfallId": "1bd8e61c-2ee8-4243-a848-7008810db8a0",
+        "small": "https://cards.scryfall.io/small/front/1/b/1bd8e61c-2ee8-4243-a848-7008810db8a0.jpg?1783931007",
         "art": "https://cards.scryfall.io/art_crop/front/1/b/1bd8e61c-2ee8-4243-a848-7008810db8a0.jpg?1783931007",
         "normal": "https://cards.scryfall.io/normal/front/1/b/1bd8e61c-2ee8-4243-a848-7008810db8a0.jpg?1783931007"
       }
@@ -1140,6 +1179,7 @@ const metaTierEntries = [
         "cn": "织命使堤谟娜",
         "en": "Tymna the Weaver",
         "scryfallId": "bc7cbe9b-324e-42b8-94e2-36e91cb32163",
+        "small": "https://cards.scryfall.io/small/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/b/c/bc7cbe9b-324e-42b8-94e2-36e91cb32163.jpg?1783937081"
       },
@@ -1147,6 +1187,7 @@ const metaTierEntries = [
         "cn": "锐目领航员马科姆",
         "en": "Malcolm, Keen-Eyed Navigator",
         "scryfallId": "51187cdb-85ee-4f68-9e29-d84d296f0825",
+        "small": "https://cards.scryfall.io/small/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885",
         "art": "https://cards.scryfall.io/art_crop/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885",
         "normal": "https://cards.scryfall.io/normal/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885"
       }
@@ -1173,6 +1214,7 @@ const metaTierEntries = [
         "cn": "噬人蛙怪",
         "en": "The Gitrog Monster",
         "scryfallId": "40489e28-878d-44a2-847f-07beef1aa0f8",
+        "small": "https://cards.scryfall.io/small/front/4/0/40489e28-878d-44a2-847f-07beef1aa0f8.jpg?1783906028",
         "art": "https://cards.scryfall.io/art_crop/front/4/0/40489e28-878d-44a2-847f-07beef1aa0f8.jpg?1783906028",
         "normal": "https://cards.scryfall.io/normal/front/4/0/40489e28-878d-44a2-847f-07beef1aa0f8.jpg?1783906028"
       }
@@ -1199,6 +1241,7 @@ const metaTierEntries = [
         "cn": "剑花娜吉拉",
         "en": "Najeela, the Blade-Blossom",
         "scryfallId": "2cb1d1da-6077-46b5-8c63-39882b8016f2",
+        "small": "https://cards.scryfall.io/small/front/2/c/2cb1d1da-6077-46b5-8c63-39882b8016f2.jpg?1783934856",
         "art": "https://cards.scryfall.io/art_crop/front/2/c/2cb1d1da-6077-46b5-8c63-39882b8016f2.jpg?1783934856",
         "normal": "https://cards.scryfall.io/normal/front/2/c/2cb1d1da-6077-46b5-8c63-39882b8016f2.jpg?1783934856"
       }
@@ -1225,6 +1268,7 @@ const metaTierEntries = [
         "cn": "愚者末日泰维司刹特",
         "en": "Tevesh Szat, Doom of Fools",
         "scryfallId": "8f244716-78ab-46f5-b6e9-fc1e6db28052",
+        "small": "https://cards.scryfall.io/small/front/8/f/8f244716-78ab-46f5-b6e9-fc1e6db28052.jpg?1783928825",
         "art": "https://cards.scryfall.io/art_crop/front/8/f/8f244716-78ab-46f5-b6e9-fc1e6db28052.jpg?1783928825",
         "normal": "https://cards.scryfall.io/normal/front/8/f/8f244716-78ab-46f5-b6e9-fc1e6db28052.jpg?1783928825"
       },
@@ -1232,6 +1276,7 @@ const metaTierEntries = [
         "cn": "屈东英雄萨拉希洛斯",
         "en": "Thrasios, Triton Hero",
         "scryfallId": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+        "small": "https://cards.scryfall.io/small/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081"
       }
@@ -1258,6 +1303,7 @@ const metaTierEntries = [
         "cn": "乐舞会主厨罗孔",
         "en": "Rocco, Cabaretti Caterer",
         "scryfallId": "b6cf8b35-2a81-40fd-b383-becb81bef806",
+        "small": "https://cards.scryfall.io/small/front/b/6/b6cf8b35-2a81-40fd-b383-becb81bef806.jpg?1783923072",
         "art": "https://cards.scryfall.io/art_crop/front/b/6/b6cf8b35-2a81-40fd-b383-becb81bef806.jpg?1783923072",
         "normal": "https://cards.scryfall.io/normal/front/b/6/b6cf8b35-2a81-40fd-b383-becb81bef806.jpg?1783923072"
       }
@@ -1284,6 +1330,7 @@ const metaTierEntries = [
         "cn": "尚武后裔萝婉",
         "en": "Rowan, Scion of War",
         "scryfallId": "4ee179ab-a15b-4bd6-b7f8-1e1abeeb31b7",
+        "small": "https://cards.scryfall.io/small/front/4/e/4ee179ab-a15b-4bd6-b7f8-1e1abeeb31b7.jpg?1783915070",
         "art": "https://cards.scryfall.io/art_crop/front/4/e/4ee179ab-a15b-4bd6-b7f8-1e1abeeb31b7.jpg?1783915070",
         "normal": "https://cards.scryfall.io/normal/front/4/e/4ee179ab-a15b-4bd6-b7f8-1e1abeeb31b7.jpg?1783915070"
       }
@@ -1310,6 +1357,7 @@ const metaTierEntries = [
         "cn": "林间嚎吼卢玛拉",
         "en": "Lumra, Bellow of the Woods",
         "scryfallId": "ae4f3aaf-3960-48cd-b34b-32e4ae5ae088",
+        "small": "https://cards.scryfall.io/small/front/a/e/ae4f3aaf-3960-48cd-b34b-32e4ae5ae088.jpg?1785161492",
         "art": "https://cards.scryfall.io/art_crop/front/a/e/ae4f3aaf-3960-48cd-b34b-32e4ae5ae088.jpg?1785161492",
         "normal": "https://cards.scryfall.io/normal/front/a/e/ae4f3aaf-3960-48cd-b34b-32e4ae5ae088.jpg?1785161492"
       }
@@ -1336,6 +1384,7 @@ const metaTierEntries = [
         "cn": "异人族公主水晶",
         "en": "Crystal, Inhuman Princess",
         "scryfallId": "1e9aec49-08d7-4fc8-87dd-69ab8910688a",
+        "small": "https://cards.scryfall.io/small/front/1/e/1e9aec49-08d7-4fc8-87dd-69ab8910688a.jpg?1783981173",
         "art": "https://cards.scryfall.io/art_crop/front/1/e/1e9aec49-08d7-4fc8-87dd-69ab8910688a.jpg?1783981173",
         "normal": "https://cards.scryfall.io/normal/front/1/e/1e9aec49-08d7-4fc8-87dd-69ab8910688a.jpg?1783981173"
       }
@@ -1362,6 +1411,7 @@ const metaTierEntries = [
         "cn": "异国的诗人",
         "en": "The Wandering Minstrel",
         "scryfallId": "77bc419d-ff69-4e7c-afe6-faca383a5ed7",
+        "small": "https://cards.scryfall.io/small/front/7/7/77bc419d-ff69-4e7c-afe6-faca383a5ed7.jpg?1783906560",
         "art": "https://cards.scryfall.io/art_crop/front/7/7/77bc419d-ff69-4e7c-afe6-faca383a5ed7.jpg?1783906560",
         "normal": "https://cards.scryfall.io/normal/front/7/7/77bc419d-ff69-4e7c-afe6-faca383a5ed7.jpg?1783906560"
       }
@@ -1388,6 +1438,7 @@ const metaTierEntries = [
         "cn": "金牙塔西格",
         "en": "Tasigur, the Golden Fang",
         "scryfallId": "175ad810-3cdd-43c7-99a9-8a2e8ad6dbae",
+        "small": "https://cards.scryfall.io/small/front/1/7/175ad810-3cdd-43c7-99a9-8a2e8ad6dbae.jpg?1783907079",
         "art": "https://cards.scryfall.io/art_crop/front/1/7/175ad810-3cdd-43c7-99a9-8a2e8ad6dbae.jpg?1783907079",
         "normal": "https://cards.scryfall.io/normal/front/1/7/175ad810-3cdd-43c7-99a9-8a2e8ad6dbae.jpg?1783907079"
       }
@@ -1414,6 +1465,7 @@ const metaTierEntries = [
         "cn": "聚力领袖薇诺塔",
         "en": "Winota, Joiner of Forces",
         "scryfallId": "5dd13a6c-23d3-44ce-a628-cb1c19d777c4",
+        "small": "https://cards.scryfall.io/small/front/5/d/5dd13a6c-23d3-44ce-a628-cb1c19d777c4.jpg?1783931014",
         "art": "https://cards.scryfall.io/art_crop/front/5/d/5dd13a6c-23d3-44ce-a628-cb1c19d777c4.jpg?1783931014",
         "normal": "https://cards.scryfall.io/normal/front/5/d/5dd13a6c-23d3-44ce-a628-cb1c19d777c4.jpg?1783931014"
       }
@@ -1440,6 +1492,7 @@ const metaTierEntries = [
         "cn": "锐目领航员马科姆",
         "en": "Malcolm, Keen-Eyed Navigator",
         "scryfallId": "51187cdb-85ee-4f68-9e29-d84d296f0825",
+        "small": "https://cards.scryfall.io/small/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885",
         "art": "https://cards.scryfall.io/art_crop/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885",
         "normal": "https://cards.scryfall.io/normal/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885"
       },
@@ -1447,6 +1500,7 @@ const metaTierEntries = [
         "cn": "砸瓶女汉子",
         "en": "Vial Smasher the Fierce",
         "scryfallId": "cc7be939-2202-40fe-8899-a05682d76190",
+        "small": "https://cards.scryfall.io/small/front/c/c/cc7be939-2202-40fe-8899-a05682d76190.jpg?1783909586",
         "art": "https://cards.scryfall.io/art_crop/front/c/c/cc7be939-2202-40fe-8899-a05682d76190.jpg?1783909586",
         "normal": "https://cards.scryfall.io/normal/front/c/c/cc7be939-2202-40fe-8899-a05682d76190.jpg?1783909586"
       }
@@ -1473,6 +1527,7 @@ const metaTierEntries = [
         "cn": "受困魔头欧尼希兹",
         "en": "Ob Nixilis, Captive Kingpin",
         "scryfallId": "ddb68233-3683-41bd-9b6e-4f07a1b54244",
+        "small": "https://cards.scryfall.io/small/front/d/d/ddb68233-3683-41bd-9b6e-4f07a1b54244.jpg?1783916511",
         "art": "https://cards.scryfall.io/art_crop/front/d/d/ddb68233-3683-41bd-9b6e-4f07a1b54244.jpg?1783916511",
         "normal": "https://cards.scryfall.io/normal/front/d/d/ddb68233-3683-41bd-9b6e-4f07a1b54244.jpg?1783916511"
       }
@@ -1499,6 +1554,7 @@ const metaTierEntries = [
         "cn": "大一统飞将亚崔夏",
         "en": "Atraxa, Grand Unifier",
         "scryfallId": "4a1f905f-1d55-4d02-9d24-e58070793d3f",
+        "small": "https://cards.scryfall.io/small/front/4/a/4a1f905f-1d55-4d02-9d24-e58070793d3f.jpg?1783918003",
         "art": "https://cards.scryfall.io/art_crop/front/4/a/4a1f905f-1d55-4d02-9d24-e58070793d3f.jpg?1783918003",
         "normal": "https://cards.scryfall.io/normal/front/4/a/4a1f905f-1d55-4d02-9d24-e58070793d3f.jpg?1783918003"
       }
@@ -1525,6 +1581,7 @@ const metaTierEntries = [
         "cn": "玛尔涅斯·寇卡尔",
         "en": "Marneus Calgar",
         "scryfallId": "e7517e8e-b424-4731-ba9d-6132bdefa6bf",
+        "small": "https://cards.scryfall.io/small/front/e/7/e7517e8e-b424-4731-ba9d-6132bdefa6bf.jpg?1783920949",
         "art": "https://cards.scryfall.io/art_crop/front/e/7/e7517e8e-b424-4731-ba9d-6132bdefa6bf.jpg?1783920949",
         "normal": "https://cards.scryfall.io/normal/front/e/7/e7517e8e-b424-4731-ba9d-6132bdefa6bf.jpg?1783920949"
       }
@@ -1551,6 +1608,7 @@ const metaTierEntries = [
         "cn": "铸物勋爵克撒",
         "en": "Urza, Lord High Artificer",
         "scryfallId": "7b7a348a-51f7-4dc5-8fe7-1c70fea5e050",
+        "small": "https://cards.scryfall.io/small/front/7/b/7b7a348a-51f7-4dc5-8fe7-1c70fea5e050.jpg?1783915686",
         "art": "https://cards.scryfall.io/art_crop/front/7/b/7b7a348a-51f7-4dc5-8fe7-1c70fea5e050.jpg?1783915686",
         "normal": "https://cards.scryfall.io/normal/front/7/b/7b7a348a-51f7-4dc5-8fe7-1c70fea5e050.jpg?1783915686"
       }
@@ -1577,6 +1635,7 @@ const metaTierEntries = [
         "cn": "灾祸卜算师格拉布",
         "en": "Glarb, Calamity's Augur",
         "scryfallId": "ffc70b2d-5a3a-49ea-97db-175a62248302",
+        "small": "https://cards.scryfall.io/small/front/f/f/ffc70b2d-5a3a-49ea-97db-175a62248302.jpg?1783910796",
         "art": "https://cards.scryfall.io/art_crop/front/f/f/ffc70b2d-5a3a-49ea-97db-175a62248302.jpg?1783910796",
         "normal": "https://cards.scryfall.io/normal/front/f/f/ffc70b2d-5a3a-49ea-97db-175a62248302.jpg?1783910796"
       }
@@ -1603,6 +1662,7 @@ const metaTierEntries = [
         "cn": "衡心定盘莱昂纳多",
         "en": "Leonardo, the Balance",
         "scryfallId": "72e637db-7112-406f-809b-0eda248488b5",
+        "small": "https://cards.scryfall.io/small/front/7/2/72e637db-7112-406f-809b-0eda248488b5.jpg?1783904176",
         "art": "https://cards.scryfall.io/art_crop/front/7/2/72e637db-7112-406f-809b-0eda248488b5.jpg?1783904176",
         "normal": "https://cards.scryfall.io/normal/front/7/2/72e637db-7112-406f-809b-0eda248488b5.jpg?1783904176"
       },
@@ -1610,6 +1670,7 @@ const metaTierEntries = [
         "cn": "乐天真心米开朗基罗",
         "en": "Michelangelo, the Heart",
         "scryfallId": "bac2d744-db65-4b56-8634-c87fd00c090e",
+        "small": "https://cards.scryfall.io/small/front/b/a/bac2d744-db65-4b56-8634-c87fd00c090e.jpg?1783904173",
         "art": "https://cards.scryfall.io/art_crop/front/b/a/bac2d744-db65-4b56-8634-c87fd00c090e.jpg?1783904173",
         "normal": "https://cards.scryfall.io/normal/front/b/a/bac2d744-db65-4b56-8634-c87fd00c090e.jpg?1783904173"
       }
@@ -1636,6 +1697,7 @@ const metaTierEntries = [
         "cn": "现场直击的艾普·奥尼尔",
         "en": "April O'Neil, Live on the Scene",
         "scryfallId": "7265ab42-5434-4127-acd6-8905ab63d62d",
+        "small": "https://cards.scryfall.io/small/front/7/2/7265ab42-5434-4127-acd6-8905ab63d62d.jpg?1783904171",
         "art": "https://cards.scryfall.io/art_crop/front/7/2/7265ab42-5434-4127-acd6-8905ab63d62d.jpg?1783904171",
         "normal": "https://cards.scryfall.io/normal/front/7/2/7265ab42-5434-4127-acd6-8905ab63d62d.jpg?1783904171"
       },
@@ -1643,6 +1705,7 @@ const metaTierEntries = [
         "cn": "衡心定盘莱昂纳多",
         "en": "Leonardo, the Balance",
         "scryfallId": "72e637db-7112-406f-809b-0eda248488b5",
+        "small": "https://cards.scryfall.io/small/front/7/2/72e637db-7112-406f-809b-0eda248488b5.jpg?1783904176",
         "art": "https://cards.scryfall.io/art_crop/front/7/2/72e637db-7112-406f-809b-0eda248488b5.jpg?1783904176",
         "normal": "https://cards.scryfall.io/normal/front/7/2/72e637db-7112-406f-809b-0eda248488b5.jpg?1783904176"
       }
@@ -1669,6 +1732,7 @@ const metaTierEntries = [
         "cn": "屈东英雄萨拉希洛斯",
         "en": "Thrasios, Triton Hero",
         "scryfallId": "21e27b91-c7f1-4709-aa0d-8b5d81b22a0a",
+        "small": "https://cards.scryfall.io/small/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/2/1/21e27b91-c7f1-4709-aa0d-8b5d81b22a0a.jpg?1783937081"
       },
@@ -1676,6 +1740,7 @@ const metaTierEntries = [
         "cn": "砸瓶女汉子",
         "en": "Vial Smasher the Fierce",
         "scryfallId": "cc7be939-2202-40fe-8899-a05682d76190",
+        "small": "https://cards.scryfall.io/small/front/c/c/cc7be939-2202-40fe-8899-a05682d76190.jpg?1783909586",
         "art": "https://cards.scryfall.io/art_crop/front/c/c/cc7be939-2202-40fe-8899-a05682d76190.jpg?1783909586",
         "normal": "https://cards.scryfall.io/normal/front/c/c/cc7be939-2202-40fe-8899-a05682d76190.jpg?1783909586"
       }
@@ -1702,6 +1767,7 @@ const metaTierEntries = [
         "cn": "经常捣乱的拉夫与麦奇",
         "en": "Raph & Mikey, Troublemakers",
         "scryfallId": "8795fba4-0ff3-4c04-a81c-60408608a00c",
+        "small": "https://cards.scryfall.io/small/front/8/7/8795fba4-0ff3-4c04-a81c-60408608a00c.jpg?1783904069",
         "art": "https://cards.scryfall.io/art_crop/front/8/7/8795fba4-0ff3-4c04-a81c-60408608a00c.jpg?1783904069",
         "normal": "https://cards.scryfall.io/normal/front/8/7/8795fba4-0ff3-4c04-a81c-60408608a00c.jpg?1783904069"
       }
@@ -1728,6 +1794,7 @@ const metaTierEntries = [
         "cn": "瀚力无边灰儿",
         "en": "Ashling, the Limitless",
         "scryfallId": "5924c01f-2815-4e37-b700-3ba6cc81e0e4",
+        "small": "https://cards.scryfall.io/small/front/5/9/5924c01f-2815-4e37-b700-3ba6cc81e0e4.jpg?1783904607",
         "art": "https://cards.scryfall.io/art_crop/front/5/9/5924c01f-2815-4e37-b700-3ba6cc81e0e4.jpg?1783904607",
         "normal": "https://cards.scryfall.io/normal/front/5/9/5924c01f-2815-4e37-b700-3ba6cc81e0e4.jpg?1783904607"
       }
@@ -1754,6 +1821,7 @@ const metaTierEntries = [
         "cn": "太初龙后裔",
         "en": "Scion of the Ur-Dragon",
         "scryfallId": "565b2a40-57b1-451f-8c2a-e02222502288",
+        "small": "https://cards.scryfall.io/small/front/5/6/565b2a40-57b1-451f-8c2a-e02222502288.jpg?1783935875",
         "art": "https://cards.scryfall.io/art_crop/front/5/6/565b2a40-57b1-451f-8c2a-e02222502288.jpg?1783935875",
         "normal": "https://cards.scryfall.io/normal/front/5/6/565b2a40-57b1-451f-8c2a-e02222502288.jpg?1783935875"
       }
@@ -1780,6 +1848,7 @@ const metaTierEntries = [
         "cn": "锐目领航员马科姆",
         "en": "Malcolm, Keen-Eyed Navigator",
         "scryfallId": "51187cdb-85ee-4f68-9e29-d84d296f0825",
+        "small": "https://cards.scryfall.io/small/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885",
         "art": "https://cards.scryfall.io/art_crop/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885",
         "normal": "https://cards.scryfall.io/normal/front/5/1/51187cdb-85ee-4f68-9e29-d84d296f0825.jpg?1783913885"
       },
@@ -1787,6 +1856,7 @@ const metaTierEntries = [
         "cn": "沃血塔娜",
         "en": "Tana, the Bloodsower",
         "scryfallId": "a3d8d64f-a403-42a7-881b-4f70e9fe15a2",
+        "small": "https://cards.scryfall.io/small/front/a/3/a3d8d64f-a403-42a7-881b-4f70e9fe15a2.jpg?1783937081",
         "art": "https://cards.scryfall.io/art_crop/front/a/3/a3d8d64f-a403-42a7-881b-4f70e9fe15a2.jpg?1783937081",
         "normal": "https://cards.scryfall.io/normal/front/a/3/a3d8d64f-a403-42a7-881b-4f70e9fe15a2.jpg?1783937081"
       }
@@ -1813,6 +1883,7 @@ const metaTierEntries = [
         "cn": "诺曼·奥斯本",
         "en": "Norman Osborn // Green Goblin",
         "scryfallId": "d5c53af9-7150-4e78-8771-2de7980aa307",
+        "small": "https://cards.scryfall.io/small/front/d/5/d5c53af9-7150-4e78-8771-2de7980aa307.jpg?1783905356",
         "art": "https://cards.scryfall.io/art_crop/front/d/5/d5c53af9-7150-4e78-8771-2de7980aa307.jpg?1783905356",
         "normal": "https://cards.scryfall.io/normal/front/d/5/d5c53af9-7150-4e78-8771-2de7980aa307.jpg?1783905356"
       }

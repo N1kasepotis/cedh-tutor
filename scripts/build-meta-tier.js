@@ -78,6 +78,10 @@ async function resolveCommanderArt(ids) {
           || (Array.isArray(card.card_faces) && card.card_faces[0] && card.card_faces[0].image_uris);
         if (!uris || !card.id) return;
         found.set(card.id, {
+          // 双拍档的格子只有 66rpx 宽（约 103 device px @3x），却在下发 626×457 的
+          // art_crop（124KB）——超配 18 倍。small 是 146×204、17KB，长宽比 0.716 与
+          // 格子的 0.69 几乎一致，aspectFill 几乎不裁，换过去零视觉损失。
+          small: uris.small || uris.normal || '',
           art: uris.art_crop || uris.normal || '',
           normal: uris.normal || uris.large || '',
         });
@@ -137,7 +141,7 @@ async function build() {
           en: commander.en || '',
           scryfallId,
           // 解析到才写；没有这两个字段时运行时按 ID 回落取图
-          ...(baked ? { art: baked.art, normal: baked.normal } : {}),
+          ...(baked ? { small: baked.small, art: baked.art, normal: baked.normal } : {}),
         };
       }),
     }));

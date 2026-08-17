@@ -35,6 +35,16 @@ Page({
     });
   },
 
+  // 档位展开 / 收起。只翻 expanded，不重建 entries——重建会把整份列表再过一次桥。
+  toggleTier(event) {
+    const id = event.currentTarget.dataset.id;
+    this.setData({
+      tierGroups: this.data.tierGroups.map((tier) => (
+        tier.id === id ? { ...tier, expanded: !tier.expanded } : tier
+      )),
+    });
+  },
+
   onShareAppMessage() {
     const summary = this.data.summary || {};
     return {
