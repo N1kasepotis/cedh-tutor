@@ -650,6 +650,12 @@ test('试玩页取图全部走 cardArt，且低内存与回落只有一处', () 
   // 不能 await 阻塞导入：解析期间要能先用回落路径把牌显示出来
   assert.doesNotMatch(js, /await prefetchCardArt/);
 
+  // 进页面时若已有存着的牌表，必须提前解析。微信的 image 换了 src 会重新下载同一张图，
+  // 「先回落链渲染、解析完再换直链」对已显示的卡就是双份下载——开局七张正好撞这上面。
+  // 牌表本来就存着，提前一步解析，导入时首帧直接是直链。
+  assert.match(js, /this\.prefetchDeckArt\(parseMtgoDeckText\(deckText\)\);/,
+    'onLoad 读到存着的牌表后必须预解析，否则开局七张会下载两次');
+
   // 尺寸命名映射只在 cardArt 一处做（Scryfall 用 art_crop，image_uris 键是 artCrop）
   assert.match(js, /version === 'art_crop' \? 'artCrop'/);
   assert.equal((js.match(/'artCrop'/g) || []).length, 1,

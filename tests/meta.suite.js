@@ -496,3 +496,55 @@ test('上游巡检比对：忽略格式差异、识别真实变化、拦下坏�
     fs.rmSync(tmp, { recursive: true, force: true });
   }
 });
+
+// 梯度表一屏就有十几张主将图。按 ID 取图会打 api.scryfall.com/cards/<id>?format=image
+// ——那是 API 端点不是 CDN，每张图先查表再回 302，等于两次建连，全部叠在首屏。
+// 快照是构建期产物，所以直链在构建期就解析好烤进去，运行时零 API 请求。
+test('主将卡图：构建期烤入 CDN 直链，运行时零 API 请求', () => {
+  const { metaTierEntries } = require('../miniprogram/config/meta-tier');
+  const commanders = metaTierEntries.flatMap((entry) => entry.commanders || []);
+  assert.ok(commanders.length >= 50, '主将数量异常，断言可能在空转');
+
+  const unbaked = commanders.filter((c) => c.scryfallId && !c.art);
+  assert.deepEqual(unbaked.map((c) => c.en), [],
+    '这些主将没烤进直链，运行时会回落去撞 302；请重跑 node scripts/build-meta-tier.js');
+
+  commanders.forEach((commander) => {
+    // 直链必须指向 CDN，不能是 api.scryfall.com——后者才是要绕开的那个
+    assert.match(commander.art, /^https:\/\/cards\.scryfall\.io\//,
+      `${commander.en} 的 art 不是 CDN 直链：${commander.art}`);
+    assert.match(commander.normal, /^https:\/\/cards\.scryfall\.io\//,
+      `${commander.en} 的 normal 不是 CDN 直链：${commander.normal}`);
+  });
+  assert.equal(
+    commanders.filter((c) => /api\.scryfall\.com/.test(`${c.art}${c.normal}`)).length, 0,
+    '快照里不该再出现 api.scryfall.com 的取图地址',
+  );
+
+  // 回落必须保留：万一某次构建没网，没烤上的条目仍要能按 ID 取到图，不开天窗
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const util = fs.readFileSync(path.join(__dirname, '..', 'miniprogram/utils/meta-tier.js'), 'utf8');
+  assert.match(util, /art: commander\.art \|\| buildScryfallImageUrlById/);
+  assert.match(util, /normal: commander\.normal \|\| buildScryfallImageUrlById/);
+});
+
+// 这条锁的是构建脚本本身。Scryfall 会用 400 generic_user_agent 拒掉使用 HTTP 库
+// 默认 UA 的请求，Node 的 fetch 默认发 undici——初版就是这么整批失败的，
+// 而当时的 catch 把失败吞了，0/71 全军覆没却没有任何提示。
+test('构建脚本取图：必须带自定义 UA，且失败要出声', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const script = fs.readFileSync(path.join(__dirname, '..', 'scripts/build-meta-tier.js'), 'utf8');
+
+  assert.match(script, /const USER_AGENT = '[^']+'/, '必须定义自定义 User-Agent');
+  assert.doesNotMatch(script, /USER_AGENT = '(undici|node-fetch|axios)/i);
+  assert.match(script, /'User-Agent': USER_AGENT/, '取图请求必须带上该 UA');
+  // 失败路径必须打日志，否则下次整批失败又会被静默兜底藏住
+  assert.match(script, /console\.warn\([^)]*卡图[^)]*失败/);
+  assert.match(script, /console\.warn\([^)]*卡图[^)]*异常/);
+  // 构建期必须报出烤入比例，一眼能看出这步有没有真的生效
+  assert.match(script, /卡图直链已烤入 \$\{bakedCount\}\/\$\{commanderCount\}/);
+  // 批量上限是 Scryfall 的硬上限，超了整批被拒
+  assert.match(script, /COLLECTION_BATCH_SIZE = 75/);
+});

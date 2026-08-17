@@ -16,6 +16,7 @@ const {
 const { paintChart } = require('../../utils/tracker-charts');
 const { formatCommanderDisplayLines, splitCommanderNames } = require('../../utils/result-display');
 const { buildScryfallImageUrl } = require('../../utils/scryfall');
+const { prefetchCardArt, getCardArt } = require('../../utils/card-art');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
 
@@ -80,6 +81,20 @@ Page({
     });
     const data = normalizeTrackerData(stored.value, commanders, trackerConfig);
     this.applyDecks(data.decks, false);
+
+    // 主将头像批量解析成 CDN 直链：最多 5 副牌 × 2 位拍档，一次请求就够。
+    // 微信的 image 换了 src 会重新下载同一张图，所以只在确实解析到直链时才重渲染一次；
+    // 解析结果通常是全中或全不中，不会来回抖。
+    const names = data.decks
+      .filter((deck) => deck.commander)
+      .flatMap((deck) => splitCommanderNames(deck.commander.name).slice(0, 2));
+    if (names.length) {
+      prefetchCardArt(names).then(() => {
+        if (this.pageActive && names.some((name) => getCardArt(name, 'artCrop'))) {
+          this.applyDecks(data.decks, false);
+        }
+      });
+    }
   },
 
   decorateDecks(decks) {
@@ -112,7 +127,8 @@ Page({
       const commanderAvatars = deck.commander
         ? splitCommanderNames(deck.commander.name).slice(0, 2).map((name) => ({
           name,
-          url: buildScryfallImageUrl(name, 'art_crop'),
+          // 直链优先；没解析到就按名回落（撞 302，但不至于开天窗）
+          url: getCardArt(name, 'artCrop') || buildScryfallImageUrl(name, 'art_crop'),
         }))
         : [];
 

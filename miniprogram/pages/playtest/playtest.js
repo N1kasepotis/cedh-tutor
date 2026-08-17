@@ -120,6 +120,11 @@ Page({
         deckText,
         importWarning: deckText.length < storedDeck.value.length ? '已截断过长的历史牌表，请重新导入' : '',
       });
+      // 进页面就先把存着的牌表解析成直链，别等按下「导入」。
+      // 微信的 image 换了 src 就会重新下载同一张图，所以「先用回落链渲染、
+      // 解析完再换成直链」对**已经显示出来的**卡是双份下载。开局七张正好撞在这上面。
+      // 而牌表本来就存着，提前一步解析，导入时首帧直接就是直链，那七张也省掉。
+      this.prefetchDeckArt(parseMtgoDeckText(deckText));
     }
   },
 

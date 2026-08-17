@@ -17,11 +17,16 @@ function buildCommanderArt(commanders) {
   if (!named.length) return { mode: 'none', images: [] };
   return {
     mode: named.length === 2 ? 'dual' : 'single',
+    // 优先用构建期烤进快照的 cards.scryfall.io 直链：梯度表一屏就有十几张图，
+    // 按 ID 取图会打 api.scryfall.com/cards/<id>?format=image，那是 API 端点，
+    // 每张图先查表再回 302 跳到 CDN，等于两次建连，全部叠在首屏上。
+    // 快照是构建期产物，这步没有理由留到运行时——现在是零 API 请求、直连 CDN。
+    // 回落保留：万一某条没烤上（构建时没网），仍按 ID 取图，不至于开天窗。
     images: named.map((commander) => ({
       cn: commander.cn || commander.en,
       en: commander.en,
-      art: buildScryfallImageUrlById(commander.scryfallId, 'art_crop'),
-      normal: buildScryfallImageUrlById(commander.scryfallId, 'normal'),
+      art: commander.art || buildScryfallImageUrlById(commander.scryfallId, 'art_crop'),
+      normal: commander.normal || buildScryfallImageUrlById(commander.scryfallId, 'normal'),
     })),
   };
 }
