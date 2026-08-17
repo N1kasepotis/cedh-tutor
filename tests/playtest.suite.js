@@ -342,10 +342,14 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   const generalInspectTargets = js.slice(js.indexOf('const targets'), js.indexOf('return targets.filter'));
   assert.doesNotMatch(generalInspectTargets, /zone: 'command'/);
 
-  // 小卡面使用 small 图，详视仍使用 normal；衍生物保持文字瓦片
+  // 小卡面使用 small 图，详视仍使用 normal；衍生物保持文字瓦片。
+  // 取图一律走 this.cardArt——它内部先查直链、查不到再回落，低内存模式也在那里统一处理
   assert.match(wxml, /class="card-art"/);
-  assert.match(js, /art:\s*card\.token \|\| this\.lowMemoryMode \? '' : buildScryfallImageUrl\(card\.name, 'small'\)/);
-  assert.match(js, /art:\s*this\.lowMemoryMode \? '' : buildScryfallImageUrl\(card\.name, 'small'\)/);
+  assert.match(js, /art:\s*card\.token \? '' : this\.cardArt\(card\.name, 'small'\)/);
+  assert.match(js, /art:\s*this\.cardArt\(card\.name, 'small'\)/);
+  assert.match(js, /imageUrl:\s*this\.cardArt\(card\.name, 'normal'\)/);
+  // 低内存模式的判断收敛到 cardArt 一处，不再散在每个取图点
+  assert.match(js, /cardArt\(name, version\) \{\s*\n\s*if \(this\.lowMemoryMode\) return '';/);
   assert.match(js, /wx\.onMemoryWarning/);
   assert.match(js, /DRAG_RENDER_INTERVAL_MS\s*=\s*32/);
   assert.match(js, /syncManaView\(\)/);
@@ -418,8 +422,8 @@ test('主将区呈现主将卡图（单主将居中 / 双拍档左右分屏）�
   assert.match(wxml, /commandPreview\.mode === 'dual'/);
   assert.match(wxml, /class="zone-art-split"/);
   assert.match(wxml, /commandPreview\.mode === 'single'/);
-  assert.match(js, /buildScryfallImageUrl\(faces\[0\], 'art_crop'\)/);
-  assert.match(js, /buildScryfallImageUrl\(faces\[1\], 'art_crop'\)/);
+  assert.match(js, /this\.cardArt\(faces\[0\], 'art_crop'\)/);
+  assert.match(js, /this\.cardArt\(faces\[1\], 'art_crop'\)/);
 
   // 坟场 / 放逐：恒显「最上方=数组末位（最近置入）」一张 art_crop，无开关
   assert.match(js, /buildZoneTopArt\(zone\)\s*{/);
@@ -568,4 +572,86 @@ test('对局顶栏在「撤销」出现后仍能单行放下，且标签不断�
 
   assert.ok(readouts + actions <= available,
     `五颗按钮时顶栏需 ${readouts + actions}rpx，超过可用 ${available}rpx——会挤压出断字`);
+});
+
+// 卡图直连：这一组锁的是「卡图不许再走 api.scryfall.com 的重定向」。
+// 原本所有卡图都指向 api.scryfall.com/cards/named?...&format=image——那是 API 端点
+// 不是 CDN，每张图都要服务端做一次模糊名检索再回 302，等于两次建连；
+// 且这些请求全部算进 Scryfall 的调用频率约束。实测同一张图：
+//   经 API 重定向 3.31 / 5.75 / 4.33 s   直连 CDN 1.56 / 1.64 / 1.49 s   约 2.8 倍
+// 缓存寿命也差 180 倍（302 是 max-age 2 天，CDN 图片是 1 年）。
+test('卡图批量解析：直链取自 image_uris，双面牌取正面', () => {
+  const {
+    extractImageUris, COLLECTION_BATCH_SIZE, prefetchCardArt, getCardArt, clearCardArtCache,
+  } = require('../miniprogram/utils/card-art');
+
+  // 批量上限必须是 75：Scryfall collection 端点的硬上限，超了整批会被拒
+  assert.equal(COLLECTION_BATCH_SIZE, 75);
+
+  // 直链一律取自返回的 image_uris，不自己拼路径——
+  // 双面牌、异画的路径规则并不统一，自己拼迟早拼错
+  const single = extractImageUris({
+    name: 'Sol Ring',
+    image_uris: {
+      small: 'https://cards.scryfall.io/small/front/9/1/x.jpg?1',
+      normal: 'https://cards.scryfall.io/normal/front/9/1/x.jpg?1',
+      art_crop: 'https://cards.scryfall.io/art_crop/front/9/1/x.jpg?1',
+    },
+  });
+  assert.match(single.small, /^https:\/\/cards\.scryfall\.io\//);
+  assert.match(single.normal, /^https:\/\/cards\.scryfall\.io\//);
+  assert.match(single.artCrop, /^https:\/\/cards\.scryfall\.io\//);
+
+  // 双面牌的 image_uris 挂在 card_faces[0] 上，卡对象本身没有；取不到就等于没图
+  const dual = extractImageUris({
+    name: 'Malakir Rebirth // Malakir Mire',
+    card_faces: [
+      { name: 'Malakir Rebirth', image_uris: { small: 'https://cards.scryfall.io/small/front/a/b/d.jpg' } },
+      { name: 'Malakir Mire' },
+    ],
+  });
+  assert.match(dual.small, /^https:\/\/cards\.scryfall\.io\//);
+  assert.equal(extractImageUris({ name: 'No Images' }), null);
+
+  // 缺档位时逐级回落，不返回空串把图渲染成裂图
+  const partial = extractImageUris({ name: 'Only Normal', image_uris: { normal: 'https://cards.scryfall.io/normal/n.jpg' } });
+  assert.equal(partial.small, partial.normal);
+  assert.equal(partial.artCrop, partial.normal);
+
+  // 未解析到时返回 null，由调用方决定回落——不能自作主张返回空串，
+  // 那样调用方分不清「没解析到」和「本来就没图」
+  clearCardArtCache();
+  assert.equal(getCardArt('Sol Ring', 'small'), null);
+  assert.equal(typeof prefetchCardArt([]).then, 'function');
+});
+
+test('试玩页取图全部走 cardArt，且低内存与回落只有一处', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const js = fs.readFileSync(
+    path.join(__dirname, '..', 'miniprogram/pages/playtest/playtest.js'), 'utf8',
+  );
+
+  // 全页只允许一处直接调用按名取图的旧路径——就是 cardArt 内部的回落。
+  // 多出任何一处，就意味着又有卡图在撞 302。
+  const legacy = js.match(/buildScryfallImageUrl\(/g) || [];
+  assert.equal(legacy.length, 1,
+    `试玩页有 ${legacy.length} 处直接按名取图，只允许 cardArt 里的那一处回落`);
+  assert.match(js, /getCardArt\(name, key\) \|\| buildScryfallImageUrl\(name, version\)/,
+    '回落必须是「先查直链、查不到再按名取」，不能反过来');
+
+  // 导入后必须批量预解析，否则直链永远是空的、每张图都在走回落。
+  // 匹配带 this. 的调用点，不是方法定义——只写 prefetchDeckArt(parsed) 会被定义本身匹配到，
+  // 那样即使删掉调用这条也照样绿
+  assert.match(js, /this\.prefetchDeckArt\(parsed\);/);
+  assert.match(js, /prefetchCardArt\(names\)\.then\(/);
+  // 预解析必须覆盖指挥官与主牌组两部分
+  assert.match(js, /\.concat\(parsed\.commanders \|\| \[\]\)[\s\S]{0,80}\.concat\(parsed\.main \|\| \[\]\)/);
+  // 不能 await 阻塞导入：解析期间要能先用回落路径把牌显示出来
+  assert.doesNotMatch(js, /await prefetchCardArt/);
+
+  // 尺寸命名映射只在 cardArt 一处做（Scryfall 用 art_crop，image_uris 键是 artCrop）
+  assert.match(js, /version === 'art_crop' \? 'artCrop'/);
+  assert.equal((js.match(/'artCrop'/g) || []).length, 1,
+    '驼峰写法只该出现在 cardArt 的映射里，散开就会两种拼法并存');
 });

@@ -23,6 +23,7 @@ const {
   loadManaPool,
 } = require('../../utils/playtest-mana');
 const { buildScryfallImageUrl, normalizeCardName } = require('../../utils/scryfall');
+const { prefetchCardArt, getCardArt } = require('../../utils/card-art');
 const { splitCommanderNames } = require('../../utils/result-display');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
@@ -209,6 +210,10 @@ Page({
     }
     this.parsed = parsed;
     this.game = createGame(parsed);
+    // 一次性把整副牌的卡图直链批量解析好（75/批，百张牌两次请求），之后每张图直连 CDN。
+    // 不 await：解析期间照常走按名取图的回落路径，解析完再刷一次视图换成直链，
+    // 用户不会为此干等。
+    this.prefetchDeckArt(parsed);
     this.nextTokenId = -1;
     this.handScrollLeft = 0;
     this.manaPool = createManaPool();
@@ -248,6 +253,32 @@ Page({
     });
   },
 
+  // 卡图统一从这里取：解析到直链就用直链（cards.scryfall.io，一次建连、可缓存一年），
+  // 否则回落到按名取图的旧路径（api.scryfall.com，带 302）。回落保证任何时刻都有图，
+  // 不会因为批量解析还没回来或某张牌名没匹配上就留空白。
+  // 两边的尺寸命名不同：Scryfall URL 用 art_crop，缓存里是 image_uris 的驼峰键 artCrop。
+  // 映射放在这一处，调用点一律只写 Scryfall 那套写法，免得两种拼法散到各处。
+  cardArt(name, version) {
+    if (this.lowMemoryMode) return '';
+    const key = version === 'art_crop' ? 'artCrop' : (version || 'small');
+    return getCardArt(name, key) || buildScryfallImageUrl(name, version);
+  },
+
+  // 导入后一次性解析整副牌（含指挥官）。解析完刷一次视图，把回落链换成直链。
+  prefetchDeckArt(parsed) {
+    if (!parsed) return;
+    const names = []
+      .concat(parsed.commanders || [])
+      .concat(parsed.main || [])
+      .map((entry) => (entry && entry.name) || entry)
+      .filter((name) => typeof name === 'string' && name);
+    if (!names.length) return;
+    prefetchCardArt(names).then(() => {
+      // 期间用户可能已经退出或重开一局，重开会自己 syncView，这里只在还在局中时刷
+      if (this.game) this.syncView();
+    });
+  },
+
   syncView(options) {
     if (!this.game) return;
 
@@ -257,13 +288,13 @@ Page({
       // 小卡片只加载 small 图，详视才使用 normal，降低真机图片解码内存。
       battlefield: this.game.battlefield.map((card) => ({
         ...card,
-        art: card.token || this.lowMemoryMode ? '' : buildScryfallImageUrl(card.name, 'small'),
+        art: card.token ? '' : this.cardArt(card.name, 'small'),
         counterTotal: cardCounterTotal(card),
       })),
       hand: this.game.hand.map((card) => ({
         id: card.id,
         name: card.name,
-        art: this.lowMemoryMode ? '' : buildScryfallImageUrl(card.name, 'small'),
+        art: this.cardArt(card.name, 'small'),
       })),
       counts: countZones(this.game),
       topCardArt: this.buildTopCardArt(this.data.revealTop),
@@ -623,7 +654,7 @@ Page({
   // 第一张的 art_crop 无字大画铺底。syncView 每次重算，抓牌/检索/洗牌后自动跟随。
   buildTopCardArt(revealTop) {
     if (this.lowMemoryMode || !revealTop || !this.game || !this.game.library.length) return '';
-    return buildScryfallImageUrl(this.game.library[0].name, 'art_crop');
+    return this.cardArt(this.game.library[0].name, 'art_crop');
   },
 
   toggleRevealTop() {
@@ -640,13 +671,13 @@ Page({
       return { mode: 'empty', single: '', left: '', right: '' };
     }
     if (faces.length === 1) {
-      return { mode: 'single', single: buildScryfallImageUrl(faces[0], 'art_crop'), left: '', right: '' };
+      return { mode: 'single', single: this.cardArt(faces[0], 'art_crop'), left: '', right: '' };
     }
     return {
       mode: 'dual',
       single: '',
-      left: buildScryfallImageUrl(faces[0], 'art_crop'),
-      right: buildScryfallImageUrl(faces[1], 'art_crop'),
+      left: this.cardArt(faces[0], 'art_crop'),
+      right: this.cardArt(faces[1], 'art_crop'),
     };
   },
 
@@ -654,7 +685,7 @@ Page({
   buildZoneTopArt(zone) {
     const cards = (this.game && this.game[zone]) || [];
     if (this.lowMemoryMode || !cards.length) return '';
-    return buildScryfallImageUrl(cards[cards.length - 1].name, 'art_crop');
+    return this.cardArt(cards[cards.length - 1].name, 'art_crop');
   },
 
   movePanelCard(event) {
@@ -728,7 +759,7 @@ Page({
         id: card.id,
         zone,
         name: card.name,
-        imageUrl: buildScryfallImageUrl(card.name, 'normal'),
+        imageUrl: this.cardArt(card.name, 'normal'),
         // 指示物只在战场卡上可编辑（token 长按是删除，走不到详视）
         canCounter: zone === 'battlefield' && !card.token,
         counterTotal: cardCounterTotal(card),
