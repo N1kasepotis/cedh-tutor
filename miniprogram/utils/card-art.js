@@ -51,11 +51,19 @@ function extractImageUris(card) {
 function rememberCard(card) {
   const images = extractImageUris(card);
   if (!images) return;
-  // 用返回的 name 落缓存，而不是请求时传的名字：Scryfall 会把别名/简写
-  // 规范成正式卡名，只按请求名存的话，下次用正式名查会落空
+  // 一张牌要落多个键，因为「牌表里写的名字」和「Scryfall 的正式卡名」经常不是一个字符串。
+  //
+  // 双面牌是重灾区：牌表写 `Malakir Rebirth`，Scryfall 的 card.name 是
+  // `Malakir Rebirth // Malakir Mire`。初版只存了 card.name 与
+  // card_faces.join(' // ')——这两个**完全相同**，单个正面名一次都没存进去，
+  // 于是每张双面牌都查不到直链、全程走回落的 302 慢路。
+  // cEDH 牌组里 MDFC 地是主力（Agadeem's Awakening、Turntimber Symbiosis 等），
+  // 一副五到十五张，这一个疏漏足以把整体体验拖回改动之前。
   const names = [card && card.name];
   if (card && Array.isArray(card.card_faces)) {
     names.push(card.card_faces.map((face) => face && face.name).filter(Boolean).join(' // '));
+    // 每一面的名字单独也要能查到——牌表通常只写正面
+    card.card_faces.forEach((face) => names.push(face && face.name));
   }
   names.filter(Boolean).forEach((name) => {
     const key = cacheKey(name);

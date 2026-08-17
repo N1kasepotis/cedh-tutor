@@ -637,8 +637,19 @@ test('试玩页取图全部走 cardArt，且低内存与回落只有一处', () 
   const legacy = js.match(/buildScryfallImageUrl\(/g) || [];
   assert.equal(legacy.length, 1,
     `试玩页有 ${legacy.length} 处直接按名取图，只允许 cardArt 里的那一处回落`);
-  assert.match(js, /getCardArt\(name, key\) \|\| buildScryfallImageUrl\(name, version\)/,
-    '回落必须是「先查直链、查不到再按名取」，不能反过来');
+  // 取图三态：① 有直链就用直链 ② 解析还没结束返回空串（只显示占位底）
+  // ③ 解析结束仍没查到才按名回落。
+  // ② 是关键：微信的 image 换了 src 就会重新下载同一张图，
+  // 「先渲染回落链、解析完再换直链」等于把已显示的卡下载两次——开局七张全中，
+  // 比不做这个优化还慢。宁可让那一瞬只有占位底。
+  assert.match(js, /const direct = getCardArt\(name, key\);\s*\n\s*if \(direct\) return direct;\s*\n\s*if \(!this\.artReady\) return '';\s*\n\s*return buildScryfallImageUrl\(name, version\);/,
+    '取图必须是「直链 → 未就绪则空 → 回落」三态，不能在就绪前就吐回落链');
+  // 换牌表必须重置，否则新牌沿用上一轮的 artReady，第一帧又走回落
+  assert.match(js, /this\.game = createGame\(parsed\);[\s\S]{0,220}?this\.artReady = false;/);
+  // artReady 表示「这一轮解析结束」而非「全部成功」：没查到的必须能走回落，不能永远空白
+  assert.match(js, /const finish = \(\) => \{\s*\n\s*this\.artReady = true;/);
+  assert.match(js, /if \(!parsed\) \{ finish\(\); return; \}/);
+  assert.match(js, /if \(!names\.length\) \{ finish\(\); return; \}/);
 
   // 导入后必须批量预解析，否则直链永远是空的、每张图都在走回落。
   // 匹配带 this. 的调用点，不是方法定义——只写 prefetchDeckArt(parsed) 会被定义本身匹配到，
@@ -660,4 +671,69 @@ test('试玩页取图全部走 cardArt，且低内存与回落只有一处', () 
   assert.match(js, /version === 'art_crop' \? 'artCrop'/);
   assert.equal((js.match(/'artCrop'/g) || []).length, 1,
     '驼峰写法只该出现在 cardArt 的映射里，散开就会两种拼法并存');
+});
+
+// 这条锁的是让「越改越慢」的那个回归本身。
+//
+// 牌表里写的是正面名（`Malakir Rebirth`），Scryfall 的 card.name 却是
+// `Malakir Rebirth // Malakir Mire`。初版落缓存时只存了 card.name 与
+// card_faces.join(' // ')——这两个字符串**完全相同**，单面名一次都没进过缓存，
+// 于是每张双面牌都查不到直链、全程走回落的 302 慢路。
+// cEDH 牌组里 MDFC 地是主力（Agadeem's Awakening、Turntimber Symbiosis 等），
+// 一副五到十五张，足以把整体体感拖回优化之前——用户报的「越改越慢」就是这个。
+test('卡图缓存：双面牌按牌表里的正面名也要能查到直链', async () => {
+  const originalWx = global.wx;
+  // 真实的 Scryfall 响应形状（已用 /cards/collection 实际请求核对过）
+  const cards = [
+    {
+      name: 'Malakir Rebirth // Malakir Mire',
+      card_faces: [
+        {
+          name: 'Malakir Rebirth',
+          image_uris: {
+            small: 'https://cards.scryfall.io/small/a.jpg',
+            normal: 'https://cards.scryfall.io/normal/a.jpg',
+            art_crop: 'https://cards.scryfall.io/art_crop/a.jpg',
+          },
+        },
+        { name: 'Malakir Mire' },
+      ],
+    },
+    {
+      name: 'Sol Ring',
+      image_uris: {
+        small: 'https://cards.scryfall.io/small/c.jpg',
+        normal: 'https://cards.scryfall.io/normal/c.jpg',
+      },
+    },
+  ];
+  global.wx = {
+    request(options) {
+      setTimeout(() => options.success({ statusCode: 200, data: { data: cards, not_found: [] } }), 0);
+    },
+  };
+
+  try {
+    const { prefetchCardArt, getCardArt, clearCardArtCache } = require('../miniprogram/utils/card-art');
+    clearCardArtCache();
+
+    // 牌表里可能出现的三种写法都要命中：正面名、背面名、正式全名
+    await prefetchCardArt(['Malakir Rebirth', 'Sol Ring']);
+    ['Malakir Rebirth', 'Malakir Mire', 'Malakir Rebirth // Malakir Mire', 'Sol Ring']
+      .forEach((name) => {
+        const url = getCardArt(name, 'small');
+        assert.ok(url, `「${name}」查不到直链，会退回 api.scryfall.com 的 302 慢路`);
+        assert.match(url, /^https:\/\/cards\.scryfall\.io\//);
+      });
+
+    // 双面牌的图挂在 card_faces[0] 上，各档都要能取到
+    assert.match(getCardArt('Malakir Rebirth', 'artCrop'), /art_crop/);
+    assert.match(getCardArt('Malakir Rebirth', 'normal'), /normal/);
+
+    // 没请求过的牌返回 null（由调用方决定回落），不能返回空串——
+    // 空串会让调用方分不清「没解析到」和「本来就没图」
+    assert.equal(getCardArt('Never Requested Card', 'small'), null);
+  } finally {
+    global.wx = originalWx;
+  }
 });

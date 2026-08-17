@@ -419,12 +419,17 @@ test('主将头像优先用 CDN 直链，解析不到才按名回落', () => {
     path.join(__dirname, '..', 'miniprogram/pages/tracker/tracker.js'), 'utf8',
   );
 
-  assert.match(js, /getCardArt\(name, 'artCrop'\) \|\| buildScryfallImageUrl\(name, 'art_crop'\)/,
-    '取图必须先查直链、查不到再按名取，顺序不能反');
+  // 取图三态：有直链就用；这一轮解析没结束就先不给地址（只显示占位底）；
+  // 结束后仍没查到才按名回落。微信的 image 换了 src 就会重新下载同一张图，
+  // 若在解析结束前先吐回落链，命中直链的那些头像会被下载两次。
+  assert.match(js, /getCardArt\(name, 'artCrop'\)\s*\n\s*\|\| \(this\.artReady \? buildScryfallImageUrl\(name, 'art_crop'\) : ''\)/,
+    '头像必须在解析结束后才允许回落，否则命中直链的会下载两次');
   assert.match(js, /prefetchCardArt\(names\)\.then\(/, '读到牌组后必须批量预解析头像');
 
-  // 微信的 image 换了 src 会重新下载同一张图，所以只在确实解析到直链时才重渲染，
-  // 不能无条件重刷——那等于把每张头像都下载两次
-  assert.match(js, /if \(this\.pageActive && names\.some\(\(name\) => getCardArt\(name, 'artCrop'\)\)\)/,
-    '只有在真的解析到直链时才重渲染，否则白白重下一遍');
+  // 解析结束后无条件重渲染一次：没命中的那些还等着这一步放开回落地址。
+  // 旧版要求「至少一张命中才重渲染」，会把全都没命中的情况永远卡成空白。
+  assert.match(js, /this\.artReady = true;\s*\n\s*if \(this\.pageActive\) this\.applyDecks\(data\.decks, false\);/,
+    '解析结束要放开回落并重渲染，不能再要求「至少一张命中」');
+  assert.match(js, /if \(!names\.length\) this\.artReady = true;/,
+    '没有主将名时也要放开回落，否则头像永远空白');
 });

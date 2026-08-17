@@ -38,6 +38,9 @@ Page({
 
   onLoad() {
     this.pageActive = true;
+    // 头像直链的解析这一轮是否已结束。未结束时头像先不给地址（只显示占位底），
+    // 避免「先渲染回落链、解析完再换直链」造成同一张图下载两次。
+    this.artReady = false;
     this.chartDataSignature = '';
     enableShareMenu();
     this.loadTrackerData();
@@ -88,11 +91,12 @@ Page({
     const names = data.decks
       .filter((deck) => deck.commander)
       .flatMap((deck) => splitCommanderNames(deck.commander.name).slice(0, 2));
+    if (!names.length) this.artReady = true;
     if (names.length) {
       prefetchCardArt(names).then(() => {
-        if (this.pageActive && names.some((name) => getCardArt(name, 'artCrop'))) {
-          this.applyDecks(data.decks, false);
-        }
+        // 无论命中与否都要重渲染：没命中的那些还等着这一步放开回落地址
+        this.artReady = true;
+        if (this.pageActive) this.applyDecks(data.decks, false);
       });
     }
   },
@@ -127,8 +131,10 @@ Page({
       const commanderAvatars = deck.commander
         ? splitCommanderNames(deck.commander.name).slice(0, 2).map((name) => ({
           name,
-          // 直链优先；没解析到就按名回落（撞 302，但不至于开天窗）
-          url: getCardArt(name, 'artCrop') || buildScryfallImageUrl(name, 'art_crop'),
+          // 直链优先；这一轮解析还没结束就先不给地址（只显示占位底），
+          // 结束后仍没解析到才按名回落。先回落再换直链会让同一张图下载两次。
+          url: getCardArt(name, 'artCrop')
+            || (this.artReady ? buildScryfallImageUrl(name, 'art_crop') : ''),
         }))
         : [];
 

@@ -101,6 +101,9 @@ Page({
     this.handScrollLeft = 0;
     this.manaPool = loadManaPool();
     this.lowMemoryMode = false;
+    // 预解析这一轮是否已结束。未结束时 cardArt 返回空串（只显示占位底），
+    // 避免先渲染回落链、解析完再换直链造成的双份下载。
+    this.artReady = false;
     if (wx.onMemoryWarning) {
       this.memoryWarningHandler = () => {
         this.lowMemoryMode = true;
@@ -215,9 +218,12 @@ Page({
     }
     this.parsed = parsed;
     this.game = createGame(parsed);
+    // 换了牌表就重新等一轮解析：沿用上一轮的 artReady 会让新牌先走回落链，
+    // 那正是双份下载的来源
+    this.artReady = false;
     // 一次性把整副牌的卡图直链批量解析好（75/批，百张牌两次请求），之后每张图直连 CDN。
-    // 不 await：解析期间照常走按名取图的回落路径，解析完再刷一次视图换成直链，
-    // 用户不会为此干等。
+    // 不 await：解析期间卡片先只显示占位底，解析结束再刷一次视图补上图。
+    // 这一瞬的「没有图」是有意的——先渲染回落链再换直链会让同一张图下载两次。
     this.prefetchDeckArt(parsed);
     this.nextTokenId = -1;
     this.handScrollLeft = 0;
@@ -258,30 +264,43 @@ Page({
     });
   },
 
-  // 卡图统一从这里取：解析到直链就用直链（cards.scryfall.io，一次建连、可缓存一年），
-  // 否则回落到按名取图的旧路径（api.scryfall.com，带 302）。回落保证任何时刻都有图，
-  // 不会因为批量解析还没回来或某张牌名没匹配上就留空白。
-  // 两边的尺寸命名不同：Scryfall URL 用 art_crop，缓存里是 image_uris 的驼峰键 artCrop。
-  // 映射放在这一处，调用点一律只写 Scryfall 那套写法，免得两种拼法散到各处。
+  // 卡图统一从这里取。三种情况：
+  //   ① 已解析到直链 → 用直链（cards.scryfall.io，一次建连、可缓存一年）
+  //   ② 还没解析完 → 返回空串，先只显示占位底，**不要先渲染回落链**
+  //   ③ 解析已结束但这张没查到 → 回落到按名取图（api.scryfall.com，带 302）
+  //
+  // ② 是这次修的重点。微信的 image 一旦换掉 src 就会重新下载同一张图，
+  // 所以「先用回落链渲染、解析完再换直链」对已经显示出来的卡就是**下载两次**——
+  // 开局七张手牌正好全撞上，比不做这个优化还慢。宁可让那一瞬只有占位底：
+  // 占位底本来就是加载态该有的样子，而双份下载是纯浪费。
+  //
+  // 尺寸命名两边不同：Scryfall URL 用 art_crop，image_uris 的键是 artCrop。
+  // 映射只放这一处，调用点一律写 Scryfall 那套。
   cardArt(name, version) {
     if (this.lowMemoryMode) return '';
     const key = version === 'art_crop' ? 'artCrop' : (version || 'small');
-    return getCardArt(name, key) || buildScryfallImageUrl(name, version);
+    const direct = getCardArt(name, key);
+    if (direct) return direct;
+    if (!this.artReady) return '';
+    return buildScryfallImageUrl(name, version);
   },
 
-  // 导入后一次性解析整副牌（含指挥官）。解析完刷一次视图，把回落链换成直链。
+  // 一次性解析整副牌（含指挥官）。解析结束后放开回落并刷一次视图。
+  // artReady 表示「解析这一轮已经结束」，不表示「全都解析成功」——
+  // 没查到的那些从此走回落，不会被永远卡成空白。
   prefetchDeckArt(parsed) {
-    if (!parsed) return;
+    const finish = () => {
+      this.artReady = true;
+      if (this.game) this.syncView();
+    };
+    if (!parsed) { finish(); return; }
     const names = []
       .concat(parsed.commanders || [])
       .concat(parsed.main || [])
       .map((entry) => (entry && entry.name) || entry)
       .filter((name) => typeof name === 'string' && name);
-    if (!names.length) return;
-    prefetchCardArt(names).then(() => {
-      // 期间用户可能已经退出或重开一局，重开会自己 syncView，这里只在还在局中时刷
-      if (this.game) this.syncView();
-    });
+    if (!names.length) { finish(); return; }
+    prefetchCardArt(names).then(finish);
   },
 
   syncView(options) {
