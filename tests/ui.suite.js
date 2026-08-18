@@ -220,16 +220,18 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     wxss.matchAll(/\.home-index-[a-z]+\s*\{\s*color:\s*(#[0-9A-F]{6});/gi),
     (match) => match[1].toUpperCase(),
   );
-  // 例外二：右上角外跳入口的 MTGso 浅蓝。浅蓝底只能配深字——白字在这一档上仅 1.87:1，
-  // 而近黑字有 10.61:1。它与页面底色的亮度分离度只有 1.44:1，靠一道硬黑边定住轮廓。
+  // 例外二：右上角外跳入口的 MTGso 浅蓝，只作为那枚方块的底色使用。
   const PORTAL_BLUE = '#7EC8E3';
   // 先剥注释再数：注释里为交代来历也会写出这个色值，那不算「用了它」。
   // 本页多数门禁刻意连注释一起扫，这一条是例外——它数的是使用次数，不是是否出现。
   const wxssNoComments = wxss.replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.equal((wxssNoComments.match(new RegExp(PORTAL_BLUE, 'gi')) || []).length, 2,
-    'MTGso 浅蓝只许用两处：入口常态底色与按压态字色');
+  assert.equal((wxssNoComments.match(new RegExp(PORTAL_BLUE, 'gi')) || []).length, 1,
+    'MTGso 浅蓝只许用一处：入口的底色');
+  // 扫剥掉注释的版本：色板契约管的是「页面画了什么」，不是「注释提到什么」。
+  // 注释里为交代取舍常要写出备选色值（例如「若要达 AA 需压到某个更深的蓝」），
+  // 那不是使用。真正的使用一定出现在声明里，照样会被这里抓到。
   const colorLiterals = Array.from(
-    wxss.matchAll(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi),
+    wxssNoComments.matchAll(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi),
     (match) => match[0].replace(/\s/g, '').toUpperCase(),
   ).filter((c) => !entryHues.includes(c) && c !== PORTAL_BLUE);
   assert.deepEqual(
@@ -1106,14 +1108,19 @@ test('首页右上角 MTGso 外跳入口', () => {
   assert.doesNotMatch(portalTag, /hover-start-time/,
     '入口不得带这个计时属性，会顶坏八行目录的计数');
   assert.match(portalTag, /hover-stay-time="120"/, '入口用全站通用的按压时长');
-  // 按压把浅蓝底与近黑字对调，仍在同一套配色里
-  assert.match(wxss, /\.home-portal-active\s*\{[^}]*color:\s*#7EC8E3[^}]*background:\s*#0A0A0A/,
-    '按压必须是浅蓝与近黑对调');
+  // 按压只把底沉到近黑，字与边保持白（白字在近黑上 19.3:1，按压态反而最清楚）
+  assert.match(wxss, /\.home-portal-active\s*\{[^}]*background:\s*#0A0A0A/,
+    '按压把底沉到近黑');
+  assert.doesNotMatch(wxss, /\.home-portal-active\s*\{[^}]*color:/,
+    '按压不改字色——字与边始终是白的');
 
   const portalRule = (wxss.match(/\.home-portal\s*\{[^}]*\}/) || [''])[0];
   (portalRule.match(/#[0-9A-Fa-f]{6}/g) || []).forEach((hex) => {
-    assert.ok(['#0A0A0A', '#7EC8E3'].includes(hex.toUpperCase()), `入口用了预期外的 ${hex}`);
+    assert.ok(['#FFFFFF', '#7EC8E3'].includes(hex.toUpperCase()), `入口用了预期外的 ${hex}`);
   });
+  // 字与边都必须是白：这是品牌一致性的要求，也是下面那条例外说明的前提
+  assert.match(portalRule, /border:\s*\d+rpx solid #FFFFFF/, '边框必须是白色');
+  assert.match(portalRule, /(?:^|[;{\s])color:\s*#FFFFFF/, '文字必须是白色');
 
   // 字体必须与页面自己那三套（Courier / 点阵 HomePixel / Archivo Black）都不同：
   // 这是**另一个品牌**的标记，用页面自己的字面会把它读成本页目录的一员。
@@ -1139,15 +1146,21 @@ test('首页右上角 MTGso 外跳入口', () => {
   const portalBg = portalRule.match(/background:\s*(#[0-9A-Fa-f]{6})/)[1];
   const portalFg = portalRule.match(/(?:^|[;{\s])color:\s*(#[0-9A-Fa-f]{6})/)[1];
 
-  // 浅蓝底只能配深字：同一档浅蓝上白字仅约 1.9:1，是不可读的
+  // ⚠ 这一处**明知不达 AA 仍如此选择**，是为与 MTGso 的品牌观感一致的产品决定，
+  // 不是没量过。所以这里不断言「必须过 AA」——那会把一个已定的取舍伪装成 bug；
+  // 改为把实测值钉住：低于现状会红（防止无意中更糟），
+  // 一旦有人把它改到达标，这条也会红，提醒回来把这段说明一并删掉。
   const textContrast = ratio(portalFg, portalBg);
-  assert.ok(textContrast >= 4.5,
-    `入口文字 ${portalFg} 在 ${portalBg} 上只有 ${textContrast.toFixed(2)}:1，未过 AA 4.5:1`);
+  assert.ok(textContrast > 1.8 && textContrast < 2.0,
+    `入口白字在浅蓝上的对比度是 ${textContrast.toFixed(2)}:1（预期约 1.87）。`
+    + '低于此值说明更难读了；高于此值说明已改成达标配色，请同时删掉这段例外说明。');
+  assert.ok(textContrast < 4.5,
+    '这条例外的存在前提就是它不达 AA；若已达标，整段说明应当移除');
 
-  // 浅蓝与页面底色的亮度分离度只有约 1.4:1，方块会糊进背景，
-  // 所以必须有一道硬边把轮廓定住——这不是装饰，是可辨识性
-  assert.match(portalRule, /border:\s*\d+rpx solid #0A0A0A/,
-    '浅蓝与页面底色分离度不足，必须有硬边界定轮廓');
+  // 边框：浅蓝与页面底色只差约 1.4:1，方块本身糊在背景里，
+  // 边框是唯一把轮廓定住的东西，因此必须存在（颜色由品牌决定，此处只锁「有」）
+  assert.match(portalRule, /border:\s*\d+rpx solid #[0-9A-Fa-f]{6}/,
+    '浅蓝与页面底色分离度不足，必须有边框界定轮廓');
   assert.ok(ratio(portalBg, '#D0F03C') < 2,
     '这条断言的前提是浅蓝与底色分离度低；若换了高对比底色，边框要求可以放宽');
 });

@@ -114,22 +114,25 @@ page {
   overflow: hidden;
 }
 
-/* 右上角外跳 MTGso。按 MTGso 自己的浅蓝主题走，圆角方块，像一枚外部应用的图标。
+/* 右上角外跳 MTGso。按 MTGso 自己的浅蓝主题走，圆角方块 + 全白字与边框，
+   整体读作一枚外部应用的图标。
 
-   三个数都是量出来的，不是挑好看：
-   · 浅蓝 #7EC8E3 配近黑字 10.61:1，远过 AA。反过来「浅蓝底白字」只有 1.87:1，
-     完全不可读——浅蓝主题只能配深字。
-   · 浅蓝与页面底色 #D0F03C 的亮度分离度仅 1.44:1，方块会糊进背景没有边界，
-     所以加一道 2rpx 纯黑硬边把轮廓定住。这页本来就满是硬黑线（顶栏 5px、行间 1px），
-     不是新语汇。
-   · right 56rpx 而非贴边：右缘那条竖排 motto 是 fixed 贴屏幕右侧的，
+   ⚠ 这里有一处**明知不达标仍如此选择**的取舍，别当成疏漏改回去：
+   白字打在这档浅蓝上只有 1.87:1，AA 正文要 4.5、UI 部件要 3.0，都不到；
+   白边与页面底色 #D0F03C 只有 1.30:1，边界很软。
+   作为对照，改回近黑是 10.61:1 与 15.28:1。
+   之所以仍用白，是要与 MTGso 的品牌观感一致——这是产品决定，不是没量过。
+   若哪天要兼顾可读性：同色相下白字达 3:1 需把蓝压到 #279ECE，达 4.5:1 需 #1F7FA5，
+   但那就不再是「浅蓝」了。
+
+   其余三个数是量出来的：
+   · right 56rpx 而非贴边——右缘那条竖排 motto 是 fixed 贴屏幕右侧的，
      8px 字高约 15.4rpx 加 14rpx 内边距占掉约 29rpx，24rpx 会与它叠字。
+   · 76rpx 见方，触摸目标 39.5pt。
+   · 字体刻意不用页面那三套（Courier / 点阵 / Archivo Black）：这是另一个品牌的标记，
+     用几何无衬线才读得出「外部应用」而不是本页目录的一员。
 
-   字体刻意不用页面那三套（Courier / 点阵 / Archivo Black）：这是**另一个品牌**的标记，
-   用几何无衬线才读得出「外部应用」而不是本页目录的一员；圆角方块配几何体也更像应用图标。
-
-   圆角是全页唯一的一处。首页原本零圆角，测试锁死「border-radius 声明有且只有一条 0」；
-   这里新增一条，断言相应改为「只允许这两条，且圆角只能出现在本入口上」。 */
+   圆角是全页唯一的一处，测试按「圆角只允许出现在本入口上」校验。 */
 .home-portal {
   position: absolute;
   right: 56rpx;
@@ -139,9 +142,9 @@ page {
   justify-content: center;
   width: 76rpx;
   height: 76rpx;
-  border: 2rpx solid #0A0A0A;
+  border: 2rpx solid #FFFFFF;
   border-radius: 16rpx;
-  color: #0A0A0A;
+  color: #FFFFFF;
   background: #7EC8E3;
   font-family: "Avenir Next", Futura, "Century Gothic", "PingFang SC", "Helvetica Neue", sans-serif;
   font-size: 10px;
@@ -150,9 +153,9 @@ page {
   line-height: 1;
 }
 
-/* 按压反相：浅蓝底与近黑字对调，仍在同一套配色里 */
+/* 按压：字与边保持白，底沉到近黑。白字在近黑上 19.3:1——
+   按压态反而是全流程里最清楚的一态 */
 .home-portal-active {
-  color: #7EC8E3;
   background: #0A0A0A;
 }
 
