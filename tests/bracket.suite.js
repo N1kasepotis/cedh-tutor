@@ -2102,8 +2102,20 @@ test('组合技判定文案不使用内部工程口吻', () => {
 
   // Hullbreaker 那条的标题要点出实际卡名，而不是只写一个抽象类别
   const { COMBO_PATTERNS } = require('../miniprogram/config/bracket-data');
-  const hullbreaker = COMBO_PATTERNS.find((p) => p.id === 'hullbreaker-repeatable-artifacts');
-  assert.ok(hullbreaker, 'Hullbreaker 那条 pattern 应当存在');
-  assert.match(hullbreaker.label, /Hullbreaker Horror/,
-    '标题要写出实际卡名，玩家才对得上号');
+  // 每条 pattern 的标题都必须写出它真正检测的那张卡。
+  // 这条不是文风要求，是准确性：改之前有两条标题写的卡根本不在 required 里——
+  // lumra-land-recursion 标的是 Lumra，实际检测的是 Lotus Cobra；
+  // tayam-role-loop 标的是 Tayam，实际检测的是 Devoted Druid。
+  // 牌里没有那张卡却被告知「检测到 Lumra 框架」，用户只会怀疑整个判定。
+  COMBO_PATTERNS.filter((pattern) => pattern.kind === 'pattern').forEach((pattern) => {
+    const required = pattern.required || [];
+    assert.ok(required.length, `${pattern.id} 缺 required，标题无从核对`);
+    required.forEach((card) => {
+      assert.ok(pattern.label.includes(card),
+        `${pattern.id} 的标题「${pattern.label}」没写出它实际检测的卡「${card}」`);
+    });
+    // 「框架」这类抽象词单独出现时说明标题还停在类别层面，没落到卡上
+    assert.ok(!/^[^A-Za-z]*框架$/.test(pattern.label),
+      `${pattern.id} 的标题只有抽象类别，没有实际卡名`);
+  });
 });
