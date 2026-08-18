@@ -199,41 +199,32 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // imprint 缩到近乎隐形的 fine print（6px）
   assert.match(wxss, /\.home-colophon-item\s*{[^}]*font-size:\s*6px[^}]*text-transform:\s*uppercase/);
   assert.doesNotMatch(wxss, /gradient|box-shadow|backdrop-filter|clip-path|background-image|radial-gradient/);
-  // 首页原本零圆角，全文件只允许 .home-button 那一条显式的 0。
-  // 现在多一条例外：右上角外跳 MTGso 的入口做了钝角，因为它代表的是**另一个应用**，
-  // 圆角方块正是「外部应用图标」的通用形态，与本页目录的直角语汇刻意区分。
-  // 例外只此一处——圆角不得蔓延到页面自身的任何元素上。
+  // 首页零圆角：全文件只允许 .home-button 那一条显式的 0。
+  //（曾为右上角的 MTGso 外跳入口开过一条钝角例外；该入口已整体移除，例外一并撤回。）
   const radiusOwners = Array.from(
     wxss.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*)\{([^{}]*border-radius:\s*([^;]+);[^{}]*)\}/g),
     (m) => ({ selector: m[1].trim(), value: m[3].trim() }),
   );
   assert.deepEqual(
     radiusOwners.map((r) => `${r.selector} → ${r.value}`).sort(),
-    ['.home-button → 0', '.home-portal → 16rpx'],
-    '圆角只允许出现在外跳入口上；页面自身一律直角',
+    ['.home-button → 0'],
+    '首页一律直角，全文件只此一条显式的 border-radius: 0',
   );
 
-  // 色板有两类例外，各自集中在一处、逐条校验，都不许散到别处；
+  // 色板只有一类例外：八枚序号的入口主题色，集中在一处、逐条校验，不许散到别处；
   // 剔掉它们之后，全页其余部分仍必须只用那六个字面量。
-  // 例外一：八枚序号的入口主题色。
   const entryHues = Array.from(
     wxss.matchAll(/\.home-index-[a-z]+\s*\{\s*color:\s*(#[0-9A-F]{6});/gi),
     (match) => match[1].toUpperCase(),
   );
-  // 例外二：右上角外跳入口的 MTGso 浅蓝，只作为那枚方块的底色使用。
-  const PORTAL_BLUE = '#7EC8E3';
-  // 先剥注释再数：注释里为交代来历也会写出这个色值，那不算「用了它」。
-  // 本页多数门禁刻意连注释一起扫，这一条是例外——它数的是使用次数，不是是否出现。
-  const wxssNoComments = wxss.replace(/\/\*[\s\S]*?\*\//g, '');
-  assert.equal((wxssNoComments.match(new RegExp(PORTAL_BLUE, 'gi')) || []).length, 1,
-    'MTGso 浅蓝只许用一处：入口的底色');
   // 扫剥掉注释的版本：色板契约管的是「页面画了什么」，不是「注释提到什么」。
-  // 注释里为交代取舍常要写出备选色值（例如「若要达 AA 需压到某个更深的蓝」），
+  // 注释里为交代取舍常要写出备选色值（例如「若要达 AA 需把某个蓝压到多深」），
   // 那不是使用。真正的使用一定出现在声明里，照样会被这里抓到。
+  const wxssNoComments = wxss.replace(/\/\*[\s\S]*?\*\//g, '');
   const colorLiterals = Array.from(
     wxssNoComments.matchAll(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi),
     (match) => match[0].replace(/\s/g, '').toUpperCase(),
-  ).filter((c) => !entryHues.includes(c) && c !== PORTAL_BLUE);
+  ).filter((c) => !entryHues.includes(c));
   assert.deepEqual(
     new Set(colorLiterals),
     new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', '#00B3FF', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.7)']),
@@ -1051,141 +1042,4 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   assert.doesNotMatch(wxss, /home-field-node/);
   assert.doesNotMatch(wxml, /home-field-node/);
   assert.doesNotMatch(js, /HOME_VORONOI_NODES|fieldNodes/);
-});
-
-// 首页右上角外跳 MTGso。小程序跳小程序只有 wx.navigateToMiniProgram 这一条官方路。
-//
-// MTGso 官方那个跳转页（www.mtgso.cn/to-miniprogram.html）走的是
-// weixin://dl/business/ URL Scheme——那是给外部浏览器唤起小程序用的，
-// 小程序内部没有触发该 scheme 的通道，能从那页复用的只有 AppID 与默认路径。
-test('首页右上角 MTGso 外跳入口', () => {
-  const fs = require('node:fs');
-  const path = require('node:path');
-  const root = path.join(__dirname, '..');
-  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
-  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
-  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.js'), 'utf8');
-
-  // AppID 取自 MTGso 官方跳转页，改动它等于换了一个小程序，必须显眼
-  assert.match(js, /const MTGSO_APPID = 'wx5df3db45daa5d9c0';/);
-  assert.match(js, /wx\.navigateToMiniProgram\(\{[\s\S]{0,200}?appId: MTGSO_APPID/);
-  // 不传 path：官方说明「path 为空则打开首页」，而首页正是要去的地方。
-  // 上一版照抄 MTGso 那个 H5 跳转页里的 pages/index/index，等于在猜对方的页面路径——
-  // 路径不对会直接让跳转失败，上线后按了没反应就是栽在这里。
-  assert.doesNotMatch(js, /goMtgso\(\)[\s\S]{0,240}?path:/,
-    '不要传 path——猜对方的页面路径只会多一个出错点，留空即开首页');
-
-  // fail 必须接住，但**不能吞掉**。上一版写成 fail: () => {}，线上跳不动时页面毫无反应，
-  // 既没法告诉用户也没法定位。要求：用户点「取消」（fail cancel）保持安静，其余把 errMsg 摆出来。
-  const jumpBody = js.match(/goMtgso\(\) \{[\s\S]*?\n  \},/)[0];
-  assert.match(jumpBody, /fail: \(error\) =>/, 'fail 必须接住错误对象，不能是空函数');
-  assert.doesNotMatch(jumpBody, /fail: \(\) => \{\},/,
-    'fail 不得写成空函数——那会把失败原因彻底吞掉');
-  assert.match(jumpBody, /indexOf\('cancel'\) >= 0\) return;/,
-    '用户主动取消是正常操作，必须安静返回，不能报错');
-  // 必须把 errMsg 插进提示文案本身。只断言「文件里同时出现 errMsg 与 showToast」是不够的：
-  // 把提示改成一句固定的「打开失败」照样能匹配，而那正好丢掉唯一能定位问题的信息。
-  assert.match(jumpBody, /showToast\(\{ title: `[^`]*\$\{message\}`/,
-    '提示里必须带上 errMsg 本身，否则线上跳不动时依然无从定位');
-  // 微信自 2.3.0 起会在跳转前统一弹确认框，自建二次确认等于问两遍
-  assert.doesNotMatch(js, /goMtgso\(\) \{[\s\S]{0,200}?showModal/,
-    '不要自建二次确认——微信已经统一弹框了');
-
-  // 必须由点击触发：微信自 2.3.0 起不允许未经用户点击就自动跳转
-  assert.match(wxml, /class="home-portal"[\s\S]{0,260}?bindtap="goMtgso"/);
-  // 文案按品牌写法大小写：MTGso，不是全大写
-  assert.match(wxml, />MTGso<\/view>/, '入口文案必须是 MTGso（品牌写法），不是全大写');
-  // 位置：贴右缘，top 绑导航让位高度。绝对定位从 padding box 外沿起算，
-  // 写死 0 会顶到微信胶囊上去
-  assert.match(wxml, /class="home-portal"\s*\n\s*style="top: \{\{homeNavClearancePx\}\}px;"/,
-    '入口的 top 必须绑 homeNavClearancePx，否则会压到微信胶囊');
-  assert.match(wxss, /\.home-portal\s*\{[^}]*position:\s*absolute/);
-  assert.match(wxss, /\.home-hero\s*\{[^}]*position:\s*relative/,
-    'hero 必须是定位上下文，否则入口会相对整页定位');
-
-  // 方形，不斜切
-  const portalW = Number(wxss.match(/\.home-portal\s*\{[^}]*width:\s*(\d+)rpx/)[1]);
-  const portalH = Number(wxss.match(/\.home-portal\s*\{[^}]*height:\s*(\d+)rpx/)[1]);
-  assert.equal(portalW, portalH, '入口必须是正方形');
-  assert.doesNotMatch(wxss, /\.home-portal\s*\{[^}]*transform:\s*skew/, '入口不再斜切');
-
-  // 必须让开右缘那条竖排 motto：它是 position: fixed 贴边的，
-  // 8px 字高约 15.4rpx 再加 14rpx 内边距，占掉右侧约 29rpx。
-  // 初版写 right: 24rpx 正落在带内，两者叠字。
-  const portalRight = Number(wxss.match(/\.home-portal\s*\{[^}]*right:\s*(\d+)rpx/)[1]);
-  assert.ok(portalRight >= 40,
-    `入口 right 只有 ${portalRight}rpx，会压到右缘那条竖排 motto（约占 29rpx）`);
-
-  // 不得蹭用八行目录的按压节奏：那两个计时属性的取值被按出现次数恰好 8 次校验。
-  // 注意这条断言连注释一起扫，所以这里也不能写出那两个字面量——
-  // 本次实现就因为在 wxml 注释里写了它们，把计数顶成了 9。
-  const portalTag = (wxml.match(/<view\s*\n\s*class="home-portal"[\s\S]*?>/) || [''])[0];
-  assert.doesNotMatch(portalTag, /hover-start-time/,
-    '入口不得带这个计时属性，会顶坏八行目录的计数');
-  assert.match(portalTag, /hover-stay-time="120"/, '入口用全站通用的按压时长');
-  // 按压只把底沉到近黑，字与边保持白（白字在近黑上 19.3:1，按压态反而最清楚）
-  assert.match(wxss, /\.home-portal-active\s*\{[^}]*background:\s*#0A0A0A/,
-    '按压把底沉到近黑');
-  assert.doesNotMatch(wxss, /\.home-portal-active\s*\{[^}]*color:/,
-    '按压不改字色——字与边始终是白的');
-
-  const portalRule = (wxss.match(/\.home-portal\s*\{[^}]*\}/) || [''])[0];
-  (portalRule.match(/#[0-9A-Fa-f]{6}/g) || []).forEach((hex) => {
-    assert.ok(['#FFFFFF', '#7EC8E3'].includes(hex.toUpperCase()), `入口用了预期外的 ${hex}`);
-  });
-  // 字与边都必须是白：这是品牌一致性的要求，也是下面那条例外说明的前提
-  assert.match(portalRule, /border:\s*\d+rpx solid #FFFFFF/, '边框必须是白色');
-  assert.match(portalRule, /(?:^|[;{\s])color:\s*#FFFFFF/, '文字必须是白色');
-
-  // 字体必须与页面自己那三套（Courier / 点阵 HomePixel / Archivo Black）都不同：
-  // 这是**另一个品牌**的标记，用页面自己的字面会把它读成本页目录的一员。
-  // 几何无衬线配圆角方块，才读得出「外部应用图标」。
-  const portalFont = portalRule.match(/font-family:\s*([^;]+);/)[1];
-  ['Courier', 'HomePixel', 'cEDHDisplay'].forEach((own) => {
-    assert.ok(!portalFont.includes(own),
-      `入口不得用页面自己的字面 ${own}——它代表的是另一个品牌`);
-  });
-  assert.match(portalFont, /Avenir Next|Futura|Century Gothic/,
-    '入口用几何无衬线，与圆角方块的应用图标形态相配');
-
-  // 字号要小到「MTGso」五个字母能落在方块内圈里。按几何无衬线约 0.55em 的平均字宽估，
-  // 再扣掉两道 2rpx 边框——不写死某个字号，改了方块尺寸这条也跟着自适应。
-  const portalFontPx = Number(portalRule.match(/font-size:\s*(\d+)px/)[1]);
-  const portalBorder = Number(portalRule.match(/border:\s*(\d+)rpx/)[1]);
-  const innerRpx = portalW - portalBorder * 2;
-  const labelRpx = ('MTGso'.length * portalFontPx * 0.55) / 0.52; // px → rpx（750 基准）
-  assert.ok(labelRpx <= innerRpx,
-    `「MTGso」在 ${portalFontPx}px 下约 ${labelRpx.toFixed(0)}rpx 宽，`
-    + `超出方块内圈 ${innerRpx}rpx——字号要再小一档或方块要放大`);
-
-  // 色值都从样式里读回来再算，不写死常量——写死的话改了样式这条照样绿。
-  const luminance = (hex) => {
-    const chan = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
-      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-    return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2];
-  };
-  const ratio = (a, b) => {
-    const [x, y] = [luminance(a), luminance(b)];
-    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-  };
-  const portalBg = portalRule.match(/background:\s*(#[0-9A-Fa-f]{6})/)[1];
-  const portalFg = portalRule.match(/(?:^|[;{\s])color:\s*(#[0-9A-Fa-f]{6})/)[1];
-
-  // ⚠ 这一处**明知不达 AA 仍如此选择**，是为与 MTGso 的品牌观感一致的产品决定，
-  // 不是没量过。所以这里不断言「必须过 AA」——那会把一个已定的取舍伪装成 bug；
-  // 改为把实测值钉住：低于现状会红（防止无意中更糟），
-  // 一旦有人把它改到达标，这条也会红，提醒回来把这段说明一并删掉。
-  const textContrast = ratio(portalFg, portalBg);
-  assert.ok(textContrast > 1.8 && textContrast < 2.0,
-    `入口白字在浅蓝上的对比度是 ${textContrast.toFixed(2)}:1（预期约 1.87）。`
-    + '低于此值说明更难读了；高于此值说明已改成达标配色，请同时删掉这段例外说明。');
-  assert.ok(textContrast < 4.5,
-    '这条例外的存在前提就是它不达 AA；若已达标，整段说明应当移除');
-
-  // 边框：浅蓝与页面底色只差约 1.4:1，方块本身糊在背景里，
-  // 边框是唯一把轮廓定住的东西，因此必须存在（颜色由品牌决定，此处只锁「有」）
-  assert.match(portalRule, /border:\s*\d+rpx solid #[0-9A-Fa-f]{6}/,
-    '浅蓝与页面底色分离度不足，必须有边框界定轮廓');
-  assert.ok(ratio(portalBg, '#D0F03C') < 2,
-    '这条断言的前提是浅蓝与底色分离度低；若换了高对比底色，边框要求可以放宽');
 });
