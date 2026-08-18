@@ -114,39 +114,46 @@ page {
   overflow: hidden;
 }
 
-/* 右上角外跳 MTGso。用 MTGso 的蓝白配色，方形不斜切。
-   蓝取 #007DB2：它与全页事故色 #00B3FF 同色相（198°），只压低了明度——
-   因为白字打在 #00B3FF 上只有 2.36:1，远不到 AA 4.5:1，压到这一档才够 4.59:1。
-   这是全页色板的第二类例外（第一类是八枚序号的入口主题色），同样集中在一处。
+/* 右上角外跳 MTGso。按 MTGso 自己的浅蓝主题走，圆角方块，像一枚外部应用的图标。
 
-   right 从 24rpx 挪到 56rpx：右缘那条竖排 motto 是 position: fixed 贴边的，
-   8px 字高约 15.4rpx 再加 14rpx 内边距，占掉右侧约 29rpx——原来的 24rpx 正落在带内，
-   所以会重叠。56rpx 留出 27rpx 间隙。
+   三个数都是量出来的，不是挑好看：
+   · 浅蓝 #7EC8E3 配近黑字 10.61:1，远过 AA。反过来「浅蓝底白字」只有 1.87:1，
+     完全不可读——浅蓝主题只能配深字。
+   · 浅蓝与页面底色 #D0F03C 的亮度分离度仅 1.44:1，方块会糊进背景没有边界，
+     所以加一道 2rpx 纯黑硬边把轮廓定住。这页本来就满是硬黑线（顶栏 5px、行间 1px），
+     不是新语汇。
+   · right 56rpx 而非贴边：右缘那条竖排 motto 是 fixed 贴屏幕右侧的，
+     8px 字高约 15.4rpx 加 14rpx 内边距占掉约 29rpx，24rpx 会与它叠字。
 
-   刻意不加 border-radius：首页测试要求全文件的 border-radius 声明有且只有一条 0，
-   这里再写一条（哪怕也是 0）都会让那条断言失败；默认本来就是直角。
-   位置由内联 top 绑 homeNavClearancePx 给出，见 wxml 的说明。 */
+   字体刻意不用页面那三套（Courier / 点阵 / Archivo Black）：这是**另一个品牌**的标记，
+   用几何无衬线才读得出「外部应用」而不是本页目录的一员；圆角方块配几何体也更像应用图标。
+
+   圆角是全页唯一的一处。首页原本零圆角，测试锁死「border-radius 声明有且只有一条 0」；
+   这里新增一条，断言相应改为「只允许这两条，且圆角只能出现在本入口上」。 */
 .home-portal {
   position: absolute;
   right: 56rpx;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 76rpx;
   height: 76rpx;
-  color: #FFFFFF;
-  background: #007DB2;
-  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
+  border: 2rpx solid #0A0A0A;
+  border-radius: 16rpx;
+  color: #0A0A0A;
+  background: #7EC8E3;
+  font-family: "Avenir Next", Futura, "Century Gothic", "PingFang SC", "Helvetica Neue", sans-serif;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 0.5px;
+  letter-spacing: 0;
   line-height: 1;
 }
 
-/* 按压在蓝白之间反相：底变白、字变蓝，仍是同一套配色 */
+/* 按压反相：浅蓝底与近黑字对调，仍在同一套配色里 */
 .home-portal-active {
-  color: #007DB2;
-  background: #FFFFFF;
+  color: #7EC8E3;
+  background: #0A0A0A;
 }
 
 /* 规则宣言：满墙涂鸦式压迫感——极密行距、整体轻微倾斜、贴边溢出，不再优雅留白 */

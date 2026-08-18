@@ -199,9 +199,18 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // imprint 缩到近乎隐形的 fine print（6px）
   assert.match(wxss, /\.home-colophon-item\s*{[^}]*font-size:\s*6px[^}]*text-transform:\s*uppercase/);
   assert.doesNotMatch(wxss, /gradient|box-shadow|backdrop-filter|clip-path|background-image|radial-gradient/);
+  // 首页原本零圆角，全文件只允许 .home-button 那一条显式的 0。
+  // 现在多一条例外：右上角外跳 MTGso 的入口做了钝角，因为它代表的是**另一个应用**，
+  // 圆角方块正是「外部应用图标」的通用形态，与本页目录的直角语汇刻意区分。
+  // 例外只此一处——圆角不得蔓延到页面自身的任何元素上。
+  const radiusOwners = Array.from(
+    wxss.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*)\{([^{}]*border-radius:\s*([^;]+);[^{}]*)\}/g),
+    (m) => ({ selector: m[1].trim(), value: m[3].trim() }),
+  );
   assert.deepEqual(
-    Array.from(wxss.matchAll(/border-radius:\s*([^;]+);/g), (match) => match[1].trim()),
-    ['0'],
+    radiusOwners.map((r) => `${r.selector} → ${r.value}`).sort(),
+    ['.home-button → 0', '.home-portal → 16rpx'],
+    '圆角只允许出现在外跳入口上；页面自身一律直角',
   );
 
   // 色板有两类例外，各自集中在一处、逐条校验，都不许散到别处；
@@ -211,14 +220,14 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     wxss.matchAll(/\.home-index-[a-z]+\s*\{\s*color:\s*(#[0-9A-F]{6});/gi),
     (match) => match[1].toUpperCase(),
   );
-  // 例外二：右上角外跳入口的 MTGso 蓝。它与事故色 #00B3FF 同色相（198°），只压低了明度——
-  // 白字打在 #00B3FF 上仅 2.36:1，远不到 AA 4.5:1；压到 #007DB2 才够 4.59:1。
-  const PORTAL_BLUE = '#007DB2';
+  // 例外二：右上角外跳入口的 MTGso 浅蓝。浅蓝底只能配深字——白字在这一档上仅 1.87:1，
+  // 而近黑字有 10.61:1。它与页面底色的亮度分离度只有 1.44:1，靠一道硬黑边定住轮廓。
+  const PORTAL_BLUE = '#7EC8E3';
   // 先剥注释再数：注释里为交代来历也会写出这个色值，那不算「用了它」。
   // 本页多数门禁刻意连注释一起扫，这一条是例外——它数的是使用次数，不是是否出现。
   const wxssNoComments = wxss.replace(/\/\*[\s\S]*?\*\//g, '');
   assert.equal((wxssNoComments.match(new RegExp(PORTAL_BLUE, 'gi')) || []).length, 2,
-    'MTGso 蓝只许用两处：入口常态底色与按压态字色');
+    'MTGso 浅蓝只许用两处：入口常态底色与按压态字色');
   const colorLiterals = Array.from(
     wxss.matchAll(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi),
     (match) => match[0].replace(/\s/g, '').toUpperCase(),
@@ -1097,28 +1106,48 @@ test('首页右上角 MTGso 外跳入口', () => {
   assert.doesNotMatch(portalTag, /hover-start-time/,
     '入口不得带这个计时属性，会顶坏八行目录的计数');
   assert.match(portalTag, /hover-stay-time="120"/, '入口用全站通用的按压时长');
-  // 按压在蓝白之间反相：底变白、字变蓝，仍是同一套配色
-  assert.match(wxss, /\.home-portal-active\s*\{[^}]*color:\s*#007DB2[^}]*background:\s*#FFFFFF/,
-    '按压必须在蓝白之间反相');
+  // 按压把浅蓝底与近黑字对调，仍在同一套配色里
+  assert.match(wxss, /\.home-portal-active\s*\{[^}]*color:\s*#7EC8E3[^}]*background:\s*#0A0A0A/,
+    '按压必须是浅蓝与近黑对调');
 
-  // 首页禁令：入口不得引入新色板，也不得多写一条 border-radius
-  //（全文件的 border-radius 声明有且只有一条 0，再写一条哪怕也是 0 都会断）
   const portalRule = (wxss.match(/\.home-portal\s*\{[^}]*\}/) || [''])[0];
-  assert.doesNotMatch(portalRule, /border-radius/,
-    '不要给入口写 border-radius——全文件只允许存在一条，默认本来就是直角');
   (portalRule.match(/#[0-9A-Fa-f]{6}/g) || []).forEach((hex) => {
-    assert.ok(['#FFFFFF', '#007DB2'].includes(hex.toUpperCase()), `入口用了预期外的 ${hex}`);
+    assert.ok(['#0A0A0A', '#7EC8E3'].includes(hex.toUpperCase()), `入口用了预期外的 ${hex}`);
   });
-  // 白字打在这枚蓝上必须过 AA：直接用事故色 #00B3FF 只有 2.36:1，是不可读的。
-  // 色值从样式里读回来，而不是写死常量——写死的话改了样式这条照样绿。
-  const PORTAL_BLUE = portalRule.match(/background:\s*(#[0-9A-Fa-f]{6})/)[1];
+
+  // 字体必须与页面自己那三套（Courier / 点阵 HomePixel / Archivo Black）都不同：
+  // 这是**另一个品牌**的标记，用页面自己的字面会把它读成本页目录的一员。
+  // 几何无衬线配圆角方块，才读得出「外部应用图标」。
+  const portalFont = portalRule.match(/font-family:\s*([^;]+);/)[1];
+  ['Courier', 'HomePixel', 'cEDHDisplay'].forEach((own) => {
+    assert.ok(!portalFont.includes(own),
+      `入口不得用页面自己的字面 ${own}——它代表的是另一个品牌`);
+  });
+  assert.match(portalFont, /Avenir Next|Futura|Century Gothic/,
+    '入口用几何无衬线，与圆角方块的应用图标形态相配');
+
+  // 色值都从样式里读回来再算，不写死常量——写死的话改了样式这条照样绿。
   const luminance = (hex) => {
     const chan = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
       .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
     return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2];
   };
-  const [lw, lb] = [luminance('#FFFFFF'), luminance(PORTAL_BLUE)];
-  const contrast = (Math.max(lw, lb) + 0.05) / (Math.min(lw, lb) + 0.05);
-  assert.ok(contrast >= 4.5,
-    `白字在入口蓝 ${PORTAL_BLUE} 上只有 ${contrast.toFixed(2)}:1，未过 AA 4.5:1`);
+  const ratio = (a, b) => {
+    const [x, y] = [luminance(a), luminance(b)];
+    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
+  };
+  const portalBg = portalRule.match(/background:\s*(#[0-9A-Fa-f]{6})/)[1];
+  const portalFg = portalRule.match(/(?:^|[;{\s])color:\s*(#[0-9A-Fa-f]{6})/)[1];
+
+  // 浅蓝底只能配深字：同一档浅蓝上白字仅约 1.9:1，是不可读的
+  const textContrast = ratio(portalFg, portalBg);
+  assert.ok(textContrast >= 4.5,
+    `入口文字 ${portalFg} 在 ${portalBg} 上只有 ${textContrast.toFixed(2)}:1，未过 AA 4.5:1`);
+
+  // 浅蓝与页面底色的亮度分离度只有约 1.4:1，方块会糊进背景，
+  // 所以必须有一道硬边把轮廓定住——这不是装饰，是可辨识性
+  assert.match(portalRule, /border:\s*\d+rpx solid #0A0A0A/,
+    '浅蓝与页面底色分离度不足，必须有硬边界定轮廓');
+  assert.ok(ratio(portalBg, '#D0F03C') < 2,
+    '这条断言的前提是浅蓝与底色分离度低；若换了高对比底色，边框要求可以放宽');
 });
