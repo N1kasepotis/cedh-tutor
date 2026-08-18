@@ -36,12 +36,16 @@ Page({
   },
 
   // 档位展开 / 收起。只翻 expanded，不重建 entries——重建会把整份列表再过一次桥。
+  // 只改被点那一档的 expanded，用路径写法定点更新。
+  // 整体替换 tierGroups 会让每个档位对象都换新身份，微信据此把所有 tier-block 重渲染一遍：
+  // 其余档位的 <image> 全部卸载重挂，配合 lazy-load，重挂时已在视野内的图可能不再触发
+  // 加载观察器——梯度表「有时候图完全显示不出来」就是这么来的，顺带每次展开还白白重下一遍。
   toggleTier(event) {
     const id = event.currentTarget.dataset.id;
+    const index = this.data.tierGroups.findIndex((tier) => tier.id === id);
+    if (index < 0) return;
     this.setData({
-      tierGroups: this.data.tierGroups.map((tier) => (
-        tier.id === id ? { ...tier, expanded: !tier.expanded } : tier
-      )),
+      [`tierGroups[${index}].expanded`]: !this.data.tierGroups[index].expanded,
     });
   },
 

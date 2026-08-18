@@ -564,16 +564,29 @@ test('环境梯度：T3/T4 默认收起，收起的档位整块不进渲染树',
     `首屏仍要渲染 ${shown}/${total} 张图，收起没起到作用`);
 
   const wxml = fs.readFileSync(path.join(__dirname, '..', 'miniprogram/pages/meta/meta.wxml'), 'utf8');
-  // 必须是 wx:if 而不是 hidden：hidden 只是不显示，image 照样会发请求
-  assert.match(wxml, /class="deck-row"\s*\n\s*wx:if="\{\{item\.expanded\}\}"/);
+  // 两条都直接关系到「有时候整档图不显示」：
+  // ① 必须用 wx:if 而不是 hidden——hidden 只是不显示，image 照样会发请求。
+  // ② wx:if 必须挂在包住 wx:for 的 block 上，不能与 wx:for 写在同一个元素上：
+  //    同元素时 wx:for 会重绑循环作用域，wx:if 里的 item 指外层档位还是被内层遮蔽
+  //    并无保证，不同基础库版本表现不一致。
+  assert.match(wxml, /<block wx:if="\{\{item\.expanded\}\}">\s*\n\s*<view\s*\n\s*class="deck-row"/,
+    'wx:if 必须挂在包住 wx:for 的 block 上');
+  assert.doesNotMatch(wxml, /class="deck-row"[\s\S]{0,200}?wx:if=/,
+    'deck-row 自身不得再带 wx:if——与 wx:for 同元素时作用域没有保证');
   assert.doesNotMatch(wxml, /class="deck-row"[^>]*hidden=/);
   // 档位标题要能点开、要有可读的无障碍标签
   assert.match(wxml, /class="tier-head"[\s\S]{0,300}?bindtap="toggleTier"/);
   assert.match(wxml, /aria-label="\{\{item\.label\}\} 档，\{\{item\.count\}\} 套/);
 
   const js = fs.readFileSync(path.join(__dirname, '..', 'miniprogram/pages/meta/meta.js'), 'utf8');
-  // 只翻 expanded，不重建 entries——重建会把整份列表再过一次桥
-  assert.match(js, /tier\.id === id \? \{ \.\.\.tier, expanded: !tier\.expanded \} : tier/);
+  // 必须定点更新那一档的 expanded。整体替换 tierGroups 会让每个档位对象都换新身份，
+  // 微信据此把所有 tier-block 重渲染一遍：其余档位的 <image> 全部卸载重挂，
+  // 配合 lazy-load，重挂时已在视野内的图可能不再触发加载观察器——这正是
+  // 「有时候图完全显示不出来」的成因；顺带每次展开还把已加载的图白白重下一遍。
+  assert.match(js, /\[`tierGroups\[\$\{index\}\]\.expanded`\]: !this\.data\.tierGroups\[index\]\.expanded/,
+    '展开/收起必须用路径写法定点更新，不能整体替换 tierGroups');
+  assert.doesNotMatch(js, /tierGroups: this\.data\.tierGroups\.map/,
+    '不得整体替换 tierGroups——那会让所有档位的图卸载重挂');
 });
 
 // 这条锁的是构建脚本本身。Scryfall 会用 400 generic_user_agent 拒掉使用 HTTP 库
