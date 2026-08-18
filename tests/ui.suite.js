@@ -204,16 +204,25 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     ['0'],
   );
 
-  // 序号的八枚入口主题色是色板上唯一的例外，单独收在一处、逐条校验（见下），
-  // 不许散到别处；剔掉它们之后，全页其余部分仍必须只用那六个字面量
+  // 色板有两类例外，各自集中在一处、逐条校验，都不许散到别处；
+  // 剔掉它们之后，全页其余部分仍必须只用那六个字面量。
+  // 例外一：八枚序号的入口主题色。
   const entryHues = Array.from(
     wxss.matchAll(/\.home-index-[a-z]+\s*\{\s*color:\s*(#[0-9A-F]{6});/gi),
     (match) => match[1].toUpperCase(),
   );
+  // 例外二：右上角外跳入口的 MTGso 蓝。它与事故色 #00B3FF 同色相（198°），只压低了明度——
+  // 白字打在 #00B3FF 上仅 2.36:1，远不到 AA 4.5:1；压到 #007DB2 才够 4.59:1。
+  const PORTAL_BLUE = '#007DB2';
+  // 先剥注释再数：注释里为交代来历也会写出这个色值，那不算「用了它」。
+  // 本页多数门禁刻意连注释一起扫，这一条是例外——它数的是使用次数，不是是否出现。
+  const wxssNoComments = wxss.replace(/\/\*[\s\S]*?\*\//g, '');
+  assert.equal((wxssNoComments.match(new RegExp(PORTAL_BLUE, 'gi')) || []).length, 2,
+    'MTGso 蓝只许用两处：入口常态底色与按压态字色');
   const colorLiterals = Array.from(
     wxss.matchAll(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi),
     (match) => match[0].replace(/\s/g, '').toUpperCase(),
-  ).filter((c) => !entryHues.includes(c));
+  ).filter((c) => !entryHues.includes(c) && c !== PORTAL_BLUE);
   assert.deepEqual(
     new Set(colorLiterals),
     new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', '#00B3FF', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.7)']),
@@ -1058,13 +1067,28 @@ test('首页右上角 MTGso 外跳入口', () => {
 
   // 必须由点击触发：微信自 2.3.0 起不允许未经用户点击就自动跳转
   assert.match(wxml, /class="home-portal"[\s\S]{0,260}?bindtap="goMtgso"/);
+  // 文案按品牌写法大小写：MTGso，不是全大写
+  assert.match(wxml, />MTGso<\/view>/, '入口文案必须是 MTGso（品牌写法），不是全大写');
   // 位置：贴右缘，top 绑导航让位高度。绝对定位从 padding box 外沿起算，
   // 写死 0 会顶到微信胶囊上去
   assert.match(wxml, /class="home-portal"\s*\n\s*style="top: \{\{homeNavClearancePx\}\}px;"/,
     '入口的 top 必须绑 homeNavClearancePx，否则会压到微信胶囊');
-  assert.match(wxss, /\.home-portal\s*\{[^}]*position:\s*absolute[^}]*right:\s*\d+rpx/);
+  assert.match(wxss, /\.home-portal\s*\{[^}]*position:\s*absolute/);
   assert.match(wxss, /\.home-hero\s*\{[^}]*position:\s*relative/,
     'hero 必须是定位上下文，否则入口会相对整页定位');
+
+  // 方形，不斜切
+  const portalW = Number(wxss.match(/\.home-portal\s*\{[^}]*width:\s*(\d+)rpx/)[1]);
+  const portalH = Number(wxss.match(/\.home-portal\s*\{[^}]*height:\s*(\d+)rpx/)[1]);
+  assert.equal(portalW, portalH, '入口必须是正方形');
+  assert.doesNotMatch(wxss, /\.home-portal\s*\{[^}]*transform:\s*skew/, '入口不再斜切');
+
+  // 必须让开右缘那条竖排 motto：它是 position: fixed 贴边的，
+  // 8px 字高约 15.4rpx 再加 14rpx 内边距，占掉右侧约 29rpx。
+  // 初版写 right: 24rpx 正落在带内，两者叠字。
+  const portalRight = Number(wxss.match(/\.home-portal\s*\{[^}]*right:\s*(\d+)rpx/)[1]);
+  assert.ok(portalRight >= 40,
+    `入口 right 只有 ${portalRight}rpx，会压到右缘那条竖排 motto（约占 29rpx）`);
 
   // 不得蹭用八行目录的按压节奏：那两个计时属性的取值被按出现次数恰好 8 次校验。
   // 注意这条断言连注释一起扫，所以这里也不能写出那两个字面量——
@@ -1073,8 +1097,9 @@ test('首页右上角 MTGso 外跳入口', () => {
   assert.doesNotMatch(portalTag, /hover-start-time/,
     '入口不得带这个计时属性，会顶坏八行目录的计数');
   assert.match(portalTag, /hover-stay-time="120"/, '入口用全站通用的按压时长');
-  assert.match(wxss, /\.home-portal-active\s*\{[^}]*color:\s*#00B3FF/,
-    '按压反相为电光蓝字，与八行目录同一套语汇');
+  // 按压在蓝白之间反相：底变白、字变蓝，仍是同一套配色
+  assert.match(wxss, /\.home-portal-active\s*\{[^}]*color:\s*#007DB2[^}]*background:\s*#FFFFFF/,
+    '按压必须在蓝白之间反相');
 
   // 首页禁令：入口不得引入新色板，也不得多写一条 border-radius
   //（全文件的 border-radius 声明有且只有一条 0，再写一条哪怕也是 0 都会断）
@@ -1082,6 +1107,18 @@ test('首页右上角 MTGso 外跳入口', () => {
   assert.doesNotMatch(portalRule, /border-radius/,
     '不要给入口写 border-radius——全文件只允许存在一条，默认本来就是直角');
   (portalRule.match(/#[0-9A-Fa-f]{6}/g) || []).forEach((hex) => {
-    assert.ok(['#D0F03C', '#0A0A0A'].includes(hex.toUpperCase()), `入口用了色板外的 ${hex}`);
+    assert.ok(['#FFFFFF', '#007DB2'].includes(hex.toUpperCase()), `入口用了预期外的 ${hex}`);
   });
+  // 白字打在这枚蓝上必须过 AA：直接用事故色 #00B3FF 只有 2.36:1，是不可读的。
+  // 色值从样式里读回来，而不是写死常量——写死的话改了样式这条照样绿。
+  const PORTAL_BLUE = portalRule.match(/background:\s*(#[0-9A-Fa-f]{6})/)[1];
+  const luminance = (hex) => {
+    const chan = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
+      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2];
+  };
+  const [lw, lb] = [luminance('#FFFFFF'), luminance(PORTAL_BLUE)];
+  const contrast = (Math.max(lw, lb) + 0.05) / (Math.min(lw, lb) + 0.05);
+  assert.ok(contrast >= 4.5,
+    `白字在入口蓝 ${PORTAL_BLUE} 上只有 ${contrast.toFixed(2)}:1，未过 AA 4.5:1`);
 });

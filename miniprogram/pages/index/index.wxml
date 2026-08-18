@@ -24,7 +24,7 @@
         hover-class="home-portal-active"
         hover-stay-time="120"
         bindtap="goMtgso"
-      >MTGSO</view>
+      >MTGso</view>
       <view class="home-format-notes" aria-label="Commander format annotations">
         <text class="home-format-note {{redactionLine === 0 ? 'is-redacted' : ''}}">RULE 903 DEFINES EDH AS MULTIPLAYER COMMANDER</text>
         <text class="home-format-note home-format-note-next {{redactionLine === 1 ? 'is-redacted' : ''}}">EVERY DECK PLAYS 100 SINGLETON CARDS</text>
@@ -108,7 +108,6 @@
           <text class="home-button-zh">环境梯度</text>
           <text class="home-button-en">META TIER LIST</text>
         </view>
-        <text class="home-button-flag">NEW</text>
       </view>
     </view>
 

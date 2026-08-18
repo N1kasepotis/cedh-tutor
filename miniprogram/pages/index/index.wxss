@@ -114,28 +114,39 @@ page {
   overflow: hidden;
 }
 
-/* 右上角外跳 MTGso。沿用注释墙那套「审查涂黑」语汇：实心黑块 + 底色字，
-   再借 NEW 角标的 skewX(-12deg) 与被拉变形的字标呼应——不引入任何新的视觉语汇。
+/* 右上角外跳 MTGso。用 MTGso 的蓝白配色，方形不斜切。
+   蓝取 #007DB2：它与全页事故色 #00B3FF 同色相（198°），只压低了明度——
+   因为白字打在 #00B3FF 上只有 2.36:1，远不到 AA 4.5:1，压到这一档才够 4.59:1。
+   这是全页色板的第二类例外（第一类是八枚序号的入口主题色），同样集中在一处。
+
+   right 从 24rpx 挪到 56rpx：右缘那条竖排 motto 是 position: fixed 贴边的，
+   8px 字高约 15.4rpx 再加 14rpx 内边距，占掉右侧约 29rpx——原来的 24rpx 正落在带内，
+   所以会重叠。56rpx 留出 27rpx 间隙。
+
    刻意不加 border-radius：首页测试要求全文件的 border-radius 声明有且只有一条 0，
    这里再写一条（哪怕也是 0）都会让那条断言失败；默认本来就是直角。
    位置由内联 top 绑 homeNavClearancePx 给出，见 wxml 的说明。 */
 .home-portal {
   position: absolute;
-  right: 24rpx;
-  padding: 4rpx 12rpx;
-  color: #D0F03C;
-  background: #0A0A0A;
+  right: 56rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 76rpx;
+  height: 76rpx;
+  color: #FFFFFF;
+  background: #007DB2;
   font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
   font-size: 10px;
   font-weight: 700;
-  letter-spacing: 1.5px;
-  line-height: 1.2;
-  transform: skewX(-12deg);
+  letter-spacing: 0.5px;
+  line-height: 1;
 }
 
-/* 按压反相为电光蓝字，与八行目录同一套「反相」语汇 */
+/* 按压在蓝白之间反相：底变白、字变蓝，仍是同一套配色 */
 .home-portal-active {
-  color: #00B3FF;
+  color: #007DB2;
+  background: #FFFFFF;
 }
 
 /* 规则宣言：满墙涂鸦式压迫感——极密行距、整体轻微倾斜、贴边溢出，不再优雅留白 */
@@ -359,31 +370,6 @@ page {
   text-overflow: ellipsis;
   white-space: nowrap;
   text-transform: uppercase;
-}
-
-/* NEW 角标：用事故色电光蓝——全页唯一的第五色，只在 glitch 行和按压反相时出现，
-   因此它一现身就是全页最扎眼的东西，不需要动效也够抢眼。
-   斜切 -12deg 呼应被 skewX 拉变形的 cEDH Tutor 字标，不是随便贴一个圆角标签。 */
-.home-button-flag {
-  flex: 0 0 auto;
-  margin-left: 16rpx;
-  padding: 3px 8px;
-  color: #0A0A0A;
-  background: #00B3FF;
-  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
-  font-size: 10px;
-  font-weight: 700;
-  letter-spacing: 1.5px;
-  line-height: 1.2;
-  transform: skewX(-12deg);
-  white-space: nowrap;
-}
-
-/* 该行被随机 glitch 命中时整行已是电光蓝底，角标必须反相，
-   否则蓝底蓝块直接糊成一片（与涂黑编号同一类坑） */
-.home-button.is-glitch .home-button-flag {
-  color: #00B3FF;
-  background: #0A0A0A;
 }
 
 /* 粗暴分割：字符 /// 一整行当分隔线 */

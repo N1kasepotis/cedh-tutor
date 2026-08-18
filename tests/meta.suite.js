@@ -168,14 +168,15 @@ test('环境梯度：分组、派生与详情查找', () => {
 // NEW 角标按产品要求常驻，不随「看过」熄灭。既然不再需要判断是否看过，
 // 版本追踪的那一套（meta-tier-version 模块、双端存储键、onShow 比对）也一并移除——
 // 留着只会是没人读的存储写入。
-test('首页 NEW 角标常驻，且不残留版本追踪机制', () => {
+test('首页不再有 NEW 角标，且不残留版本追踪机制', () => {
   const indexJs = readMini('pages/index/index.js');
   const indexWxml = readMini('pages/index/index.wxml');
   const indexWxss = readMini('pages/index/index.wxss');
   const metaJs = readMini('pages/meta/meta.js');
 
-  // 常驻：无条件渲染
-  assert.match(indexWxml, /class="home-button-flag">NEW</);
+  // 角标已撤：模板与样式都不许留孤儿
+  assert.doesNotMatch(indexWxml, /home-button-flag/, 'NEW 角标已撤，模板里不应再有');
+  assert.doesNotMatch(indexWxss, /home-button-flag/, 'NEW 角标已撤，样式里不应留孤儿规则');
   assert.doesNotMatch(indexWxml, /metaIsNew/);
 
   // 版本追踪机制已彻底移除，不留下没人读的存储写入
@@ -187,9 +188,6 @@ test('首页 NEW 角标常驻，且不残留版本追踪机制', () => {
   assert.doesNotMatch(readMini('../scripts/build-meta-tier.js'), /VERSION_TARGET/,
     '构建脚本不应再生成版本号模块');
 
-  // 事故色电光蓝；被 glitch 命中时必须反相，否则蓝底蓝块糊成一片
-  assert.match(indexWxss, /\.home-button-flag\s*{[^}]*background:\s*#00B3FF/);
-  assert.match(indexWxss, /\.home-button\.is-glitch \.home-button-flag\s*{[^}]*background:\s*#0A0A0A/);
 });
 
 test('环境梯度页面：注册齐全、署名可见、外链只复制不内嵌', () => {
