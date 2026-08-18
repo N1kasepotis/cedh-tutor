@@ -67,50 +67,62 @@
 
     <view class="mana-rail {{manaTotal ? '' : 'mana-dim'}}" aria-label="法术力池">
       <view class="mana-cell mana-cell-W {{manaPool.W ? '' : 'mana-zero'}}">
-        <view class="mana-symbol">W</view>
+        <view class="mana-head">
+          <view class="mana-symbol">W</view>
+          <view class="mana-badge">{{manaPool.W}}</view>
+        </view>
         <view class="mana-row">
           <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="白 减一" data-color="W" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
-          <view class="mana-badge">{{manaPool.W}}</view>
           <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="白 加一" data-color="W" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
         </view>
       </view>
       <view class="mana-cell mana-cell-U {{manaPool.U ? '' : 'mana-zero'}}">
-        <view class="mana-symbol">U</view>
+        <view class="mana-head">
+          <view class="mana-symbol">U</view>
+          <view class="mana-badge">{{manaPool.U}}</view>
+        </view>
         <view class="mana-row">
           <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="蓝 减一" data-color="U" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
-          <view class="mana-badge">{{manaPool.U}}</view>
           <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="蓝 加一" data-color="U" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
         </view>
       </view>
       <view class="mana-cell mana-cell-B {{manaPool.B ? '' : 'mana-zero'}}">
-        <view class="mana-symbol">B</view>
+        <view class="mana-head">
+          <view class="mana-symbol">B</view>
+          <view class="mana-badge">{{manaPool.B}}</view>
+        </view>
         <view class="mana-row">
           <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="黑 减一" data-color="B" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
-          <view class="mana-badge">{{manaPool.B}}</view>
           <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="黑 加一" data-color="B" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
         </view>
       </view>
       <view class="mana-cell mana-cell-R {{manaPool.R ? '' : 'mana-zero'}}">
-        <view class="mana-symbol">R</view>
+        <view class="mana-head">
+          <view class="mana-symbol">R</view>
+          <view class="mana-badge">{{manaPool.R}}</view>
+        </view>
         <view class="mana-row">
           <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="红 减一" data-color="R" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
-          <view class="mana-badge">{{manaPool.R}}</view>
           <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="红 加一" data-color="R" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
         </view>
       </view>
       <view class="mana-cell mana-cell-G {{manaPool.G ? '' : 'mana-zero'}}">
-        <view class="mana-symbol">G</view>
+        <view class="mana-head">
+          <view class="mana-symbol">G</view>
+          <view class="mana-badge">{{manaPool.G}}</view>
+        </view>
         <view class="mana-row">
           <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="绿 减一" data-color="G" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
-          <view class="mana-badge">{{manaPool.G}}</view>
           <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="绿 加一" data-color="G" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
         </view>
       </view>
       <view class="mana-cell mana-cell-C {{manaPool.C ? '' : 'mana-zero'}}">
-        <view class="mana-symbol">C</view>
+        <view class="mana-head">
+          <view class="mana-symbol">C</view>
+          <view class="mana-badge">{{manaPool.C}}</view>
+        </view>
         <view class="mana-row">
           <view class="mana-ctrl mana-ctrl-minus" aria-role="button" aria-label="无色 减一" data-color="C" hover-class="pressable-active" hover-stay-time="120" bindtap="manaRemove">−</view>
-          <view class="mana-badge">{{manaPool.C}}</view>
           <view class="mana-ctrl mana-ctrl-plus" aria-role="button" aria-label="无色 加一" data-color="C" hover-class="pressable-active" hover-stay-time="120" bindtap="manaAdd">+</view>
         </view>
       </view>

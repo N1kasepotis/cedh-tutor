@@ -260,9 +260,38 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
 
   // 性能约定：无 keyframe 动画、禁页面滚动
   assert.doesNotMatch(wxss, /animation|keyframes/);
-  // 触控地板：对局高频 ± 控件不得回落到 44rpx / 56rpx 以下
-  assert.match(wxss, /\.mana-ctrl\s*{[\s\S]*?width:\s*44rpx[\s\S]*?height:\s*44rpx/);
+  // 触控地板：对局高频 ± 控件不得回落
+  assert.match(wxss, /\.mana-ctrl\s*{[\s\S]*?width:\s*48rpx[\s\S]*?height:\s*48rpx/);
   assert.match(wxss, /\.life-btn\s*{[\s\S]*?width:\s*56rpx[\s\S]*?height:\s*56rpx/);
+
+  // 法术力格的宽度预算。这一行放 6 个色格 + 1 个总量块，每格能分到的宽度是固定的
+  //（rpx 恒为屏宽的 1/750，所以这笔账在所有机型上一模一样）：
+  //   750 − rail 左右内边距 24 − 6 个间隙 − 总量块(60+4+12) ，再除以 6
+  // 原本每格要塞「减44 + 2 + 数字28 + 2 + 加44 = 120rpx」，而只分到约 100rpx。
+  // .mana-ctrl 默认可收缩，于是被压到约 35rpx 宽却仍是 44rpx 高，
+  // border-radius: 50% 就画成了扁椭圆，相邻两色的按钮还挤在一起。
+  // 修法是把数字提到 symbol 那一排（那排原本只有 44rpx 的 symbol，空着 56rpx），
+  // 下排只留两个按钮。这条断言把这笔账钉住，改任何一个数都要重新算。
+  const rule = (name) => (wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`)) || [''])[0];
+  const px = (name, prop) => {
+    const found = rule(name).match(new RegExp(`${prop}:\\s*(\\d+)rpx`));
+    return found ? Number(found[1]) : null;
+  };
+  const railGap = px('mana-rail', 'gap');
+  const ctrlSize = px('mana-ctrl', 'width');
+  const ctrlGap = px('mana-row', 'gap');
+  assert.ok(railGap && ctrlSize && ctrlGap, '法术力行的三个尺寸必须写成显式 rpx，才能核算预算');
+  const perCell = (750 - 12 * 2 - railGap * 6 - (60 + 4 + 12)) / 6;
+  const rowNeeds = ctrlSize * 2 + ctrlGap;
+  assert.ok(rowNeeds <= perCell,
+    `法术力每格只有 ${perCell.toFixed(1)}rpx，下排却要 ${rowNeeds}rpx——按钮会被压扁成椭圆`);
+  // 数字必须在 symbol 那一排，不能回到按钮中间：回去就又超预算
+  assert.match(wxml, /<view class="mana-head">\s*\n\s*<view class="mana-symbol">/);
+  assert.doesNotMatch(wxml, /mana-ctrl-minus[\s\S]{0,200}?mana-badge[\s\S]{0,200}?mana-ctrl-plus/,
+    '数字不得再回到「减 数 加」的中间——那会让每格超出约 20rpx');
+  // 按钮不得再被挤压：宽高相等才是圆，且不参与收缩
+  assert.equal(ctrlSize, px('mana-ctrl', 'height'), '± 按钮宽高必须相等，否则圆会变椭圆');
+  assert.match(rule('mana-ctrl'), /flex:\s*0 0 auto/, '± 按钮不得参与 flex 收缩');
   const boardBlock = wxml.slice(wxml.indexOf('playtest-board'));
   // 粒子背景提升到页面级：导入态与对局态（含 battlefield）共用同款暗色动态背景
   assert.match(wxml, /<particle-background palette="playtest"><\/particle-background>/);

@@ -410,7 +410,7 @@
 .mana-rail {
   display: flex;
   align-items: stretch;
-  gap: var(--cedh-space-1);
+  gap: 6rpx;
   padding: var(--cedh-space-2) var(--cedh-space-2) 6rpx;
   background: var(--cedh-surface-muted);
   border: var(--cedh-hairline);
@@ -431,6 +431,17 @@
   gap: 6rpx;
 }
 
+/* 数字从「减 数 加」那一行提到 symbol 旁边。原来一格要塞 44+2+28+2+44 = 120rpx，
+   而每格只有约 100rpx，.mana-ctrl 默认可收缩，于是被压到约 35rpx 宽却仍是 44rpx 高，
+   border-radius: 50% 就画成了扁椭圆，相邻两色还挤在一起——截图里看到的就是这个。
+   上排原本只有一个 44rpx 的 symbol，空着 56rpx，正好接得下数字。 */
+.mana-head {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4rpx;
+}
+
 .mana-symbol {
   display: flex;
   align-items: center;
@@ -446,7 +457,8 @@
 .mana-row {
   display: flex;
   align-items: center;
-  gap: 2rpx;
+  gap: 4rpx;
+  justify-content: center;
 }
 
 /* 对局中最高频的点按之一：44rpx 是法术力栏纵向空间内能给到的最大目标 */
@@ -454,8 +466,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 44rpx;
-  height: 44rpx;
+  width: 48rpx;
+  height: 48rpx;
+  flex: 0 0 auto;
   border-radius: 50%;
   font-size: var(--cedh-text-14);
   font-weight: 650;
