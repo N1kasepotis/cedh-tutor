@@ -34,6 +34,12 @@ function getHomeNavClearancePx() {
   return Math.ceil(statusBarHeight + 56);
 }
 
+// MTGso 小程序。AppID 与默认路径取自其官方跳转页 https://www.mtgso.cn/to-miniprogram.html
+// （那一页本身走的是 weixin://dl/business/ URL Scheme，只适用于外部浏览器唤起；
+// 小程序内部要用 wx.navigateToMiniProgram，两者不通用，能复用的只有这两个值。）
+const MTGSO_APPID = 'wx5df3db45daa5d9c0';
+const MTGSO_PATH = 'pages/index/index';
+
 const HOME_ACTION_COUNT = 8;
 // 审查黑条：每次进首页随机涂黑注释墙里的一整行——直接把那一行自己的文字盒染成实心黑，
 // 因此黑条与文字天然等宽等高、必定盖住，不做任何像素定位（字体回退/屏高断点都不会错位）。
@@ -139,6 +145,18 @@ Page({
   goMeta() {
     wx.navigateTo({
       url: '/pages/meta/meta',
+    });
+  },
+
+  // 外跳 MTGso。微信自己会在跳转前弹确认框（基础库 2.3.0 起统一行为），
+  // 所以这里不再自建二次确认，重复问一遍只会更烦。
+  // fail 必须写：用户在那个确认框上点「取消」也会走 fail，
+  // 不接住就是一个没人处理的 Promise 拒绝——本项目已经为同类问题踩过一次坑。
+  goMtgso() {
+    wx.navigateToMiniProgram({
+      appId: MTGSO_APPID,
+      path: MTGSO_PATH,
+      fail: () => {},
     });
   },
 });

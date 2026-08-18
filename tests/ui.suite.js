@@ -1032,3 +1032,56 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   assert.doesNotMatch(wxml, /home-field-node/);
   assert.doesNotMatch(js, /HOME_VORONOI_NODES|fieldNodes/);
 });
+
+// 首页右上角外跳 MTGso。小程序跳小程序只有 wx.navigateToMiniProgram 这一条官方路。
+//
+// MTGso 官方那个跳转页（www.mtgso.cn/to-miniprogram.html）走的是
+// weixin://dl/business/ URL Scheme——那是给外部浏览器唤起小程序用的，
+// 小程序内部没有触发该 scheme 的通道，能从那页复用的只有 AppID 与默认路径。
+test('首页右上角 MTGso 外跳入口', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
+  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
+  const js = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.js'), 'utf8');
+
+  // AppID 取自 MTGso 官方跳转页，改动它等于换了一个小程序，必须显眼
+  assert.match(js, /const MTGSO_APPID = 'wx5df3db45daa5d9c0';/);
+  assert.match(js, /wx\.navigateToMiniProgram\(\{[\s\S]{0,200}?appId: MTGSO_APPID/);
+  // 用户在微信那个确认框上点「取消」也会走 fail；不接住就是一个没人处理的拒绝
+  assert.match(js, /wx\.navigateToMiniProgram\(\{[\s\S]{0,240}?fail: \(\) => \{\},/,
+    'navigateToMiniProgram 必须写 fail：用户取消跳转也会走它');
+  // 微信自 2.3.0 起会在跳转前统一弹确认框，自建二次确认等于问两遍
+  assert.doesNotMatch(js, /goMtgso\(\) \{[\s\S]{0,200}?showModal/,
+    '不要自建二次确认——微信已经统一弹框了');
+
+  // 必须由点击触发：微信自 2.3.0 起不允许未经用户点击就自动跳转
+  assert.match(wxml, /class="home-portal"[\s\S]{0,260}?bindtap="goMtgso"/);
+  // 位置：贴右缘，top 绑导航让位高度。绝对定位从 padding box 外沿起算，
+  // 写死 0 会顶到微信胶囊上去
+  assert.match(wxml, /class="home-portal"\s*\n\s*style="top: \{\{homeNavClearancePx\}\}px;"/,
+    '入口的 top 必须绑 homeNavClearancePx，否则会压到微信胶囊');
+  assert.match(wxss, /\.home-portal\s*\{[^}]*position:\s*absolute[^}]*right:\s*\d+rpx/);
+  assert.match(wxss, /\.home-hero\s*\{[^}]*position:\s*relative/,
+    'hero 必须是定位上下文，否则入口会相对整页定位');
+
+  // 不得蹭用八行目录的按压节奏：那两个计时属性的取值被按出现次数恰好 8 次校验。
+  // 注意这条断言连注释一起扫，所以这里也不能写出那两个字面量——
+  // 本次实现就因为在 wxml 注释里写了它们，把计数顶成了 9。
+  const portalTag = (wxml.match(/<view\s*\n\s*class="home-portal"[\s\S]*?>/) || [''])[0];
+  assert.doesNotMatch(portalTag, /hover-start-time/,
+    '入口不得带这个计时属性，会顶坏八行目录的计数');
+  assert.match(portalTag, /hover-stay-time="120"/, '入口用全站通用的按压时长');
+  assert.match(wxss, /\.home-portal-active\s*\{[^}]*color:\s*#00B3FF/,
+    '按压反相为电光蓝字，与八行目录同一套语汇');
+
+  // 首页禁令：入口不得引入新色板，也不得多写一条 border-radius
+  //（全文件的 border-radius 声明有且只有一条 0，再写一条哪怕也是 0 都会断）
+  const portalRule = (wxss.match(/\.home-portal\s*\{[^}]*\}/) || [''])[0];
+  assert.doesNotMatch(portalRule, /border-radius/,
+    '不要给入口写 border-radius——全文件只允许存在一条，默认本来就是直角');
+  (portalRule.match(/#[0-9A-Fa-f]{6}/g) || []).forEach((hex) => {
+    assert.ok(['#D0F03C', '#0A0A0A'].includes(hex.toUpperCase()), `入口用了色板外的 ${hex}`);
+  });
+});

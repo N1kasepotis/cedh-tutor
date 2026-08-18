@@ -102,6 +102,7 @@ page {
 }
 
 .home-hero {
+  position: relative; /* 右上角外跳入口按它定位 */
   box-sizing: border-box;
   display: flex;
   min-height: 0;
@@ -111,6 +112,30 @@ page {
   padding-bottom: 30rpx;
   padding-left: 20rpx;
   overflow: hidden;
+}
+
+/* 右上角外跳 MTGso。沿用注释墙那套「审查涂黑」语汇：实心黑块 + 底色字，
+   再借 NEW 角标的 skewX(-12deg) 与被拉变形的字标呼应——不引入任何新的视觉语汇。
+   刻意不加 border-radius：首页测试要求全文件的 border-radius 声明有且只有一条 0，
+   这里再写一条（哪怕也是 0）都会让那条断言失败；默认本来就是直角。
+   位置由内联 top 绑 homeNavClearancePx 给出，见 wxml 的说明。 */
+.home-portal {
+  position: absolute;
+  right: 24rpx;
+  padding: 4rpx 12rpx;
+  color: #D0F03C;
+  background: #0A0A0A;
+  font-family: "Courier New", Courier, "Nimbus Mono PS", ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  line-height: 1.2;
+  transform: skewX(-12deg);
+}
+
+/* 按压反相为电光蓝字，与八行目录同一套「反相」语汇 */
+.home-portal-active {
+  color: #00B3FF;
 }
 
 /* 规则宣言：满墙涂鸦式压迫感——极密行距、整体轻微倾斜、贴边溢出，不再优雅留白 */

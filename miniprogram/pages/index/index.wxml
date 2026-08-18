@@ -12,6 +12,19 @@
 
   <view class="home-content">
     <view class="home-hero" style="padding-top: {{homeNavClearancePx}}px;">
+      <!-- 外跳 MTGso。压在胶囊下方、贴右缘：top 与 hero 的 padding-top 绑同一个值，
+           因为绝对定位从 padding box 外沿起算，写 0 会顶到胶囊上去。
+           按压节奏刻意与八行目录不同：那两个计时属性的取值被测试按出现次数恰好 8 次校验，
+           这里蹭用会把计数顶成 9。注意这条注释本身也在扫描范围内，不能写出那两个字面量。 -->
+      <view
+        class="home-portal"
+        style="top: {{homeNavClearancePx}}px;"
+        aria-role="button"
+        aria-label="打开 MTGso 小程序"
+        hover-class="home-portal-active"
+        hover-stay-time="120"
+        bindtap="goMtgso"
+      >MTGSO</view>
       <view class="home-format-notes" aria-label="Commander format annotations">
         <text class="home-format-note {{redactionLine === 0 ? 'is-redacted' : ''}}">RULE 903 DEFINES EDH AS MULTIPLAYER COMMANDER</text>
         <text class="home-format-note home-format-note-next {{redactionLine === 1 ? 'is-redacted' : ''}}">EVERY DECK PLAYS 100 SINGLETON CARDS</text>
