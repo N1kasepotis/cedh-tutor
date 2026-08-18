@@ -626,7 +626,7 @@ test('Combo assembly mana value grades speed objectively and feeds the early-com
   assert.ok(slow.assignedBracket < 5, '合计 5 费（速度 3）不构成早期组合技，不应触发 B5');
   assert.ok(slow.evidence.some((item) => item.code === 'COMBO_FAMILY_SCEPTER_REVERSAL'
     && item.detail.startsWith('检测到完整')
-    && item.detail.includes('条件型无限法术力')
+    && item.detail.includes('有条件的无限法术力')
     && item.detail.includes('启动法术力 2+3')
     && !item.detail.includes('前期即可启动')
     && !item.detail.includes('全套法术力值合计')));
@@ -2072,4 +2072,38 @@ test('Bracket page and two home entries are wired without creating a Meta page',
   assert.doesNotMatch(indexWxss, /--home-accent-rgb|\.home-button-(?:edhti|match|bracket|playtest|life|random|tracker|meta)\s*\{/);
   assert.match(indexWxss, /\.home-button\s*{[\s\S]*border-bottom:\s*1px solid rgba\(0,0,0,0\.35\)/);
   assert.match(indexWxss, /\.home-index-active\s*{[\s\S]*background:\s*#0A0A0A/);
+});
+
+// 面向用户的判定文案不能是内部工程口吻。这条不锁具体措辞（那会让改文案永远在改测试），
+// 只封一份「内部说法黑名单」——它们各自都有明确的毛病：
+//   多角色组件框架 / 只作强度依据 —— 引擎内部的分类术语，用户读不出含义
+//   不冒充 —— 防御性动词，像在跟人辩解，不像在说明
+//   条件型 —— 学术腔，说人话就是「有机会」
+// 组合技判定是这个工具最常被读到的输出，用词生硬会让整份报告显得不可信。
+test('组合技判定文案不使用内部工程口吻', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+  const strip = (s) => s.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+
+  const bracketJs = strip(fs.readFileSync(path.join(root, 'miniprogram/utils/bracket.js'), 'utf8'));
+  const dataJs = strip(fs.readFileSync(path.join(root, 'miniprogram/config/bracket-data.js'), 'utf8'));
+
+  const jargon = ['多角色组件框架', '只作强度依据', '不冒充', '条件型'];
+  jargon.forEach((term) => {
+    assert.ok(!bracketJs.includes(term), `判定文案里不该出现内部说法「${term}」`);
+    assert.ok(!dataJs.includes(term), `组合技配置里不该出现内部说法「${term}」`);
+  });
+
+  // pattern 的说明必须讲清「为什么不锁档位」——这是用户唯一会追问的点。
+  // 只禁黑名单不够：换个同样难懂的说法照样能过，所以正面要求这层因果在。
+  assert.match(bracketJs, /pattern\.result[\s\S]{0,160}?不是固定的两张牌[\s\S]{0,120}?不直接锁定档位下限/,
+    'pattern 说明要讲明「组件可换、不是固定两张牌，所以不锁档位」的因果');
+
+  // Hullbreaker 那条的标题要点出实际卡名，而不是只写一个抽象类别
+  const { COMBO_PATTERNS } = require('../miniprogram/config/bracket-data');
+  const hullbreaker = COMBO_PATTERNS.find((p) => p.id === 'hullbreaker-repeatable-artifacts');
+  assert.ok(hullbreaker, 'Hullbreaker 那条 pattern 应当存在');
+  assert.match(hullbreaker.label, /Hullbreaker Horror/,
+    '标题要写出实际卡名，玩家才对得上号');
 });

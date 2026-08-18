@@ -1218,7 +1218,7 @@ function evaluateBracket(parsed, options = {}) {
       'strength',
       pattern.cards,
       pattern.label,
-      `${pattern.result}，检测到多角色组件框架，只作强度依据，不冒充固定双卡组合技`,
+      `${pattern.result}。这类组件可以互相替换，不是固定的两张牌，能不能凑齐要看当局抓到什么，所以只提高强度判断，不直接锁定档位下限`,
       0,
     ));
   });

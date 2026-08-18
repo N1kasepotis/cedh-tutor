@@ -2,7 +2,7 @@ const {
   decoratePreviewSlots,
   sortRecommendationsForDisplay,
 } = require('../../utils/result-display');
-const { fetchCardImageUris } = require('../../utils/scryfall');
+const { prefetchCardArt, getCardArt } = require('../../utils/card-art');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage } = require('../../utils/storage');
 
@@ -63,50 +63,42 @@ Page({
     return { title: '答几道题，找到你的本命 cEDH 主将' };
   },
 
+  // 一次批量解析全部主将图，解析完只刷一次视图。
+  //
+  // 旧写法是每张卡各发一次 fetchCardImageUris——那是 api.scryfall.com 的按名查询，
+  // 一卡一次往返，且并发被限到 4，五条推荐最多十张图要分三轮跑完；
+  // 每张回来还各自 setData 一遍**整个** recommendations 数组，十次全量过桥。
+  // 换成 /cards/collection 批量：十个名字一次请求，解析完统一刷一次。
   loadPreviewImages(recommendations, signature) {
-    recommendations.forEach((recommendation, recommendIndex) => {
-      recommendation.previewCards.forEach((card, cardIndex) => {
-        fetchCardImageUris(card.name)
-          .then((images) => {
-            if (signature !== this.loadedSignature) return;
-            // API 拿不到图时保留预填的直连 URL，只清 loading，避免把能用的 src 覆盖成空
-            if (!images.artCrop && !images.normal) {
-              this.updatePreviewCard(recommendIndex, cardIndex, { loading: false });
-              return;
-            }
+    const names = [];
+    recommendations.forEach((recommendation) => {
+      (recommendation.previewCards || []).forEach((card) => {
+        if (card && card.name) names.push(card.name);
+      });
+    });
+    if (!names.length) return;
 
-            this.updatePreviewCard(recommendIndex, cardIndex, {
-              artCrop: images.artCrop,
-              normal: images.normal,
-              loading: false,
-            });
+    prefetchCardArt(names).then(() => {
+      // 期间用户可能已经重新匹配，signature 对不上就丢弃这批结果
+      if (signature !== this.loadedSignature) return;
+      this.setData({
+        recommendations: (this.data.recommendations || []).map((recommendation) => (
+          decoratePreviewSlots({
+            ...recommendation,
+            previewCards: (recommendation.previewCards || []).map((card) => {
+              const artCrop = getCardArt(card.name, 'artCrop');
+              const normal = getCardArt(card.name, 'normal');
+              // 没解析到就保留预填的直连地址，只清 loading——
+              // 覆盖成空会把本来能显示的图弄没
+              if (!artCrop && !normal) return { ...card, loading: false };
+              return { ...card, artCrop, normal, loading: false };
+            }),
           })
-          .catch(() => {
-            if (signature !== this.loadedSignature) return;
-            this.updatePreviewCard(recommendIndex, cardIndex, {
-              loading: false,
-            });
-          });
+        )),
       });
     });
   },
 
-  updatePreviewCard(recommendIndex, cardIndex, patch) {
-    const recommendations = (this.data.recommendations || []).map((recommendation, currentRecommendIndex) => {
-      if (currentRecommendIndex !== recommendIndex) return recommendation;
-
-      const previewCards = (recommendation.previewCards || []).map((card, currentCardIndex) => (
-        currentCardIndex === cardIndex ? { ...card, ...patch } : card
-      ));
-
-      return decoratePreviewSlots({
-        ...recommendation,
-        previewCards,
-      });
-    });
-
-    this.setData({ recommendations });
-  },
 
   previewCardImage(event) {
     const current = event.currentTarget.dataset.url;

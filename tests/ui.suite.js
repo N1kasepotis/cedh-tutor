@@ -762,8 +762,26 @@ test('result page copies links and shows Scryfall previews without export UI', (
   assert.match(wxml, /class="secondary-button action-button"[\s\S]*bindtap="goHome"/);
   assert.doesNotMatch(wxml, /id="resultExportCanvas"|action-export-button|bindtap="exportImage"/);
 
-  assert.match(js, /require\('\.\.\/\.\.\/utils\/scryfall'\)/);
-  assert.match(js, /fetchCardImageUris\(card\.name\)/);
+  // 主将图走批量解析，不再一卡一次往返。
+  // 旧写法每张卡各发一次 fetchCardImageUris（按名查询、并发上限 4），
+  // 五条推荐最多十张图要分三轮跑完；每张回来还各自 setData 一遍整个 recommendations 数组。
+  assert.match(js, /require\('\.\.\/\.\.\/utils\/card-art'\)/);
+  assert.match(js, /prefetchCardArt\(names\)\.then\(/,
+    '主将图必须批量解析，不能逐张请求');
+  // 剥注释再判：这条问的是「代码有没有调它」，不是「注释提没提它」。
+  // 上面那段说明为交代来龙去脉正要写出这个函数名，扫原文会把说明本身判成违规。
+  const resultCode = js.replace(/\/\*[\s\S]*?\*\//g, '').replace(/^\s*\/\/.*$/gm, '');
+  assert.doesNotMatch(resultCode, /fetchCardImageUris/,
+    '不得退回逐张按名查询——那是十次往返换一次批量');
+  // 解析完只刷一次。真正要守的是「不能一张卡刷一次」——逐张 setData 会把整个
+  // recommendations 数组反复过桥，十张图就是十次全量序列化。
+  const loadPreviewBody = resultCode.match(/loadPreviewImages\(recommendations, signature\) \{[\s\S]*?\n  \},/)[0];
+  assert.equal((loadPreviewBody.match(/setData\(/g) || []).length, 1,
+    'loadPreviewImages 里只允许一次 setData——每张卡刷一次会把整表反复过桥');
+  // 且那一次必须落在批量解析的回调里。只数「有几次 setData」不够：
+  // 写在逐卡循环里同样只有一处文本，却会按卡片数反复执行。
+  assert.match(loadPreviewBody, /prefetchCardArt\(names\)\.then\([\s\S]*?setData\(/,
+    '唯一那次 setData 必须在批量解析完成后执行，不能落在逐卡循环里');
   assert.match(scryfallJs, /api\.scryfall\.com\/cards\/named/);
   assert.match(scryfallJs, /wx\.request/);
   assert.match(scryfallJs, /Accept:\s*'application\/json'/);
