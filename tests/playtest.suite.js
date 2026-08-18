@@ -264,31 +264,52 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   assert.match(wxss, /\.mana-ctrl\s*{[\s\S]*?width:\s*48rpx[\s\S]*?height:\s*48rpx/);
   assert.match(wxss, /\.life-btn\s*{[\s\S]*?width:\s*56rpx[\s\S]*?height:\s*56rpx/);
 
-  // 法术力格的宽度预算。这一行放 6 个色格 + 1 个总量块，每格能分到的宽度是固定的
-  //（rpx 恒为屏宽的 1/750，所以这笔账在所有机型上一模一样）：
-  //   750 − rail 左右内边距 24 − 6 个间隙 − 总量块(60+4+12) ，再除以 6
-  // 原本每格要塞「减44 + 2 + 数字28 + 2 + 加44 = 120rpx」，而只分到约 100rpx。
-  // .mana-ctrl 默认可收缩，于是被压到约 35rpx 宽却仍是 44rpx 高，
-  // border-radius: 50% 就画成了扁椭圆，相邻两色的按钮还挤在一起。
-  // 修法是把数字提到 symbol 那一排（那排原本只有 44rpx 的 symbol，空着 56rpx），
-  // 下排只留两个按钮。这条断言把这笔账钉住，改任何一个数都要重新算。
+  // 法术力格改成竖排：加号在正上、色标居中、减号在正下，三者共用一条中轴。
+  //
+  // 横排时每格要塞「减44 + 2 + 数字28 + 2 + 加44 = 120rpx」，而每格只分到约 100rpx
+  //（rpx 恒为屏宽的 1/750，所以这笔账在所有机型上一模一样）。.mana-ctrl 默认可收缩，
+  // 于是被压到约 35rpx 宽却仍是 44rpx 高，border-radius: 50% 就画成了扁椭圆。
+  // 竖排之后横向只需要「最宽的那一项」，宽度压力消失；约束转到「圆内塞不塞得下」。
   const rule = (name) => (wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`)) || [''])[0];
   const px = (name, prop) => {
-    const found = rule(name).match(new RegExp(`${prop}:\\s*(\\d+)rpx`));
+    const found = rule(name).match(new RegExp(`(?:^|[;{\\s])${prop}:\\s*(\\d+)rpx`));
     return found ? Number(found[1]) : null;
   };
   const railGap = px('mana-rail', 'gap');
   const ctrlSize = px('mana-ctrl', 'width');
-  const ctrlGap = px('mana-row', 'gap');
-  assert.ok(railGap && ctrlSize && ctrlGap, '法术力行的三个尺寸必须写成显式 rpx，才能核算预算');
+  const symbolSize = px('mana-symbol', 'width');
+  assert.ok(railGap && ctrlSize && symbolSize, '法术力格的尺寸必须写成显式 rpx，才能核算预算');
+
+  // 横向：每格最宽的一项不得超出可分到的宽度，否则又会被 flex 压扁
   const perCell = (750 - 12 * 2 - railGap * 6 - (60 + 4 + 12)) / 6;
-  const rowNeeds = ctrlSize * 2 + ctrlGap;
-  assert.ok(rowNeeds <= perCell,
-    `法术力每格只有 ${perCell.toFixed(1)}rpx，下排却要 ${rowNeeds}rpx——按钮会被压扁成椭圆`);
-  // 数字必须在 symbol 那一排，不能回到按钮中间：回去就又超预算
-  assert.match(wxml, /<view class="mana-head">\s*\n\s*<view class="mana-symbol">/);
-  assert.doesNotMatch(wxml, /mana-ctrl-minus[\s\S]{0,200}?mana-badge[\s\S]{0,200}?mana-ctrl-plus/,
-    '数字不得再回到「减 数 加」的中间——那会让每格超出约 20rpx');
+  assert.ok(Math.max(ctrlSize, symbolSize) <= perCell,
+    `法术力每格只有 ${perCell.toFixed(1)}rpx，最宽项却要 ${Math.max(ctrlSize, symbolSize)}rpx`);
+
+  // 色标圆内要同时装下字母与数字，否则会溢出圆外
+  const letterSize = px('mana-symbol-letter', 'font-size');
+  const symbolGap = px('mana-symbol', 'gap');
+  assert.ok(letterSize && symbolGap !== null, '字母字号与圆内间距要显式给出');
+  const inner = letterSize + symbolGap + 28; // 数字用 --cedh-text-14 = 28rpx
+  assert.ok(inner <= symbolSize,
+    `色标圆 ${symbolSize}rpx 装不下「字母 ${letterSize} + ${symbolGap} + 数字 28」= ${inner}rpx`);
+
+  // 竖排顺序必须是「加 → 色标 → 减」：这是对称形态，也是中轴成立的前提。
+  // 必须六格逐个查——只断言「存在一处正确顺序」的话，颠倒其中一格照样绿
+  // （相邻格会凑出一个假匹配），这一点是变异测试暴露出来的。
+  const orderedCells = wxml.match(
+    /mana-ctrl-plus[\s\S]{0,220}?<view class="mana-symbol">[\s\S]{0,220}?mana-ctrl-minus/g,
+  ) || [];
+  assert.equal(orderedCells.length, 6,
+    `只有 ${orderedCells.length} 格是「加号在上、色标居中、减号在下」，六色都要一致`);
+  // 字母与数字都在圆内。挂到圆外侧会在两位数（storm 回合常见 10+ 法术力）时越界撞邻格
+  assert.match(wxml, /<view class="mana-symbol">\s*\n\s*<text class="mana-symbol-letter">/);
+  assert.match(wxml, /<text class="mana-badge">\{\{manaPool\.\w\}\}<\/text>\s*\n\s*<\/view>/,
+    '数字必须在色标圆内，挂到圆外两位数会越界');
+  assert.doesNotMatch(rule('mana-badge'), /position:\s*absolute/,
+    '数字不得用绝对定位挂在圆外——两位数会撞到邻色');
+  // 中轴：色标与两颗按钮必须在同一列居中
+  assert.match(rule('mana-cell'), /flex-direction:\s*column/);
+  assert.match(rule('mana-cell'), /align-items:\s*center/);
   // 按钮不得再被挤压：宽高相等才是圆，且不参与收缩
   assert.equal(ctrlSize, px('mana-ctrl', 'height'), '± 按钮宽高必须相等，否则圆会变椭圆');
   assert.match(rule('mana-ctrl'), /flex:\s*0 0 auto/, '± 按钮不得参与 flex 收缩');
