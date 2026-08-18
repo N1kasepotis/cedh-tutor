@@ -147,7 +147,7 @@ page {
   color: #FFFFFF;
   background: #7EC8E3;
   font-family: "Avenir Next", Futura, "Century Gothic", "PingFang SC", "Helvetica Neue", sans-serif;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0;
   line-height: 1;

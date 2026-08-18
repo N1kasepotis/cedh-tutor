@@ -81,7 +81,14 @@ Page({
   previewCommander(event) {
     const url = event.currentTarget.dataset.url;
     if (!url) return;
-    wx.previewImage({ urls: [url], current: url, fail: () => {} });
+    // 失败要出声。这跟字体加载不是一回事：字体挂了会回退系统字体栈，用户照样能读；
+    // 而这是用户主动点主将图要看大图，静默失败就是一次「按了没反应」的死点击，
+    // 用户只会以为程序卡住。弱网下图还没下下来正是最容易命中的场景。
+    wx.previewImage({
+      urls: [url],
+      current: url,
+      fail: () => wx.showToast({ title: '图片打开失败，请稍后重试', icon: 'none' }),
+    });
   },
 
   // 个人主体不能用 web-view，打不开 topdeck.gg；沿用推荐结果页复制链接的既有做法

@@ -1069,9 +1069,24 @@ test('首页右上角 MTGso 外跳入口', () => {
   // AppID 取自 MTGso 官方跳转页，改动它等于换了一个小程序，必须显眼
   assert.match(js, /const MTGSO_APPID = 'wx5df3db45daa5d9c0';/);
   assert.match(js, /wx\.navigateToMiniProgram\(\{[\s\S]{0,200}?appId: MTGSO_APPID/);
-  // 用户在微信那个确认框上点「取消」也会走 fail；不接住就是一个没人处理的拒绝
-  assert.match(js, /wx\.navigateToMiniProgram\(\{[\s\S]{0,240}?fail: \(\) => \{\},/,
-    'navigateToMiniProgram 必须写 fail：用户取消跳转也会走它');
+  // 不传 path：官方说明「path 为空则打开首页」，而首页正是要去的地方。
+  // 上一版照抄 MTGso 那个 H5 跳转页里的 pages/index/index，等于在猜对方的页面路径——
+  // 路径不对会直接让跳转失败，上线后按了没反应就是栽在这里。
+  assert.doesNotMatch(js, /goMtgso\(\)[\s\S]{0,240}?path:/,
+    '不要传 path——猜对方的页面路径只会多一个出错点，留空即开首页');
+
+  // fail 必须接住，但**不能吞掉**。上一版写成 fail: () => {}，线上跳不动时页面毫无反应，
+  // 既没法告诉用户也没法定位。要求：用户点「取消」（fail cancel）保持安静，其余把 errMsg 摆出来。
+  const jumpBody = js.match(/goMtgso\(\) \{[\s\S]*?\n  \},/)[0];
+  assert.match(jumpBody, /fail: \(error\) =>/, 'fail 必须接住错误对象，不能是空函数');
+  assert.doesNotMatch(jumpBody, /fail: \(\) => \{\},/,
+    'fail 不得写成空函数——那会把失败原因彻底吞掉');
+  assert.match(jumpBody, /indexOf\('cancel'\) >= 0\) return;/,
+    '用户主动取消是正常操作，必须安静返回，不能报错');
+  // 必须把 errMsg 插进提示文案本身。只断言「文件里同时出现 errMsg 与 showToast」是不够的：
+  // 把提示改成一句固定的「打开失败」照样能匹配，而那正好丢掉唯一能定位问题的信息。
+  assert.match(jumpBody, /showToast\(\{ title: `[^`]*\$\{message\}`/,
+    '提示里必须带上 errMsg 本身，否则线上跳不动时依然无从定位');
   // 微信自 2.3.0 起会在跳转前统一弹确认框，自建二次确认等于问两遍
   assert.doesNotMatch(js, /goMtgso\(\) \{[\s\S]{0,200}?showModal/,
     '不要自建二次确认——微信已经统一弹框了');
@@ -1132,6 +1147,16 @@ test('首页右上角 MTGso 外跳入口', () => {
   });
   assert.match(portalFont, /Avenir Next|Futura|Century Gothic/,
     '入口用几何无衬线，与圆角方块的应用图标形态相配');
+
+  // 字号要小到「MTGso」五个字母能落在方块内圈里。按几何无衬线约 0.55em 的平均字宽估，
+  // 再扣掉两道 2rpx 边框——不写死某个字号，改了方块尺寸这条也跟着自适应。
+  const portalFontPx = Number(portalRule.match(/font-size:\s*(\d+)px/)[1]);
+  const portalBorder = Number(portalRule.match(/border:\s*(\d+)rpx/)[1]);
+  const innerRpx = portalW - portalBorder * 2;
+  const labelRpx = ('MTGso'.length * portalFontPx * 0.55) / 0.52; // px → rpx（750 基准）
+  assert.ok(labelRpx <= innerRpx,
+    `「MTGso」在 ${portalFontPx}px 下约 ${labelRpx.toFixed(0)}rpx 宽，`
+    + `超出方块内圈 ${innerRpx}rpx——字号要再小一档或方块要放大`);
 
   // 色值都从样式里读回来再算，不写死常量——写死的话改了样式这条照样绿。
   const luminance = (hex) => {
