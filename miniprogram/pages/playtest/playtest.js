@@ -285,22 +285,48 @@ Page({
     return buildScryfallImageUrl(name, version);
   },
 
-  // 一次性解析整副牌（含指挥官）。解析结束后放开回落并刷一次视图。
+  // 这一刻真的会显示成图的那几张：开局就是七张手牌加主将区，战场还是空的。
+  // 牌库里那九十多张一张图都不渲染，却要陪着一起等——先解析这几张，首屏快得多。
+  visibleCardNames() {
+    if (!this.game) return [];
+    return []
+      .concat(this.game.hand || [])
+      .concat(this.game.battlefield || [])
+      .concat(this.game.command || [])
+      .filter((card) => card && !card.token)
+      .map((card) => card.name)
+      .filter((name) => typeof name === 'string' && name);
+  },
+
+  // 解析整副牌（含指挥官）。解析结束后放开回落并刷一次视图。
   // artReady 表示「解析这一轮已经结束」，不表示「全都解析成功」——
   // 没查到的那些从此走回落，不会被永远卡成空白。
+  //
+  // 名字按「屏幕上真会显示的排最前」重排，再交给批量解析，每批回来刷一次视图。
+  // 百张牌是两批：以前要两批都跑完才出第一张图，现在第一批一回来七张手牌就有图了。
+  // 请求数一点没多——只是把该先要的排到了前面。
+  //
+  // 中间那次刷视图时 artReady 仍是 false，所以还没解析到的卡返回空串、只显示占位底。
+  // 绝不能在这时候放开回落：后面那批一到就要把已显示的图换掉重下一遍，
+  // 正是一路在躲的双份下载。
   prefetchDeckArt(parsed) {
     const finish = () => {
       this.artReady = true;
       if (this.game) this.syncView();
     };
     if (!parsed) { finish(); return; }
-    const names = []
+    const deckNames = []
       .concat(parsed.commanders || [])
       .concat(parsed.main || [])
       .map((entry) => (entry && entry.name) || entry)
       .filter((name) => typeof name === 'string' && name);
-    if (!names.length) { finish(); return; }
-    prefetchCardArt(names).then(finish);
+    if (!deckNames.length) { finish(); return; }
+
+    // 可见的排前面；重复的名字由 prefetchCardArt 自己去重，这里不必先滤一遍
+    const names = this.visibleCardNames().concat(deckNames);
+    prefetchCardArt(names, {
+      onBatch: () => { if (this.game) this.syncView(); },
+    }).then(finish);
   },
 
   syncView(options) {

@@ -229,9 +229,14 @@ function resolveKnown(key) {
 }
 
 // 批量预解析一组卡名。返回的 Promise 永远 resolve；解析不到的名字留给调用方回落。
-function prefetchCardArt(names) {
+//
+// options.onBatch：每批解析完调一次。传进来的名字**按调用方给的顺序**分批，
+// 所以把「屏幕上真会显示的那几张」排在最前面，第一批一回来就能刷出图，
+// 不必等整副牌跑完。百张牌是两批，这一下就把首图时间砍掉一半，而请求数不变。
+function prefetchCardArt(names, options) {
   hydrateFromStorage();
 
+  const onBatch = options && typeof options.onBatch === 'function' ? options.onBatch : null;
   const wanted = [];
   const seen = new Set();
   (names || []).forEach((raw) => {
@@ -246,7 +251,15 @@ function prefetchCardArt(names) {
   // 批次串行而不是并发：Scryfall 明确要求控制调用节奏，
   // 并发几批换不来多少速度，却更容易吃到 429
   const run = batches.reduce(
-    (gate, batch) => gate.then(() => requestBatch(batch)),
+    (gate, batch) => gate.then(() => requestBatch(batch)).then(() => {
+      // 回调里通常是一次 setData，抛异常不该把后面几批一起带走
+      if (!onBatch) return;
+      try {
+        onBatch();
+      } catch (error) {
+        // 刷视图失败不影响解析本身，后面的批次继续跑
+      }
+    }),
     Promise.resolve(),
   );
   const settle = run.then(() => {

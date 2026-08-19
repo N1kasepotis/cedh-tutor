@@ -124,12 +124,15 @@ test('两条批量链路都必须用正面名标识符', () => {
 function withMockWx(run) {
   const originalWx = global.wx;
   const store = new Map();
-  const state = { requestCount: 0, lastIdentifiers: null, cards: [] };
+  const state = {
+    requestCount: 0, lastIdentifiers: null, batches: [], cards: [],
+  };
 
   global.wx = {
     request(options) {
       state.requestCount += 1;
       state.lastIdentifiers = (options.data.identifiers || []).map((item) => item.name);
+      state.batches.push(state.lastIdentifiers);
       setTimeout(() => options.success({
         statusCode: 200,
         data: { data: state.cards, not_found: [] },
@@ -244,6 +247,68 @@ test('双面牌：发出去的是正面名，回来的三种写法都要能查�
 // ---------------------------------------------------------------------------
 // 调用点：直链优先、慢路兜底
 // ---------------------------------------------------------------------------
+
+// 这条必须真的驱动页面对象跑一遍，光看源码看不出「谁排在前面」。
+test('试玩页：手牌排在第一批，第一批一回来就刷视图', () => withMockWx(async (state) => {
+  const { clearCardArtCache } = require('../miniprogram/utils/card-art');
+  clearCardArtCache();
+
+  const originalPage = global.Page;
+  const originalGetApp = global.getApp;
+  let page = null;
+  global.Page = (config) => { page = config; };
+  global.getApp = () => ({});
+  const pagePath = require.resolve('../miniprogram/pages/playtest/playtest.js');
+  delete require.cache[pagePath];
+  try {
+    require(pagePath);
+  } finally {
+    global.Page = originalPage;
+    global.getApp = originalGetApp;
+  }
+
+  // 一副真实规模的牌：七张手牌 + 一位主将会显示成图，牌库里那九十多张一张都不显示
+  const hand = Array.from({ length: 7 }, (_, i) => ({ id: `h${i}`, name: `Hand Card ${i}` }));
+  const command = [{ id: 'c0', name: 'Commander Card' }];
+  const library = Array.from({ length: 92 }, (_, i) => `Library Card ${i}`);
+
+  const syncViewAt = [];
+  const context = {
+    artReady: false,
+    game: { hand, battlefield: [], command },
+    syncView() { syncViewAt.push(this.artReady); },
+    visibleCardNames: page.visibleCardNames,
+    prefetchDeckArt: page.prefetchDeckArt,
+  };
+
+  await new Promise((resolve) => {
+    const done = () => resolve();
+    context.syncView = function syncView() {
+      syncViewAt.push(this.artReady);
+      if (this.artReady) done();
+    };
+    context.prefetchDeckArt({
+      commanders: [{ name: 'Commander Card' }],
+      main: library.map((name) => ({ name })),
+    });
+  });
+
+  // 分批仍是 75 一批，百张牌两批——重排名字不该让请求数变多
+  assert.equal(state.batches.length, 2, `请求数应为 2，实际 ${state.batches.length}`);
+
+  // 第一批必须以八张会显示的卡打头。排在后面的话，第一批回来时屏幕上
+  // 还是一张图都没有，得等第二批——首图时间白白翻倍。
+  const head = state.batches[0].slice(0, 8);
+  assert.deepEqual(head, [...hand.map((card) => card.name), 'Commander Card'].slice(0, 8),
+    '会显示的卡没排在第一批最前面');
+
+  // 至少刷两次视图：第一批回来刷一次（此时 artReady 还是 false，
+  // 没解析到的仍显示占位底），全部跑完再刷一次并放开回落。
+  assert.ok(syncViewAt.length >= 2, `应至少刷两次视图，实际 ${syncViewAt.length} 次`);
+  assert.equal(syncViewAt[0], false,
+    '第一批回来时不能就放开回落——后面那批一到会把已显示的图换掉重下一遍');
+  assert.equal(syncViewAt[syncViewAt.length - 1], true, '跑完必须放开回落');
+}));
 
 test('推荐结果的卡位首帧就是直链，不再先填 302 地址再替换', () => {
   const { decoratePreviewSlots } = require('../miniprogram/utils/result-display');

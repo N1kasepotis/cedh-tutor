@@ -699,13 +699,16 @@ test('试玩页取图全部走 cardArt，且低内存与回落只有一处', () 
   // artReady 表示「这一轮解析结束」而非「全部成功」：没查到的必须能走回落，不能永远空白
   assert.match(js, /const finish = \(\) => \{\s*\n\s*this\.artReady = true;/);
   assert.match(js, /if \(!parsed\) \{ finish\(\); return; \}/);
-  assert.match(js, /if \(!names\.length\) \{ finish\(\); return; \}/);
+  assert.match(js, /if \(!deckNames\.length\) \{ finish\(\); return; \}/);
 
   // 导入后必须批量预解析，否则直链永远是空的、每张图都在走回落。
   // 匹配带 this. 的调用点，不是方法定义——只写 prefetchDeckArt(parsed) 会被定义本身匹配到，
   // 那样即使删掉调用这条也照样绿
   assert.match(js, /this\.prefetchDeckArt\(parsed\);/);
-  assert.match(js, /prefetchCardArt\(names\)\.then\(/);
+  // 每批回来都要刷一次视图：百张牌分两批，非得等两批跑完才出第一张图，
+  // 等于把首图时间白白翻倍。「可见的排最前 + 每批刷视图」这套顺序由
+  // card-art.suite.js 真跑一遍页面对象来验，这里只守住调用形状还在。
+  assert.match(js, /prefetchCardArt\(names, \{\s*\n\s*onBatch:/);
   // 预解析必须覆盖指挥官与主牌组两部分
   assert.match(js, /\.concat\(parsed\.commanders \|\| \[\]\)[\s\S]{0,80}\.concat\(parsed\.main \|\| \[\]\)/);
   // 不能 await 阻塞导入：解析期间要能先用回落路径把牌显示出来

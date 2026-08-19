@@ -60,7 +60,11 @@
 - 原生 WXML / WXSS / JS；默认竖屏，四人血量记录页单独横屏；个人主体，不用 `web-view`。
 - 指挥官 / 问卷 / Bracket 规则 / 贴纸 / EDHTI / 血量 / 卷心菜 / 伊捷 / 粒子 / 性能阈值全是本地配置（`config/`）。
 - **标题字体**：首页中文与入口使用 Fusion Pixel Font 10px Monospaced `zh_hans` 2026.07.01 的受控子集，包含主页所需中文、ASCII 与数字（顶部注释与底部 imprint 使用 Courier 等宽栈）；`assets/home-pixel-font.js` 内嵌约 14KB TTF 并注册为 `HomePixel`。`cEDH Tutor` 单独使用 `assets/title-font.js` 内嵌的 Archivo Black WOFF2，注册为 `cEDHDisplay`，并以系统粗体栈兜底。两种字体均由 `pages/index/index.js` 本地加载，失败时直接显示回退字体，不遮挡首帧。Fusion Pixel 完整 OFL 随发布包放在 `assets/FUSION_PIXEL_OFL.txt`，源子集、授权副本与再生成脚本分别位于 `tools/fonts/`、`scripts/build-home-pixel-font.js`；Archivo 也继续供 EDHTI 导出海报与血量数字使用。
-- **Scryfall 卡图 / 元数据**：`utils/scryfall.js` 用 `?fuzzy=` + `format=image` 直连图片。`normalizeCardName` 把弯引号（Moxfield 导出）归一化为直引号，并把撇号编码为 `%27`（裸撇号会让微信 `<image>` 加载失败）。JSON 卡图请求设 8 秒超时、全局最多 4 个并发请求，并校验 HTTP 状态与响应结构；同卡并发请求复用 Promise，成功缓存上限 64 项，失败会清缓存以允许重试。`utils/bracket-metadata.js` 通过 `/cards/collection` 以 75 张为上限顺序分批读取 `cmc`、正面 `type_line`、`oracle_id` 与 `prices.usd`；只对超时、请求失败、408、429 和 5xx 做一次受控重试。当前印次没有非闪 USD 时，以多个 Oracle ID 合并搜索其他纸牌非闪印次；成功、明确未找到和本轮无价结果会话内去重，网络失败仍允许下次重试。
+- **卡图直链三级取**（`utils/card-art.js`）：① **构建期烤表** `config/commander-art.js` —— 本地 100 位主将是固定不变的一份表，推荐结果、EDHTI 无字大画、强度分级 hero 底图、战绩头像都只从这里取名字，所以直链在构建期就算好烤进包里，这四条链路**一次请求都不发**，首帧拿到的就是最终地址、不会「先占位后跳图」。② **上次会话落的盘**（`cardArtIndex`，30 天保质期）—— 同一副牌第二次打开零请求；烤表内容不重复落盘，写入推迟一跳避开首屏那次 `setData`。③ **本次批量解析** `/cards/collection`，75 张一批。三级都没有才由调用方回落到 `?fuzzy=` + `format=image` 的 302 慢路。存储与烤表里的地址压成 `<scryfallId, 版本时间戳>`（判据在 `utils/scryfall-cdn.js`），但那是**拿到真地址后逐档比对过**才压的，跟「凭卡名瞎猜路径」是两回事；比对不上的原样存字面量。改了 `config/commanders.js` 要重跑 `node scripts/build-commander-art.js`，`card-art.suite.js` 有门禁守着漏烤。
+- **`/cards/collection` 只认正面名，给 `A // B` 全名一律 `not_found`**：实测（2026-08）双面、拆分、融合、冒险四类全都如此，正面名才命中（返回的 `name` 反而是全名）。Moxfield / Archidekt 导出的 MDFC 地、冒险生物全是全名写法，cEDH 一副五到十五张。判据抽在 `utils/scryfall.js` 的 `collectionIdentifier`，卡图与强度分级两条批量链路共用。**注意这两条链路的代价不一样**：卡图那条只是退回 302 慢路，强度分级那条是 `cmc` / 类别 / 价格**根本查不到**，那些卡会被算进「元数据未覆盖」，直接影响档位判定。反过来 `?fuzzy=` 那条路径认全名，别拿这个函数去改它。
+- **一次请求能同时喂两个用途就别发两次**：强度分级读牌表时本来就要为整副牌打一趟 `/cards/collection` 拿 `cmc` / 类别 / 价格，那份响应里带着 `image_uris`；`bracket-metadata.js` 顺手调 `rememberCardArt` 收进卡图缓存，hero 底图因此是白得的。
+- **首屏要的排最前，每批回来就刷一次视图**：`prefetchCardArt(names, { onBatch })` 按调用方给的顺序分批。试玩页把「屏幕上真会显示的那几张」（手牌 + 战场 + 主将区）排在最前，百张牌仍是两批、请求数不变，但第一批一回来七张手牌就有图了，不必等第二批。中途刷视图时 `artReady` 仍是 `false`，没解析到的返回空串只显示占位底——**绝不能在这时放开回落**，否则后一批一到就要把已显示的图换掉重下一遍。
+- **Scryfall 元数据**：`utils/scryfall.js` 的 `normalizeCardName` 把弯引号（Moxfield 导出）归一化为直引号，并把撇号编码为 `%27`（裸撇号会让微信 `<image>` 加载失败）。JSON 卡图请求设 8 秒超时、全局最多 4 个并发请求，并校验 HTTP 状态与响应结构；同卡并发请求复用 Promise，成功缓存上限 64 项，失败会清缓存以允许重试。`utils/bracket-metadata.js` 通过 `/cards/collection` 以 75 张为上限顺序分批读取 `cmc`、正面 `type_line`、`oracle_id` 与 `prices.usd`；只对超时、请求失败、408、429 和 5xx 做一次受控重试。当前印次没有非闪 USD 时，以多个 Oracle ID 合并搜索其他纸牌非闪印次；成功、明确未找到和本轮无价结果会话内去重，网络失败仍允许下次重试。
 - **本地存储**：页面不直接读写 `wx.*StorageSync`，统一经 `utils/storage.js`。当前键：`quizResult` / `quizDraft`（问卷结果与在答草稿）、`edhtiState`（EDHTI 进度与完成态）、`bracketDeckText` / `playtestDeckText`（两页各自的牌表）、战绩、血量、法术力池与贴纸。**长流程一律可中断可恢复**：多步问卷与需要粘贴长文本的页面都必须落盘，中途切后台不该让用户白干。新数据保存为 `{ schemaVersion, updatedAt, data }` envelope；历史裸值自动升级，损坏数据安全回退，未来版本数据禁止被旧版覆盖。写入/删除失败返回显式结果，由页面提示用户而非静默丢数据。
 - **设计 token 必须先定义再使用**：`var(--x)` 取不到值不会报错，只会悄悄回退成继承值——字号、间距、颜色都会静默失真，Node 测试和真机都看不出「本该是多少」。`--cedh-text-11` 曾被随机工具与环境梯度用了却从未定义。`shared.suite.js` 有全项目门禁扫描未定义的 `--cedh-*`。
 - **异步 wx API 一律显式传回调**：微信的异步 API 无参调用（`wx.hideKeyboard()`、`wx.hideLoading()`）会返回 Promise，拒绝时没人 catch 就冒成框架级的 `Error: timeout`——栈里全是 `WAServiceMainContext`、没有任何应用帧，极难定位。典型触发：用「粘贴」按钮填入牌表时键盘从未升起，`hideKeyboard` 无键盘可收即拒绝。`shared.suite.js` 有全项目门禁扫描无参异步调用（同步 API 如 `getWindowInfo` 在白名单内）。
@@ -181,7 +185,7 @@ Deck
 ## 视觉规则
 
 - **网络图三件套**：凡是 `src` 绑定数据的 `<image>`，都必须 ① 有占位底色（`--cedh-image-placeholder`；深色页用自己的深底）② 挂 `lazy-load` ③ 高度确定。前两项由 `shared.suite.js` 自动校验——这次审出 7 处缺占位底、1 处缺 `lazy-load`，靠人工记显然记不住。**第三项没做成门禁**：判定它要理解完整祖先链（强度分级的 hero 底图是「图 `height:100%` → 父 `.hero-art-split` 也 `height:100%` → 祖父 `.hero-art` 才是 `position:absolute`」），静态正则解析 WXML 嵌套不可靠，初版把这三处正确代码误报成了违规。当前 19 处网络图已人工逐个核过：高度全部确定或本就脱离文档流，无布局抖动；新增图片时请自行确认。
-- **图片档位按格子形状选，不跟详情页共用同一张**：Scryfall 的 `small` 是 146×204（17KB，整张牌）、`art_crop` 是 626×457（124KB，纯画作）、`normal` 是 488×680（171KB）。列表缩略图沿用详情页的 `art_crop` 是最容易犯的超配——环境梯度的双拍档格子只有 66rpx 宽（@3x 约 103px），超配 18 倍；我的主将的 72rpx 圆头像超配 23 倍。选档前先算「这个格子在 @3x 下到底需要多少像素」，再挑最接近的档；长宽比对不上时优先保视觉（单主将的横格仍用 `art_crop`），对得上时一律取小档。
+- **图片档位按格子形状选，不跟详情页共用同一张**：Scryfall 的 `small` 是 146×204（17KB，整张牌）、`art_crop` 是 626×457（124KB，纯画作）、`normal` 是 488×680（171KB）。列表缩略图沿用详情页的 `art_crop` 是最容易犯的超配——环境梯度的双拍档格子只有 66rpx 宽（@3x 约 103px），超配 18 倍；我的主将的 72rpx 圆头像超配 23 倍。选档前先算「这个格子在 @3x 下到底需要多少像素」，再挑最接近的档；长宽比对不上时优先保视觉（单主将的横格仍用 `art_crop`），对得上时一律取小档。**我的主将那个 72rpx 圆头像是知情不改**：`small` 是整张牌（含牌框与文字框），`aspectFill` 到正方形切出来的是类别行和规则文字那一带，`art_crop` 切出来才是人物——省 107KB 换一个明显更丑的头像不划算，何况一屏最多 10 个、CDN 缓存一年、第二次进来不再下载。要改只能等 Scryfall 出更小的纯画作档。
 
 - 首页以 `#D0F03C`、`#FFFFFF`、`#0A0A0A`、事故色电光蓝 `#00B3FF` 加半透明黑双档为全部色板——`rgba(0,0,0,0.35)` 作装饰（注释、发丝分隔线、imprint、侧脊题词），`rgba(0,0,0,0.7)` 用于承载功能语义的英文副标题（过 AA 正文对比度），编号提为纯黑巨号（最大对比）；电光蓝是唯一的「事故色」，只用于随机 glitch 行底色与按压反相时的字色，其余一律保持黄+黑；全页不使用投影、渐变、纹理、玻璃与图片，首页不加载粒子或连接效果，全部文字无阴影；入口按压用专属 `home-index-active` 在 60ms 内反相为纯黑底 + 电光蓝字，不缩放、不位移。
 - 除首页外的非导出页面禁用 `radial-gradient` 背景光斑，只保留线性底色 + 玻璃层 + 粒子背景 + 语义色。**唯一例外**：血量记录的玩家分区光晕（`life-tracker.wxss` 中由 `--player-rgb` 驱动、每位玩家一色，是该页核心视觉）。该例外由 `shared.suite.js` 的发布门禁锁定——它同时校验「除此之外没有第二处」以及「这处光晕必须由 `--player-rgb` 驱动」，避免例外被当成放行通用装饰光斑的口子。
@@ -211,6 +215,7 @@ Deck
 
 ```bash
 node scripts/build-meta-tier.js     # 更新环境梯度快照后重新生成 config/meta-tier.js
+node scripts/build-commander-art.js # 改过 config/commanders.js 后重新烤主将卡图直链（会联网并自检）
 node scripts/build-home-voronoi.js  # 重算首页整页背景线场（打印线段统计与可见区 ASCII 预览）
 npm run check                       # 语法门禁 + 全部测试 + 覆盖率/视觉复杂度诊断
 npm test                            # 仅运行全部测试
@@ -218,7 +223,7 @@ npm run syntax                      # 仅检查全部 JavaScript 语法
 npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊断
 ```
 
-当前基线：88 个 JavaScript 文件通过语法门禁，326 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 174,196 个画像）。发布包 `miniprogram/` 约 1.4MB，主包上限 2MB。
+当前基线：92 个 JavaScript 文件通过语法门禁，338 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 174,196 个画像）。发布包 `miniprogram/` 约 1.4MB，主包上限 2MB。
 
 诊断默认使用确定性的基准覆盖集：基线/单项变化、按主将标签构造的目标画像、固定种子的组合画像，以及颜色/资源引擎组合。排序复用生产逻辑中的拍档惩罚和低使用率多样性尾位，避免诊断模型与实际推荐分叉。需要离线穷举全部单选组合时使用 `node scripts/diagnose-coverage.js --mode=full`；该模式组合量很大，不用于日常 CI。
 
@@ -230,7 +235,9 @@ npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊
 
 | 项 | 看什么 |
 | --- | --- |
-| **卡图请求数** | 开发者工具 Network 面板导入一副百张牌：请求条数应约为 **2**（两批 `cards/collection`），而不是每张一条。这个数字比耗时读数更能证明直连生效，且不受网络环境影响 |
+| **卡图请求数** | 开发者工具 Network 面板导入一副百张牌：请求条数应为 **2**（两批 `cards/collection`），而不是每张一条。这个数字比耗时读数更能证明直连生效，且不受网络环境影响。**同一副牌第二次进来应为 0**（落盘生效）|
+| **首图时间** | 同上，看第一批 `collection` 回来时七张手牌是不是立刻出图——出图说明「可见的排最前」生效；要等第二批才出，说明排序被改坏了 |
+| **主将卡图零请求** | 做完问卷进推荐结果页、或打开 EDHTI 结果：Network 面板不该出现任何 `cards/collection`，主将图直接来自构建期烤表 |
 | **卡图直链可达** | 环境梯度列表的主将图能正常显示（直链是构建期烤进快照的，若 `cards.scryfall.io` 未进 downloadFile 白名单或直链失效，这里会最先暴露） |
 | 触摸 / 拖拽 | 套牌试玩跨区拖放、长按详视、战场卡指示器步进 |
 | 相册授权 | EDHTI「导出分析」保存到相册（需 mp 后台已发布隐私指引） |
