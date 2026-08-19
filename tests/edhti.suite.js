@@ -229,7 +229,15 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   // 结果页保持同一个直连图片 URL，避免 JSON 查询回写 src 后触发二次下载。
   assert.doesNotMatch(js, /fetchCardImageUris/);
   assert.doesNotMatch(js, /loadCommanderArt/);
-  assert.match(js, /buildScryfallImageUrl\(displayCommander, 'art_crop'\)/);
+  // 无字大画只允许一处构造：两个赋值点（人格默认主将、推荐池选中主将）必须共用
+  // buildCommanderArt，否则改一处漏一处，结果页会先显示一张再跳变成另一张。
+  assert.equal((js.match(/buildCommanderArt\(/g) || []).length, 3,
+    'buildCommanderArt 应为一处定义 + 两处调用，共三次出现');
+  // 顺序不能反：先问构建期烤好的直链，取不到才回落按名取图的 302 慢路。
+  // 写反就等于永远走慢路，烤表白烤。
+  assert.match(js, /artCrop: getCardArt\(commanderName, 'artCrop'\) \|\| buildScryfallImageUrl\(commanderName, 'art_crop'\)/,
+    '无字大画必须直链优先、按名取图兜底');
+  assert.match(js, /normal: getCardArt\(commanderName, 'normal'\) \|\| buildScryfallImageUrl\(commanderName, 'normal'\)/);
   assert.match(js, /commanderArt/);
   assert.match(js, /const EXPORT_HEIGHT = 1624/);
   assert.match(js, /EXPORT_PINK/);

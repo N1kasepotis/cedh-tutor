@@ -1,4 +1,5 @@
 const { buildScryfallImageUrl } = require('./scryfall');
+const { getCardArt } = require('./card-art');
 
 const CANONICAL_PARTNER_DISPLAY_ORDER = [
   ['Tymna the Weaver', "Kraum, Ludevic's Opus"],
@@ -118,14 +119,31 @@ function parseFitPercent(item) {
 }
 
 function buildPreviewCards(commanderName) {
-  // 预填直连图片 URL：卡图立即可显示，不依赖 API 请求成功；
-  // 之后 loadPreviewImages 若成功，会升级为 CDN 正式地址。
-  return splitCommanderNames(commanderName).map((name) => ({
-    name,
-    artCrop: buildScryfallImageUrl(name),
-    normal: buildScryfallImageUrl(name, 'normal'),
-    loading: true,
-  }));
+  // 推荐结果里的主将必然来自本地指挥官库，而那 100 位的直链在构建期就烤进
+  // config/commander-art.js 了——所以这里直接问 getCardArt 就有：首帧即是最终地址，
+  // 零请求、零跳图。
+  //
+  // 旧写法是先填 api.scryfall.com 的按名取图地址（要 302），等 loadPreviewImages
+  // 解析完再换成 CDN 直链。微信的 <image> 一换 src 就重新下载，等于每张卡下两次，
+  // 而且第一次走的还是慢的那条。
+  //
+  // 万一有名字没烤到（改了主将库却忘了重跑构建脚本），照旧回落到按名取图，
+  // 由 loadPreviewImages 事后升级——功能不受影响，只是慢回从前。
+  return splitCommanderNames(commanderName).map((name) => {
+    const artCrop = getCardArt(name, 'artCrop');
+    const normal = getCardArt(name, 'normal');
+    if (artCrop || normal) {
+      return {
+        name, artCrop: artCrop || '', normal: normal || '', loading: false,
+      };
+    }
+    return {
+      name,
+      artCrop: buildScryfallImageUrl(name),
+      normal: buildScryfallImageUrl(name, 'normal'),
+      loading: true,
+    };
+  });
 }
 
 function decoratePreviewSlots(recommendation) {

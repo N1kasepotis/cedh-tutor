@@ -7,6 +7,7 @@ const {
 } = require('../../utils/bracket');
 const { fetchBracketCardMetadata } = require('../../utils/bracket-metadata');
 const { buildScryfallImageUrl } = require('../../utils/scryfall');
+const { getCardArt } = require('../../utils/card-art');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
 
@@ -64,7 +65,12 @@ function buildVerdictSteps(result) {
   return steps;
 }
 
-// 主将卡图嵌入 hero 底层：单主将整幅、双拍档左右分屏，不新增版面区域
+// 主将卡图嵌入 hero 底层：单主将整幅、双拍档左右分屏，不新增版面区域。
+//
+// 直链是白得的：读牌表时那趟 /cards/collection（拿 cmc / 类别 / 价格）响应里
+// 本来就带 image_uris，bracket-metadata 顺手收进了卡图缓存，这里直接取。
+// 主将若恰好在本地指挥官库里，构建期烤表还会更早一步命中。
+// 两处都没有才回落按名取图的 302 慢路——那是牌表里写了自定义卡或错字的情况。
 function buildHeroArt(commanders) {
   const named = (commanders || [])
     .map((card) => card && card.name)
@@ -73,7 +79,10 @@ function buildHeroArt(commanders) {
   if (!named.length) return { mode: 'none', images: [] };
   return {
     mode: named.length === 2 ? 'dual' : 'single',
-    images: named.map((name) => ({ name, url: buildScryfallImageUrl(name, 'art_crop') })),
+    images: named.map((name) => ({
+      name,
+      url: getCardArt(name, 'artCrop') || buildScryfallImageUrl(name, 'art_crop'),
+    })),
   };
 }
 

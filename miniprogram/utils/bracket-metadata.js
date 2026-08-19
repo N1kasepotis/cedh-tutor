@@ -1,5 +1,6 @@
-const { normalizeCardName } = require('./scryfall');
+const { normalizeCardName, collectionIdentifier } = require('./scryfall');
 const { extractStrengthFeatures } = require('./bracket-card-profile');
+const { rememberCardArt } = require('./card-art');
 
 const SCRYFALL_COLLECTION_API = 'https://api.scryfall.com/cards/collection';
 const SCRYFALL_SEARCH_API = 'https://api.scryfall.com/cards/search';
@@ -82,6 +83,10 @@ function trimSetCache(cache, limit) {
 function cacheCardMetadata(card) {
   const metadata = extractBracketCardMetadata(card);
   if (!metadata) return;
+
+  // 这份响应里本来就带着 image_uris，以前直接丢掉，然后 hero 底图再去按名走一次 302。
+  // 顺手收进卡图缓存，等于白得——强度分级页面的主将图因此一次请求都不用加。
+  rememberCardArt(card);
 
   if (metadata.usd === null && metadata.oracleId && oraclePriceCache.has(metadata.oracleId)) {
     metadata.usd = oraclePriceCache.get(metadata.oracleId);
@@ -224,7 +229,12 @@ function requestCollectionBatch(names) {
       'Content-Type': 'application/json',
     },
     data: {
-      identifiers: names.map((name) => ({ name })),
+      // 只能发正面名：collection 端点对 `A // B` 全名一律回 not_found。
+      // 以前直接发牌表原文，于是每张 MDFC 地、冒险生物、拆分牌都拿不到
+      // cmc / 类别 / 价格——不是慢，是**根本没进强度判定**，还会把「元数据覆盖率」压低。
+      // 同一批里两张牌砍出同一个正面名时去重，免得白占批量额度。
+      identifiers: Array.from(new Set(names.map(collectionIdentifier).filter(Boolean)))
+        .map((name) => ({ name })),
     },
   }, (payload) => {
     if (!payload || !Array.isArray(payload.data)) {
@@ -341,7 +351,20 @@ function runCollectionBatch(batch) {
       value.cards.forEach(cacheCardMetadata);
       // Only the API's explicit not_found list is safe to negative-cache. A returned
       // alias may have a different canonical name and should remain retryable otherwise.
-      value.notFound.forEach(markMissing);
+      //
+      // not_found 回声里是**我们发出去的正面名**，牌表里写的可能是 `A // B` 全名，
+      // 得映射回原始那一条再标；直接标正面名的话，全名那条永远标不上，
+      // 每次开页都要为同一张不存在的卡重发一次请求。
+      const missingIdentifiers = new Set(
+        value.notFound
+          .map((item) => metadataKey(item && typeof item === 'object' ? item.name : item))
+          .filter(Boolean),
+      );
+      if (missingIdentifiers.size) {
+        batch.forEach((name) => {
+          if (missingIdentifiers.has(metadataKey(collectionIdentifier(name)))) markMissing(name);
+        });
+      }
       return { failed: false, retryCount };
     })
     .catch((error) => ({ failed: true, retryCount: error && error.retryCount ? error.retryCount : 0 }));

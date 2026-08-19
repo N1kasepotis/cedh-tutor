@@ -52,6 +52,18 @@ function normalizeCardName(name) {
     .trim();
 }
 
+// /cards/collection 的 name 标识符**只认正面名，给全名一律 not_found**。
+// 实测（2026-08）双面、拆分、融合、冒险四类全都如此：
+//   'Agadeem's Awakening // Agadeem, the Undercrypt'  → 未找到
+//   'Agadeem's Awakening'                            → 命中（返回的 name 反而是全名）
+// Moxfield / Archidekt 导出的 MDFC 地、冒险生物全是全名写法，cEDH 牌组一副五到十五张。
+// 不砍掉后半截，这些卡在批量端点上永远查不到：卡图退回 302 慢路，强度分级那边
+// 则是连 cmc、类别、价格一起查不到，被直接算进「元数据未覆盖」。
+// 只作用于批量端点的标识符——?fuzzy= 那条路径反而认全名，不要拿这个函数去改它。
+function collectionIdentifier(name) {
+  return normalizeCardName(name).split(/\s*\/\/\s*/)[0].trim();
+}
+
 // encodeURIComponent 不编码 ! ' ( ) *，会在 URL 里留下裸撇号。
 // 微信 <image> / getImageInfo 的 URL 解析比浏览器严格，裸撇号会导致带撇号的卡
 // （Thassa's Oracle、Lion's Eye Diamond 等）图片加载失败——补全这几个字符的编码。
@@ -152,6 +164,7 @@ module.exports = {
   SCRYFALL_REQUEST_TIMEOUT_MS,
   MAX_CONCURRENT_IMAGE_REQUESTS,
   normalizeCardName,
+  collectionIdentifier,
   buildScryfallNamedUrl,
   buildScryfallImageUrl,
   buildScryfallImageUrlById,

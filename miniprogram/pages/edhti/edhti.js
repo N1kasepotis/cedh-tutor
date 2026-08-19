@@ -19,6 +19,7 @@ const {
 const {
   buildScryfallImageUrl,
 } = require('../../utils/scryfall');
+const { getCardArt } = require('../../utils/card-art');
 const { formatOptionCode } = require('../../utils/quiz-flow');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
@@ -638,6 +639,20 @@ function formatQuestion(question, answerMap, index) {
   };
 }
 
+// 无字大画：结果页从头到尾只用同一个 URL，绝不在 JSON 查询返回后替换 src——
+// 微信的 image 一换 src 就会重新下载并解码同一张卡图。
+//
+// 主将来自本地指挥官库，直链在构建期已烤进 config/commander-art.js，
+// 所以首帧拿到的就是 CDN 直链；烤不到才回落按名取图的 302 慢路。
+function buildCommanderArt(commanderName) {
+  if (!commanderName) return { artCrop: '', normal: '', large: '' };
+  return {
+    artCrop: getCardArt(commanderName, 'artCrop') || buildScryfallImageUrl(commanderName, 'art_crop'),
+    normal: getCardArt(commanderName, 'normal') || buildScryfallImageUrl(commanderName, 'normal'),
+    large: '',
+  };
+}
+
 function formatResult(rawResult) {
   if (!rawResult || !rawResult.persona) return null;
   const commanderName = rawResult.persona.commander && rawResult.persona.commander.en;
@@ -645,13 +660,7 @@ function formatResult(rawResult) {
 
   return {
     ...rawResult,
-    commanderArt: {
-      // 无字大画直连：结果页只保持同一个 URL，避免 JSON 查询返回后替换 src，
-      // 导致微信 image 重新下载/解码同一张卡图。
-      artCrop: commanderName ? buildScryfallImageUrl(commanderName, 'art_crop') : '',
-      normal: commanderName ? buildScryfallImageUrl(commanderName, 'normal') : '',
-      large: '',
-    },
+    commanderArt: buildCommanderArt(commanderName),
     descriptionText: spaceSentencePeriods(rawResult.persona.description),
     personaColor,
     // 句末句号转换后去掉尾部换行，避免收尾引号被挤到单独一行
@@ -837,11 +846,7 @@ Page({
     const displayCommander = recommendedCommander
       || (result.persona && result.persona.commander && result.persona.commander.en);
     if (displayCommander) {
-      result.commanderArt = {
-        artCrop: buildScryfallImageUrl(displayCommander, 'art_crop'),
-        normal: buildScryfallImageUrl(displayCommander, 'normal'),
-        large: '',
-      };
+      result.commanderArt = buildCommanderArt(displayCommander);
     }
 
     this.setData({
