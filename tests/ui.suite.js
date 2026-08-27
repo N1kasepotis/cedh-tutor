@@ -233,27 +233,53 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 中文入口为纯黑（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
   assert.match(wxss, /\.home-button-zh\s*{[^}]*color:\s*#0A0A0A/);
 
-  // 序号与英文副标题同款：同一套等宽字体栈、同一字号、同一字距。
-  // 两者是这一行仅有的两枚小标记，一左一右，用同一副字面才读得出是一对
+  // 序号是沉在这一行底下、被下缘切断的海报巨号。这一组锁的是让那个切口
+  // 「看着是排过版的」而不是「裁歪了」的三个前提。
   const indexRule = wxss.match(/\.home-button-index\s*\{[^}]*\}/)[0];
-  const enRule = wxss.match(/\.home-button-en\s*\{[^}]*\}/)[0];
-  const faceOf = (rule) => ({
-    family: (rule.match(/font-family:\s*([^;]+);/) || [])[1],
-    size: (rule.match(/font-size:\s*([^;]+);/) || [])[1],
-    tracking: (rule.match(/letter-spacing:\s*([^;]+);/) || [])[1],
-  });
-  assert.deepEqual(faceOf(indexRule), faceOf(enRule),
-    '序号必须与英文副标题同字体、同字号、同字距');
+
+  // ① 字号必须是 10px 的整数倍，而且必须是 px 不是 rpx。
+  // 点阵字形画在 10px 网格上，非整数倍会让像素边落在半格上、真机发虚；
+  // rpx 随屏宽缩放（60rpx 在 390pt 机器上只有网格的 3.12 倍），当场糊掉。
+  const indexSize = indexRule.match(/font-size:\s*(\d+(?:\.\d+)?)(px|rpx)/);
+  assert.ok(indexSize, '序号必须显式写 font-size');
+  assert.equal(indexSize[2], 'px', '序号字号只能用 px：rpx 随屏宽缩放会脱离点阵网格');
+  const fontPx = Number(indexSize[1]);
+  assert.equal(fontPx % 10, 0, `序号字号 ${fontPx}px 不是 10px 的整数倍，点阵字会糊`);
+  assert.ok(fontPx >= 40, `序号 ${fontPx}px 不够大，撑不起底版`);
+
+  // ② 沉降量必须是整格。基线在内容框顶部 0.9em（ascent 900 / upem 1000），
+  // 所以沉 k 格 = -(1 + k) 格。只有整格偏移才能让切口落在数字自己的像素格边界上——
+  // 那正是这一版唯一的立论点。
+  const cell = fontPx / 10;
+  const bottomPx = indexRule.match(/bottom:\s*(-?\d+(?:\.\d+)?)px/);
+  assert.ok(bottomPx, '序号必须用 px 写 bottom 偏移');
+  const sinkCells = -Number(bottomPx[1]) / cell - 1;
+  assert.ok(Number.isInteger(sinkCells) && sinkCells >= 1,
+    `沉降 ${bottomPx[1]}px 换算成 ${sinkCells} 格，不是整数格——切口会落在半个像素上`);
+  assert.ok(sinkCells <= 4, `沉了 ${sinkCells} 格，七格高的数字剩不下多少`);
+  assert.match(indexRule, /position:\s*absolute/);
+
+  // ③ 不许写 font-weight / font-style。这款点阵字只有一个字重、没有斜体字面，
+  // 写了系统只能合成——假粗体把笔画抹出网格，合成斜体把整张网格剪歪。
+  // 10px 时看不太出来，60px 时一眼就糊。
+  assert.doesNotMatch(indexRule, /font-weight:/,
+    '点阵字只有一个字重，写 font-weight 会触发合成假粗体、把笔画抹出像素网格');
+  assert.doesNotMatch(indexRule, /font-style:/,
+    '点阵字没有斜体字面，合成斜体是切变，会把像素网格整个剪歪');
+
+  // 行容器要能切住它：需要定位参照，且裁切必须发生在 padding box（发丝线内侧）
+  const buttonRule = wxss.match(/\.home-button\s*\{[^}]*\}/)[0];
+  assert.match(buttonRule, /position:\s*relative/, '巨号绝对定位，行容器要做参照');
+  assert.match(buttonRule, /overflow:\s*hidden/, '巨号靠行容器的下缘裁切，不能是 visible');
+  // 文字必须显式提层：绝对定位元素默认画在普通流之后，不提层序号会盖住中文
+  assert.match(wxss, /\.home-button-text\s*\{[^}]*position:\s*relative[^}]*z-index:\s*1/,
+    '文字块要压在巨号之上');
 
   // 基类不得自带颜色：颜色只能来自下面八条按行的主题色，
   // 漏掉一行会直接继承成黑色，这条断言就是为了让那种遗漏立刻暴露
   assert.doesNotMatch(indexRule, /(^|[^-])color:/,
     '序号基类不得设 color，颜色只从按行主题色来');
   assert.doesNotMatch(indexRule, /transform:|background|text-shadow/);
-  // 斜化用 font-style 而不是 transform: skewX()：两者都是切变，但 transform 会让这枚
-  // 标记脱离行内布局、还要额外补右侧间距；font-style 由排版引擎处理，宽度自动算进去
-  assert.match(indexRule, /font-style:\s*italic/);
-  assert.match(indexRule, /min-width:\s*\d+rpx/, '序号仍需等宽成列，中文左缘才对得齐');
 
   // 八行各取目标页自己的主题色，八色互不重复
   const hueRules = Array.from(
@@ -287,10 +313,22 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     const [x, y] = [luminance(a), luminance(b)];
     return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
   };
+  // 序号成了 0.38 的底版之后，「这一色本身够不够亮」不再是判据——它不是要读的文字了。
+  // 真正要守的是压在它上面的字还读不读得了：中文 #0A0A0A / 英文副标题 0.7 黑，
+  // 都要在**混合后的实际颜色**上过 AA 4.5:1。
+  const indexAlpha = Number(indexRule.match(/opacity:\s*(\d?\.\d+)/)[1]);
+  const mix = (hex, alpha, over) => [1, 3, 5].map((i) => (
+    parseInt(hex.substr(i, 2), 16) * alpha + parseInt(over.substr(i, 2), 16) * (1 - alpha)
+  ));
+  const toHex = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
   hueRules.forEach(({ slug, hex }) => {
-    const ratio = contrast('#D0F03C', hex);
-    assert.ok(ratio >= 4.5,
-      `${slug} 的序号色 ${hex} 在 #D0F03C 上只有 ${ratio.toFixed(2)}:1，未过 AA 4.5:1`);
+    const plate = toHex(mix(hex, indexAlpha, '#D0F03C'));
+    const zh = contrast(plate, '#0A0A0A');
+    assert.ok(zh >= 4.5,
+      `${slug} 行的中文压在序号底版 ${plate} 上只有 ${zh.toFixed(2)}:1，未过 AA`);
+    const en = contrast(plate, toHex(mix('#000000', 0.7, plate)));
+    assert.ok(en >= 4.5,
+      `${slug} 行的英文副标题压在序号底版上只有 ${en.toFixed(2)}:1，未过 AA`);
   });
 
   // 八色之间必须**看得出**不同，而不只是数值上不重复。用 CIE Lab ΔE 量，
@@ -318,6 +356,20 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   }));
   assert.ok(closest.gap >= 30,
     `最接近的两枚序号色差 ΔE 只有 ${closest.gap.toFixed(1)}，看上去会是同一个色：${closest.pair}`);
+
+  // 但真正上屏的是**混合之后**的颜色，所以这条才是有效判据。
+  // 这八个色当初是为了当小字才压暗的，压暗的色低透明度混上去会一起塌向底色：
+  // 实测 0.19 时混合后最小 ΔE 只剩 5.6，八行看着完全一样，「序号是色标」当场失效。
+  // 0.38 才把它拉回 12.8。改 opacity 或改任何一条色，先跑这条。
+  let plateClosest = { gap: Infinity, pair: '' };
+  const plates = hueRules.map(({ slug, hex }) => ({ slug, hex: toHex(mix(hex, indexAlpha, '#D0F03C')) }));
+  plates.forEach((a, i) => plates.slice(i + 1).forEach((b) => {
+    const gap = deltaE(a.hex, b.hex);
+    if (gap < plateClosest.gap) plateClosest = { gap, pair: `${a.slug} / ${b.slug}` };
+  }));
+  assert.ok(plateClosest.gap >= 12,
+    `序号底版按 ${indexAlpha} 混到底色上之后，最接近的两行 ΔE 只有 ${plateClosest.gap.toFixed(1)}`
+    + `（${plateClosest.pair}）——八行会看成同一个色，色标就没意义了`);
 
   // 反相态要盖过按行主题色：glitch 行是电光蓝底、按压态是纯黑底，
   // 八种主题色在这两种底上都会糊掉。靠选择器权重压过去（三类 / 两类 > 一类），
@@ -389,8 +441,11 @@ test('home uses licensed embedded display and pixel fonts with device-safe fallb
   const italicOwners = Array.from(
     wxss.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]*)\{([^{}]*)\}/g),
   ).filter(([, , body]) => /font-style:\s*italic/.test(body)).map(([, sel]) => sel.trim());
-  assert.deepEqual(italicOwners, ['.home-button-index'],
-    `斜体只许留给序号，实际出现在：${italicOwners.join(' / ')}`);
+  // 全页零斜体。序号原来是唯一一处——那时它是行内小标记，右倾是为了跟同字号的
+  // 英文副标题拉开。改成沉底巨号之后，区分靠的是尺度与层级，不再需要斜；
+  // 而且点阵字没有斜体字面，60px 下合成斜体会把像素网格整个剪歪。
+  assert.deepEqual(italicOwners, [],
+    `首页不该有任何斜体，实际出现在：${italicOwners.join(' / ')}`);
 
   assert.match(js, /homePixelFontBase64/);
   assert.match(js, /titleFontBase64/);
