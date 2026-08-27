@@ -237,36 +237,42 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 「看着是排过版的」而不是「裁歪了」的三个前提。
   const indexRule = wxss.match(/\.home-button-index\s*\{[^}]*\}/)[0];
 
-  // ① 底版必须与它托着的那个词等宽，并共用一条竖中轴。
-  // 行的 overflow 在 padding box 裁切、而中文就从 padding 边缘起，所以拉宽后的数字
-  // 一旦超出标签宽度，左半边就会被切掉一条竖边，看着像裁错了。
-  // 宽度是算出来的：4 字 × (字号 + 字距)。
-  const zhRule = wxss.match(/\.home-button-zh\s*\{[^}]*\}/)[0];
-  const smRule = wxss.match(/\.home-button-zh-sm\s*\{[^}]*\}/)[0];
-  const pxOf = (rule, prop) => Number((rule.match(new RegExp(`${prop}:\\s*(\\d+(?:\\.\\d+)?)px`)) || [])[1]);
-  const labelWidth = (rule) => 4 * (pxOf(rule, 'font-size') + pxOf(rule, 'letter-spacing'));
-  assert.match(indexRule, /text-align:\s*center/, '底版要与中文共用中轴，必须居中排');
-  assert.match(indexRule, new RegExp(`width:\\s*${labelWidth(zhRule)}px`),
-    `底版宽度必须等于中文标签的 ${labelWidth(zhRule)}px（4 字 × (字号 + 字距)）`);
-  // 试玩那行的中文是小一号的，底版要跟着窄一档，否则那一行的中轴会偏
-  assert.match(wxss, new RegExp(`\\.home-button-playtest \\.home-button-index\\s*\\{[^}]*width:\\s*${labelWidth(smRule)}px`),
-    `试玩行的中文是 ${pxOf(smRule, 'font-size')}px 小号，底版应为 ${labelWidth(smRule)}px`);
-  // 等宽的前提是「每个入口都是四字」。变成三字或五字，上面那条算式就不成立了。
-  Array.from(wxml.matchAll(/<text class="home-button-zh[^"]*">([^<]+)<\/text>/g), (m) => m[1])
-    .forEach((label) => assert.equal(label.length, 4,
-      `入口中文「${label}」不是四字，底版与词等宽的算式会失效`));
+  // ① 三档字号必须是从已有的 flex-grow 等比推出来的，不是三个拍脑袋的数值。
+  // 「每一行的数字填满自己那一行」是一条规则；三个各自调出来的数值就只是巧合，
+  // 改了行高比例之后会悄悄失配——有的行满出去、有的行留白。
+  const growOf = (cls) => Number((wxss.match(new RegExp(`\\.${cls}\\s*\\{[^}]*flex-grow:\\s*(\\d*\\.?\\d+)`)) || [])[1]);
+  const vhOf = (rule) => Number((rule.match(/font-size:\s*(\d*\.?\d+)vh/) || [])[1]);
+  const baseVh = vhOf(indexRule);
+  assert.ok(baseVh > 0, '底版字号必须用 vh：八行高度跟着视口高走，用 px 换台机器就填不满');
+  const tallRule = wxss.match(/\.home-button-tall \.home-button-index\s*\{[^}]*\}/);
+  const shortRule = wxss.match(/\.home-button-short \.home-button-index\s*\{[^}]*\}/);
+  assert.ok(tallRule && shortRule, '高行与矮行都要有自己那一档底版字号');
+  [['home-button-tall', tallRule[0]], ['home-button-short', shortRule[0]]].forEach(([cls, rule]) => {
+    const want = baseVh * growOf(cls);
+    const got = vhOf(rule);
+    assert.ok(Math.abs(got - want) < 0.15,
+      `${cls} 的底版字号是 ${got}vh，但按 flex-grow ${growOf(cls)} 等比应为 ${want.toFixed(2)}vh——`
+      + '八行的裁切比例会对不齐');
+  });
 
-  // ② 沿用字标那套横向拉伸，而不是引进第三款字面：包里没有第三款字，
-  // 而 scaleX 是这一页已经在用的手法（字标 1.18），底版拉得更远，读作同一个系统。
-  assert.match(indexRule, /font-family:\s*"cEDHDisplay"/, '底版与字标同一款字面');
-  assert.match(indexRule, /transform:\s*scaleX\((\d+(?:\.\d+)?)\)/, '超宽体靠 scaleX 拉出来');
-  const stretch = Number(indexRule.match(/scaleX\((\d+(?:\.\d+)?)\)/)[1]);
+  // ② 拉伸必须绕左端。填满行高之后数字本身就很宽，绕中轴拉会把左半边推到 left:0 之外，
+  // 而行的 overflow 在 padding box 裁切，那里会切出一条硬邦邦的竖边、看着像裁错了。
+  assert.match(indexRule, /transform-origin:\s*left center/,
+    '绕中轴拉伸会让左半边被行框切出一条竖边；字标用的也是 left center');
+  assert.match(indexRule, /transform:\s*translateY\(-50%\) scaleX\((\d*\.?\d+)\)/,
+    '先竖直居中再绕左端横向拉宽');
+  const stretch = Number(indexRule.match(/scaleX\((\d*\.?\d+)\)/)[1]);
   assert.ok(stretch > 1.4, `只拉到 ${stretch}，读不出「超宽」`);
-  assert.match(indexRule, /transform-origin:\s*center/, '绕中轴拉伸，中文与底版才共用中线');
-  assert.match(indexRule, /position:\s*absolute/);
-  assert.match(indexRule, /bottom:\s*-\d+px/, '底版要沉到行的下缘之下才会被切住');
+  assert.match(indexRule, /top:\s*50%/, '底版要竖直居中，才可能上下都被裁到');
 
-  // ③ 不许写 font-weight / font-style。这款字本身就是 Black 字重、也没有斜体字面，
+  // ③ 沿用字标那一款字面，而不是引进第三款
+  assert.match(indexRule, /font-family:\s*"cEDHDisplay"/, '底版与字标同一款字面');
+  assert.match(indexRule, /position:\s*absolute/);
+  // WXML 的 <text> 是行内组件，显式块化不能省
+  assert.match(indexRule, /display:\s*block/,
+    '<text> 是行内组件，不能指望 position: absolute 去隐式块化');
+
+  // ④ 不许写 font-weight / font-style。这款字本身就是 Black 字重、也没有斜体字面，
   // 而 wx.loadFontFace 注册时不带字重描述符，写 900 或 italic 系统只能合成——
   // 假粗体把本来就厚的笔画抹糊，合成斜体是切变。10px 时看不出来，这个尺寸一眼就露。
   assert.doesNotMatch(indexRule, /font-weight:/,

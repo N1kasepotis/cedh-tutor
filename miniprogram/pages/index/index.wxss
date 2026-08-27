@@ -243,46 +243,48 @@ page {
   border-bottom: 5px solid #0A0A0A;
 }
 
-/* ===== 序号：沉在入口中文底下的超宽体底版 =====
-   从「文字左侧的一枚 10px 小标记」改成「压在中文底下、被行的下缘切断的巨号」。
-   切断是这一版唯一的新动作——数字沉到行的下缘之下，被那条本来就在的发丝分隔线切住，
-   设计手段是页面已有的结构，不是新加的装饰。
+/* ===== 序号：填满整行上下的超宽体底版 =====
+   从「文字左侧的一枚 10px 小标记」改成「填满这一行上下、被行框裁断的超宽巨号」。
+   数字不再是拿来读的，是这一行的底版。
 
-   **字面**：跟字标同一款（Archivo Black），并沿用字标那套横向拉伸的变形手法。
-   首页因此只有两种声音：Archivo Black 喊（字标 + 序号底版），点阵字低语（中文 + 副标题）。
-   拉伸而不是换字：包里没有第三款字，而 scaleX 是这一页已经在用的手法（字标 1.18），
-   底版拉到 1.9 是同一个动作推到更远，读作同一个设计系统里的东西。
+   **字面沿用字标那一款并沿用它的变形手法**：包里没有第三款字，而 scaleX 是这一页
+   已经在用的（字标是 scaleX(1.18) skewX(-10deg)），底版拉到 1.9 是同一个动作推到更远，
+   读作同一个设计系统里的东西。首页因此仍只有两种声音：Archivo Black 喊（字标 + 底版），
+   点阵字低语（中文 + 副标题）。
 
-   **宽度正好等于它托着的那个词**：行的 overflow 在 padding box 裁切，而中文就从
-   padding 边缘起——所以拉宽后的数字一旦超出标签宽度，左半边就会被切掉一条竖边，
-   看着像裁错了。与其当限制不如当规则：底版与词等宽，数字与中文共用一条中轴。
-   92px = 4 字 × (20px 字号 + 3px 字距)；试玩那行的中文是 16px/2px 的小号，故单列一条 72px。
-   八个入口的中文都是四字，测试锁住这一点——变成三字或五字，等宽的前提就不成立了。
+   **拉伸必须绕左端，不能绕中轴**。填满行高之后数字本身就很宽，绕中轴拉伸会把左半边
+   推到 left:0 之外——而行的 overflow 在 padding box 裁切，那里会切出一条硬邦邦的竖边，
+   看着像裁错了。绕左端拉，墨迹只往右长，左缘始终与中文对齐。字标用的也是 left center。
+
+   **字号按行高分三档，比例直接取自已有的 flex-grow**（tall 1.45 / base 1 / short 0.72），
+   所以「每一行的数字填满自己那一行」是同一条规则，不是八个各自拍脑袋的数值；
+   每行被裁掉的比例也因此大致相同，不会有的行满、有的行只剩一条带。
+
+   **字号必须用 vh，不能用 px**：八行是 .home-actions（flex 1 1 55%）按 flex-grow 分的，
+   高度跟着视口高走。用 px 的话只在某一种屏高上正好填满，换台机器不是溢出就是留白。
+   刻意取得比行高略大：宁可被裁一点，也不要在某些机型上填不满露出空档——
+   顶部与底部都被裁，正是「填满上下限」要的样子。
 
    **不写 font-weight 也不写 font-style**：这款字本身就是 Black 字重、也没有斜体字面，
    而 wx.loadFontFace 注册时不带字重描述符（即注册成 normal），写 900 或 italic
    系统只能合成——假粗体把本来就厚的笔画抹糊，合成斜体是切变。10px 时看不出来，
-   这个尺寸一眼就露。
+   这个尺寸一眼就露。首页因此全页零斜体。
 
-   **沉降量 -20px 是眼睛定的，不是算出来的**。点阵字那一版能精确算（从内嵌 TTF 读到
-   unitsPerEm 与字形 bbox，沉 k 格 = -(1+k) 格，切口必然落在像素格边界上）；
-   换成矢量字就没有格子可对，而这款字的 WOFF2 里那段 brotli 流在 Node 里解不开
-   （ERR__ERROR_FORMAT_PADDING_2），拿不到 capHeight 与基线位置。
-   所以这个值需要真机过一遍再定，别当成推导出来的。 */
+   display: block 是显式写的，不靠 position: absolute 去隐式块化——
+   WXML 的 <text> 是行内组件，宽度与对齐在行内盒上不生效，这一条不能省。 */
 .home-button-index {
   position: absolute;
+  display: block;
   left: 0;
-  bottom: -20px;
+  top: 50%;
   z-index: 0;
-  width: 92px;
   font-family: "cEDHDisplay", "Arial Black", sans-serif;
-  font-size: 44px;
+  font-size: 10vh;
   letter-spacing: -0.04em;
   line-height: 1;
-  text-align: center;
-  /* 拉宽绕中轴，中文与底版因此共用同一条竖中线 */
-  transform: scaleX(1.9);
-  transform-origin: center;
+  /* 先竖直居中，再绕左端横向拉宽；两者互不干扰（translateY 不动 X，scaleX 不动 Y） */
+  transform: translateY(-50%) scaleX(1.9);
+  transform-origin: left center;
   /* 0.38 是一个两头卡死的窄窗口：
      低于 0.38，八枚主题色在这块酸性黄绿上混成一片——实测 0.19 时两两最小 ΔE 只有 5.6，
      肉眼就是同一个颜色，「序号是色标」当场失效；
@@ -292,9 +294,13 @@ page {
   pointer-events: none;
 }
 
-/* 试玩那行的中文是 16px/2px 的小号，底版跟着窄一档才仍与词等宽 */
-.home-button-playtest .home-button-index {
-  width: 72px;
+/* 高行与矮行的底版按各自的 flex-grow 等比放大缩小，裁切比例才在八行之间一致 */
+.home-button-tall .home-button-index {
+  font-size: 14.5vh;
+}
+
+.home-button-short .home-button-index {
+  font-size: 7.2vh;
 }
 
 /* 每行的序号取该入口目标页自己的主题色（与 config/particle.js 的 palettes 同源），
