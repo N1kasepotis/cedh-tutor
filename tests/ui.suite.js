@@ -237,35 +237,42 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 「看着是排过版的」而不是「裁歪了」的三个前提。
   const indexRule = wxss.match(/\.home-button-index\s*\{[^}]*\}/)[0];
 
-  // ① 字号必须是 10px 的整数倍，而且必须是 px 不是 rpx。
-  // 点阵字形画在 10px 网格上，非整数倍会让像素边落在半格上、真机发虚；
-  // rpx 随屏宽缩放（60rpx 在 390pt 机器上只有网格的 3.12 倍），当场糊掉。
-  const indexSize = indexRule.match(/font-size:\s*(\d+(?:\.\d+)?)(px|rpx)/);
-  assert.ok(indexSize, '序号必须显式写 font-size');
-  assert.equal(indexSize[2], 'px', '序号字号只能用 px：rpx 随屏宽缩放会脱离点阵网格');
-  const fontPx = Number(indexSize[1]);
-  assert.equal(fontPx % 10, 0, `序号字号 ${fontPx}px 不是 10px 的整数倍，点阵字会糊`);
-  assert.ok(fontPx >= 40, `序号 ${fontPx}px 不够大，撑不起底版`);
+  // ① 底版必须与它托着的那个词等宽，并共用一条竖中轴。
+  // 行的 overflow 在 padding box 裁切、而中文就从 padding 边缘起，所以拉宽后的数字
+  // 一旦超出标签宽度，左半边就会被切掉一条竖边，看着像裁错了。
+  // 宽度是算出来的：4 字 × (字号 + 字距)。
+  const zhRule = wxss.match(/\.home-button-zh\s*\{[^}]*\}/)[0];
+  const smRule = wxss.match(/\.home-button-zh-sm\s*\{[^}]*\}/)[0];
+  const pxOf = (rule, prop) => Number((rule.match(new RegExp(`${prop}:\\s*(\\d+(?:\\.\\d+)?)px`)) || [])[1]);
+  const labelWidth = (rule) => 4 * (pxOf(rule, 'font-size') + pxOf(rule, 'letter-spacing'));
+  assert.match(indexRule, /text-align:\s*center/, '底版要与中文共用中轴，必须居中排');
+  assert.match(indexRule, new RegExp(`width:\\s*${labelWidth(zhRule)}px`),
+    `底版宽度必须等于中文标签的 ${labelWidth(zhRule)}px（4 字 × (字号 + 字距)）`);
+  // 试玩那行的中文是小一号的，底版要跟着窄一档，否则那一行的中轴会偏
+  assert.match(wxss, new RegExp(`\\.home-button-playtest \\.home-button-index\\s*\\{[^}]*width:\\s*${labelWidth(smRule)}px`),
+    `试玩行的中文是 ${pxOf(smRule, 'font-size')}px 小号，底版应为 ${labelWidth(smRule)}px`);
+  // 等宽的前提是「每个入口都是四字」。变成三字或五字，上面那条算式就不成立了。
+  Array.from(wxml.matchAll(/<text class="home-button-zh[^"]*">([^<]+)<\/text>/g), (m) => m[1])
+    .forEach((label) => assert.equal(label.length, 4,
+      `入口中文「${label}」不是四字，底版与词等宽的算式会失效`));
 
-  // ② 沉降量必须是整格。基线在内容框顶部 0.9em（ascent 900 / upem 1000），
-  // 所以沉 k 格 = -(1 + k) 格。只有整格偏移才能让切口落在数字自己的像素格边界上——
-  // 那正是这一版唯一的立论点。
-  const cell = fontPx / 10;
-  const bottomPx = indexRule.match(/bottom:\s*(-?\d+(?:\.\d+)?)px/);
-  assert.ok(bottomPx, '序号必须用 px 写 bottom 偏移');
-  const sinkCells = -Number(bottomPx[1]) / cell - 1;
-  assert.ok(Number.isInteger(sinkCells) && sinkCells >= 1,
-    `沉降 ${bottomPx[1]}px 换算成 ${sinkCells} 格，不是整数格——切口会落在半个像素上`);
-  assert.ok(sinkCells <= 4, `沉了 ${sinkCells} 格，七格高的数字剩不下多少`);
+  // ② 沿用字标那套横向拉伸，而不是引进第三款字面：包里没有第三款字，
+  // 而 scaleX 是这一页已经在用的手法（字标 1.18），底版拉得更远，读作同一个系统。
+  assert.match(indexRule, /font-family:\s*"cEDHDisplay"/, '底版与字标同一款字面');
+  assert.match(indexRule, /transform:\s*scaleX\((\d+(?:\.\d+)?)\)/, '超宽体靠 scaleX 拉出来');
+  const stretch = Number(indexRule.match(/scaleX\((\d+(?:\.\d+)?)\)/)[1]);
+  assert.ok(stretch > 1.4, `只拉到 ${stretch}，读不出「超宽」`);
+  assert.match(indexRule, /transform-origin:\s*center/, '绕中轴拉伸，中文与底版才共用中线');
   assert.match(indexRule, /position:\s*absolute/);
+  assert.match(indexRule, /bottom:\s*-\d+px/, '底版要沉到行的下缘之下才会被切住');
 
-  // ③ 不许写 font-weight / font-style。这款点阵字只有一个字重、没有斜体字面，
-  // 写了系统只能合成——假粗体把笔画抹出网格，合成斜体把整张网格剪歪。
-  // 10px 时看不太出来，60px 时一眼就糊。
+  // ③ 不许写 font-weight / font-style。这款字本身就是 Black 字重、也没有斜体字面，
+  // 而 wx.loadFontFace 注册时不带字重描述符，写 900 或 italic 系统只能合成——
+  // 假粗体把本来就厚的笔画抹糊，合成斜体是切变。10px 时看不出来，这个尺寸一眼就露。
   assert.doesNotMatch(indexRule, /font-weight:/,
-    '点阵字只有一个字重，写 font-weight 会触发合成假粗体、把笔画抹出像素网格');
+    '这款字本身就是 Black 字重，写 font-weight 会触发合成假粗体、把笔画抹糊');
   assert.doesNotMatch(indexRule, /font-style:/,
-    '点阵字没有斜体字面，合成斜体是切变，会把像素网格整个剪歪');
+    '这款字没有斜体字面，合成斜体是切变');
 
   // 行容器要能切住它：需要定位参照，且裁切必须发生在 padding box（发丝线内侧）
   const buttonRule = wxss.match(/\.home-button\s*\{[^}]*\}/)[0];
@@ -279,7 +286,10 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 漏掉一行会直接继承成黑色，这条断言就是为了让那种遗漏立刻暴露
   assert.doesNotMatch(indexRule, /(^|[^-])color:/,
     '序号基类不得设 color，颜色只从按行主题色来');
-  assert.doesNotMatch(indexRule, /transform:|background|text-shadow/);
+  // background / text-shadow 仍然禁：底版靠 opacity 与主题色成立，
+  // 加底色会盖住线场、加投影则是首页全页禁用的。transform 不再禁——
+  // 横向拉伸正是这一版的核心手法。
+  assert.doesNotMatch(indexRule, /background|text-shadow/);
 
   // 八行各取目标页自己的主题色，八色互不重复
   const hueRules = Array.from(
