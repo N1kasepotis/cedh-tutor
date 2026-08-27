@@ -227,9 +227,11 @@ npm run syntax                      # 仅检查全部 JavaScript 语法
 npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊断
 ```
 
-当前基线：92 个 JavaScript 文件通过语法门禁，347 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 174,196 个画像）。发布包 `miniprogram/` 约 1.5MB，主包上限 2MB。
+当前基线：91 个 JavaScript 文件通过语法门禁，263 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 174,196 个画像）。发布包 `miniprogram/` 约 1.5MB，主包上限 2MB。
 
 诊断默认使用确定性的基准覆盖集：基线/单项变化、按主将标签构造的目标画像、固定种子的组合画像，以及颜色/资源引擎组合。排序复用生产逻辑中的拍档惩罚和低使用率多样性尾位，避免诊断模型与实际推荐分叉。需要离线穷举全部单选组合时使用 `node scripts/diagnose-coverage.js --mode=full`；该模式组合量很大，不用于日常 CI。
+
+**基线数字由测试守着**：README 里「当前基线」那几个可算的数（测试条数、语法门禁文件数、指挥官库人数、页面数）都由 `shared.suite.js` 与真值对账，改了代码忘了同步会直接红。散文里的数字没有主人——不会有人回头重算它，于是它慢慢变成一句假话，而下一个人拿它当事实用。同一条门禁还禁止任何 suite 去 `require` 另一个 suite：`npm test` 是 `node --test tests/*.js`，每个 suite 都会被直接拾取，再 require 一遍只会让它们跑两遍、把条数报虚（曾有 `tests/core.test.js` 这么干，把 262 条报成 349 条）。
 
 发布前应确认：`npm run check` 全绿（语法门禁 + 测试 + `deadCount` 为 0）、Scryfall request + downloadFile 域名与隐私保护指引已配置、AppID 为正式主体。
 

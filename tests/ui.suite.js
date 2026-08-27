@@ -360,6 +360,50 @@ test('home is a single-screen acid index with the eight existing actions', () =>
       `${slug} 行的底版在电光蓝上只有 ${seen.toFixed(2)}:1，几乎看不出来`);
   });
 
+  // 八色之间必须**看得出**不同，而不只是数值上不重复。用 CIE Lab ΔE 量，
+  // 「色相差多少度」在深色端根本不可靠——初版 life #C61A28 与 meta #C71807
+  // 是两个不同的十六进制值、色相也差 12°，实际 ΔE 只有 14.7，肉眼就是同一枚红。
+  //
+  // 这条曾被误删过一次：改成「只在 glitch 行显示」时，我把整块 Lab 机制连同
+  // 「混合后 ΔE」一起切掉了——但失效的只是**混合后**那条（同屏不会出现两个数字，
+  // 没机会并排比较），原色之间要看得出不同这件事一直成立。
+  const toLab = (hex) => {
+    const linear = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
+      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
+    const [r, g, b] = linear;
+    const xyz = [
+      (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047,
+      r * 0.2126 + g * 0.7152 + b * 0.0722,
+      (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883,
+    ].map((t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116));
+    return [116 * xyz[1] - 16, 500 * (xyz[0] - xyz[1]), 200 * (xyz[1] - xyz[2])];
+  };
+  const deltaE = (a, b) => {
+    const [A, B] = [toLab(a), toLab(b)];
+    return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
+  };
+  let closest = { gap: Infinity, pair: '' };
+  hueRules.forEach((a, i) => hueRules.slice(i + 1).forEach((b) => {
+    const gap = deltaE(a.hex, b.hex);
+    if (gap < closest.gap) closest = { gap, pair: `${a.slug} ${a.hex} / ${b.slug} ${b.hex}` };
+  }));
+  assert.ok(closest.gap >= 30,
+    `最接近的两枚序号色差 ΔE 只有 ${closest.gap.toFixed(1)}，看上去会是同一个色：${closest.pair}`);
+
+  // 「为什么不能用更低的不透明度」这件事，以前只写在注释里——注释里的数字没有主人，
+  // 改了颜色也不会有人重算它。搬进测试之后它会自己防守：哪天八色被调得在低透明度下
+  // 也分得开了，这条会红，提醒去重新考虑那个被否掉的方案，而不是让注释继续说瞎话。
+  const quantize = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
+  let faint = Infinity;
+  const lowPlates = hueRules.map(({ hex }) => quantize(mix(hex, 0.19, '#D0F03C')));
+  lowPlates.forEach((a, i) => lowPlates.slice(i + 1).forEach((b) => {
+    faint = Math.min(faint, deltaE(a, b));
+  }));
+  assert.ok(faint < 8,
+    `低透明度（0.19）下八色混到酸性黄绿上最小 ΔE 已到 ${faint.toFixed(2)}——`
+    + '当初否掉「低透明度水印」正是因为这个值太小（约 5.6，8 位量化后）。'
+    + '它若变大，那个方案就重新可行了，注释与取舍都要重写。');
+
   // 数字保留本行主题色、不跟着 glitch 转黑：整行反相成蓝底黑字，只有底版还留着
   // 这一行自己的颜色——读作「故障之下这一行的本色透出来」。
   assert.doesNotMatch(wxss, /\.home-button\.is-glitch \.home-button-index,/,

@@ -605,3 +605,69 @@ test('WXSS 不得留下 WXML 与 JS 都够不着的孤儿样式', () => {
     + '还是**改版后没人再用**（那才是删）。\n'
     + orphans.join('\n'));
 });
+
+// README 的「当前基线」数字必须与真值对得上。
+//
+// 散文里的数字没有主人：改了代码不会有人回去重算它，于是它慢慢变成一句假话，
+// 而下一个人（或下一轮的自己）会拿它当事实用。这一轮就抓到两处——
+//   · 测试数写着 347，真值 349，加了两条测试没同步；
+//   · 而 349 本身还是虚的：tests/core.test.js 又 require 了五个 suite，
+//     那五个因此各跑两遍，把报出来的条数抬高了 87（真实唯一条数 262）。
+//     那个文件是历史遗留——npm test 早就改成 node --test tests/*.js，
+//     每个 suite 都会被直接拾取，它的 require 只剩重复计数这一个效果。
+//     （顺带纠正一个想当然：重复并不多花墙钟时间，node --test 是多进程并行跑文件的。）
+//
+// 所以这里只锁**能被算出来**的那几个。锁不住的（包体大小、覆盖率画像数）留在散文里，
+// 但不要再往散文里加新的可算数字——能算的就该由这条守着。
+test('README 的基线数字与真值一致', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const root = path.join(__dirname, '..');
+  const readme = fs.readFileSync(path.join(root, 'README.md'), 'utf8');
+
+  const stated = (label, re) => {
+    const m = readme.match(re);
+    assert.ok(m, `README 里找不到「${label}」这条基线数字`);
+    return Number(m[1]);
+  };
+
+  // 测试条数：静态数 tests/ 下行首的 test( 声明。这个数与 node --test 报的条数
+  // 一致，前提是没有哪个文件把别的 suite 再 require 一遍。
+  const suiteFiles = fs.readdirSync(path.join(root, 'tests')).filter((f) => f.endsWith('.js'));
+  const declared = suiteFiles.reduce((sum, file) => (
+    sum + (fs.readFileSync(path.join(root, 'tests', file), 'utf8').match(/^test\(/gm) || []).length
+  ), 0);
+  assert.equal(stated('测试数', /(\d+) 项测试全绿/), declared,
+    `README 说 ${stated('测试数', /(\d+) 项测试全绿/)} 项，实际声明了 ${declared} 项。`
+    + '加删测试之后要同步这个数字。');
+
+  // 没有哪个 suite 该被别的文件再 require 一遍——那会让同一批测试跑两遍、
+  // 把报出来的条数抬高，而条数正是 README 与提交信息里反复引用的那个数
+  suiteFiles.forEach((file) => {
+    const source = fs.readFileSync(path.join(root, 'tests', file), 'utf8');
+    const requires = Array.from(source.matchAll(/require\('\.\/([\w.-]+)'\)/g), (m) => m[1]);
+    assert.deepEqual(requires, [],
+      `${file} 又 require 了 ${requires.join('、')}——node --test tests/*.js 已经会拾取每个 suite，`
+      + '再 require 一遍只会让它们跑两遍、把条数报虚');
+  });
+
+  // 语法门禁的文件数：口径是全仓（含 tests 与 scripts），与 scripts/check-syntax.js 一致
+  // 口径必须与 scripts/check-syntax.js 一致：它只走 miniprogram / scripts / tests 三个根，
+  // 不是全仓——照全仓算会多出 tools 等目录，得到一个跟门禁输出对不上的数字
+  const jsFiles = [];
+  const walk = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (entry.name.endsWith('.js')) jsFiles.push(full);
+    });
+  };
+  ['miniprogram', 'scripts', 'tests'].forEach((dir) => walk(path.join(root, dir)));
+  assert.equal(stated('语法门禁文件数', /当前基线：(\d+) 个 JavaScript 文件/), jsFiles.length);
+
+  // 指挥官库人数与页面数
+  const { commanders } = require('../miniprogram/config/commanders');
+  assert.equal(stated('推荐诊断覆盖人数', /推荐诊断覆盖 \d+\/(\d+) 位主将/), commanders.length);
+  const appJson = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/app.json'), 'utf8'));
+  assert.equal(stated('页面数', /## 当前模块（(\d+) 页）/), appJson.pages.length);
+});
