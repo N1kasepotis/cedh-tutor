@@ -160,6 +160,72 @@ page {
   transform: translate(-50%, -50%) rotate(-90deg);
 }
 
+/* 边缘赛跑：每个座位在自己那条屏幕外缘上有一段线，光按围坐顺序跑过它们。
+   位置直接跟着朝向类走——一个人坐哪条边，他的线就在哪条边，两者本来就是同一件事。
+
+   为什么是光不是文字：一半座位转了 180 度，任何一句「你先手」对另一半都是倒的。
+   为什么不做成聚光：本页的径向渐变配额只有一个，已经给了玩家分区光晕（发布门禁会数），
+   所以这里只用纯色 + 外发光。注释里也不要写那个字面量——本仓的门禁连注释一起扫。 */
+.seat-edge {
+  position: absolute;
+  z-index: 4;
+  background: rgb(var(--player-rgb));
+  opacity: 0;
+  /* 140ms 比最快那一档（55ms）还长，所以快段根本来不及亮到满——
+     于是「转得快时发虚、慢下来才逐渐结实」是自然长出来的，不用另写一套。 */
+  transition: opacity 140ms ease-out, box-shadow 140ms ease-out;
+  pointer-events: none;
+}
+
+.player-facing-top .seat-edge {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 3rpx;
+}
+
+.player-facing-bottom .seat-edge {
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 3rpx;
+}
+
+.player-facing-right .seat-edge {
+  top: 0;
+  right: 0;
+  width: 3rpx;
+  height: 100%;
+}
+
+/* 彗尾三档。外发光只给头部：全都发光就糊成一圈，看不出光在往哪边跑。 */
+.seat-edge.level-1 {
+  opacity: 0.2;
+}
+
+.seat-edge.level-2 {
+  opacity: 0.52;
+}
+
+.seat-edge.level-3 {
+  opacity: 1;
+  box-shadow:
+    0 0 12rpx rgba(var(--player-rgb), 0.85),
+    0 0 30rpx rgba(var(--player-rgb), 0.42);
+}
+
+/* 落定后常驻：中签者那条边一直留着他的颜色。
+   比头部收敛得多——它要陪完整整一局，不能一直在抢注意力。 */
+.seat-edge.seat-edge-won {
+  opacity: 0.9;
+  box-shadow: 0 0 8rpx rgba(var(--player-rgb), 0.45);
+}
+
+.hub-draw {
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
+}
+
 .life-hit-area {
   position: relative;
   z-index: 1;
@@ -425,6 +491,19 @@ page {
 @media (prefers-reduced-motion: reduce) {
   .dropdown-trigger {
     animation: none;
+  }
+
+  /* 赛跑本身停不掉——小程序没有让 JS 读到这条媒体查询的 API，硬跳过就变成
+     对着三秒空屏发呆。能做的是去掉发光和过渡，只留最朴素的亮/灭。
+     被切换的是一条 3rpx 发丝线，面积远在 WCAG 2.3.1 的小面积豁免之内，
+     而且变的是不透明度不是位移，不触发前庭反应。 */
+  .seat-edge {
+    transition: none;
+  }
+
+  .seat-edge.level-3,
+  .seat-edge.seat-edge-won {
+    box-shadow: none;
   }
 
   .dropdown-icon,

@@ -6,6 +6,10 @@ const {
   changePlayerLife,
   isLifeTrackerState,
   seatFacingFor,
+  pickFirstPlayerId,
+  buildFirstPlayerRace,
+  raceLevelsAt,
+  setFirstPlayer,
 } = require('../../utils/life-tracker');
 const { readStorage, writeStorage } = require('../../utils/storage');
 const { setKeepScreenOn } = require('../../utils/keep-screen-on');
@@ -62,6 +66,7 @@ Page({
 
   onHide() {
     this.clearLifePress(false);
+    this.stopRace();
     this.dismissUndo();
     this.writeStorage();
     this.setData({ menuOpen: false });
@@ -69,6 +74,7 @@ Page({
 
   onUnload() {
     this.clearLifePress(false);
+    this.stopRace();
     this.dismissUndo();
     this.writeStorage();
     setKeepScreenOn(false);
@@ -102,13 +108,20 @@ Page({
     // 两人上下对坐（上位反转）；三人上一下二（首位横跨反转）；四人十字四分；
     // 五人两两对坐 + 一人坐右短边。谁坐哪条边查 config 的 seatFacing，不在这里硬算——
     // 那张表同时被边缘赛跑用来决定光该跑过哪一段，两处算法分家迟早对不上。
+    // 重建 players 会抹掉正在跑的那一帧亮度：对局中随手加一点血就会把光打断。
+    // 原样接过来，让赛跑自己去推进。
+    const current = this.data.players || [];
     const players = this.gameState.players.map((player, index) => {
       const color = colorForKey(player.colorKey);
       return {
         ...player,
         color: color.hex,
         rgb: color.rgb,
+        raceLevel: (current[index] && current[index].raceLevel) || 0,
         orientationClass: `player-facing-${seatFacingFor(playerCount, index)}`,
+        // 抽完先手，中签者那条外缘留成他的颜色。抽签只热闹两秒，
+        // 但「谁先手」整局都在用来数回合顺序，所以它得留下来。
+        isFirstPlayer: player.id === this.gameState.firstPlayerId,
       };
     });
     this.setData({ players, playerCount });
@@ -227,8 +240,75 @@ Page({
     this.setData({ menuOpen: !this.data.menuOpen });
   },
 
+  // 抽先手：一道光沿屏幕外缘绕圈，经过每个人的座位边，减速，停在中签者那一段。
+  //
+  // 全程不出文字：一半座位是转 180 度的，任何一句「你先手」对另一半都是倒的。
+  // 光没有方向，从哪个座位看都读得懂。
+  drawFirstPlayer() {
+    this.setData({ menuOpen: false });
+    if (this.raceTimer) return; // 正在跑就别重入，否则两条序列会互相抢 raceLevels
+
+    const playerCount = this.gameState.playerCount || this.gameState.players.length;
+    const winnerId = pickFirstPlayerId(this.gameState, Math.random);
+    if (!winnerId) return;
+
+    const race = buildFirstPlayerRace(playerCount, winnerId);
+    // 两人以下没有「绕圈」可言，直接给结果
+    if (!race.sequence.length) {
+      this.settleFirstPlayer(winnerId);
+      return;
+    }
+    this.dismissUndo();
+    this.runRaceStep(race, winnerId, 0);
+  },
+
+  runRaceStep(race, winnerId, index) {
+    const last = index >= race.sequence.length - 1;
+    const trail = (lifeTrackerConfig.firstPlayerRace || {}).trail;
+    // 最后一格只留中签者独亮，彗尾清掉——「其余全灭、只剩一个」才是落定的那一下，
+    // 拖着尾巴收尾会显得还没跑完
+    this.applyRaceLevels(last ? { [winnerId]: 3 } : raceLevelsAt(race.sequence, index, trail));
+
+    this.raceTimer = setTimeout(() => {
+      this.raceTimer = null;
+      if (last) {
+        this.settleFirstPlayer(winnerId);
+        return;
+      }
+      this.runRaceStep(race, winnerId, index + 1);
+    }, last ? (lifeTrackerConfig.firstPlayerRace || {}).holdMs : race.delays[index]);
+  },
+
+  // 只推变化的那几格。整个 players 数组每 55ms 全量过桥是这一页最贵的做法，
+  // 而一帧真正变化的最多就是彗尾那几格。
+  applyRaceLevels(levels) {
+    const patch = {};
+    (this.data.players || []).forEach((player, index) => {
+      const next = levels[player.id] || 0;
+      if ((player.raceLevel || 0) === next) return;
+      patch[`players[${index}].raceLevel`] = next;
+    });
+    if (Object.keys(patch).length) this.setData(patch);
+  },
+
+  settleFirstPlayer(winnerId) {
+    this.gameState = setFirstPlayer(this.gameState, winnerId);
+    this.applyRaceLevels({});
+    this.syncPlayers();
+    this.writeStorage();
+  },
+
+  // 切后台、切人数、重置、离开页面都要掐掉：让一条已经没意义的序列继续跑，
+  // 结果就是它在新的一局里凭空点亮一个座位。
+  stopRace() {
+    if (this.raceTimer) clearTimeout(this.raceTimer);
+    this.raceTimer = null;
+    this.applyRaceLevels({});
+  },
+
   resetGame() {
     this.clearLifePress(false);
+    this.stopRace();
     this.undoPendingSnapshot = cloneLifeState(this.gameState);
     this.gameState = resetLifeTrackerState(this.gameState);
     this.syncPlayers();
@@ -245,6 +325,7 @@ Page({
       return;
     }
     this.clearLifePress(false);
+    this.stopRace();
     this.undoPendingSnapshot = cloneLifeState(this.gameState);
     this.gameState = setLifeTrackerPlayerCount(this.gameState, count);
     this.syncPlayers();

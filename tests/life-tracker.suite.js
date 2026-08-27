@@ -378,3 +378,262 @@ test('life tracker offers an undo window after destructive board changes', () =>
     `撤销胶囊未同心：外高 ${barHeight}rpx、内高 ${actionHeight}rpx，上下缩 ${(barHeight - actionHeight) / 2}rpx，右侧却缩 ${barPadRight}rpx`,
   );
 });
+
+// ---------------------------------------------------------------------------
+// 抽先手：边缘赛跑
+//
+// 一道光沿屏幕外缘按围坐顺序跑，减速，停在中签者那一段，之后那条边留成他的颜色。
+// 全程不出文字——一半座位转了 180 度，任何一句「你先手」对另一半都是倒的。
+// ---------------------------------------------------------------------------
+
+test('围坐环序覆盖每个人恰好一次，且是真正的顺时针', () => {
+  const { seatRingFor } = getLifeTrackerUtils();
+
+  [2, 3, 4, 5].forEach((count) => {
+    const ring = seatRingFor(count);
+    assert.equal(ring.length, count, `${count} 人局的环少了人`);
+    assert.deepEqual(
+      ring.slice().sort((a, b) => a - b),
+      Array.from({ length: count }, (_, i) => i + 1),
+      `${count} 人局的环有重复或越界的座位`,
+    );
+  });
+
+  // DOM 顺序不等于围坐顺序，这正是这张表存在的理由：
+  // 三人局 seat-2 在左下、seat-3 在右下，顺时针数是 1 → 3 → 2；
+  // 四人局 seat-3 在左下、seat-4 在右下，顺时针是 1 → 2 → 4 → 3。
+  // 直接拿 DOM 顺序跑，光会在对角之间乱跳，一眼就是不对。
+  assert.deepEqual(seatRingFor(3), [1, 3, 2]);
+  assert.deepEqual(seatRingFor(4), [1, 2, 4, 3]);
+  // 五人：左上 → 右上 → 右侧竖栏 → 右下 → 左下
+  assert.deepEqual(seatRingFor(5), [1, 2, 5, 4, 3]);
+});
+
+test('先手是均匀抽的，动画只是把已定的结果演出来', () => {
+  const { createLifeTrackerState, pickFirstPlayerId, buildFirstPlayerRace } = getLifeTrackerUtils();
+  const state = createLifeTrackerState({ rng: () => 0.25, playerCount: 4 });
+
+  // 四人局：rng 落在四个等宽区间里，各自对应一个座位
+  assert.equal(pickFirstPlayerId(state, () => 0), 1);
+  assert.equal(pickFirstPlayerId(state, () => 0.26), 2);
+  assert.equal(pickFirstPlayerId(state, () => 0.51), 3);
+  assert.equal(pickFirstPlayerId(state, () => 0.999999), 4);
+  // rng 返回越界值不能把 id 抽到数组外去
+  assert.equal(pickFirstPlayerId(state, () => 1.5), 4);
+  assert.equal(pickFirstPlayerId(state, () => -3), 1);
+
+  // 序列末位必须**恰好**是抽中的那个人。反过来做（先定步数、看落在谁头上）
+  // 会让概率依赖 laps / easing 这些节奏参数——改一下节奏就悄悄改了公平性。
+  [2, 3, 4, 5].forEach((count) => {
+    for (let winner = 1; winner <= count; winner += 1) {
+      const race = buildFirstPlayerRace(count, winner);
+      const landed = race.sequence[race.sequence.length - 1];
+      assert.equal(landed, winner, `${count} 人局抽到 seat-${winner}，光却停在 seat-${landed}`);
+      assert.equal(race.sequence.length, race.delays.length);
+    }
+  });
+
+  // 不存在的座位不生成序列，让调用方直接落结果而不是跑一段空动画
+  assert.deepEqual(buildFirstPlayerRace(4, 99), { sequence: [], delays: [] });
+});
+
+test('赛跑必须是减速的，而且要绕够圈数', () => {
+  const { buildFirstPlayerRace, seatRingFor } = getLifeTrackerUtils();
+  const { lifeTrackerConfig } = require('../miniprogram/config/life-tracker');
+  const config = lifeTrackerConfig.firstPlayerRace;
+
+  const race = buildFirstPlayerRace(5, 3);
+  // 单调不减：中间任何一处变快，观感就不是「转盘慢下来」而是「卡了一下」
+  race.delays.forEach((delay, index) => {
+    if (index === 0) return;
+    assert.ok(delay >= race.delays[index - 1],
+      `第 ${index} 步比上一步还快（${race.delays[index - 1]} → ${delay}），减速被打断了`);
+  });
+  assert.equal(race.delays[0], config.minStepMs);
+  assert.equal(race.delays[race.delays.length - 1], config.maxStepMs);
+  // 首尾必须真的拉开差距，否则就是匀速转圈、没有「停下来」这个动作
+  assert.ok(config.maxStepMs >= config.minStepMs * 4, '最慢与最快差距不足，读不出减速');
+
+  // 至少绕满配置的圈数：少于两圈来不及建立「在转」的印象
+  const ring = seatRingFor(5);
+  assert.ok(race.sequence.length > ring.length * config.laps,
+    `只跑了 ${race.sequence.length} 步，不足 ${config.laps} 圈`);
+  assert.ok(config.laps >= 2);
+  // 彗尾至少一格。砍成 0 的话每一帧只有一个孤格在亮，快段就是纯闪烁——
+  // 既读不出光在往哪边跑，也是这条效果里唯一沾边光敏风险的地方。
+  assert.ok(config.trail >= 1, '彗尾长度不能是 0，那不是赛跑是闪烁');
+
+  // 总时长要落在「有悬念但不磨人」的区间
+  const total = race.delays.reduce((sum, delay) => sum + delay, 0);
+  assert.ok(total > 1500 && total < 5000, `总时长 ${total}ms 超出可接受区间`);
+});
+
+test('彗尾：头部最亮往回递减，不是单格闪烁', () => {
+  const { raceLevelsAt } = getLifeTrackerUtils();
+  const sequence = [1, 2, 4, 3, 1, 2, 4, 3];
+
+  // 只亮一格的话，快段就是纯闪烁；有尾巴才读得出「一道光在跑」
+  assert.deepEqual(raceLevelsAt(sequence, 4, 2), { 1: 3, 3: 2, 4: 1 });
+  // 开头几步尾巴还没长齐，不能越界去读 sequence[-1]
+  assert.deepEqual(raceLevelsAt(sequence, 0, 2), { 1: 3 });
+  assert.deepEqual(raceLevelsAt(sequence, 1, 2), { 2: 3, 1: 2 });
+  // 两人局：座位比尾巴短，同一格会被扫到两次，必须取最亮的那次
+  assert.deepEqual(raceLevelsAt([1, 2, 1, 2], 3, 2), { 2: 3, 1: 2 });
+  assert.deepEqual(raceLevelsAt(sequence, 4, 0), { 1: 1 });
+});
+
+test('先手落定后常驻，并随新的一局清掉', () => {
+  const {
+    createLifeTrackerState, setFirstPlayer, resetLifeTrackerState,
+    setLifeTrackerPlayerCount, isLifeTrackerState,
+  } = getLifeTrackerUtils();
+
+  const state = createLifeTrackerState({ rng: () => 0.25, playerCount: 5 });
+  assert.equal(state.firstPlayerId, null, '新开一局还没抽先手');
+
+  const drawn = setFirstPlayer(state, 4);
+  assert.equal(drawn.firstPlayerId, 4);
+  // 抽签只热闹两秒，但「谁先手」整局都在用来数回合顺序——所以它得存下来，
+  // 切后台回来还在
+  assert.ok(isLifeTrackerState(drawn), '带先手的存档必须能落盘');
+  assert.equal(setFirstPlayer(drawn, 99).firstPlayerId, null, '不存在的座位不能被记成先手');
+
+  // 重置和切人数都是「新的一局」，先手跟着清
+  assert.equal(resetLifeTrackerState(drawn, () => 0.5).firstPlayerId, null);
+  assert.equal(setLifeTrackerPlayerCount(drawn, 4, () => 0.5).firstPlayerId, null);
+
+  // 越界的先手 id 必须让整份存档作废：留着它只会让那条常驻边永远不显示、
+  // 而且不报错——最难查的那一类
+  assert.equal(isLifeTrackerState({ ...drawn, firstPlayerId: 9 }), false);
+  assert.equal(isLifeTrackerState({ ...drawn, firstPlayerId: 0 }), false);
+  assert.equal(isLifeTrackerState({ ...drawn, firstPlayerId: 2.5 }), false);
+  // 旧存档没有这个字段，仍然有效
+  const legacy = { ...drawn };
+  delete legacy.firstPlayerId;
+  assert.ok(isLifeTrackerState(legacy), '旧存档没有 firstPlayerId，不该被判无效');
+});
+
+// 这条必须真的驱动页面对象跑一遍：光跑没跑、停在谁那儿、有没有全量刷 players，
+// 光看源码都看不出来。
+test('抽先手：真跑一遍，光停在中签者、且不整数组刷视图', async () => {
+  const originalPage = global.Page;
+  const originalWx = global.wx;
+  let page = null;
+  const store = new Map();
+  global.Page = (config) => { page = config; };
+  global.wx = {
+    getStorageSync: (key) => (store.has(key) ? store.get(key) : ''),
+    setStorageSync: (key, value) => store.set(key, JSON.parse(JSON.stringify(value))),
+    removeStorageSync: (key) => store.delete(key),
+    showToast: () => {},
+    setKeepScreenOn: () => {},
+    showShareMenu: () => {},
+  };
+  const modulePath = require.resolve('../miniprogram/pages/life-tracker/life-tracker.js');
+  delete require.cache[modulePath];
+  try {
+    require(modulePath);
+  } finally {
+    global.Page = originalPage;
+  }
+
+  const { createLifeTrackerState } = getLifeTrackerUtils();
+  const setCalls = [];
+  const context = Object.assign(Object.create(page), {
+    data: { players: [], playerCount: 5, menuOpen: false, undoVisible: false },
+    gameState: createLifeTrackerState({ rng: () => 0.25, playerCount: 5 }),
+    setData(patch) {
+      setCalls.push(patch);
+      Object.keys(patch).forEach((key) => {
+        const indexed = key.match(/^players\[(\d+)\]\.(\w+)$/);
+        if (indexed) this.data.players[Number(indexed[1])][indexed[2]] = patch[key];
+        else this.data[key] = patch[key];
+      });
+    },
+  });
+  context.syncPlayers();
+  const bulkBefore = setCalls.filter((patch) => Object.prototype.hasOwnProperty.call(patch, 'players')).length;
+
+  try {
+    await new Promise((resolve, reject) => {
+      const settle = context.settleFirstPlayer.bind(context);
+      context.settleFirstPlayer = (winnerId) => {
+        try {
+          settle(winnerId);
+          resolve(winnerId);
+        } catch (error) {
+          reject(error);
+        }
+      };
+      context.drawFirstPlayer();
+    });
+  } finally {
+    context.stopRace();
+    global.wx = originalWx;
+  }
+
+  const winnerId = context.gameState.firstPlayerId;
+  assert.ok(winnerId >= 1 && winnerId <= 5, `抽出的先手 ${winnerId} 不是有效座位`);
+
+  // 光必须真的跑过每一个人：只亮中签者那一下就不是赛跑，是直接公布答案
+  const lit = new Set();
+  setCalls.forEach((patch) => {
+    Object.keys(patch).forEach((key) => {
+      const indexed = key.match(/^players\[(\d+)\]\.raceLevel$/);
+      if (indexed && patch[key] > 0) lit.add(Number(indexed[1]) + 1);
+    });
+  });
+  assert.equal(lit.size, 5, `只点亮了 ${Array.from(lit).join(',')}，光没跑完一圈`);
+
+  // 高频那几帧只能走定向路径。整个 players 数组每 55ms 全量过桥，
+  // 是这一页最贵的写法，也正是真机上会卡的原因。
+  const bulkTotal = setCalls.filter((patch) => Object.prototype.hasOwnProperty.call(patch, 'players')).length;
+  assert.equal(bulkTotal - bulkBefore, 1,
+    `赛跑期间整数组刷了 ${bulkTotal - bulkBefore} 次，只允许落定后 syncPlayers 那一次`);
+
+  // 落定后中签者带上常驻标记，其余不带
+  context.data.players.forEach((player) => {
+    assert.equal(player.isFirstPlayer, player.id === winnerId, `seat-${player.id} 的常驻先手标记不对`);
+    assert.equal(player.raceLevel || 0, 0, '落定后不该还留着赛跑的亮度');
+  });
+});
+
+test('赛跑的线挂在座位外缘，位置跟着朝向走', () => {
+  const wxml = readPage('wxml');
+  const wxss = readPage('wxss');
+  const js = readPage('js');
+
+  // 必须在 player-face **之外**：放进去会跟着 face 一起转 180 度，线就跑到屏幕内侧了。
+  // 「seat-edge 出现在唯一那个 player-face 开标签之前」——这两条合起来就等价于
+  // 「它不是 player-face 的后代」，比匹配相邻文本可靠得多（相邻文本挡不住整段被复制）。
+  const edgeAt = wxml.indexOf('class="seat-edge');
+  const faceAt = wxml.indexOf('<view class="player-face">');
+  assert.ok(edgeAt > 0, 'wxml 里找不到 seat-edge');
+  assert.ok(faceAt > 0, 'wxml 里找不到 player-face');
+  assert.ok(edgeAt < faceAt, 'seat-edge 必须是 player-face 的兄弟节点，不能放在里面');
+  assert.equal((wxml.match(/<view class="player-face">/g) || []).length, 1,
+    'player-face 只该有一个；多出来的那个会让上面的位置判断失效');
+  assert.match(wxml, /class="seat-edge level-\{\{item\.raceLevel \|\| 0\}\}/);
+  assert.match(wxml, /item\.isFirstPlayer \? 'seat-edge-won'/);
+  assert.match(wxml, /bindtap="drawFirstPlayer"/);
+
+  // 一个人坐哪条边，他的线就在哪条边——两者本来就是同一件事
+  assert.match(wxss, /\.player-facing-top \.seat-edge\s*{[^}]*top:\s*0/);
+  assert.match(wxss, /\.player-facing-bottom \.seat-edge\s*{[^}]*bottom:\s*0/);
+  assert.match(wxss, /\.player-facing-right \.seat-edge\s*{[^}]*right:\s*0/);
+  // 三档彗尾 + 常驻态
+  ['level-1', 'level-2', 'level-3', 'seat-edge-won'].forEach((name) => {
+    assert.match(wxss, new RegExp(`\\.seat-edge\\.${name}\\s*{`), `缺少 .seat-edge.${name}`);
+  });
+  // 外发光只给头部：全都发光就糊成一圈，看不出光往哪边跑
+  assert.doesNotMatch(wxss, /\.seat-edge\.level-1\s*{[^}]*box-shadow/);
+  assert.doesNotMatch(wxss, /\.seat-edge\.level-2\s*{[^}]*box-shadow/);
+
+  // 减少动态偏好下去掉发光与过渡
+  assert.match(wxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.seat-edge\s*{[^}]*transition:\s*none/);
+
+  // 切后台 / 重置 / 切人数都要掐掉：让一条没意义的序列继续跑，
+  // 结果就是它在新的一局里凭空点亮一个座位
+  assert.ok((js.match(/this\.stopRace\(\);/g) || []).length >= 4,
+    'onHide / onUnload / resetGame / setPlayerMode 都要掐掉正在跑的赛跑');
+});

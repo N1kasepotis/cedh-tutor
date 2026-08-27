@@ -6,6 +6,11 @@
       class="player-zone {{item.orientationClass}} seat-{{index + 1}}"
       style="--player-color: {{item.color}}; --player-rgb: {{item.rgb}};"
     >
+      <view
+        class="seat-edge level-{{item.raceLevel || 0}} {{item.isFirstPlayer ? 'seat-edge-won' : ''}}"
+        aria-hidden="true"
+      ></view>
+
       <view class="player-face">
         <view
           class="life-hit-area life-increase"
@@ -70,6 +75,15 @@
             data-count="{{item}}"
             bindtap="setPlayerMode"
           >{{item}}人</view>
+        </view>
+        <view class="hub-row">
+          <view
+            class="hub-action hub-draw"
+            aria-role="button"
+            aria-label="随机抽取先手玩家"
+            hover-class="hub-action-active"
+            bindtap="drawFirstPlayer"
+          >抽先手</view>
         </view>
       </view>
     </view>
