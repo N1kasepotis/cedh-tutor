@@ -36,13 +36,28 @@ function isEnvelope(value) {
     && Object.prototype.hasOwnProperty.call(value, 'data'));
 }
 
+// 校验函数是各页自己写的，读盘时喂给它的又是磁盘上的任意内容（可能损坏、
+// 可能是未来版本的形状）。写得不够防御的校验器（`(v) => v.answers && ...`
+// 这种）碰上 null 就会抛，而这个模块的契约是「返回显式结果，不抛」——
+// 一抛就绕过了整套失败处理，页面拿不到 ok:false，也就不会提示用户。
+// 同一个函数里 migrate 早就是包起来的，validate 漏包属于不一致。
+// 抛出等同于判否：数据可疑就当它不可用，而不是让异常冒到调用栈上。
+function runValidate(validate, value) {
+  if (typeof validate !== 'function') return true;
+  try {
+    return Boolean(validate(value));
+  } catch (cause) {
+    return false;
+  }
+}
+
 function writeStorage(key, value, options = {}) {
   const api = getStorageApi(options.api);
   if (!api || typeof api.setStorageSync !== 'function') {
     return { ok: false, error: storageError('storage_unavailable') };
   }
 
-  if (typeof options.validate === 'function' && !options.validate(value)) {
+  if (!runValidate(options.validate, value)) {
     return { ok: false, error: storageError('invalid_storage_value') };
   }
 
@@ -116,7 +131,7 @@ function readStorage(key, options = {}) {
     return { ok: false, value: fallback, source: 'invalid', error: storageError('storage_migration_failed', cause) };
   }
 
-  if (typeof options.validate === 'function' && !options.validate(value)) {
+  if (!runValidate(options.validate, value)) {
     return { ok: false, value: fallback, source: 'invalid', error: storageError('invalid_storage_value') };
   }
 
