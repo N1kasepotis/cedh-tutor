@@ -63,6 +63,7 @@
         <view class="hub-row">
           <view class="hub-action" aria-role="button" aria-label="返回主页" hover-class="hub-action-active" bindtap="goHome">主页</view>
           <view class="hub-action hub-reset" aria-role="button" aria-label="重置对局并重新分配颜色" hover-class="hub-action-active" bindtap="resetGame">重置</view>
+          <view class="hub-action hub-draw" aria-role="button" aria-label="随机抽取先手玩家" hover-class="hub-action-active" bindtap="drawFirstPlayer">抽先手</view>
         </view>
         <view class="hub-row">
           <view
@@ -75,15 +76,6 @@
             data-count="{{item}}"
             bindtap="setPlayerMode"
           >{{item}}人</view>
-        </view>
-        <view class="hub-row">
-          <view
-            class="hub-action hub-draw"
-            aria-role="button"
-            aria-label="随机抽取先手玩家"
-            hover-class="hub-action-active"
-            bindtap="drawFirstPlayer"
-          >抽先手</view>
         </view>
       </view>
     </view>

@@ -637,3 +637,74 @@ test('赛跑的线挂在座位外缘，位置跟着朝向走', () => {
   assert.ok((js.match(/this\.stopRace\(\);/g) || []).length >= 4,
     'onHide / onUnload / resetGame / setPlayerMode 都要掐掉正在跑的赛跑');
 });
+
+// 中心菜单从屏幕纵向中点往下展开，但它的高度全是 rpx——而 rpx 是按**宽**推导的。
+// 横屏下宽是长边，于是屏幕越长（比例越大），同样的 rpx 高度占掉的 vh 越多。
+// 加第三行时正是这么翻的车：2.16:1 的机器上菜单底部落到 105vh，整行在屏幕外。
+//
+//   行数   iPhone SE 1.78   iPhone 13 2.16   21:9 长屏 2.28
+//    2         83.7vh           91.0vh          93.2vh
+//    3         95.5vh          105.4vh ✗       108.4vh ✗
+//
+// 所以这道门禁不锁「行数必须是 2」，而是按真实常量算出最长机型上的底边位置。
+// 加一行、改行高、改顶部偏移，任何一项让它越界都会立刻红，而不是等真机上看见。
+test('中心菜单在最长的横屏机型上也不出框', () => {
+  const wxml = readPage('wxml');
+  const wxss = readPage('wxss');
+
+  const menuBlock = wxss.match(/\.dropdown-menu\s*{([\s\S]*?)}/);
+  assert.ok(menuBlock, '找不到 .dropdown-menu 规则块');
+  const actionBlock = wxss.match(/\.hub-action\s*{([\s\S]*?)}/);
+  assert.ok(actionBlock, '找不到 .hub-action 规则块');
+
+  const rpxOf = (block, property) => {
+    const found = block.match(new RegExp(`${property}:\\s*(\\d+(?:\\.\\d+)?)rpx`));
+    assert.ok(found, `解析不出 ${property}`);
+    return Number(found[1]);
+  };
+
+  const topOffset = rpxOf(menuBlock[1], 'top');
+  const rowGap = rpxOf(menuBlock[1], 'gap');
+  const menuWidth = rpxOf(menuBlock[1], 'width');
+  const rowHeight = rpxOf(actionBlock[1], 'height');
+
+  const menu = wxml.slice(wxml.indexOf('class="dropdown-menu'));
+  const rows = menu.split('<view class="hub-row">').slice(1);
+  assert.ok(rows.length >= 1, '菜单里一行都没有');
+
+  // 从中心往下伸的总高度（rpx）
+  const dropRpx = topOffset + rowHeight * rows.length + rowGap * (rows.length - 1);
+
+  // 目前在售最长的横屏比例约 2.3（21:9 手机）。留 4vh 余量给系统手势条。
+  const LONGEST_ASPECT = 2.3;
+  const SAFE_LIMIT_VH = 96;
+  const bottomVh = 50 + (dropRpx * LONGEST_ASPECT * 100) / 750;
+  assert.ok(bottomVh <= SAFE_LIMIT_VH,
+    `${rows.length} 行菜单在 ${LONGEST_ASPECT}:1 的机型上底边落到 ${bottomVh.toFixed(1)}vh（上限 ${SAFE_LIMIT_VH}vh）。`
+    + '菜单是从 50vh 往下展开的，高度却按 rpx（宽）算——屏幕越长越容易掉出去。'
+    + '要加动作就并进已有的行，不要再往下堆。');
+
+  // 并进已有行之后，横向也得放得下。按钮是 flex: 1 1 0 均分，
+  // 一个中日韩字符在 16rpx 字号 + 0.08em 字距下约占 17.3rpx。
+  const fontSize = rpxOf(actionBlock[1], 'font-size');
+  const perChar = fontSize * 1.08;
+  rows.forEach((row, index) => {
+    const labels = Array.from(row.matchAll(/>([^<>]+)<\/view>/g), (match) => match[1].trim())
+      .filter(Boolean)
+      // wx:for 出来的是 {{item}}人，按最长的那个档位算
+      .map((label) => label.replace(/\{\{[^}]*\}\}/g, String(Math.max(...[2, 3, 4, 5]))));
+    assert.ok(labels.length, `第 ${index + 1} 行解析不出按钮`);
+    const perButton = (menuWidth - rowGap * (labels.length - 1)) / labels.length;
+    const widest = labels.reduce((longest, label) => (label.length > longest.length ? label : longest), '');
+    assert.ok(widest.length * perChar < perButton,
+      `第 ${index + 1} 行有 ${labels.length} 颗按钮、每颗 ${perButton.toFixed(1)}rpx，`
+      + `但「${widest}」要占约 ${(widest.length * perChar).toFixed(1)}rpx——字会被挤断或溢出。`);
+  });
+
+  // 抽先手属于「按一下就发生一次」的动作，跟主页、重置同组；
+  // 第二行留给「按住不变」的人数档位。分组错了菜单就读不成两句话。
+  assert.match(rows[0], /bindtap="drawFirstPlayer"/, '抽先手应与主页、重置同在动作行');
+  assert.match(rows[0], /bindtap="goHome"/);
+  assert.match(rows[0], /bindtap="resetGame"/);
+  assert.match(rows[1], /bindtap="setPlayerMode"/, '第二行应是人数档位');
+});
