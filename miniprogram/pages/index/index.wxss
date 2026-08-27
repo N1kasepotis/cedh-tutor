@@ -282,16 +282,37 @@ page {
   font-size: 10vh;
   letter-spacing: -0.04em;
   line-height: 1;
-  /* 先竖直居中，再绕左端横向拉宽；两者互不干扰（translateY 不动 X，scaleX 不动 Y） */
-  transform: translateY(-50%) scaleX(1.9);
+  /* 先竖直居中，再绕左端横向拉宽，最后斜化。
+     斜化走 skewX 而不是 font-style：这款字没有斜体字面，写 italic 系统只能合成，
+     而合成本身也就是切变——既然如此，不如显式写出角度、拿到确定的结果。
+     字标用的也是 skewX(-10deg)，两者因此是同一个动作。
+     skewX 排在 scaleX 左边（即后作用于已拉宽的字形），视觉倾角才是标称的 10 度；
+     排到右边会先斜后拉，1.9 倍会把倾角放大到约 18.5 度，跟字标就对不上了。 */
+  transform: translateY(-50%) skewX(-10deg) scaleX(1.9);
   transform-origin: left center;
   /* 0.38 是一个两头卡死的窄窗口：
      低于 0.38，八枚主题色在这块酸性黄绿上混成一片——实测 0.19 时两两最小 ΔE 只有 5.6，
      肉眼就是同一个颜色，「序号是色标」当场失效；
      高于 0.40，压在数字上的 10px 英文副标题（0.7 黑）掉到 4.5:1 以下，不再过 AA。
-     取 0.38：ΔE 12.8、副标题 4.8:1、中文 6.9:1。改这个值必须重算这三项。 */
-  opacity: 0.38;
+     常态不显示：底版只在随机 glitch 到的那一行出现，见下面的 is-glitch 规则。 */
+  opacity: 0;
   pointer-events: none;
+}
+
+/* 底版只在随机 glitch 到的那一行显示——八行同时铺满巨号会跟整页线场糊成一团，
+   而每次进页只亮一行，它就从墙纸变成了一次事件。
+   同屏永远只有一个数字，所以「八色两两分得开」这条判据随之作废：
+   你根本没机会并排比较。留下的判据只有「压在它上面的黑字还读不读得了」。
+
+   **不透明度是 0.28 而不是常态那套 0.38**：glitch 行的底是电光蓝，
+   比酸性黄绿暗得多（相对亮度 0.37 对 0.78），再叠一层暗色就没余量了——
+   实测 0.38 时三行的黑字掉到 4.5:1 以下（最差 3.91:1）。
+   0.28 是窗口中点：最差黑字 4.8:1 过 AA，最差可见度 1.27:1 仍看得出来。
+
+   **数字保留本行的主题色，不跟着 glitch 转黑**：整行都反相成蓝底黑字，
+   只有底版还留着这一行自己的颜色——读作「故障之下这一行的本色透出来」。 */
+.home-button.is-glitch .home-button-index {
+  opacity: 0.28;
 }
 
 /* 高行与矮行的底版按各自的 flex-grow 等比放大缩小，裁切比例才在八行之间一致 */
@@ -393,7 +414,6 @@ page {
   background: #00B3FF;
 }
 
-.home-button.is-glitch .home-button-index,
 .home-button.is-glitch .home-button-zh,
 .home-button.is-glitch .home-button-en {
   color: #0A0A0A;

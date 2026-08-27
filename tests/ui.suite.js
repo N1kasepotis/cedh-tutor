@@ -259,8 +259,12 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 而行的 overflow 在 padding box 裁切，那里会切出一条硬邦邦的竖边、看着像裁错了。
   assert.match(indexRule, /transform-origin:\s*left center/,
     '绕中轴拉伸会让左半边被行框切出一条竖边；字标用的也是 left center');
-  assert.match(indexRule, /transform:\s*translateY\(-50%\) scaleX\((\d*\.?\d+)\)/,
-    '先竖直居中再绕左端横向拉宽');
+  // 斜化走 skewX 不走 font-style：这款字没有斜体字面，写 italic 系统只能合成，
+  // 而合成本身就是切变——不如显式写出角度、拿到确定的结果。字标用的也是 skewX(-10deg)。
+  // skewX 必须排在 scaleX 左边（后作用于已拉宽的字形），视觉倾角才是标称的 10 度；
+  // 排到右边先斜后拉，1.9 倍会把倾角放大到约 18.5 度，跟字标就对不上了。
+  assert.match(indexRule, /transform:\s*translateY\(-50%\) skewX\(-\d+deg\) scaleX\((\d*\.?\d+)\)/,
+    '顺序必须是 translateY → skewX → scaleX');
   const stretch = Number(indexRule.match(/scaleX\((\d*\.?\d+)\)/)[1]);
   assert.ok(stretch > 1.4, `只拉到 ${stretch}，读不出「超宽」`);
   assert.match(indexRule, /top:\s*50%/, '底版要竖直居中，才可能上下都被裁到');
@@ -329,68 +333,43 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     const [x, y] = [luminance(a), luminance(b)];
     return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
   };
-  // 序号成了 0.38 的底版之后，「这一色本身够不够亮」不再是判据——它不是要读的文字了。
-  // 真正要守的是压在它上面的字还读不读得了：中文 #0A0A0A / 英文副标题 0.7 黑，
-  // 都要在**混合后的实际颜色**上过 AA 4.5:1。
-  const indexAlpha = Number(indexRule.match(/opacity:\s*(\d?\.\d+)/)[1]);
+  // 底版只在随机 glitch 到的那一行显示，常态是透明的。
+  // 于是同屏永远只有一个数字——「八色两两分得开」这条判据随之作废（没机会并排比较），
+  // 原来那条按酸性黄绿算混合 ΔE 的门禁一并撤掉。留下的判据只有一条：
+  // 压在底版上的黑字还读不读得了，而且要按 glitch 行真实的电光蓝底算。
+  assert.match(indexRule, /opacity:\s*0;/, '常态不显示底版：八行同时铺满巨号会跟整页线场糊成一团');
+  const glitchRule = wxss.match(/\.home-button\.is-glitch \.home-button-index\s*\{[^}]*\}/);
+  assert.ok(glitchRule, '底版要有一条 is-glitch 下的显示规则');
+  const glitchAlpha = Number(glitchRule[0].match(/opacity:\s*(\d?\.\d+)/)[1]);
+  assert.ok(glitchAlpha > 0, 'glitch 行必须把底版显示出来');
+
+  // glitch 行的底是电光蓝，比酸性黄绿暗得多（相对亮度 0.37 对 0.78），
+  // 再叠一层暗色就没余量了——实测 0.38 时三行的黑字掉到 4.5:1 以下（最差 3.91:1）。
   const mix = (hex, alpha, over) => [1, 3, 5].map((i) => (
     parseInt(hex.substr(i, 2), 16) * alpha + parseInt(over.substr(i, 2), 16) * (1 - alpha)
   ));
   const toHex = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
   hueRules.forEach(({ slug, hex }) => {
-    const plate = toHex(mix(hex, indexAlpha, '#D0F03C'));
-    const zh = contrast(plate, '#0A0A0A');
-    assert.ok(zh >= 4.5,
-      `${slug} 行的中文压在序号底版 ${plate} 上只有 ${zh.toFixed(2)}:1，未过 AA`);
-    const en = contrast(plate, toHex(mix('#000000', 0.7, plate)));
-    assert.ok(en >= 4.5,
-      `${slug} 行的英文副标题压在序号底版上只有 ${en.toFixed(2)}:1，未过 AA`);
+    const plate = toHex(mix(hex, glitchAlpha, '#00B3FF'));
+    const text = contrast(plate, '#0A0A0A');
+    assert.ok(text >= 4.5,
+      `${slug} 行 glitch 时，黑字压在底版 ${plate} 上只有 ${text.toFixed(2)}:1，未过 AA`);
+    // 也不能淡到看不见——那样这个效果就白做了
+    const seen = contrast(plate, '#00B3FF');
+    assert.ok(seen >= 1.25,
+      `${slug} 行的底版在电光蓝上只有 ${seen.toFixed(2)}:1，几乎看不出来`);
   });
 
-  // 八色之间必须**看得出**不同，而不只是数值上不重复。用 CIE Lab ΔE 量，
-  // 「色相差多少度」在深色端根本不可靠——初版 life #C61A28 与 meta #C71807
-  // 是两个不同的十六进制值、色相也差 12°，实际 ΔE 只有 14.7，肉眼就是同一枚红。
-  const toLab = (hex) => {
-    const linear = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
-      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-    const [r, g, b] = linear;
-    const xyz = [
-      (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047,
-      r * 0.2126 + g * 0.7152 + b * 0.0722,
-      (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883,
-    ].map((t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116));
-    return [116 * xyz[1] - 16, 500 * (xyz[0] - xyz[1]), 200 * (xyz[1] - xyz[2])];
-  };
-  const deltaE = (a, b) => {
-    const [A, B] = [toLab(a), toLab(b)];
-    return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
-  };
-  let closest = { gap: Infinity, pair: '' };
-  hueRules.forEach((a, i) => hueRules.slice(i + 1).forEach((b) => {
-    const gap = deltaE(a.hex, b.hex);
-    if (gap < closest.gap) closest = { gap, pair: `${a.slug} ${a.hex} / ${b.slug} ${b.hex}` };
-  }));
-  assert.ok(closest.gap >= 30,
-    `最接近的两枚序号色差 ΔE 只有 ${closest.gap.toFixed(1)}，看上去会是同一个色：${closest.pair}`);
-
-  // 但真正上屏的是**混合之后**的颜色，所以这条才是有效判据。
-  // 这八个色当初是为了当小字才压暗的，压暗的色低透明度混上去会一起塌向底色：
-  // 实测 0.19 时混合后最小 ΔE 只剩 5.6，八行看着完全一样，「序号是色标」当场失效。
-  // 0.38 才把它拉回 12.8。改 opacity 或改任何一条色，先跑这条。
-  let plateClosest = { gap: Infinity, pair: '' };
-  const plates = hueRules.map(({ slug, hex }) => ({ slug, hex: toHex(mix(hex, indexAlpha, '#D0F03C')) }));
-  plates.forEach((a, i) => plates.slice(i + 1).forEach((b) => {
-    const gap = deltaE(a.hex, b.hex);
-    if (gap < plateClosest.gap) plateClosest = { gap, pair: `${a.slug} / ${b.slug}` };
-  }));
-  assert.ok(plateClosest.gap >= 12,
-    `序号底版按 ${indexAlpha} 混到底色上之后，最接近的两行 ΔE 只有 ${plateClosest.gap.toFixed(1)}`
-    + `（${plateClosest.pair}）——八行会看成同一个色，色标就没意义了`);
+  // 数字保留本行主题色、不跟着 glitch 转黑：整行反相成蓝底黑字，只有底版还留着
+  // 这一行自己的颜色——读作「故障之下这一行的本色透出来」。
+  assert.doesNotMatch(wxss, /\.home-button\.is-glitch \.home-button-index,/,
+    '底版不该被 glitch 的黑字覆盖收编，否则八行主题色变成死代码');
 
   // 反相态要盖过按行主题色：glitch 行是电光蓝底、按压态是纯黑底，
   // 八种主题色在这两种底上都会糊掉。靠选择器权重压过去（三类 / 两类 > 一类），
   // 所以这两条规则不能被改回单类选择器
-  assert.match(wxss, /\.home-button\.is-glitch \.home-button-index,/);
+  // glitch 行只反相中文与副标题；序号底版保留主题色（见上）
+  assert.match(wxss, /\.home-button\.is-glitch \.home-button-zh,/);
   assert.match(wxss, /\.home-index-active \.home-button-index,/);
 
   // 功能文本（入口副标题）按正文对比度要求：10px + 0.7 alpha 在 #D0F03C 上约 7.5:1，过 AA 4.5:1
