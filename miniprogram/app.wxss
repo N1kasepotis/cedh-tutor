@@ -111,9 +111,7 @@ button::after {
 .secondary-button,
 .text-button,
 .option,
-.preset-chip,
-.result-button,
-.seat-button {
+.preset-chip {
   border-radius: var(--cedh-radius-control-sm);
   transform: translateY(0);
   transition:
@@ -152,9 +150,7 @@ button[disabled].pressable-active,
   .secondary-button,
   .text-button,
   .option,
-  .preset-chip,
-  .result-button,
-  .seat-button {
+  .preset-chip {
     transition: opacity 120ms ease;
   }
 

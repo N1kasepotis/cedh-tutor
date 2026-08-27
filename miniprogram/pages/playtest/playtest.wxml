@@ -121,7 +121,7 @@
     </view>
 
     <view class="zone-strip">
-      <view class="zone-chip {{commandPreview.mode !== 'empty' ? 'has-art' : ''}}" id="zone-command" aria-role="button" aria-label="主将区" data-zone="command" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
+      <view class="zone-chip {{commandPreview.mode !== 'empty' ? 'has-art' : ''}} {{hoverZone === 'command' ? 'drop-target' : ''}}" id="zone-command" aria-role="button" aria-label="主将区" data-zone="command" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
         <view wx:if="{{commandPreview.mode === 'dual'}}" class="zone-art-split">
           <image class="zone-art-half" src="{{commandPreview.left}}" mode="aspectFill" lazy-load="{{true}}"></image>
           <image class="zone-art-half" src="{{commandPreview.right}}" mode="aspectFill" lazy-load="{{true}}"></image>
@@ -130,24 +130,24 @@
         <view class="zone-label">主将区</view>
         <view class="zone-count mono">{{counts.command}}</view>
       </view>
-      <view class="zone-chip {{topCardArt ? 'has-art' : ''}}" id="zone-library" aria-role="button" aria-label="牌库，单击抓牌，长按查找（导师效应）" data-zone="library" hover-class="pressable-active" hover-stay-time="120" bindtap="drawOne" bindlongpress="openZone">
+      <view class="zone-chip {{topCardArt ? 'has-art' : ''}} {{hoverZone === 'library' ? 'drop-target' : ''}}" id="zone-library" aria-role="button" aria-label="牌库，单击抓牌，长按查找（导师效应）" data-zone="library" hover-class="pressable-active" hover-stay-time="120" bindtap="drawOne" bindlongpress="openZone">
         <image wx:if="{{topCardArt}}" class="zone-top-art" src="{{topCardArt}}" mode="aspectFill" lazy-load="{{true}}"></image>
         <view class="zone-label">牌库</view>
         <view class="zone-count mono">{{counts.library}}</view>
       </view>
-      <view class="zone-chip {{graveyardTopArt ? 'has-art' : ''}}" id="zone-graveyard" aria-role="button" aria-label="坟场" data-zone="graveyard" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
+      <view class="zone-chip {{graveyardTopArt ? 'has-art' : ''}} {{hoverZone === 'graveyard' ? 'drop-target' : ''}}" id="zone-graveyard" aria-role="button" aria-label="坟场" data-zone="graveyard" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
         <image wx:if="{{graveyardTopArt}}" class="zone-top-art" src="{{graveyardTopArt}}" mode="aspectFill" lazy-load="{{true}}"></image>
         <view class="zone-label">坟场</view>
         <view class="zone-count mono">{{counts.graveyard}}</view>
       </view>
-      <view class="zone-chip {{exileTopArt ? 'has-art' : ''}}" id="zone-exile" aria-role="button" aria-label="放逐区" data-zone="exile" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
+      <view class="zone-chip {{exileTopArt ? 'has-art' : ''}} {{hoverZone === 'exile' ? 'drop-target' : ''}}" id="zone-exile" aria-role="button" aria-label="放逐区" data-zone="exile" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
         <image wx:if="{{exileTopArt}}" class="zone-top-art" src="{{exileTopArt}}" mode="aspectFill" lazy-load="{{true}}"></image>
         <view class="zone-label">放逐区</view>
         <view class="zone-count mono">{{counts.exile}}</view>
       </view>
     </view>
 
-    <scroll-view class="hand" id="hand" scroll-x enable-flex scroll-left="{{handScrollLeft}}" aria-label="手牌">
+    <scroll-view class="hand {{hoverZone === 'hand' ? 'drop-target' : ''}}" id="hand" scroll-x enable-flex scroll-left="{{handScrollLeft}}" aria-label="手牌">
       <view wx:if="{{!hand.length}}" class="hand-empty">单击牌库抓牌</view>
       <view class="hand-track" wx:else>
         <view

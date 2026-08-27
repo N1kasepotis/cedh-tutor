@@ -85,6 +85,10 @@ Page({
     inspect: null,
     inspectTargets: [],
     dragId: 0,
+    // 拖动中手指所在的投放区。松手时本来就要做一次命中检测判落点，
+    // 这里只是把同一次检测提前到拖动过程中，好让用户在**松手前**就知道会落到哪——
+    // 否则只能靠猜，而松手之后牌已经移走了。
+    hoverZone: '',
     canUndo: false,
     manaPool: { W: 0, U: 0, B: 0, R: 0, G: 0, C: 0 },
     manaTotal: 0,
@@ -529,6 +533,9 @@ Page({
 
     drag.latestX = x;
     drag.latestY = y;
+    // 命中检测要的是**手指的视口坐标**，不是上面那对被夹紧过的卡牌坐标
+    drag.pointerX = touch.clientX;
+    drag.pointerY = touch.clientY;
     this.scheduleDragRender(drag);
   },
 
@@ -537,11 +544,16 @@ Page({
     this.dragRenderTimer = setTimeout(() => {
       this.dragRenderTimer = null;
       if (!this.drag || this.drag !== drag) return;
-      this.setData({
+      const patch = {
         [`battlefield[${drag.index}].x`]: drag.latestX,
         [`battlefield[${drag.index}].y`]: drag.latestY,
         dragId: drag.id,
-      });
+      };
+      // 只在悬停区**变化时**才推：这是每 DRAG_RENDER_INTERVAL_MS 一次的高频 setData，
+      // 每帧都带一个没变的字段过桥是白花钱
+      const hover = this.hitTestZone(drag.pointerX, drag.pointerY);
+      if (hover !== this.data.hoverZone) patch.hoverZone = hover;
+      this.setData(patch);
     }, DRAG_RENDER_INTERVAL_MS);
   },
 
@@ -572,7 +584,7 @@ Page({
 
     const touch = event.changedTouches && event.changedTouches[0];
     if (!touch) {
-      this.setData({ dragId: 0 });
+      this.setData({ dragId: 0, hoverZone: '' });
       return;
     }
     const dropZone = this.hitTestZone(touch.clientX, touch.clientY);
@@ -580,7 +592,7 @@ Page({
     if (dropZone && dropZone !== 'battlefield') {
       this.captureUndo('移动');
       moveCard(this.game, 'battlefield', drag.id, dropZone);
-      this.setData({ dragId: 0 });
+      this.setData({ dragId: 0, hoverZone: '' });
       this.syncView(dropZone === 'hand' ? () => this.scrollHandToEnd() : undefined);
       return;
     }
@@ -590,7 +602,7 @@ Page({
     if (!dropZone && !this.isInsideBattlefield(touch.clientX, touch.clientY)) {
       this.captureUndo('收回手牌');
       moveCard(this.game, 'battlefield', drag.id, 'hand');
-      this.setData({ dragId: 0 });
+      this.setData({ dragId: 0, hoverZone: '' });
       this.syncView(() => this.scrollHandToEnd());
       return;
     }
@@ -605,6 +617,7 @@ Page({
       [`battlefield[${drag.index}].x`]: card ? card.x : 0,
       [`battlefield[${drag.index}].y`]: card ? card.y : 0,
       dragId: 0,
+      hoverZone: '',
     });
   },
 
@@ -613,7 +626,7 @@ Page({
     this.clearDragRender();
     this.drag = null;
     this.longpressFired = false;
-    this.setData({ dragId: 0 });
+    this.setData({ dragId: 0, hoverZone: '' });
   },
 
   hitTestZone(clientX, clientY) {

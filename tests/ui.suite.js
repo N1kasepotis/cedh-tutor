@@ -518,8 +518,10 @@ test('button press feedback is centralized and reused across app controls', () =
   assert.match(appWxss, /button\s*{[\s\S]*border-radius:\s*var\(--cedh-radius-control\)/);
   assert.match(appWxss, /\.primary-button\s*{[\s\S]*border-radius:\s*var\(--cedh-radius-control\)/);
   assert.match(appWxss, /\.secondary-button\s*{[\s\S]*border-radius:\s*var\(--cedh-radius-control\)/);
-  assert.match(appWxss, /\.option,[\s\S]*\.preset-chip,[\s\S]*\.result-button,[\s\S]*\.seat-button\s*{[\s\S]*border-radius:\s*var\(--cedh-radius-control-sm\)/);
-  assert.match(appWxss, /\.primary-button,[\s\S]*\.secondary-button,[\s\S]*\.text-button,[\s\S]*\.option,[\s\S]*\.preset-chip,[\s\S]*\.result-button,[\s\S]*\.seat-button\s*{[\s\S]*transition:[\s\S]*220ms/);
+  // .result-button / .seat-button 已删：两者在全项目的 wxml 与 js 里一次都没出现过，
+  // 是纯孤儿样式。共用按压反馈这件事本身没变，只是名单里少了两个从不存在的按钮。
+  assert.match(appWxss, /\.option,[\s\S]*\.preset-chip\s*{[\s\S]*border-radius:\s*var\(--cedh-radius-control-sm\)/);
+  assert.match(appWxss, /\.primary-button,[\s\S]*\.secondary-button,[\s\S]*\.text-button,[\s\S]*\.option,[\s\S]*\.preset-chip\s*{[\s\S]*transition:[\s\S]*220ms/);
   assert.match(appWxss, /\.pressable-active\s*{[\s\S]*opacity:\s*0\.72/);
   assert.match(appWxss, /\.pressable-active\s*{[\s\S]*translateY\(6rpx\)/);
   assert.doesNotMatch(appWxss, /scale\(0\.985\)|scale\(1\)/);

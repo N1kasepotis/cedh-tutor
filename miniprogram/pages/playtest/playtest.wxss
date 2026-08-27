@@ -304,7 +304,10 @@
   border-radius: var(--cedh-radius-1);
 }
 
-.zone-chip.drop-target {
+/* 拖动中手指悬停的那个区点亮，让用户在松手前就知道牌会落到哪。
+   手牌是 scroll-view 不是 zone-chip，所以单配一条同款高亮。 */
+.zone-chip.drop-target,
+.hand.drop-target {
   background: var(--cedh-accent-soft);
   border-color: var(--cedh-accent-line);
 }

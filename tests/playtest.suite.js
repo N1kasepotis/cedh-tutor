@@ -433,7 +433,7 @@ test('展示库顶模式：牌库检索面板 toggle + 库顶 art_crop 铺底牌
   assert.match(js, /toggleRevealTop\(\)\s*{/);
 
   // 牌库芯片：有库顶图时挂 has-art 类并铺 art 图，label/count 仍在（边框保持默认白色，不随开启变色）
-  assert.match(wxml, /class="zone-chip \{\{topCardArt \? 'has-art' : ''\}\}"/);
+  assert.match(wxml, /class="zone-chip \{\{topCardArt \? 'has-art' : ''\}\}/);
   assert.match(wxml, /<image[^>]*class="zone-top-art"[^>]*src="\{\{topCardArt\}\}"/);
 
   // 库顶图取 library[0] 的 art_crop 无字大画；关闭 / 空库时返回空串
@@ -480,8 +480,8 @@ test('主将区呈现主将卡图（单主将居中 / 双拍档左右分屏）�
   assert.match(js, /cards\[cards\.length - 1\]\.name, 'art_crop'/);
   assert.match(js, /graveyardTopArt: this\.buildZoneTopArt\('graveyard'\)/);
   assert.match(js, /exileTopArt: this\.buildZoneTopArt\('exile'\)/);
-  assert.match(wxml, /class="zone-chip \{\{graveyardTopArt \? 'has-art' : ''\}\}"/);
-  assert.match(wxml, /class="zone-chip \{\{exileTopArt \? 'has-art' : ''\}\}"/);
+  assert.match(wxml, /class="zone-chip \{\{graveyardTopArt \? 'has-art' : ''\}\}/);
+  assert.match(wxml, /class="zone-chip \{\{exileTopArt \? 'has-art' : ''\}\}/);
   assert.match(wxml, /<image wx:if="\{\{graveyardTopArt\}\}" class="zone-top-art"/);
   assert.match(wxml, /<image wx:if="\{\{exileTopArt\}\}" class="zone-top-art"/);
 
@@ -789,4 +789,50 @@ test('卡图缓存：双面牌按牌表里的正面名也要能查到直链', as
   } finally {
     global.wx = originalWx;
   }
+});
+
+// 拖动中要让用户在**松手前**就知道牌会落到哪。
+//
+// 这个效果原本是「样式写好了但从没挂上去」：.zone-chip.drop-target 躺在 wxss 里，
+// WXML 一次都没引用过，于是拖动全程没有任何区块高亮，只能靠猜手指在哪个区上——
+// 而松手之后牌已经移走了，猜错就得撤销重来。
+//
+// 断言按 hitTestZone 自己的区列表反推，而不是手写一份名单：往命中检测里加一个区
+// 却忘了给它配高亮，这条会立刻红。孤儿样式那道门禁挡不住这种漏接——
+// 只要 drop-target 还挂在**任何一个**区上，它就认为这个类是活的。
+test('拖动中悬停的投放区要点亮，且每个可落区都配到了', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const pageRoot = path.join(__dirname, '..', 'miniprogram/pages/playtest/playtest');
+  const js = fs.readFileSync(`${pageRoot}.js`, 'utf8');
+  const wxml = fs.readFileSync(`${pageRoot}.wxml`, 'utf8');
+  const wxss = fs.readFileSync(`${pageRoot}.wxss`, 'utf8');
+
+  // 命中检测认哪些区，就得给哪些区配高亮——名单从源码里读，不手抄
+  const zoneList = js.match(/const zones = \[([^\]]+)\]/);
+  assert.ok(zoneList, 'hitTestZone 里应有一份可落区名单');
+  const zones = Array.from(zoneList[1].matchAll(/'([a-z]+)'/g), (m) => m[1]);
+  assert.ok(zones.length >= 5, `可落区只有 ${zones.length} 个，名单没读全`);
+
+  zones.forEach((zone) => {
+    assert.match(wxml, new RegExp(`hoverZone === '${zone}' \\? 'drop-target'`),
+      `「${zone}」区没配拖动高亮：拖过去时它不会亮，用户只能猜`);
+  });
+
+  // 高亮样式要真的覆盖到这些元素。手牌是 scroll-view 不是 zone-chip，容易漏。
+  assert.match(wxss, /\.zone-chip\.drop-target,\s*\n\.hand\.drop-target\s*{/,
+    '手牌区是 scroll-view，不在 .zone-chip 之列，要单独配同款高亮');
+
+  // 悬停区必须在拖动**过程中**算，不能等到松手
+  assert.match(js, /const hover = this\.hitTestZone\(drag\.pointerX, drag\.pointerY\);/,
+    '拖动渲染里要实时做命中检测，否则高亮永远不更新');
+  // 命中检测要的是手指的视口坐标，不是被夹紧过的卡牌坐标
+  assert.match(js, /drag\.pointerX = touch\.clientX;/,
+    'latestX/Y 是夹紧后的卡牌坐标，拿它做命中检测会判错区');
+  // 每帧都带一个没变的字段过桥是白花钱
+  assert.match(js, /if \(hover !== this\.data\.hoverZone\) patch\.hoverZone = hover;/,
+    '悬停区只在变化时才推，这是每 32ms 一次的高频 setData');
+  // 松手 / 取消都要熄灭，否则高亮会留在屏幕上
+  assert.ok((js.match(/hoverZone: ''/g) || []).length >= 4,
+    '松手与取消的每条路径都要把高亮熄掉');
 });

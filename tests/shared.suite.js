@@ -543,3 +543,65 @@ test('全站网络图：有占位底、挂 lazy-load', () => {
   assert.deepEqual(missingLazy, [],
     `这些图没挂 lazy-load，不在视野里也会抢带宽：${missingLazy.join(', ')}`);
 });
+
+// 孤儿样式门禁：WXSS 里定义了、但 WXML 与 JS 里一次都拼不出来的类名。
+//
+// 这道门禁是从一次真实的漏接里长出来的：playtest 的 .zone-chip.drop-target 样式
+// 写好了却从没挂上去——拖动过程中没有任何区块高亮，用户只能靠猜手指在哪个区上，
+// 松手才知道落到哪。它不是「多余的样式」，是**没接上的功能**，而这类漏接从外面看
+// 跟死代码长得一模一样，只能靠扫。同一轮还扫出五处纯孤儿（.result-button /
+// .seat-button / .edhti-kicker / .commander-cn / .result-title / .recommend-rank）。
+//
+// 已知盲区（有意留着，宁可漏报不可误报）：类名由模板或 JS 拼出来时只能按前缀判活，
+// 于是「前缀撞上另一个动态族」的孤儿会漏掉——.seat-button 就是这样躲过第一遍的
+// （life-tracker 里有 seat-{{index + 1}}，但它只会产出 seat-1，永远产不出 seat-button）。
+// 漏报只是少抓一个，误报却会拦住正常开发，所以这个方向是刻意选的。
+test('WXSS 不得留下 WXML 与 JS 都够不着的孤儿样式', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const mini = path.join(__dirname, '..', 'miniprogram');
+
+  const files = [];
+  const walk = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else files.push(full);
+    });
+  };
+  walk(mini);
+
+  const read = (file) => fs.readFileSync(file, 'utf8');
+  const consumers = files
+    .filter((file) => file.endsWith('.wxml') || file.endsWith('.js'))
+    .map(read)
+    .join('\n');
+
+  // 动态感知：类名常由模板或 JS 拼出（mode-{{playerCount}} / player-facing-${facing}），
+  // 所以逐级砍尾巴，只要某个前缀后面紧跟插值就算活的。
+  const reachable = (name) => {
+    if (consumers.includes(name)) return true;
+    const parts = name.split('-');
+    for (let i = parts.length - 1; i > 0; i -= 1) {
+      const prefix = `${parts.slice(0, i).join('-')}-`;
+      if (consumers.includes(`${prefix}{{`) || consumers.includes(`${prefix}\${`)) return true;
+    }
+    return false;
+  };
+
+  const orphans = [];
+  files.filter((file) => file.endsWith('.wxss')).forEach((file) => {
+    const source = read(file).replace(/\/\*[\s\S]*?\*\//g, '');
+    const names = new Set(Array.from(source.matchAll(/\.([a-z][a-z0-9-]{2,})/g), (m) => m[1]));
+    names.forEach((name) => {
+      if (reachable(name)) return;
+      orphans.push(`${path.relative(mini, file).split(path.sep).join('/')} → .${name}`);
+    });
+  });
+
+  assert.deepEqual(orphans, [],
+    '这些类名在 WXSS 里有样式、但 WXML 与 JS 里都拼不出来。\n'
+    + '先分清是哪一种再动手：**样式写好了却忘了挂上去**（那是漏接的功能，要接上），\n'
+    + '还是**改版后没人再用**（那才是删）。\n'
+    + orphans.join('\n'));
+});

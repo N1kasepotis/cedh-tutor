@@ -162,15 +162,14 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   const wxss = fs.readFileSync(path.join(pageRoot, 'edhti.wxss'), 'utf8');
   const neonTheme = fs.readFileSync(path.join(root, 'miniprogram/styles/themes/neon-arcade.wxss'), 'utf8');
   const edhtiRootBlock = neonTheme.match(/\.edhti\s*{[\s\S]*?\n}/)[0];
-  const commanderWithArtBlock = wxss.slice(
-    wxss.indexOf('.commander-content.with-art'),
-    wxss.indexOf('.commander-cn'),
-  );
+  // 按规则块精确取，不再 slice 到「下一条规则的名字」为止——
+  // 那种切法的边界依赖后面恰好有哪条规则，删掉一条无关样式就会把切片撑进别人的规则里，
+  // 报出一个跟改动毫无关系的错。
+  const commanderWithArtBlock = wxss.match(/\n\.commander-content\.with-art\s*{[\s\S]*?\n}/)[0];
   const commanderTextShadowBlock = wxss.slice(
     wxss.indexOf('.commander-content.with-art .section-label'),
     wxss.indexOf('.tag-row'),
   );
-  const commanderCnBlock = wxss.match(/\n\.commander-cn\s*{[\s\S]*?\n}/)[0];
   const commanderEnBlock = wxss.match(/\n\.commander-en\s*{[\s\S]*?\n}/)[0];
   const miniCodePath = path.join(root, 'miniprogram/assets/cT_logo_v.2.jpg');
   const cedhHouseQrPath = path.join(root, 'miniprogram/assets/cedh-house-qr.jpg');
@@ -354,11 +353,12 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   assert.doesNotMatch(wxss, /\.commander-art-fade/);
   assert.match(wxss, /\.commander-content\.with-art\s*{[\s\S]*var\(--cedh-space-5\)/);
   assert.doesNotMatch(commanderWithArtBlock, /background:|box-shadow:|border-radius:/);
-  assert.match(wxss, /\.commander-content\.with-art \.section-label,\s*[\s\S]*\.commander-content\.with-art \.commander-cn,\s*[\s\S]*\.commander-content\.with-art \.commander-en\s*{/);
+  // .commander-cn 已从名单里去掉：它在 wxml 与 js 里一次都没出现过，是纯孤儿样式。
+  // 这一条仍守住「带卡图时标签与英文名一起换成描边处理」，只是不再点名那个从不存在的类。
+  assert.match(wxss, /\.commander-content\.with-art \.section-label,\s*[\s\S]*\.commander-content\.with-art \.commander-en\s*{/);
   assert.match(commanderTextShadowBlock, /font-family:[\s\S]*Courier New[\s\S]*monospace/);
   assert.match(commanderTextShadowBlock, /letter-spacing:\s*0\.1em/);
   assert.match(commanderTextShadowBlock, /text-shadow:[\s\S]*2rpx 0 0 rgba\(var\(--edhti-pink-rgb\),\s*0\.42\)[\s\S]*-2rpx 0 0 rgba\(var\(--edhti-blue-rgb\),\s*0\.4\)[\s\S]*3rpx 3rpx 0 rgba\(16,\s*28,\s*44,\s*0\.78\)/);
-  assert.doesNotMatch(commanderCnBlock, /text-shadow:/);
   assert.doesNotMatch(commanderEnBlock, /text-shadow:/);
   // 页面主题变量收拢在 styles/themes/neon-arcade.wxss，页面通过 @import 引入
   assert.match(wxss, /@import "\.\.\/\.\.\/styles\/themes\/neon-arcade\.wxss"/);

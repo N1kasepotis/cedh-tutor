@@ -54,7 +54,6 @@ const stickerSheets = [
 const stickerConfig = {
   storageKey: 'goblinStickerSheets',
   drawCount: 3,
-  oddsThresholds: [6, 5, 4],
   stickerSheets,
 };
 

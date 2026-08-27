@@ -11,15 +11,6 @@
   gap: var(--cedh-space-6);
 }
 
-.result-title {
-  color: var(--cedh-text);
-  font-family: var(--cedh-font-serif);
-  font-size: var(--cedh-text-30);
-  font-weight: 400;
-  letter-spacing: -0.035em;
-  line-height: 1.04;
-}
-
 .recommend-list {
   display: flex;
   flex-direction: column;
@@ -144,12 +135,6 @@
   align-items: center;
   justify-content: center;
   gap: var(--cedh-space-2);
-}
-
-.recommend-rank {
-  color: var(--cedh-text-faint);
-  font-size: var(--cedh-text-10);
-  letter-spacing: 0.14em;
 }
 
 .top-match-badge {

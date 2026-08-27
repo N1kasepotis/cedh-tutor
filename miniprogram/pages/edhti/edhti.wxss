@@ -17,7 +17,6 @@
   justify-content: flex-end;
 }
 
-.edhti-kicker,
 .question-bucket,
 .section-label {
   color: var(--edhti-blue);
@@ -326,7 +325,6 @@
 }
 
 .commander-content.with-art .section-label,
-.commander-content.with-art .commander-cn,
 .commander-content.with-art .commander-en {
   color: rgba(246, 252, 255, 0.96);
   font-family: "Courier New", "Lucida Console", Consolas, Monaco, var(--cedh-font-mono), "PingFang SC", monospace;
@@ -346,14 +344,6 @@
 
 .commander-content.with-art .commander-en {
   color: rgba(246, 252, 255, 0.96);
-}
-
-.commander-cn {
-  margin-top: var(--cedh-space-3);
-  color: var(--cedh-text);
-  font-family: var(--cedh-font-serif);
-  font-size: var(--cedh-text-20);
-  line-height: 1.25;
 }
 
 .commander-en {
