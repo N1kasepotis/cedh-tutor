@@ -5,6 +5,7 @@ const {
   setLifeTrackerPlayerCount,
   changePlayerLife,
   isLifeTrackerState,
+  seatFacingFor,
 } = require('../../utils/life-tracker');
 const { readStorage, writeStorage } = require('../../utils/storage');
 const { setKeepScreenOn } = require('../../utils/keep-screen-on');
@@ -98,15 +99,16 @@ Page({
 
   syncPlayers() {
     const playerCount = this.gameState.playerCount || this.gameState.players.length;
-    // 两人上下对坐（上位反转）；三人上一下二（首位横跨反转）；四人十字四分
-    const topCount = playerCount === 4 ? 2 : 1;
+    // 两人上下对坐（上位反转）；三人上一下二（首位横跨反转）；四人十字四分；
+    // 五人两两对坐 + 一人坐右短边。谁坐哪条边查 config 的 seatFacing，不在这里硬算——
+    // 那张表同时被边缘赛跑用来决定光该跑过哪一段，两处算法分家迟早对不上。
     const players = this.gameState.players.map((player, index) => {
       const color = colorForKey(player.colorKey);
       return {
         ...player,
         color: color.hex,
         rgb: color.rgb,
-        orientationClass: index < topCount ? 'player-facing-top' : 'player-facing-bottom',
+        orientationClass: `player-facing-${seatFacingFor(playerCount, index)}`,
       };
     });
     this.setData({ players, playerCount });

@@ -27,6 +27,17 @@ function shuffledColorKeys(rng = Math.random, playerCount = lifeTrackerConfig.pl
   return keys.slice(0, normalizePlayerCount(playerCount));
 }
 
+// 座位朝向：'top' / 'bottom' / 'right'，即这个人坐在屏幕的哪条边。
+// 表里缺项时回退成「首位坐上边、其余坐下边」，也就是加侧坐之前的老行为——
+// 这样 seatFacing 万一被改坏，页面还是能用，只是五人局的侧位不再侧着。
+function seatFacingFor(playerCount, seatIndex) {
+  const table = lifeTrackerConfig.seatFacing || {};
+  const facings = table[normalizePlayerCount(playerCount)];
+  const facing = Array.isArray(facings) ? facings[seatIndex] : null;
+  if (facing === 'top' || facing === 'bottom' || facing === 'right') return facing;
+  return seatIndex === 0 ? 'top' : 'bottom';
+}
+
 function normalizePlayerName(value, index) {
   const name = String(value || '').trim().slice(0, 12);
   return name || `玩家 ${index + 1}`;
@@ -110,6 +121,7 @@ module.exports = {
   normalizePlayerCount,
   initialLifeFor,
   shuffledColorKeys,
+  seatFacingFor,
   createLifeTrackerState,
   resetLifeTrackerState,
   setLifeTrackerPlayerCount,

@@ -7,7 +7,23 @@ const lifeTrackerConfig = {
   minLife: -999,
   maxLife: 999,
   playerCount: 4,
-  playerCountOptions: [2, 3, 4],
+  playerCountOptions: [2, 3, 4, 5],
+  // 每种人数下、每个座位坐在屏幕的哪条边上。索引 = 座位序（seat-1 起）。
+  //
+  // 这张表同时决定两件事，所以只能有一份：
+  //   ① 内容要不要转——坐上边的人要 rotate(180deg) 才对着他正着读
+  //   ② 那个人的「外缘」是屏幕哪条边——边缘赛跑的光要跑过那一段
+  // 以前是一句 `playerCount === 4 ? 2 : 1` 硬算，加进侧坐就算不出来了。
+  //
+  // 五人取「两两对坐 + 一人坐短边」：这是五个人围一台平放手机的真实坐法。
+  // 侧坐那位的加减区仍是轴对齐矩形，只有数字转 90°——整块 face 转 90° 会让
+  // 盒子尺寸和旋转后的视觉尺寸对不上，必然溢出。
+  seatFacing: {
+    2: ['top', 'bottom'],
+    3: ['top', 'bottom', 'bottom'],
+    4: ['top', 'top', 'bottom', 'bottom'],
+    5: ['top', 'top', 'bottom', 'bottom', 'right'],
+  },
   holdDelayMs: 420,
   holdIntervalMs: 85,
   colors: [

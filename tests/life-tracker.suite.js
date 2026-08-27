@@ -137,12 +137,66 @@ test('life tracker supports two and three player modes with adaptive layout', ()
   assert.match(wxml, /hub-mode \{\{item === playerCount \? 'hub-mode-active' : ''\}\}/);
   assert.match(js, /setPlayerMode\(event\)\s*{[\s\S]*setLifeTrackerPlayerCount/);
   assert.match(js, /playerCountOptions:\s*lifeTrackerConfig\.playerCountOptions/);
-  assert.match(js, /playerCount === 4 \? 2 : 1/);
+  // 朝向必须查 config 的 seatFacing，不能在页面里硬算。加进侧坐之后「前 N 位坐上边」
+  // 这种算法已经表达不了五人局；而且这张表还被边缘赛跑用来决定光跑过哪条边，
+  // 两处各算一套迟早对不上。
+  assert.match(js, /orientationClass: `player-facing-\$\{seatFacingFor\(playerCount, index\)\}`/);
+  assert.doesNotMatch(js, /playerCount === 4 \? 2 : 1/, '朝向不该再靠硬编码人数推');
   assert.match(wxss, /\.life-grid\.mode-2\s*{[^}]*grid-template-columns:\s*1fr/);
   assert.match(wxss, /\.life-grid\.mode-2::after\s*{[^}]*display:\s*none/);
   assert.match(wxss, /\.life-grid\.mode-3 \.player-zone\.seat-1\s*{[^}]*grid-column:\s*1 \/ -1/);
   assert.match(wxss, /\.life-grid\.mode-3::after\s*{[^}]*top:\s*50%[^}]*height:\s*50%/);
   assert.match(wxss, /\.hub-mode-active\s*{[^}]*border-color/);
+});
+
+// 五人 = 两两对坐 + 一人坐右短边。这是五个人围一台平放手机的真实坐法；
+// 「一边挤三个」也能塞下，但那位侧身的人得歪着头看自己的血量。
+test('五人局：四宫格 + 右短边竖栏，第五位侧坐', () => {
+  const { createLifeTrackerState, isLifeTrackerState, seatFacingFor } = getLifeTrackerUtils();
+
+  const five = createLifeTrackerState({ rng: () => 0.25, playerCount: 5 });
+  assert.equal(five.playerCount, 5);
+  assert.equal(five.players.length, 5);
+  assert.deepEqual(five.players.map((player) => player.life), [40, 40, 40, 40, 40]);
+  // 八个色够分，但「够分」不等于「真的没重」——重色会让两个人分不清自己那格
+  assert.equal(new Set(five.players.map((player) => player.colorKey)).size, 5);
+  assert.ok(isLifeTrackerState(five));
+
+  // 朝向表：前四位两两对坐，第五位坐右边
+  assert.deepEqual(
+    Array.from({ length: 5 }, (_, index) => seatFacingFor(5, index)),
+    ['top', 'top', 'bottom', 'bottom', 'right'],
+  );
+  // 老几档不能被这次改动带歪
+  assert.deepEqual(Array.from({ length: 2 }, (_, i) => seatFacingFor(2, i)), ['top', 'bottom']);
+  assert.deepEqual(Array.from({ length: 3 }, (_, i) => seatFacingFor(3, i)), ['top', 'bottom', 'bottom']);
+  assert.deepEqual(Array.from({ length: 4 }, (_, i) => seatFacingFor(4, i)), ['top', 'top', 'bottom', 'bottom']);
+  // 表被改坏时回退成加侧坐之前的老行为，而不是抛异常把整页搞白
+  assert.equal(seatFacingFor(4, 99), 'bottom');
+  assert.equal(seatFacingFor(4, 0), 'top');
+
+  const wxss = readPage('wxss');
+  // 五个座位必须全部显式落位：只写 seat-5 的话，自动流会把 seat-3 塞进右上角
+  [1, 2, 3, 4, 5].forEach((seat) => {
+    assert.match(wxss, new RegExp(`\\.life-grid\\.mode-5 \\.player-zone\\.seat-${seat}\\s*{[^}]*grid-area`),
+      `seat-${seat} 在五人局没有显式落位，四宫格会被自动流打散`);
+  });
+  assert.match(wxss, /\.life-grid\.mode-5\s*{[^}]*grid-template-columns:\s*1fr 1fr var\(--life-side-strip\)/);
+  // 分隔线要跟着竖栏挪：横线不能切开竖栏（那是一个人），竖线要落在四宫格中缝
+  assert.match(wxss, /\.life-grid\.mode-5::before\s*{[^}]*width:\s*calc\(100vw - var\(--life-side-strip\)\)/);
+  assert.match(wxss, /\.life-grid\.mode-5::after\s*{[^}]*left:\s*calc\(100vw - var\(--life-side-strip\)\)/);
+  // 中心菜单同理，否则它偏在竖栏那侧、不在十字交点上
+  assert.match(wxss, /\.life-grid\.mode-5 \.board-hub\s*{[^}]*left:\s*calc\(\(100vw - var\(--life-side-strip\)\) \/ 2\)/);
+
+  // 侧坐：加减区改成左右两列（对他就是上下），只有数字转 -90 度。
+  // 整块 face 转 90 度会让盒子尺寸与旋转后的视觉尺寸对调，必然溢出。
+  assert.match(wxss, /\.player-facing-right \.player-face\s*{[^}]*grid-template-columns:\s*repeat\(2,\s*1fr\)/);
+  assert.match(wxss, /\.player-facing-right \.life-increase\s*{[^}]*grid-column:\s*1/);
+  assert.match(wxss, /\.player-facing-right \.life-decrease\s*{[^}]*grid-column:\s*2/);
+  assert.match(wxss, /\.player-facing-right \.player-summary\s*{[^}]*rotate\(-90deg\)/,
+    '侧坐的数字必须转 -90 度：他坐右边朝左看，转 +90 度对他是倒的');
+  assert.doesNotMatch(wxss, /\.player-facing-right \.player-face\s*{[^}]*transform:\s*rotate/,
+    '不能整块 face 转，盒子尺寸对不上会溢出');
 });
 
 test('player values reuse cEDHDisplay with a thin color-aware double outline', () => {

@@ -8,6 +8,9 @@ page {
 .life-tracker-page {
   --life-entry-accent-rgb: 225, 93, 104;
   --life-entry-accent: #e15d68;
+  /* 五人局右短边那条竖栏的宽度。20vw 在横屏各机型都够放下转 90 度的数字：
+     844pt 宽机上是 169pt，667pt 宽机上是 133pt，而字号最大也就 85pt。 */
+  --life-side-strip: 20vw;
   position: fixed;
   inset: 0;
   width: 100vw;
@@ -47,6 +50,40 @@ page {
 .life-grid.mode-3::after {
   top: 50%;
   height: 50%;
+}
+
+/* 五人：左侧仍是四宫格，右短边留一条竖栏给第五个人——这是五个人围一台平放手机
+   的真实坐法（两两对坐，一人坐短边）。五个座位全部显式落位：只给 seat-5 指定
+   位置的话，自动流会把 seat-3 塞进第一行第三格，四宫格当场散架。 */
+.life-grid.mode-5 {
+  grid-template-columns: 1fr 1fr var(--life-side-strip);
+}
+
+.life-grid.mode-5 .player-zone.seat-1 { grid-area: 1 / 1; }
+.life-grid.mode-5 .player-zone.seat-2 { grid-area: 1 / 2; }
+.life-grid.mode-5 .player-zone.seat-3 { grid-area: 2 / 1; }
+.life-grid.mode-5 .player-zone.seat-4 { grid-area: 2 / 2; }
+.life-grid.mode-5 .player-zone.seat-5 { grid-area: 1 / 3 / 3 / 4; }
+
+/* 分隔线跟着挪：横线只画到竖栏为止（竖栏是一个人，不该被横线切开），
+   竖线落到四宫格真正的中缝上而不是屏幕中线。 */
+.life-grid.mode-5::before {
+  width: calc(100vw - var(--life-side-strip));
+}
+
+.life-grid.mode-5::after {
+  left: calc(100vw - var(--life-side-strip));
+}
+
+/* 竖栏与四宫格之间那道线用内阴影而不是 border：::before/::after 两个伪元素都占满了，
+   而 border 会挤占格子的内容区、把居中的数字推偏。 */
+.life-grid.mode-5 .player-zone.seat-5 {
+  box-shadow: inset 1rpx 0 0 rgba(var(--life-entry-accent-rgb), 0.11);
+}
+
+/* 中心菜单要回到四宫格真正的十字交点上，否则它偏在竖栏那侧，一眼就是没对齐 */
+.life-grid.mode-5 .board-hub {
+  left: calc((100vw - var(--life-side-strip)) / 2);
 }
 
 .life-grid::before,
@@ -96,6 +133,31 @@ page {
 
 .player-facing-bottom .player-face {
   transform: none;
+}
+
+/* 侧坐那位：加减区仍是两个轴对齐的矩形——左半加、右半减，从他的视角正好是上下。
+   整块 face 转 90 度是行不通的：盒子还是竖栏那个瘦长尺寸，转完视觉宽高对调、必然溢出。
+   所以只转数字那一块，并给它一个沿竖栏长边的显式宽度。 */
+.player-facing-right .player-face {
+  grid-template-rows: 1fr;
+  grid-template-columns: repeat(2, 1fr);
+}
+
+.player-facing-right .life-increase {
+  grid-row: 1;
+  grid-column: 1;
+}
+
+.player-facing-right .life-decrease {
+  grid-row: 1;
+  grid-column: 2;
+}
+
+/* -90 度而不是 90 度：他坐在右边朝屏幕左侧看，所以他的「上」是屏幕的负 x 方向。
+   转 +90 度的话数字对他是倒着的。 */
+.player-facing-right .player-summary {
+  width: 80vh;
+  transform: translate(-50%, -50%) rotate(-90deg);
 }
 
 .life-hit-area {
@@ -242,7 +304,9 @@ page {
   display: flex;
   flex-direction: column;
   gap: 6rpx;
-  width: 180rpx;
+  /* 220 而不是 180：人数那行从三颗变四颗，每颗净宽 (220-3*6)/4 = 50.5rpx，
+     「5人」两字在 16rpx 字号下约 32rpx，还留得下呼吸 */
+  width: 220rpx;
   padding: 0;
   visibility: hidden;
   opacity: 0;
