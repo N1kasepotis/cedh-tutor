@@ -141,7 +141,7 @@ test('环境梯度：分组、派生与详情查找', () => {
   assert.equal(hexToRgbTriplet('#ff0000'), '255, 0, 0');
   assert.equal(hexToRgbTriplet('nonsense'), '140, 143, 148', '颜色缺失时要有中性兜底而不是崩');
 
-  // 单主将居中、双拍档左右分屏——与结算页、套牌试玩主将区同一语汇
+  // 单主将居中、双拍档左右分屏——与结算页、套牌试玩统帅区同一语汇
   assert.equal(buildCommanderArt([]).mode, 'none');
   assert.equal(buildCommanderArt([{ scryfallId: 'a', en: 'A' }]).mode, 'single');
   assert.equal(buildCommanderArt([

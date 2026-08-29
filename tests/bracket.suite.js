@@ -1098,8 +1098,8 @@ test('Competitive gate recognizes non-blue and command-engine cEDH, not just the
     `${99 - recognized.length} ${land}`,
   ].join('\n');
 
-  // Magda：单红组合技主将，通用导师稀缺（只有 Gamble / Wishclaw），但主将区引擎 + 早期组合技
-  // → 曾被「导师 ≥3」硬门槛压回 B4，现在按组装一致性（主将区引擎抵导师）进入 B5
+  // Magda：单红组合技主将，通用导师稀缺（只有 Gamble / Wishclaw），但统帅区引擎 + 早期组合技
+  // → 曾被「导师 ≥3」硬门槛压回 B4，现在按组装一致性（统帅区引擎抵导师）进入 B5
   const magda = analyzeBracketDeck(build('Magda, Brazen Outlaw', [
     'Sol Ring', 'Mana Vault', 'Grim Monolith', 'Chrome Mox', 'Mox Opal', 'Mox Amber',
     'Lotus Petal', 'Ancient Tomb', 'Jeweled Amulet', 'Simian Spirit Guide',
@@ -1109,10 +1109,10 @@ test('Competitive gate recognizes non-blue and command-engine cEDH, not just the
   ])).result;
   const magdaTutors = (magda.signals.find((s) => s.key === 'efficientTutor') || { count: 0 }).count;
   assert.ok(magdaTutors < 3, 'Magda 牌表通用导师应低于旧硬门槛');
-  assert.equal(magda.competitiveProfile, true, '主将区引擎 + 早期组合技应满足竞技门槛');
+  assert.equal(magda.competitiveProfile, true, '统帅区引擎 + 早期组合技应满足竞技门槛');
   assert.equal(magda.assignedBracket, 5, '单色组合技主将不应因缺通用导师而被压回 B4');
 
-  // Rakdos 引擎牌组：无已收录组合技、无主将区引擎，但极高多轴密度（引擎 3）应满足制胜路径
+  // Rakdos 引擎牌组：无已收录组合技、无统帅区引擎，但极高多轴密度（引擎 3）应满足制胜路径
   const engineBreadth = analyzeBracketDeck(build('Rowan, Scion of War', [
     'Sol Ring', 'Mana Vault', 'Chrome Mox', 'Mox Opal', 'Mox Amber', 'Lotus Petal', 'Dark Ritual', 'Cabal Ritual',
     'Demonic Tutor', 'Vampiric Tutor', 'Imperial Seal', 'Gamble', 'Diabolic Intent',
@@ -1122,14 +1122,14 @@ test('Competitive gate recognizes non-blue and command-engine cEDH, not just the
   assert.equal(engineBreadth.competitiveProfile, true, '20 信号 / 4 高轴 / 引擎 3 应满足极高多轴密度制胜路径');
   assert.equal(engineBreadth.assignedBracket, 5);
 
-  // 护栏一 · 速度地板：休闲主将区引擎（快速法术力不足）不进竞技
+  // 护栏一 · 速度地板：休闲统帅区引擎（快速法术力不足）不进竞技
   const casual = analyzeBracketDeck(build('Korvold, Fae-Cursed King', [
     'Sol Ring', 'Arcane Signet', 'Demonic Tutor', 'Deadly Rollick', 'Cultivate', 'Rampant Growth',
   ], 'Swamp')).result;
   assert.equal(casual.competitiveProfile, false, '快速法术力不足 3 的休闲主将牌组被速度地板挡住');
   assert.ok(casual.assignedBracket <= 4);
 
-  // 护栏二 · 制胜路径：快速好牌堆但无组合技 / 无主将区引擎 / 未达极高密度 → 停在 B4
+  // 护栏二 · 制胜路径：快速好牌堆但无组合技 / 无统帅区引擎 / 未达极高密度 → 停在 B4
   const toothless = analyzeBracketDeck([
     'Commander', '1 Bear Cub', 'Deck',
     '1 Sol Ring', '1 Mana Vault', '1 Chrome Mox',
@@ -1141,7 +1141,7 @@ test('Competitive gate recognizes non-blue and command-engine cEDH, not just the
   assert.equal(toothless.competitiveProfile, false, '无制胜路径的快速好牌堆不应升为竞技');
   assert.equal(toothless.assignedBracket, 4);
 
-  // 护栏三 · 锋利度：主将区引擎但零互动 / 零组合技 / 无密度的纯 durdle 不进竞技
+  // 护栏三 · 锋利度：统帅区引擎但零互动 / 零组合技 / 无密度的纯 durdle 不进竞技
   const durdle = analyzeBracketDeck(build('Najeela, the Blade-Blossom', [
     'Sol Ring', 'Mana Vault', 'Chrome Mox', 'Demonic Tutor', 'Llanowar Elves', 'Birds of Paradise',
   ], 'Forest')).result;
@@ -1982,7 +1982,7 @@ test('Bracket page and two home entries are wired without creating a Meta page',
   assert.match(bracketJs, /覆盖范围：曲线[\s\S]*价格[\s\S]*构筑/);
   assert.match(bracketData, /label:\s*'高效导师'/);
   assert.match(bracketData, /label:\s*'高效制胜'/);
-  assert.match(bracketData, /label:\s*'高效主将区引擎'/);
+  assert.match(bracketData, /label:\s*'高效统帅区引擎'/);
   assert.doesNotMatch([bracketData, bracketUtils].join('\n'), /\u6307\u6325\u533a/);
   assert.match(bracketUtils, /cardFlow:\s*cardSet\(\['efficientTutor', 'engine', 'efficientWinCondition'\]\)/);
   assert.doesNotMatch(bracketData, /高效检索/);

@@ -285,7 +285,7 @@ const SIGNAL_GROUPS = Object.freeze({
     ]),
   }),
   commandZoneEngine: Object.freeze({
-    label: '高效主将区引擎',
+    label: '高效统帅区引擎',
     commanderOnly: true,
     cards: Object.freeze([
       'Kinnan, Bonder Prodigy', 'Najeela, the Blade-Blossom', "Yuriko, the Tiger's Shadow",
@@ -345,7 +345,7 @@ const KNOWN_COMBOS = Object.freeze([
   { id: 'twin-exarch', familyId: 'splinter-twin', cards: ['Splinter Twin', 'Deceiver Exarch'], label: 'Twin + Exarch', speed: 'setup', result: '无限攻击衍生物', recommendedBracket: 3 },
   { id: 'blood-bond', familyId: 'exquisite-blood', cards: ['Exquisite Blood', 'Sanguine Bond'], label: 'Exquisite Blood + Sanguine Bond', speed: 'setup', result: '生命流失循环', recommendedBracket: 3 },
   { id: 'blood-vito', familyId: 'exquisite-blood', cards: ['Exquisite Blood', 'Vito, Thorn of the Dusk Rose'], label: 'Exquisite Blood + Vito', speed: 'setup', result: '生命流失循环', recommendedBracket: 3 },
-  { id: 'bloodchief-mindcrank', familyId: 'bloodchief-mindcrank', cards: ['Bloodchief Ascension', 'Mindcrank'], label: 'Bloodchief + Mindcrank', speed: 'setup', result: '磨牌与失血循环', recommendedBracket: 3 },
+  { id: 'bloodchief-mindcrank', familyId: 'bloodchief-mindcrank', cards: ['Bloodchief Ascension', 'Mindcrank'], label: 'Bloodchief + Mindcrank', speed: 'setup', result: '磨牌与生命流失循环', recommendedBracket: 3 },
   { id: 'niv-curiosity', familyId: 'niv-curiosity', cards: ['Niv-Mizzet, Parun', 'Curiosity'], label: 'Niv-Mizzet + Curiosity', speed: 'setup', result: '抓牌与伤害循环', recommendedBracket: 3 },
   { id: 'niv-eye', familyId: 'niv-curiosity', cards: ['Niv-Mizzet, Parun', 'Ophidian Eye'], label: 'Niv-Mizzet + Ophidian Eye', speed: 'setup', result: '抓牌与伤害循环', recommendedBracket: 3 },
   { id: 'basalt-rings', familyId: 'basalt-infinite-mana', cards: ['Basalt Monolith', 'Rings of Brighthearth'], label: 'Basalt + Rings', speed: 'setup', result: '无限无色法术力', recommendedBracket: 3 },
@@ -355,8 +355,8 @@ const KNOWN_COMBOS = Object.freeze([
   { id: 'mikaeus-triskelion', familyId: 'mikaeus-triskelion', cards: ['Mikaeus, the Unhallowed', 'Triskelion'], label: 'Mikaeus + Triskelion', speed: 'setup', result: '无限伤害', recommendedBracket: 3 },
   { id: 'rip-helm', familyId: 'rip-helm', cards: ['Rest in Peace', 'Helm of Obedience'], label: 'Rest in Peace + Helm', speed: 'setup', result: '放逐牌库', recommendedBracket: 3 },
   { id: 'squirrel-earthcraft', familyId: 'squirrel-earthcraft', cards: ['Squirrel Nest', 'Earthcraft'], label: 'Squirrel Nest + Earthcraft', speed: 'setup', result: '无限松鼠', recommendedBracket: 3 },
-  { id: 'chain-onyx', familyId: 'chain-smog', cards: ['Chain of Smog', 'Professor Onyx'], label: 'Chain of Smog + Professor Onyx', speed: 'early', result: 'Magecraft 生命流失循环', recommendedBracket: 4 },
-  { id: 'chain-apprentice', familyId: 'chain-smog', cards: ['Chain of Smog', 'Witherbloom Apprentice'], label: 'Chain of Smog + Apprentice', speed: 'early', result: 'Magecraft 生命流失循环', recommendedBracket: 4 },
+  { id: 'chain-onyx', familyId: 'chain-smog', cards: ['Chain of Smog', 'Professor Onyx'], label: 'Chain of Smog + Professor Onyx', speed: 'early', result: '魔艺生命流失循环', recommendedBracket: 4 },
+  { id: 'chain-apprentice', familyId: 'chain-smog', cards: ['Chain of Smog', 'Witherbloom Apprentice'], label: 'Chain of Smog + Apprentice', speed: 'early', result: '魔艺生命流失循环', recommendedBracket: 4 },
   { id: 'aluren-acererak', familyId: 'aluren-acererak', cards: ['Aluren', 'Acererak the Archlich'], label: 'Aluren + Acererak', speed: 'early', result: '地城循环', recommendedBracket: 4 },
   { id: 'citadel-top-reservoir', familyId: 'citadel-top', cards: ["Bolas's Citadel", "Sensei's Divining Top", 'Aetherflux Reservoir'], label: 'Citadel + Top + Reservoir', speed: 'setup', result: '抓牌与生命循环', recommendedBracket: 3 },
   { id: 'worldgorger-animate', familyId: 'worldgorger', cards: ['Worldgorger Dragon', 'Animate Dead'], label: 'Worldgorger + Animate Dead', speed: 'setup', result: '有条件的法术力循环', recommendedBracket: 3 },
@@ -373,12 +373,12 @@ const COMBO_PATTERNS = Object.freeze([
   { id: 'dargo-engine-sacrifice', familyId: 'dargo-loop', countsAsCompleteFamily: true, commanderRequired: ['Dargo, the Shipwrecker'], anyOfGroups: [['Birgi, God of Storytelling', 'Relic of Legends', 'Pitiless Plunderer'], ['Altar of Dementia', 'Goblin Bombardment']], label: 'Dargo Recast Loop', speed: 'early', result: '重复施放与牺牲循环', recommendedBracket: 4 },
   { id: 'dargo-technomancer-recursion', familyId: 'dargo-loop', countsAsCompleteFamily: true, commanderRequired: ['Dargo, the Shipwrecker'], required: ['Ruthless Technomancer'], anyOfGroups: [['Cursed Mirror', 'Corpse Dance', 'Mardu Siegebreaker']], label: 'Dargo Technomancer Loop', speed: 'early', result: '重复施放与牺牲循环', recommendedBracket: 4 },
   { id: 'magda-clock-artifact-dwarf', familyId: 'magda-clock', countsAsCompleteFamily: true, required: ['Magda, Brazen Outlaw', 'Clock of Omens'], anyOfGroups: [['Universal Automaton', 'Metallic Mimic', 'Adaptive Automaton', 'Roaming Throne', 'Barkform Harvester', 'Three Tree Mascot', 'Bloodline Pretender', 'Mirror of the Forebears']], label: 'Magda + Clock of Omens', speed: 'early', result: '无限珍宝', recommendedBracket: 4 },
-  { id: 'hullbreaker-repeatable-artifacts', familyId: 'hullbreaker-pattern', kind: 'pattern', required: ['Hullbreaker Horror'], atLeastGroups: [{ cards: ['Mox Amber', 'Mox Opal', 'Chrome Mox', 'Lotus Petal', "Lion's Eye Diamond", 'Sol Ring', 'Mana Vault', 'Grim Monolith', 'Arcane Signet', 'Fellwar Stone'], count: 2 }], label: 'Hullbreaker Horror ＋ 低费法术力物', speed: 'setup', result: '可以达成无限释放与无限漂浮法术力', recommendedBracket: 3 },
+  { id: 'hullbreaker-repeatable-artifacts', familyId: 'hullbreaker-pattern', kind: 'pattern', required: ['Hullbreaker Horror'], atLeastGroups: [{ cards: ['Mox Amber', 'Mox Opal', 'Chrome Mox', 'Lotus Petal', "Lion's Eye Diamond", 'Sol Ring', 'Mana Vault', 'Grim Monolith', 'Arcane Signet', 'Fellwar Stone'], count: 2 }], label: 'Hullbreaker Horror ＋ 低费法术力神器', speed: 'setup', result: '可以达成无限施放与无限漂浮法术力', recommendedBracket: 3 },
   { id: 'lumra-land-recursion', familyId: 'lumra-pattern', kind: 'pattern', commanderRequired: ['Lumra, Bellow of the Woods'], required: ['Lotus Cobra'], anyOfGroups: [['Altar of Dementia', 'Greater Good', 'Squandered Resources']], atLeastGroups: [{ cards: ['Arid Mesa', 'Bloodstained Mire', 'Flooded Strand', 'Marsh Flats', 'Misty Rainforest', 'Polluted Delta', 'Scalding Tarn', 'Verdant Catacombs', 'Windswept Heath', 'Wooded Foothills', 'Prismatic Vista', 'Fabled Passage'], count: 2 }], label: 'Lotus Cobra ＋ 切地 ＋ 牺牲引擎', speed: 'setup', result: '反复切地滚出法术力与抓牌', recommendedBracket: 3 },
   { id: 'tayam-role-loop', familyId: 'tayam-pattern', kind: 'pattern', commanderRequired: ['Tayam, Luminous Enigma'], required: ['Devoted Druid'], anyOfGroups: [['Ashnod\'s Altar', 'Phyrexian Altar', 'Altar of Dementia', 'Blasting Station'], ['Hapatra, Vizier of Poisons', 'Young Wolf', 'Strangleroot Geist', 'Promise of Bunrei']], label: 'Devoted Druid ＋ 祭坛 ＋ 不死生物', speed: 'setup', result: '反复牺牲与回场，滚出无限法术力或磨牌', recommendedBracket: 3 },
   { id: 'protean-hulk-pile', familyId: 'protean-hulk-pattern', kind: 'pattern', required: ['Protean Hulk'], anyOfGroups: [['Viscera Seer', 'Carrion Feeder', 'Altar of Dementia', 'Phyrexian Altar', "Ashnod's Altar"]], atLeastGroups: [{ cards: ['Karmic Guide', 'Reveillark', 'Mikaeus, the Unhallowed', 'Walking Ballista', 'Body Snatcher', 'Activated Sleeper', 'Melira, Sylvok Outcast', 'Lesser Masticore', 'Disciple of the Vault'], count: 2 }], label: 'Protean Hulk ＋ 检索目标 ＋ 牺牲引擎', speed: 'early', result: '牺牲后直接搜出整套制胜组件', recommendedBracket: 3 },
   { id: 'doomsday-pile', familyId: 'doomsday-pattern', kind: 'pattern', required: ['Doomsday'], atLeastGroups: [{ cards: ["Thassa's Oracle", 'Laboratory Maniac', 'Jace, Wielder of Mysteries', 'Gush', 'Street Wraith', "Lion's Eye Diamond", 'Gitaxian Probe', 'Consider', 'Edge of Autumn'], count: 2 }], label: 'Doomsday ＋ 牌堆组件', speed: 'early', result: '叠好牌库后直接过牌取胜', recommendedBracket: 3 },
-  { id: 'arcum-ring-mind-over-matter', familyId: 'arcum-engine-pattern', kind: 'engine', commanderRequired: ['Arcum Dagsson'], required: ['The One Ring', 'Mind Over Matter'], label: 'Arcum Ring 抽牌引擎', speed: 'setup', result: '抽牌与重置引擎', recommendedBracket: 3 },
+  { id: 'arcum-ring-mind-over-matter', familyId: 'arcum-engine-pattern', kind: 'engine', commanderRequired: ['Arcum Dagsson'], required: ['The One Ring', 'Mind Over Matter'], label: 'Arcum Ring 抓牌引擎', speed: 'setup', result: '抓牌与重置引擎', recommendedBracket: 3 },
 ]);
 
 const CARD_ALIASES = Object.freeze({

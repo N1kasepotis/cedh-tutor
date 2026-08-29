@@ -11,7 +11,7 @@ function formatPublishedAt(value) {
   return match ? `${match[1]}.${match[2]}.${match[3]}` : '';
 }
 
-// 单主将居中、双拍档左右分屏——沿用结算页与套牌试玩主将区的既有语汇
+// 单主将居中、双拍档左右分屏——沿用结算页与套牌试玩统帅区的既有语汇
 function buildCommanderArt(commanders) {
   const named = (commanders || []).filter((commander) => commander && commander.scryfallId).slice(0, 2);
   if (!named.length) return { mode: 'none', images: [] };

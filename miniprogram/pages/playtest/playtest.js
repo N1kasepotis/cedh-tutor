@@ -39,7 +39,7 @@ const DRAG_RENDER_INTERVAL_MS = 32;
 const PANEL_PAGE_SIZE = 40;
 
 function buildInspectTargets(zone) {
-  // 主将只在手牌 / 战场 / 坟场之间移动，不入库、不放逐、不回主将区
+  // 主将只在手牌 / 战场 / 坟场之间移动，不入库、不放逐、不回统帅区
   if (zone === 'command') {
     return [
       { zone: 'hand', label: ZONE_LABELS.hand },
@@ -48,7 +48,7 @@ function buildInspectTargets(zone) {
     ];
   }
 
-  // 非主将区的牌不再提供「移到主将区」——主将区只容纳开局的主将
+  // 非统帅区的牌不再提供「移到统帅区」——统帅区只容纳开局的主将
   const targets = [
     { zone: 'hand', label: ZONE_LABELS.hand },
     { zone: 'battlefield', label: ZONE_LABELS.battlefield },
@@ -289,7 +289,7 @@ Page({
     return buildScryfallImageUrl(name, version);
   },
 
-  // 这一刻真的会显示成图的那几张：开局就是七张手牌加主将区，战场还是空的。
+  // 这一刻真的会显示成图的那几张：开局就是七张手牌加统帅区，战场还是空的。
   // 牌库里那九十多张一张图都不渲染，却要陪着一起等——先解析这几张，首屏快得多。
   visibleCardNames() {
     if (!this.game) return [];
@@ -725,7 +725,7 @@ Page({
     this.setData({ revealTop, topCardArt: this.buildTopCardArt(revealTop) });
   },
 
-  // 主将区：按 主将推荐结算界面 呈现——单主将居中大画，双拍档左右分屏。
+  // 统帅区：按 主将推荐结算界面 呈现——单主将居中大画，双拍档左右分屏。
   // 主将可能一行一张（game.command 多条目）或一行 "A / B"（splitCommanderNames 再拆）。
   buildCommandPreview() {
     const faces = ((this.game && this.game.command) || [])
@@ -914,7 +914,7 @@ Page({
     if (!this.manaPool) return;
     wx.showModal({
       title: '清空法术力池',
-      content: '将所有颜色的法术力量归零？',
+      content: '将所有颜色的法术力归零？',
       confirmText: '清空',
       success: (result) => {
         if (!result.confirm) return;

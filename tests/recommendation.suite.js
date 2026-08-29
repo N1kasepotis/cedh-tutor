@@ -46,7 +46,7 @@ test('questionnaire keeps the required Chinese flow editable in config', () => {
   assert.ok(questions[1].options[2].weights.storm >= 3);
   assert.deepEqual(
     questions[2].options.map((option) => option.text),
-    ['Stax 锁控', '适度互动', '康完你的康他的', '各扫门前雪'],
+    ['Stax 锁场', '适度互动', '康完你的康他的', '各扫门前雪'],
   );
   assert.equal(dimensionLabels.stax, 'Stax');
   assert.equal(JSON.stringify(questions).includes('别急'), false);

@@ -85,7 +85,7 @@ test('牌组试玩拒绝超长文本、异常总张数与过量主将，避免�
   assert.match(tooManyCommanders.warnings[0], /主将/);
 });
 
-test('建局：洗库、主将区、起手七张，注入 rng 可复现', () => {
+test('建局：洗库、统帅区、起手七张，注入 rng 可复现', () => {
   const { parseMtgoDeckText, createGame } = require('../miniprogram/utils/playtest');
 
   const lines = [];
@@ -382,13 +382,13 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   assert.match(js, /PANEL_PAGE_SIZE\s*=\s*40/);
   assert.match(js, /cards\.slice\(0, this\.panelVisibleCount\)/);
 
-  // 区域面板可把牌移入放逐区（除放逐区自身与主将区外都提供）；主将只在手牌/战场/坟场间移动
+  // 区域面板可把牌移入放逐区（除放逐区自身与统帅区外都提供）；主将只在手牌/战场/坟场间移动
   assert.match(wxml, /wx:if="\{\{panelZone !== 'exile' && panelZone !== 'command'\}\}"[^>]*data-to="exile"[^>]*>放逐/);
   assert.match(wxml, /wx:if="\{\{panelZone !== 'library' && panelZone !== 'command'\}\}"[^>]*data-to="library"[^>]*>库顶/);
   const cmdInspectBranch = js.slice(js.indexOf("if (zone === 'command')"), js.indexOf('const targets'));
   assert.match(cmdInspectBranch, /zone: 'hand'[\s\S]*zone: 'battlefield'[\s\S]*zone: 'graveyard'/);
   assert.doesNotMatch(cmdInspectBranch, /zone: 'exile'|zone: 'library'/);
-  // 非主将（其余区）的牌不再提供「移到主将区」选项
+  // 非主将（其余区）的牌不再提供「移到统帅区」选项
   const generalInspectTargets = js.slice(js.indexOf('const targets'), js.indexOf('return targets.filter'));
   assert.doesNotMatch(generalInspectTargets, /zone: 'command'/);
 
@@ -457,13 +457,13 @@ test('展示库顶模式：牌库检索面板 toggle + 库顶 art_crop 铺底牌
   assert.doesNotMatch(wxss, /\.zone-chip\.reveal-top/);
 });
 
-test('主将区呈现主将卡图（单主将居中 / 双拍档左右分屏）、坟场放逐恒显顶牌大画', () => {
+test('统帅区呈现主将卡图（单主将居中 / 双拍档左右分屏）、坟场放逐恒显顶牌大画', () => {
   const pageRoot = path.join(root, 'miniprogram/pages/playtest');
   const js = fs.readFileSync(path.join(pageRoot, 'playtest.js'), 'utf8');
   const wxml = fs.readFileSync(path.join(pageRoot, 'playtest.wxml'), 'utf8');
   const wxss = fs.readFileSync(path.join(pageRoot, 'playtest.wxss'), 'utf8');
 
-  // 主将区沿用 result-display 的 splitCommanderNames 拆分（对齐结算页拍档呈现）
+  // 统帅区沿用 result-display 的 splitCommanderNames 拆分（对齐结算页拍档呈现）
   assert.match(js, /require\('\.\.\/\.\.\/utils\/result-display'\)/);
   assert.match(js, /buildCommandPreview\(\)\s*{/);
   assert.match(js, /splitCommanderNames\(card\.name\)/);

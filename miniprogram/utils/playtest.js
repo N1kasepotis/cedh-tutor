@@ -11,7 +11,7 @@ const ZONE_LABELS = {
   library: '牌库',
   graveyard: '坟场',
   exile: '放逐区',
-  command: '主将区',
+  command: '统帅区',
 };
 
 const MAX_DECK_LINES = 400;
@@ -162,7 +162,7 @@ function shuffleInPlace(cards, rng) {
   return cards;
 }
 
-// 建局：主牌洗入牌库，指挥官进主将区，抓起手 7 张。
+// 建局：主牌洗入牌库，指挥官进统帅区，抓起手 7 张。
 function createGame(parsed, rng) {
   const mainExpand = expandCards(parsed.main, 1);
   const commandExpand = expandCards(parsed.commanders, mainExpand.nextId);

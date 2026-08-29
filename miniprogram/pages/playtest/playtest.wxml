@@ -121,13 +121,13 @@
     </view>
 
     <view class="zone-strip">
-      <view class="zone-chip {{commandPreview.mode !== 'empty' ? 'has-art' : ''}} {{hoverZone === 'command' ? 'drop-target' : ''}}" id="zone-command" aria-role="button" aria-label="主将区" data-zone="command" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
+      <view class="zone-chip {{commandPreview.mode !== 'empty' ? 'has-art' : ''}} {{hoverZone === 'command' ? 'drop-target' : ''}}" id="zone-command" aria-role="button" aria-label="统帅区" data-zone="command" hover-class="pressable-active" hover-stay-time="120" bindtap="openZone" bindlongpress="openZone">
         <view wx:if="{{commandPreview.mode === 'dual'}}" class="zone-art-split">
           <image class="zone-art-half" src="{{commandPreview.left}}" mode="aspectFill" lazy-load="{{true}}"></image>
           <image class="zone-art-half" src="{{commandPreview.right}}" mode="aspectFill" lazy-load="{{true}}"></image>
         </view>
         <image wx:elif="{{commandPreview.mode === 'single'}}" class="zone-top-art" src="{{commandPreview.single}}" mode="aspectFill" lazy-load="{{true}}"></image>
-        <view class="zone-label">主将区</view>
+        <view class="zone-label">统帅区</view>
         <view class="zone-count mono">{{counts.command}}</view>
       </view>
       <view class="zone-chip {{topCardArt ? 'has-art' : ''}} {{hoverZone === 'library' ? 'drop-target' : ''}}" id="zone-library" aria-role="button" aria-label="牌库，单击抓牌，长按查找（导师效应）" data-zone="library" hover-class="pressable-active" hover-stay-time="120" bindtap="drawOne" bindlongpress="openZone">

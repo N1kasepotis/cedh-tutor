@@ -312,7 +312,7 @@
   border-color: var(--cedh-accent-line);
 }
 
-/* 带卡图的区域芯片（主将区 / 牌库展示库顶 / 坟场 / 放逐区）：art 铺底，label/count 提层压黑边保可读。
+/* 带卡图的区域芯片（统帅区 / 牌库展示库顶 / 坟场 / 放逐区）：art 铺底，label/count 提层压黑边保可读。
    overflow:hidden + position:relative 防 absolute 图逃逸到面板级祖先（同 .card-tile 的坑）。 */
 .zone-chip.has-art {
   position: relative;

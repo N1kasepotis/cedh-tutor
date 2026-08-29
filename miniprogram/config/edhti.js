@@ -1133,7 +1133,7 @@ const edhtiQuestions = [
         }
       },
       {
-        "text": "攻击力和血量，简单直接。",
+        "text": "力量和防御力，简单直接。",
         "scores": {
           "direct": 3
         },

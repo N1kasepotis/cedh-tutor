@@ -433,7 +433,7 @@ function parseBracketDeck(text) {
         raw: rawLine,
         message: `第 ${lineNumber} 行是未识别区段`,
       });
-      // 未识别的类型分组不能沿用 Commander / Companion，避免把后续主牌误标为主将区。
+      // 未识别的类型分组不能沿用 Commander / Companion，避免把后续主牌误标为统帅区。
       section = 'main';
       return;
     }
@@ -670,7 +670,7 @@ function signalBand(signals) {
   const command = counts.commandZoneEngine || 0;
   // 免费互动是反应性/保护性的：它护住一套打法，本身不构成打法。因此单独的替费密度不足以
   // 独立进 B4（optimized/高强度需要主动牌力）——只在与主动信号搭配时（fast≥2 & tutors≥3 &
-  // free≥2）计入 B4，或经 Game Changer 张数下限（官方 3 张规则）进档。Stax 是主动控制轴，
+  // free≥2）计入 B4，或经主宰牌张数下限（官方 3 张规则）进档。Stax 是主动控制轴，
   // denial≥4 仍可独立 B4。参见四支柱门槛里「锋利度」同样是必要非充分。
   if (fast >= 4
     || tutors >= 5
@@ -678,7 +678,7 @@ function signalBand(signals) {
     || (fast >= 2 && tutors >= 3 && free >= 2)
     || (command >= 1 && fast >= 3 && tutors >= 3)) return 4;
 
-  // 一两张替费仍算「升级」结构信号（B3），与官方 1–3 张 Game Changer→Upgraded 对齐；
+  // 一两张替费仍算「升级」结构信号（B3），与官方 1–3 张主宰牌→B3 强化对齐；
   // 但不再让纯替费密度独自冲到 B4。
   if (fast >= 2
     || tutors >= 3
@@ -691,7 +691,7 @@ function signalBand(signals) {
   return 1;
 }
 
-// 组装一致性：可靠地找到并拼出制胜线的能力。通用导师是经典路径，但主将区引擎（每局常驻、
+// 组装一致性：可靠地找到并拼出制胜线的能力。通用导师是经典路径，但统帅区引擎（每局常驻、
 // 可反复取用）与抓牌引擎同样带来一致性——单色导师稀缺的组合技主将（如 Magda）靠主将本身
 // 而非通用导师达成一致性，因此不能用「导师 ≥3」这条蓝黑范式硬门槛一刀切。
 function consistencyReach(tutors, command, engines) {
@@ -723,9 +723,9 @@ function hasCompetitiveSignalDensity(signals, detectedComboFamilies, detectedCom
     .some(isEarlyCombo);
   // 支柱一，速度：爆发性法术力，色彩无关；也是挡住休闲牌组的硬地板（premium 快速法术力密度）。
   const hasSpeed = fast >= 3;
-  // 支柱二，一致性：导师或主将区引擎或抓牌引擎，任一路径凑够都行。
+  // 支柱二，一致性：导师或统帅区引擎或抓牌引擎，任一路径凑够都行。
   const hasConsistency = consistencyReach(tutors, command, engines) >= 3;
-  // 支柱三，制胜路径：已收录早期组合技、curated 主将区引擎（本身即制胜/组合技引擎）、或极高多轴密度。
+  // 支柱三，制胜路径：已收录早期组合技、curated 统帅区引擎（本身即制胜/组合技引擎）、或极高多轴密度。
   const hasExtremeBreadth = totalSignals >= 14
     && highAxes >= 4
     && (command >= 1 || engines >= 3 || winConditions >= 2 || denial >= 3 || hasEarlyCombo);
@@ -897,7 +897,7 @@ function bandSignalCounts(signals) {
   };
 }
 
-// 抗干扰韧性轴（色彩中立）：蓝系靠免费反击，其他颜色靠 Stax、主将区引擎或更深的导师／
+// 抗干扰韧性轴（色彩中立）：蓝系靠免费反击，其他颜色靠 Stax、统帅区引擎或更深的导师／
 // 引擎冗余抵抗对手互动。取各路径最大值，使不沾蓝的 cEDH 不因免费反击少而被压档。
 const RESILIENCE_AXIS_LABEL = '抗干扰韧性';
 const CONSISTENCY_AXIS_LABEL = '组装一致性';
@@ -1043,7 +1043,7 @@ function computeBandPosition({
     if (command >= 1) {
       axes.push(bandAxis(
         'commandZonePath',
-        '主将区引擎路径',
+        '统帅区引擎路径',
         (1 + Math.max(Math.min(fast, 1), Math.min(tutors / 2, 1))) / 2,
       ));
     }
@@ -1065,7 +1065,7 @@ function computeBandPosition({
     if (command >= 1) {
       axes.push(bandAxis(
         'commandZonePath',
-        '主将区引擎路径',
+        '统帅区引擎路径',
         (Math.min(fast / 3, 1) + Math.min(tutors / 3, 1)) / 2,
       ));
     }
@@ -1188,10 +1188,10 @@ function evaluateBracket(parsed, options = {}) {
       gameChangers.length > 3 ? 'GAME_CHANGER_OVER_LIMIT' : 'GAME_CHANGER_PRESENT',
       'rule',
       gameChangers,
-      `${gameChangers.length} 张 Game Changers`,
+      `${gameChangers.length} 张主宰牌`,
       gameChangers.length > 3
-        ? '超过 Upgraded 的 3 张基线，规则下限进入 Optimized。'
-        : 'Core 不使用 Game Changers，规则下限进入 Upgraded。',
+        ? '超过 B3 强化的 3 张基线，规则下限进入 B4 优化。'
+        : 'B2 核心不使用主宰牌，规则下限进入 B3 强化。',
       minimum,
     ));
   }
@@ -1203,7 +1203,7 @@ function evaluateBracket(parsed, options = {}) {
       'rule',
       massLandDenial,
       '大规模炸地与锁地',
-      '检测到大规模摧毁或锁住土地的牌（Mass Land Denial），基线只适合 Optimized 及以上。',
+      '检测到大规模摧毁或锁住土地的牌（Mass Land Denial），基线只适合 B4 优化及以上。',
       4,
     ));
   }
@@ -1217,7 +1217,7 @@ function evaluateBracket(parsed, options = {}) {
       `${extraTurns.length} 张额外回合牌`,
       extraTurns.length >= 3
         ? '数量较高，需在对局前说明是否会连续或循环额外回合。'
-        : 'Exhibition 基线不使用额外回合牌。',
+        : 'B1 主题展示基线不使用额外回合牌。',
       2,
     ));
   }
@@ -1391,8 +1391,8 @@ function evaluateBracket(parsed, options = {}) {
       extraTurns,
       extraTurnStrengthBracket === 4 ? '高密度额外回合' : '多张额外回合',
       extraTurnStrengthBracket === 4
-        ? '数量已超出“少量且不连续”的低档体验基线，建议 Optimized。'
-        : '多张额外回合会提高连续施放的一致性，建议至少 Upgraded。',
+        ? '数量已超出“少量且不连续”的低档体验基线，建议 B4 优化。'
+        : '多张额外回合会提高连续施放的一致性，建议至少 B3 强化。',
       extraTurnStrengthBracket,
     ));
   }
@@ -1422,7 +1422,7 @@ function evaluateBracket(parsed, options = {}) {
   if (cohesionProfile.reliable && dominantTheme && dominantTheme.qualifies) {
     const themeDensity = Math.round((dominantTheme.density || 0) * 100);
     const commanderText = dominantTheme.commanderAligned
-      ? '，主将区也贴合这条主线'
+      ? '，统帅区也贴合这条主线'
       : '';
     evidence.push(buildEvidence(
       'THEME_COHESION_SUPPORT',
@@ -1483,7 +1483,7 @@ function evaluateBracket(parsed, options = {}) {
   );
   // 竞技升档：结构判定先落在 B4、B5 必要条件的联合接近度超过区间「偏强」线，且具备完整
   // 竞技特征才离开 B4；再看超出竞技强度阈值的余量——余量越过 B5 基准判 B5，否则归 B4.5 准竞技。
-  // 韧性轴色彩中立（免费反击 / Stax / 主将区引擎 / 冗余皆可），不偏向蓝色。
+  // 韧性轴色彩中立（免费反击 / Stax / 统帅区引擎 / 冗余皆可），不偏向蓝色。
   const promotionCounts = bandSignalCounts(signals);
   const promotionCombos = detectedComboFamilies.concat(detectedComboPatterns);
   const bandFourApproach = bandApproachToBFive(promotionCounts, promotionCombos, signals);
@@ -1524,11 +1524,11 @@ function evaluateBracket(parsed, options = {}) {
     const surplusLinePercent = Math.round(BAND_POSITION_CONFIG.promotion.b5SurplusMin * 100);
     let competitiveDetail;
     if (!competitivePromoted) {
-      competitiveDetail = '快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但结构判定未落在 B4，不触发竞技升档';
+      competitiveDetail = '快速法术力、高效导师与抗干扰韧性（免费互动、Stax、统帅区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但结构判定未落在 B4，不触发竞技升档';
     } else if (clearCompetitiveSurplus) {
-      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，超出竞技强度阈值的余量 ${surplusPercent}% 越过 B5 基准（${surplusLinePercent}%）`;
+      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、统帅区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，超出竞技强度阈值的余量 ${surplusPercent}% 越过 B5 基准（${surplusLinePercent}%）`;
     } else {
-      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、主将区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但超出竞技强度阈值的余量约 ${surplusPercent}%，未达 B5 基准（${surplusLinePercent}%），归入 B4.5 准竞技`;
+      competitiveDetail = `快速法术力、高效导师与抗干扰韧性（免费互动、Stax、统帅区引擎或冗余任一）同时达到竞技密度，并且有早期组合技或足够集中的多轴构筑，但超出竞技强度阈值的余量约 ${surplusPercent}%，未达 B5 基准（${surplusLinePercent}%），归入 B4.5 准竞技`;
     }
     evidence.push(buildEvidence(
       'COMPETITIVE_SIGNAL_DENSITY',

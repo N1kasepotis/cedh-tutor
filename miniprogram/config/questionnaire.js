@@ -67,7 +67,7 @@ const questions = [
     title: '干扰对手',
     type: 'single',
     options: [
-      { id: 'stax', text: 'Stax 锁控', weights: { stax: 3, control: 2 } },
+      { id: 'stax', text: 'Stax 锁场', weights: { stax: 3, control: 2 } },
       { id: 'moderate', text: '适度互动', weights: { interaction: 3, midrange: 1, blue: 1 } },
       { id: 'stackControl', text: '康完你的康他的', weights: { interaction: 4, control: 2, blue: 2, complex: 1 } },
       { id: 'low', text: '各扫门前雪', weights: { lowInteraction: 3, proactive: 2, speed: 1 } },
