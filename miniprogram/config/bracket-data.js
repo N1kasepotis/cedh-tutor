@@ -8,8 +8,11 @@
 const BRACKET_MANIFEST = Object.freeze({
   schemaVersion: 1,
   ruleVersion: 'commander-brackets-2026-02-09',
-  dataVersion: 'curated-en-2026-07-15-combo-families',
-  evaluatorVersion: '2.7.0',
+  dataVersion: 'curated-en-2026-08-28-spellbook-two-card',
+  // 2.8.0：接入 Commander Spellbook 的两卡组合技快照（3015 条）。
+  // 这一版**会改变判定结果**——此前只认手工维护的 42 条，牌表里绝大多数两卡组合技
+  // 一条都识别不出来，那正是「牌组里有组合技却没被认出来」的直接原因。
+  evaluatorVersion: '2.8.0',
   supportedLanguage: 'en',
 });
 

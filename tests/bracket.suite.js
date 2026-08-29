@@ -1746,8 +1746,8 @@ test('Every result carries internal version metadata, evidence, confidence bound
   assert.ok(result.evidence.length >= 1);
   assert.ok(result.evidence.every((item) => item.ruleVersion === BRACKET_MANIFEST.ruleVersion));
   assert.equal(result.versions.evaluatorVersion, BRACKET_MANIFEST.evaluatorVersion);
-  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.7.0');
-  assert.equal(BRACKET_MANIFEST.dataVersion, 'curated-en-2026-07-15-combo-families');
+  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.8.0');
+  assert.equal(BRACKET_MANIFEST.dataVersion, 'curated-en-2026-08-28-spellbook-two-card');
   assert.equal(result.versions.supportedLanguage, 'en');
   assert.equal(result.confidence, 'low');
   assert.equal(result.deckMetrics.estimatedTotalUsd, null);
@@ -2118,4 +2118,182 @@ test('组合技判定文案不使用内部工程口吻', () => {
     assert.ok(!/^[^A-Za-z]*框架$/.test(pattern.label),
       `${pattern.id} 的标题只有抽象类别，没有实际卡名`);
   });
+});
+
+// ---------------------------------------------------------------------------
+// Commander Spellbook 两卡组合技快照
+//
+// 手工维护的 KNOWN_COMBOS 只有 42 条，牌表里绝大多数两卡组合技一条都认不出来——
+// 这就是「牌组里有组合技却没被识别」的直接原因。快照补上长尾（3000 条量级），
+// 手工那份继续负责它覆盖的部分（中文更好、有家族归并）。
+// ---------------------------------------------------------------------------
+
+test('组合技快照：结构完好、档位合法、不与手工库重复', () => {
+  const {
+    SPELLBOOK_CARD_NAMES, SPELLBOOK_COMBO_ROWS, SPELLBOOK_CATEGORY_LABELS,
+  } = require('../miniprogram/config/spellbook-combos');
+  const { KNOWN_COMBOS } = require('../miniprogram/config/bracket-data');
+  const { canonicalCardKey } = require('../miniprogram/utils/bracket');
+
+  const rows = SPELLBOOK_COMBO_ROWS.split(';');
+  assert.ok(rows.length > 2000, `快照只有 ${rows.length} 条，明显没拉全`);
+  assert.ok(SPELLBOOK_CARD_NAMES.length > 1000, `卡名表只有 ${SPELLBOOK_CARD_NAMES.length} 张`);
+
+  const pairs = new Set();
+  rows.forEach((row, position) => {
+    const parts = row.split(',');
+    assert.equal(parts.length, 4, `第 ${position} 条字段数不对：${row}`);
+    const left = SPELLBOOK_CARD_NAMES[parseInt(parts[0], 36)];
+    const right = SPELLBOOK_CARD_NAMES[parseInt(parts[1], 36)];
+    // 下标越界会静默变成 undefined，然后在界面上渲染成「undefined ＋ 某牌」
+    assert.ok(left && right, `第 ${position} 条的卡名下标越界：${row}`);
+    const bracket = Number(parts[2]);
+    assert.ok(Number.isInteger(bracket) && bracket >= 1 && bracket <= 5,
+      `第 ${position} 条档位 ${parts[2]} 越出 1–5`);
+    assert.ok(SPELLBOOK_CATEGORY_LABELS[parts[3]],
+      `第 ${position} 条的类别 ${parts[3]} 没有对应中文`);
+    // 同一对牌只该出现一次，否则证据里会重复报同一套牌
+    const key = [canonicalCardKey(left), canonicalCardKey(right)].sort().join('|');
+    assert.ok(!pairs.has(key), `配对重复：${left} + ${right}`);
+    pairs.add(key);
+  });
+
+  // 与手工库不得重叠——重叠就会同一套牌被报两次，一次带家族标签一次不带
+  KNOWN_COMBOS.filter((combo) => combo.cards.length === 2).forEach((combo) => {
+    const key = combo.cards.map(canonicalCardKey).sort().join('|');
+    assert.ok(!pairs.has(key),
+      `${combo.cards.join(' + ')} 同时存在于手工库与快照，会被报两次`);
+  });
+});
+
+test('组合技快照：命中要两张都在，双面牌两种写法都认', () => {
+  const { matchSpellbookCombos, clearSpellbookIndex } = require('../miniprogram/utils/spellbook-combos');
+  const { SPELLBOOK_CARD_NAMES, SPELLBOOK_COMBO_ROWS } = require('../miniprogram/config/spellbook-combos');
+  const { canonicalCardKey } = require('../miniprogram/utils/bracket');
+  clearSpellbookIndex();
+
+  const first = SPELLBOOK_COMBO_ROWS.split(';')[0].split(',');
+  const pair = [
+    SPELLBOOK_CARD_NAMES[parseInt(first[0], 36)],
+    SPELLBOOK_CARD_NAMES[parseInt(first[1], 36)],
+  ];
+
+  // 两张都在 → 命中
+  const both = new Set(pair.map(canonicalCardKey));
+  assert.equal(matchSpellbookCombos(both, canonicalCardKey).length, 1);
+
+  // 只有一张 → 不命中。这份库整份都是两卡组合技，半套不该算数，
+  // 否则每副牌都会被报出一大堆「差一张」的组合技
+  const onlyOne = new Set([canonicalCardKey(pair[0])]);
+  assert.deepEqual(matchSpellbookCombos(onlyOne, canonicalCardKey), []);
+
+  // 空集合与非法入参不得抛
+  assert.deepEqual(matchSpellbookCombos(new Set(), canonicalCardKey), []);
+  assert.deepEqual(matchSpellbookCombos(null, canonicalCardKey), []);
+  assert.deepEqual(matchSpellbookCombos(both, null), []);
+
+  // 双面牌：Spellbook 与 Moxfield 都写全名 `A // B`，但有的导出器只写正面名。
+  // 只认一种就会漏掉那一半用户。
+  const dual = SPELLBOOK_CARD_NAMES.find((name) => name.indexOf(' // ') > 0);
+  if (dual) {
+    const front = dual.split(' // ')[0];
+    const rows = SPELLBOOK_COMBO_ROWS.split(';');
+    const dualIndex = SPELLBOOK_CARD_NAMES.indexOf(dual).toString(36);
+    const row = rows.find((r) => {
+      const parts = r.split(',');
+      return parts[0] === dualIndex || parts[1] === dualIndex;
+    }).split(',');
+    const partner = SPELLBOOK_CARD_NAMES[parseInt(row[0], 36)] === dual
+      ? SPELLBOOK_CARD_NAMES[parseInt(row[1], 36)]
+      : SPELLBOOK_CARD_NAMES[parseInt(row[0], 36)];
+    const byFrontFace = new Set([front, partner].map(canonicalCardKey));
+    assert.equal(matchSpellbookCombos(byFrontFace, canonicalCardKey).length, 1,
+      `牌表只写正面名「${front}」时没能命中，Archidekt 这类导出器就会漏检`);
+  }
+
+  // 排序必须稳定且档位高的在前：证据里只展示前几条，顺序不能随牌表行序抖动
+  const many = new Set();
+  SPELLBOOK_COMBO_ROWS.split(';').slice(0, 400).forEach((r) => {
+    const parts = r.split(',');
+    many.add(canonicalCardKey(SPELLBOOK_CARD_NAMES[parseInt(parts[0], 36)]));
+    many.add(canonicalCardKey(SPELLBOOK_CARD_NAMES[parseInt(parts[1], 36)]));
+  });
+  const hits = matchSpellbookCombos(many, canonicalCardKey);
+  assert.ok(hits.length > 10, `大牌表只命中 ${hits.length} 条，索引可能没建对`);
+  hits.forEach((hit, i) => {
+    if (i === 0) return;
+    assert.ok(hits[i - 1].bracket >= hit.bracket, '命中结果没有按档位降序');
+  });
+});
+
+test('长尾组合技收敛成一条证据，并按官方 B2 定义把下限顶到 3', () => {
+  const B = require('../miniprogram/utils/bracket');
+  const { SPELLBOOK_CARD_NAMES, SPELLBOOK_COMBO_ROWS } = require('../miniprogram/config/spellbook-combos');
+
+  const rows = SPELLBOOK_COMBO_ROWS.split(';').map((row) => {
+    const parts = row.split(',');
+    return {
+      cards: [SPELLBOOK_CARD_NAMES[parseInt(parts[0], 36)], SPELLBOOK_CARD_NAMES[parseInt(parts[1], 36)]],
+      bracket: Number(parts[2]),
+    };
+  });
+  const evaluate = (names) => B.evaluateBracket(B.parseBracketDeck(
+    `${names.map((n) => `1 ${n}`).join('\n')}\n1 Sol Ring\n\n1 Kinnan, Bonder Prodigy`,
+  ));
+  const spellbookEvidence = (result) => (result.evidence || [])
+    .filter((item) => item.code === 'SPELLBOOK_TWO_CARD_COMBOS');
+
+  // 档位 4 的长尾组合技：下限直接到 4
+  const four = rows.find((row) => row.bracket === 4);
+  const fourResult = evaluate(four.cards);
+  assert.equal(spellbookEvidence(fourResult).length, 1);
+  assert.ok(fourResult.floorBracket >= 4,
+    `${four.cards.join(' + ')} 是四级桌组合技，下限却只有 ${fourResult.floorBracket}`);
+
+  // 档位 1 的无限组合技：官方 Bracket 2 的定义里明写「没有两卡无限组合技」，
+  // 所以只要存在就至少是 3；3 与 4 之间的分寸交给 Spellbook 自己判断
+  const one = rows.find((row) => row.bracket === 1);
+  if (one) {
+    const oneResult = evaluate(one.cards);
+    assert.equal(oneResult.floorBracket, 3,
+      `${one.cards.join(' + ')} 是两卡无限组合技，下限应被顶到 3，实际 ${oneResult.floorBracket}`);
+  }
+
+  // 一副能命中很多条的牌：证据必须仍然只有**一条**。
+  // 逐条铺开会把判定依据冲垮，用户看到的是一面墙而不是理由。
+  const wide = [];
+  rows.slice(0, 60).forEach((row) => row.cards.forEach((name) => wide.push(name)));
+  const wideResult = evaluate(wide);
+  const lines = spellbookEvidence(wideResult);
+  assert.equal(lines.length, 1, `命中很多条时写了 ${lines.length} 行证据，应该收敛成一条`);
+  assert.match(lines[0].title, /两卡组合技 \d+ 组/);
+  // 收敛不只是「只写一行」——那一行本身也不能变成一堵墙。
+  // 命中几十条时必须只点名前几组、其余用「另有 N 组未列出」带过，
+  // 否则判定依据那一栏会被一条证据挤爆，用户看到的是墙不是理由。
+  const named = (lines[0].detail.match(/＋/g) || []).length;
+  assert.ok(named <= 3, `正文点名了 ${named} 组组合技，太多了，应该只列前两组`);
+  assert.match(lines[0].detail, /另有 \d+ 组未列出/,
+    '命中数超过展示上限时要说明省略了多少组，不能让用户以为只有这几组');
+  // 这一页其余证据正文中位数 31 字、最长 70 字。长尾这条要多带一点信息（组数 + 两组卡名 +
+  // 最高档说法 + 下限），但不能失控成一堵墙——120 字是「明显更长但仍读得完」的上限。
+  // 这一页其余证据正文中位数 31 字、最长 70 字。长尾这条要多带一点信息
+  // （组数 + 最高档说法 + 两组卡名 + 省略数 + 下限），而英文卡名一组就占 35 字，
+  // 所以放宽到约两倍；再长就该减少点名的组数，而不是抬这个阈值。
+  assert.ok(lines[0].detail.length < 150,
+    `证据正文 ${lines[0].detail.length} 字，这一页其余证据最长才 70 字`);
+  // 证据里点名的卡必须真的在牌表里（与 invariants.suite.js 的那条不变量同源）
+  const deckKeys = new Set(B.parseBracketDeck(
+    `${wide.map((n) => `1 ${n}`).join('\n')}\n\n1 Kinnan, Bonder Prodigy`,
+  ).cards.map((card) => B.canonicalCardKey(card.name)));
+  lines[0].cards.forEach((name) => {
+    assert.ok(deckKeys.has(B.canonicalCardKey(name)), `证据点名了牌表里没有的「${name}」`);
+  });
+
+  // 手工库覆盖的配对不该走长尾这条路——它有更好的中文与家族归并
+  const curated = B.evaluateBracket(B.parseBracketDeck(
+    "1 Thassa's Oracle\n1 Demonic Consultation\n\n1 Kinnan, Bonder Prodigy",
+  ));
+  assert.equal(spellbookEvidence(curated).length, 0,
+    'Oracle + Consultation 已在手工库，不该再由长尾报一次');
+  assert.ok((curated.evidence || []).some((item) => item.code === 'COMBO_FAMILY_THORACLE'));
 });

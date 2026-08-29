@@ -21,6 +21,7 @@ const {
   COMBO_PATTERNS,
   CARD_ALIASES,
 } = require('../config/bracket-data');
+const { matchSpellbookCombos } = require('./spellbook-combos');
 
 const SECTION_HEADERS = Object.freeze({
   commander: 'commander',
@@ -1109,6 +1110,10 @@ function evaluateBracket(parsed, options = {}) {
   const detectedComboFamilies = collapseComboFamilies(detectedCombos)
     .map((family) => resolveComboAssembly(family, options.metadataResult));
   const detectedComboPatterns = detectComboPatterns(index);
+  // 手工库之外的长尾：Commander Spellbook 的两卡组合技快照。KNOWN_COMBOS 只有 42 条，
+  // 牌表里绝大多数两卡组合技本来一条都认不出来——这正是「有组合技没被识别出来」的直接原因。
+  // 已被手工库覆盖的配对在构建期就剔除了，所以这里不会跟上面两行重复报同一套牌。
+  const detectedSpellbookCombos = matchSpellbookCombos(new Set(index.keys()), canonicalCardKey);
   const contextualWinConditions = resolveContextualWinConditions(index, detectedComboFamilies);
   const signals = Object.entries(SIGNAL_GROUPS).map(([key, group]) => {
     let cards = findTaggedCards(index, group.cards, { commanderOnly: group.commanderOnly });
@@ -1222,6 +1227,39 @@ function evaluateBracket(parsed, options = {}) {
       0,
     ));
   });
+
+  // 长尾组合技收敛成**一条**证据，不是每命中一条就写一行。
+  // 一副 cEDH 牌能命中二三十条，逐条铺开会把判定依据冲垮，用户看到的是一面墙而不是理由。
+  const spellbookMinimum = detectedSpellbookCombos.reduce(
+    // 官方 Bracket 2 的定义里明写「没有两卡无限组合技」，所以只要存在就至少是 3；
+    // 3 与 4 之间的分寸交给 Spellbook 自己的判断，那正是它比我们手写规则准的地方。
+    (maximum, combo) => Math.max(maximum, Math.max(Number(combo.bracket) || 1, 3)),
+    0,
+  );
+  if (detectedSpellbookCombos.length) {
+    // 只点名两组。这一页其余证据的正文中位数是 31 字、最长 70 字；逐组带上中文说法
+    // 列四组会写到 239 字——一条证据顶掉整栏，读起来是一堵墙而不是理由。
+    // 中文说法只报最高档那一组的（结果已按档位降序），其余交给卡名自己说话。
+    const SHOWN = 2;
+    const shown = detectedSpellbookCombos.slice(0, SHOWN);
+    const listed = shown.map((combo) => combo.cards.join(' ＋ ')).join('、');
+    const rest = detectedSpellbookCombos.length > SHOWN
+      ? `，另有 ${detectedSpellbookCombos.length - SHOWN} 组未列出`
+      : '';
+    floorBracket = Math.max(floorBracket, spellbookMinimum);
+    evidence.push(buildEvidence(
+      'SPELLBOOK_TWO_CARD_COMBOS',
+      'rule',
+      // 只把点名的那几张列进去：证据里的卡名会被渲染成可点的牌，
+      // 塞进几十张没点名的牌只会让那一栏变成噪音
+      uniqueCardNames(shown.reduce((names, combo) => names.concat(combo.cards), [])),
+      `两卡组合技 ${detectedSpellbookCombos.length} 组`,
+      `组合技库比对到 ${detectedSpellbookCombos.length} 组两卡组合技（最高一组：`
+      + `${detectedSpellbookCombos[0].label}）：${listed}${rest}，`
+      + `自动触发 B${spellbookMinimum} 规则下限`,
+      spellbookMinimum,
+    ));
+  }
 
   const signalStrengthBracket = signalBand(signals);
   const comboRecommendedBracket = detectedComboFamilies.reduce(
