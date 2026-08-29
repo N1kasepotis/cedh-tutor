@@ -302,13 +302,17 @@ test('Known combo matching is exact, order-independent, and never fires on a par
   const partial = analyze(['Deck', "1 Thassa's Oracle"]);
   assert.equal(partial.detectedCombos.length, 0);
 
+  // 从 2 改成 3：官方 Bracket 2 的定义里明写「没有两卡无限组合技」，
+  // 所以完整的两卡循环只要成立就至少是 3，不该只排除 B1。
+  // 这一对组合技库也判 3，两边对上了——原来那个 2 是「只看法术力费用」的启发式给的。
   const setupPair = analyze(['Deck', '1 Exquisite Blood', '1 Sanguine Bond']);
-  assert.equal(setupPair.floorBracket, 2, 'a non-early two-card loop only violates the B1 hard baseline');
+  assert.equal(setupPair.floorBracket, 3, '完整两卡循环至少 B3，官方 B2 的定义里不允许两卡无限组合技');
   assert.equal(setupPair.assignedBracket, 3, 'the combo still raises the qualitative recommendation');
 
   const bloodchiefPair = analyze(['Deck', '1 Bloodchief Ascension', '1 Mindcrank']);
   assert.ok(bloodchiefPair.detectedCombos.some((combo) => combo.id === 'bloodchief-mindcrank'));
-  assert.equal(bloodchiefPair.floorBracket, 2);
+  // 同上：完整两卡循环的下限从 2 抬到 3，组合技库对这一对也判 3
+  assert.equal(bloodchiefPair.floorBracket, 3);
   assert.equal(bloodchiefPair.assignedBracket, 3);
 
   const threeCardPackage = analyze([
@@ -396,7 +400,10 @@ test('Combo variants collapse to one family before evidence and strength are cou
   ]);
   assert.equal(dualcaster.detectedCombos.length, 3);
   assert.deepEqual(dualcaster.detectedComboFamilies.map((family) => family.familyId), ['dualcaster-copy']);
-  assert.equal(dualcaster.floorBracket, 4);
+  // 从 4 改成 3：档位改由组合技库说了算，它把这一族判成 3。
+  // 原来的 4 来自「早期两卡组合技→4」这条只看费用的启发式——Dualcaster 这一族确实快，
+  // 但产出是无限复制而不是直接取胜，还需要另配终结点，判 3 比判 4 准。
+  assert.equal(dualcaster.floorBracket, 3);
 
   const worldgorger = analyze([
     'Deck',
@@ -2158,12 +2165,18 @@ test('组合技快照：结构完好、档位合法、不与手工库重复', ()
     pairs.add(key);
   });
 
-  // 与手工库不得重叠——重叠就会同一套牌被报两次，一次带家族标签一次不带
-  KNOWN_COMBOS.filter((combo) => combo.cards.length === 2).forEach((combo) => {
-    const key = combo.cards.map(canonicalCardKey).sort().join('|');
-    assert.ok(!pairs.has(key),
-      `${combo.cards.join(' + ')} 同时存在于手工库与快照，会被报两次`);
-  });
+  // 手工库的两卡条目**必须**也在快照里——档位要由这份说了算。
+  // 手工库自己那套「早期→4，否则→2」的启发式只看得见法术力费用、看不见能不能赢：
+  // 实测 39 条里有 21 条与快照不符，其中 12 条把 Food Chain ＋ Squee、
+  // Kiki-Jiki ＋ Zealous Conscripts、Splinter Twin ＋ Pestermite、
+  // Worldgorger Dragon ＋ Animate Dead 这些明摆着的四级桌组合技判成了 3。
+  // （不重复报同一套牌是靠**证据层**去重，不是靠这里不收——见下面那条测试。）
+  const missing = KNOWN_COMBOS
+    .filter((combo) => combo.cards.length === 2)
+    .filter((combo) => !pairs.has(combo.cards.map(canonicalCardKey).sort().join('|')))
+    .map((combo) => combo.cards.join(' + '));
+  assert.deepEqual(missing, [],
+    `这些手工库配对不在快照里，档位会退回只看费用的启发式：${missing.join('、')}`);
 });
 
 test('组合技快照：命中要两张都在，双面牌两种写法都认', () => {
@@ -2244,7 +2257,14 @@ test('长尾组合技收敛成一条证据，并按官方 B2 定义把下限顶�
     .filter((item) => item.code === 'SPELLBOOK_TWO_CARD_COMBOS');
 
   // 档位 4 的长尾组合技：下限直接到 4
-  const four = rows.find((row) => row.bracket === 4);
+  // 挑样本时要避开手工库也有的配对：那些走家族那条路，不会出现在长尾证据里
+  const curatedPairs = new Set(require('../miniprogram/config/bracket-data').KNOWN_COMBOS
+    .filter((combo) => combo.cards.length === 2)
+    .map((combo) => combo.cards.map(B.canonicalCardKey).sort().join('|')));
+  const longTail = rows.filter((row) => !curatedPairs.has(
+    row.cards.map(B.canonicalCardKey).sort().join('|'),
+  ));
+  const four = longTail.find((row) => row.bracket === 4);
   const fourResult = evaluate(four.cards);
   assert.equal(spellbookEvidence(fourResult).length, 1);
   assert.ok(fourResult.floorBracket >= 4,
@@ -2252,7 +2272,7 @@ test('长尾组合技收敛成一条证据，并按官方 B2 定义把下限顶�
 
   // 档位 1 的无限组合技：官方 Bracket 2 的定义里明写「没有两卡无限组合技」，
   // 所以只要存在就至少是 3；3 与 4 之间的分寸交给 Spellbook 自己判断
-  const one = rows.find((row) => row.bracket === 1);
+  const one = longTail.find((row) => row.bracket === 1);
   if (one) {
     const oneResult = evaluate(one.cards);
     assert.equal(oneResult.floorBracket, 3,
@@ -2262,7 +2282,7 @@ test('长尾组合技收敛成一条证据，并按官方 B2 定义把下限顶�
   // 一副能命中很多条的牌：证据必须仍然只有**一条**。
   // 逐条铺开会把判定依据冲垮，用户看到的是一面墙而不是理由。
   const wide = [];
-  rows.slice(0, 60).forEach((row) => row.cards.forEach((name) => wide.push(name)));
+  longTail.slice(0, 60).forEach((row) => row.cards.forEach((name) => wide.push(name)));
   const wideResult = evaluate(wide);
   const lines = spellbookEvidence(wideResult);
   assert.equal(lines.length, 1, `命中很多条时写了 ${lines.length} 行证据，应该收敛成一条`);

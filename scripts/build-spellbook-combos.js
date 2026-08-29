@@ -13,8 +13,12 @@
 //
 // 收哪些：**产出「Infinite …」的** ∪ **档位 ≥4 的**，剔除含禁牌的。前者是因为
 // 官方 Bracket 2 的定义里明写「没有两卡无限组合技」，所以只要存在就该把下限顶到 3；
-// 后者是「四级桌组合技」本身。已被 KNOWN_COMBOS 覆盖的配对在这里剔除，
-// 避免同一套牌被报两次——手工那份有更好的中文与家族归并，让它继续赢。
+// 后者是「四级桌组合技」本身。
+//
+// 手工库（KNOWN_COMBOS）覆盖的配对**也收**：档位以这份为准。
+// 手工库自己那套「早期→4，否则→2」的启发式实测 39 条里有 21 条与 Spellbook 不符，
+// 其中 12 条把 Food Chain、Kiki-Jiki、Splinter Twin、Worldgorger 这类明显的
+// 四级桌组合技判成了 3。手工库保留的是中文说法与家族归并，那部分它确实更好。
 //
 // 重新生成：node scripts/build-spellbook-combos.js
 // 什么时候要重新生成：想同步 Spellbook 的新增组合技时。不跑也不会坏，只是漏新卡。
@@ -143,8 +147,9 @@ function render(cards, records, categories, stats) {
   lines.push(`// 生成日期：${new Date().toISOString().slice(0, 10)}`);
   lines.push('//');
   lines.push('// 收录范围：两卡组合技中「产出无限循环」∪「档位 ≥4」，剔除含禁牌的，');
-  lines.push('// 并剔除已被 config/bracket-data.js 的 KNOWN_COMBOS 覆盖的配对');
-  lines.push('//（手工那份有更好的中文与家族归并，让它继续赢）。');
+  lines.push('// 手工库（config/bracket-data.js 的 KNOWN_COMBOS）覆盖的配对也在其中：');
+  lines.push('// 档位以这份为准，手工库只保留中文与家族归并——它那套「早期→4，否则→2」的');
+  lines.push('// 启发式实测 39 条里有 21 条与这里不符，其中 12 条把四级桌组合技判成了 3。');
   lines.push(`// 全库两卡组合技 ${stats.total} 条 → 命中范围 ${stats.inScope} 条 → 去重后收录 ${records.length} 条，涉及 ${cards.length} 张牌。`);
   lines.push('//');
   lines.push('// 档位取自 variant 的 bracketTag。它不是「这个组合技多强」，而是「含有它的牌组会被估到哪一档」，');
@@ -209,7 +214,11 @@ async function main() {
     const names = (variant.uses || []).map((use) => use.card && use.card.name).filter(Boolean);
     if (names.length !== 2) return;
     const pairKey = names.map(canonicalKey).sort().join('|');
-    if (curated.has(pairKey)) { skippedCurated += 1; return; }
+    // 手工库覆盖的配对**也要收**。原先在这里排除掉，结果是手工库那套
+    // 「早期→4，否则→2」的启发式说了算——实测 39 条里有 21 条与 Spellbook 不符，
+    // 其中 12 条偏低（Food Chain、Kiki-Jiki、Splinter Twin、Worldgorger 这些
+    // 明显的四级桌组合技全被判成 3）。档位交给它，手工库只保留中文与家族归并。
+    if (curated.has(pairKey)) skippedCurated += 1;
     if (seenPairs.has(pairKey)) return; // 同一对牌可能有多条 variant，取档位最高的那条
     seenPairs.add(pairKey);
 
@@ -227,7 +236,7 @@ async function main() {
 
   console.log('');
   console.log(`全库两卡组合技 ${all.length} 条 → 命中收录范围 ${inScope} 条`);
-  console.log(`  其中 ${skippedCurated} 条已被手工库覆盖，跳过`);
+  console.log(`  其中 ${skippedCurated} 条手工库也有（档位以这里为准，手工库保留中文与家族）`);
   console.log(`落表 ${records.length} 条，涉及 ${cards.length} 张牌`);
   console.log(`写入 ${path.relative(ROOT, OUT_FILE)}（${(Buffer.byteLength(source) / 1024).toFixed(1)}KB）`);
 

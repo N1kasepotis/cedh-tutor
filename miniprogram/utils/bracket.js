@@ -21,7 +21,7 @@ const {
   COMBO_PATTERNS,
   CARD_ALIASES,
 } = require('../config/bracket-data');
-const { matchSpellbookCombos } = require('./spellbook-combos');
+const { matchSpellbookCombos, spellbookBracketFor } = require('./spellbook-combos');
 
 const SECTION_HEADERS = Object.freeze({
   commander: 'commander',
@@ -758,8 +758,26 @@ function buildEvidence(code, kind, cards, title, detail, minimumBracket) {
 function comboHardMinimum(combo) {
   if (Number.isInteger(combo.hardMinimum)) return combo.hardMinimum;
   if (combo.cards.length !== 2) return 0;
-  // 自动可检验基线：完整双卡循环排除 B1；早期双卡组合技直接进入 B4 下限。
-  return combo.speed === 'early' ? 4 : 2;
+
+  // 认识这一对牌的话，档位以组合技库为准。
+  //
+  // 底下那套「早期→4，否则→2」的启发式只看得见法术力费用，看不见这个循环
+  // 到底能不能赢。实测手工库 39 条两卡条目，它跟组合技库有 21 条不一致，
+  // 其中 12 条偏低——Food Chain ＋ Squee、Kiki-Jiki ＋ Zealous Conscripts、
+  // Splinter Twin ＋ Pestermite、Worldgorger Dragon ＋ Animate Dead 这些
+  // 明摆着的四级桌组合技全被判成了 3。组合技库那个档位是从「速度 + 是否真两卡 +
+  // 产出是否致胜」三项算出来的，比只看费用准得多。
+  const known = spellbookBracketFor(combo.cards, canonicalCardKey);
+  // 官方 Bracket 2 的定义里明写「没有两卡无限组合技」，所以认出来的一律至少是 3
+  if (known) return Math.max(known, 3);
+
+  // 库里没有的退回原启发式，但下限从 2 提到 3——同一条官方定义，
+  // 不该因为库里查不到就放宽。
+  //
+  // 这条分支**当前不可达**：bracket.suite.js 有一条门禁要求手工库的每一对
+  // 两卡条目都在快照里，所以上面那个 known 永远非零。留着是给将来用的——
+  // 手工库加了上游还没收录的变体时，它得有个说得通的兜底。
+  return combo.speed === 'early' ? 4 : 3;
 }
 
 // 速度分档：组合技全套牌张法术力值合计 → 1..5（越小越快，档表在 config）。
@@ -1112,8 +1130,15 @@ function evaluateBracket(parsed, options = {}) {
   const detectedComboPatterns = detectComboPatterns(index);
   // 手工库之外的长尾：Commander Spellbook 的两卡组合技快照。KNOWN_COMBOS 只有 42 条，
   // 牌表里绝大多数两卡组合技本来一条都认不出来——这正是「有组合技没被识别出来」的直接原因。
-  // 已被手工库覆盖的配对在构建期就剔除了，所以这里不会跟上面两行重复报同一套牌。
-  const detectedSpellbookCombos = matchSpellbookCombos(new Set(index.keys()), canonicalCardKey);
+  //
+  // 已经被手工库家族报过的配对要从长尾里剔掉，否则同一套牌会出现两条证据。
+  // 去重放在这里而不是构建期：档位得由组合技库说了算（见 comboHardMinimum），
+  // 所以那些配对必须留在快照里，只是不再单独占一行证据。
+  const reportedPairs = new Set(detectedCombos
+    .filter((combo) => combo.cards.length === 2)
+    .map((combo) => combo.cards.map(canonicalCardKey).sort().join('|')));
+  const detectedSpellbookCombos = matchSpellbookCombos(new Set(index.keys()), canonicalCardKey)
+    .filter((combo) => !reportedPairs.has(combo.cards.map(canonicalCardKey).sort().join('|')));
   const contextualWinConditions = resolveContextualWinConditions(index, detectedComboFamilies);
   const signals = Object.entries(SIGNAL_GROUPS).map(([key, group]) => {
     let cards = findTaggedCards(index, group.cards, { commanderOnly: group.commanderOnly });

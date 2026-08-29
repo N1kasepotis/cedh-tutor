@@ -99,6 +99,26 @@ function matchSpellbookCombos(deckKeys, canonicalize) {
   return matches;
 }
 
+// 查某一对牌在 Spellbook 眼里是几档；它不认识就返回 0。
+// 手工库的两卡条目也走这条：它自己那套「早期→4，否则→2」的启发式实测
+// 39 条里有 21 条与 Spellbook 不符，12 条把四级桌组合技判成了 3。
+function spellbookBracketFor(cards, canonicalize) {
+  if (!Array.isArray(cards) || cards.length !== 2) return 0;
+  if (typeof canonicalize !== 'function') return 0;
+  const table = buildIndex(canonicalize);
+  const bucket = table.get(canonicalize(cards[0]));
+  if (!bucket) return 0;
+  const wanted = canonicalize(cards[1]);
+  let best = 0;
+  bucket.forEach((position) => {
+    const row = rowAt(position);
+    const matches = row.cards.some((name) => nameVariants(name)
+      .some((variant) => canonicalize(variant) === wanted));
+    if (matches && row.bracket > best) best = row.bracket;
+  });
+  return best;
+}
+
 function clearSpellbookIndex() {
   index = null;
   indexedWith = null;
@@ -108,5 +128,6 @@ function clearSpellbookIndex() {
 module.exports = {
   SPELLBOOK_CATEGORY_LABELS,
   matchSpellbookCombos,
+  spellbookBracketFor,
   clearSpellbookIndex,
 };
