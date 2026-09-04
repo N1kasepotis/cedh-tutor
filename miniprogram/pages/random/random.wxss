@@ -289,6 +289,21 @@
   border-color: rgba(var(--tool-entry-rgb), 0.34);
 }
 
+/* 竞逐时空承混沌工具自己的紫罗兰（首页 .home-index-random #920FB3 的提亮版） */
+.tool-entry-planechase {
+  --tool-entry-rgb: 180, 120, 245;
+  background: linear-gradient(135deg, rgba(var(--tool-entry-rgb), 0.14), var(--cedh-surface-raised) 58%);
+  border-color: rgba(var(--tool-entry-rgb), 0.34);
+}
+
+.tool-entry-planechase .tool-entry-title {
+  color: #e4d1ff;
+}
+
+.tool-entry-planechase .tool-entry-arrow {
+  color: #b478f5;
+}
+
 .tool-entry-cabbage .tool-entry-title {
   color: #bce8c9;
 }

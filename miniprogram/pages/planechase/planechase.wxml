@@ -1,0 +1,132 @@
+<view class="page planechase-page">
+  <particle-background palette="random"></particle-background>
+
+  <view class="content-layer tool-shell">
+
+    <!-- 当前时空。两层图各自 src、不做替换：small 转正模糊垫底，art_crop 淡入盖上 -->
+    <view
+      wx:for="{{planes}}"
+      wx:key="index"
+      class="plane-card {{planes.length > 1 ? 'plane-card-split' : ''}}"
+      aria-role="button"
+      aria-label="查看{{item.name}}整张卡"
+      data-index="{{item.index}}"
+      hover-class="pressable-active"
+      hover-stay-time="120"
+      bindtap="openInspect"
+    >
+      <!-- 两层的先后由 z-index 定，不靠 DOM 顺序：主图写在前面，
+           这样每一层紧邻的上一个 class 都带占位底（主图的是 .plane-art，
+           垫底层的是它自己），加载中不闪白、失败不留透明洞 -->
+      <view class="plane-art">
+        <image
+          wx:if="{{!item.artFailed}}"
+          class="plane-art-main"
+          src="{{item.art.artCrop}}"
+          mode="aspectFill"
+          lazy-load="{{true}}"
+          data-index="{{index}}"
+          binderror="hidePlaneArt"
+        ></image>
+        <image class="plane-art-base" src="{{item.art.small}}" mode="aspectFill" lazy-load="{{true}}" aria-hidden="true"></image>
+        <view class="plane-scrim"></view>
+        <view class="plane-caption">
+          <text class="plane-name">{{item.name}}</text>
+          <text class="plane-type mono">{{item.type}}</text>
+        </view>
+      </view>
+
+      <view class="plane-text">
+        <view wx:for="{{item.staticLines}}" wx:for-item="line" wx:key="*this" class="plane-line">{{line}}</view>
+        <view
+          wx:for="{{item.chaosLines}}"
+          wx:for-item="line"
+          wx:key="*this"
+          class="plane-line plane-line-chaos {{chaosHot ? 'is-hot' : ''}}"
+        >{{line}}</view>
+      </view>
+    </view>
+
+    <!-- 异象：读完再点，然后自动换出（卡面提醒文字就是这么写的） -->
+    <view wx:if="{{pending === 'encounter'}}" class="encounter-bar">
+      <text class="encounter-text">遭遇异象，结算后须再次时空换出</text>
+      <view class="encounter-go" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="resolvePhenomenon">结算完毕，继续换出</view>
+    </view>
+
+    <view wx:if="{{modifierOn}}" class="modifier-bar" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="toggleModifier">
+      <text>{{modifierNote}}</text>
+    </view>
+
+    <!-- 时空骰 -->
+    <view class="die-row">
+      <view
+        class="die {{rolling ? 'is-rolling' : ''}} die-{{dieFace}}"
+        aria-role="button"
+        aria-label="掷时空骰，费用 {{rollCost}}"
+        hover-class="{{rolling ? '' : 'pressable-active'}}"
+        hover-stay-time="120"
+        bindtap="rollDie"
+      >
+        <text class="die-face">{{dieFace === 'idle' ? '时空骰' : (dieFace === 'blank' ? '空白' : (dieFace === 'chaos' ? '混沌' : '换境'))}}</text>
+        <text class="die-hint mono">{{rolling ? '掷骰中' : dieLabel}}</text>
+      </view>
+
+      <view class="die-side">
+        <view class="die-cost">
+          <text class="die-cost-label">本次掷骰费用</text>
+          <text class="die-cost-value mono">{{rollCost}}</text>
+        </view>
+        <view class="die-deck mono">牌库剩余 {{deckLeft}}</view>
+        <view class="die-turn" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="nextTurn">新回合（费用归零）</view>
+      </view>
+    </view>
+
+    <!-- 手动入口：卡面要求的换境与展示，应用不替玩家做判断 -->
+    <view class="manual-row">
+      <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="manualPlaneswalk">手动换境</view>
+      <view class="text-button" aria-role="button" data-count="1" hover-class="pressable-active" hover-stay-time="120" bindtap="revealPlanes">展示到 1 张时空</view>
+      <view class="text-button" aria-role="button" data-count="2" hover-class="pressable-active" hover-stay-time="120" bindtap="revealPlanes">展示到 2 张（境界交融）</view>
+    </view>
+
+    <view wx:if="{{revealed.length}}" class="reveal-panel surface">
+      <view class="reveal-title">展示结果（最后一张必为时空）</view>
+      <view wx:for="{{revealed}}" wx:key="index" class="reveal-item {{item.isPhenomenon ? 'is-phenomenon' : ''}}">
+        <text>{{item.name}}</text>
+        <text class="reveal-kind mono">{{item.isPhenomenon ? '异象' : '时空'}}</text>
+      </view>
+      <view class="reveal-actions">
+        <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="applyRevealed">换入其中的时空</view>
+        <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="dismissRevealed">收起</view>
+      </view>
+    </view>
+
+    <view wx:if="{{trimmedText}}" class="trim-note">{{trimmedText}}</view>
+
+    <view class="footer-row">
+      <view class="player-counts">
+        <view
+          wx:for="{{playerCounts}}"
+          wx:key="*this"
+          class="count-chip {{playerCount === item ? 'on' : ''}}"
+          aria-role="button"
+          data-count="{{item}}"
+          hover-class="pressable-active"
+          hover-stay-time="120"
+          bindtap="changePlayerCount"
+        >{{item}} 人</view>
+      </view>
+      <view class="footer-actions">
+        <view wx:if="{{canUndo}}" class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="undo">撤销</view>
+        <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="restart">重开牌库</view>
+      </view>
+    </view>
+
+    <view class="card-art-credit">卡面图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师所有</view>
+  </view>
+
+  <!-- 整张中文卡面：取的是简中印次，Scryfall 把横版卡转了 90° 存，这里转回来 -->
+  <view wx:if="{{inspect}}" class="inspect-mask" aria-role="button" aria-label="关闭卡图" bindtap="closeInspect">
+    <image class="inspect-card" src="{{inspect.normal}}" mode="aspectFit" lazy-load="{{true}}"></image>
+    <text class="inspect-name">{{inspect.name}}</text>
+  </view>
+</view>

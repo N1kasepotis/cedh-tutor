@@ -93,5 +93,13 @@
       </view>
       <view class="tool-entry-arrow">›</view>
     </view>
+
+    <view class="random-panel surface tool-entry tool-entry-planechase" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goPlanechase">
+      <view class="tool-entry-text">
+        <view class="tool-entry-title">竞逐时空</view>
+        <view class="tool-entry-sub">Planechase</view>
+      </view>
+      <view class="tool-entry-arrow">›</view>
+    </view>
   </view>
 </view>

@@ -164,4 +164,8 @@ Page({
   goIzzet() {
     wx.navigateTo({ url: '/pages/izzet/izzet' });
   },
+
+  goPlanechase() {
+    wx.navigateTo({ url: '/pages/planechase/planechase' });
+  },
 });
