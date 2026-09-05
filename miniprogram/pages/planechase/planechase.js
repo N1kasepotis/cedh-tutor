@@ -5,7 +5,7 @@ const { setKeepScreenOn } = require('../../utils/keep-screen-on');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, writeStorage, backupStorage } = require('../../utils/storage');
 const STORAGE_KEY = 'planechaseState';
-const PHASE_LABELS = { ready: '当前时空', resolve: '能力待结算', exit: '异象待换出', reveal: '处理展示牌', notes: '牌桌事项待处理' };
+const PHASE_LABELS = { ready: '可以继续掷骰', resolve: '能力待结算', exit: '异象待换出', reveal: '处理展示牌', notes: '牌桌事项待处理' };
 const REVEAL_LABELS = { merge: '同时换入两张时空', append: '追加时空，保留当前时空', echo: '引发展示牌的混沌，全部置底', leave: '全部换出，按指定顺序置底' };
 const FACE_LABELS = { blank: '空白', chaos: '混沌', planeswalk: '换境' };
 
@@ -17,6 +17,7 @@ Page({
     modifierOn: false, trimmedText: '', tableNotes: [], triggers: [], revealed: [],
     bottomOrder: [], exitOrder: [], canLeavePhenomenon: false, revealLabel: '', inspect: null, inspectFailed: false,
     saveError: '', actionError: '', recovery: false, canRecover: false, saving: false, hasSession: false,
+    activeView: 'planes', pendingCount: 0, phaseHint: '', primaryHint: '', primaryRevision: 0, expandedTrigger: null,
   },
 
   onLoad() {
@@ -107,7 +108,7 @@ Page({
   decorateCard(index) {
     const card = P.cardAt(index);
     const art = buildCdnArt(card.id, card.stamp) || {};
-    return { ...card, art, artFailed: this.failedArt.has(card.id) };
+    return { ...card, art, folio: String(index + 1).padStart(2, '0'), artFailed: this.failedArt.has(card.id) };
   },
 
   syncView() {
@@ -115,15 +116,23 @@ Page({
     const session = this.session;
     const game = session.game;
     const phase = S.phaseOf(session);
+    const phaseChanged = this.data.hasSession && phase !== this.data.phase;
     const reveal = session.reveal;
     const roll = game.lastRoll;
-    const primaryLabel = phase === 'ready' ? `掷时空骰 · 费用 ${P.rollCost(game)}`
-      : phase === 'exit' ? '异象触发已处理，换出'
-        : phase === 'notes' ? '牌桌事项已处理'
-          : phase === 'reveal' ? '按此顺序结算' : `处理待结算能力（${session.triggers.length}）`;
+    // 结算步骤变化时展示实际待处理内容；浏览卡文不提交牌局，也不改变撤销记录。
+    const activeView = !this.data.hasSession || phase !== this.data.phase
+      ? phase === 'ready' ? 'planes' : 'work' : this.data.activeView;
+    const phaseHint = { ready: '确认优先权后，可进行本回合的下一次普通掷骰。',
+      resolve: '按实际堆叠顺序选择能力；响应操作可在设置中记录。',
+      exit: '相关触发已离开堆叠，接下来从异象换出。',
+      reveal: '查看展示结果，并确认牌库底的顺序。',
+      notes: '请先在实体牌桌处理下列效应。' }[phase];
     const orderedCards = (indices) => indices.map((index, position, all) => ({ index, name: P.cardAt(index).name, canUp: position > 0, canDown: position < all.length - 1 }));
     this.setData({
-      hasSession: true, phase, phaseLabel: PHASE_LABELS[phase], primaryLabel,
+      hasSession: true, phase, phaseLabel: PHASE_LABELS[phase], phaseHint, activeView,
+      pendingCount: session.triggers.length + session.tableNotes.length
+        + (phase === 'exit' || reveal && !session.triggers.some((source) => source.id === reveal.sourceId) ? 1 : 0),
+      expandedTrigger: session.triggers.some((source) => source.id === this.data.expandedTrigger) ? this.data.expandedTrigger : null,
       planes: game.activePlanes.map((index) => this.decorateCard(index)),
       playerCount: game.playerCount, deckLeft: game.planarDeck.length,
       rollCost: P.rollCost(game), dieFace: roll ? roll.face : 'idle',
@@ -150,16 +159,49 @@ Page({
       bottomOrder: reveal ? orderedCards(reveal.bottomOrder) : [],
       exitOrder: reveal ? orderedCards(reveal.exitOrder) : [],
       revealLabel: reveal ? REVEAL_LABELS[reveal.kind] : '',
-    });
+    }, () => { if (phaseChanged) this.scrollToViews(); });
+    this.syncPrimary();
     this.prefetchNextPlane();
   },
 
-  primaryAction() {
+  syncPrimary() {
+    const { phase, activeView, rollCost } = this.data;
+    const browsePending = phase !== 'ready' && activeView !== 'work';
+    const onlyTrigger = phase === 'resolve' && this.data.triggers.length === 1 ? this.data.triggers[0] : null;
+    this.setData({
+      primaryRevision: this.data.primaryRevision + 1,
+      primaryLabel: browsePending ? '前往结算台' : onlyTrigger ? onlyTrigger.actionLabel : { ready: '掷时空骰', resolve: '选择待结算能力',
+        exit: '从此异象换出', reveal: '确认顺序并结算', notes: '牌桌事项已处理' }[phase],
+      primaryHint: phase === 'ready' ? `支付 ${rollCost} 点法术力` : browsePending ? this.data.phaseLabel
+        : onlyTrigger ? '确认牌桌响应已处理' : phase === 'resolve' ? '点击对应能力的结算按钮' : '确认牌桌处理后继续',
+    });
+  },
+  selectView(event) {
+    const view = event.currentTarget.dataset.view;
+    if (!['planes', 'work'].includes(view) || this.data.inspect) return;
+    this.setData({ activeView: view }, () => this.scrollToViews());
+    this.syncPrimary();
+  },
+  showWork() {
+    if (this.data.inspect) return;
+    this.setData({ activeView: 'work', setupOpen: false }, () => this.scrollToViews());
+    this.syncPrimary();
+  },
+  scrollToViews() {
+    if (this.unloaded || this.data.inspect) return;
+    if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ selector: '#atlas-views', duration: 0, fail: () => {} });
+  },
+  primaryAction(event) {
+    if (this.data.inspect || this.data.saving || this.data.saveError) return;
+    // 已渲染按钮携带其版本，旧画面排队的连点不能确认含义已变化的下一步骤。
+    const revision = event && event.currentTarget && event.currentTarget.dataset.revision;
+    if (revision !== undefined && Number(revision) !== this.data.primaryRevision) return;
     const phase = this.data.phase;
-    if (phase === 'resolve') {
-      if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ selector: '#pending-work', duration: 0, fail: () => {} });
+    if (phase !== 'ready' && (this.data.activeView !== 'work' || phase === 'resolve' && this.data.triggers.length !== 1)) {
+      this.showWork();
       return;
     }
+    if (phase === 'resolve') { this.dispatch({ type: 'resolveTrigger', id: this.data.triggers[0].id }); return; }
     const type = { ready: 'roll', exit: 'leavePhenomenon', reveal: 'applyReveal', notes: 'acknowledgeNotes' }[phase];
     if (type) this.dispatch({ type });
   },
@@ -179,7 +221,13 @@ Page({
     this.dispatch({ type: 'order', group: event.currentTarget.dataset.group, index: Number(event.currentTarget.dataset.index), delta: Number(event.currentTarget.dataset.delta) });
   },
   undo() { this.dispatch({ type: 'undo' }); },
-  toggleSetup() { this.setData({ setupOpen: !this.data.setupOpen }); },
+  toggleSetup() { if (!this.data.inspect) this.setData({ setupOpen: !this.data.setupOpen }); },
+  toggleTriggerOptions(event) {
+    const id = Number(event.currentTarget.dataset.id);
+    if (!this.data.inspect && this.data.triggers.some((source) => source.id === id)) {
+      this.setData({ expandedTrigger: this.data.expandedTrigger === id ? null : id });
+    }
+  },
   changePlayerCount(event) {
     const count = Number(event.currentTarget.dataset.count);
     if (count !== this.data.playerCount) this.dispatch({ type: 'restart', playerCount: count });

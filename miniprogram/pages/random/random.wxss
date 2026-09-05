@@ -38,6 +38,7 @@
 .range-input {
   width: 100%;
   height: 88rpx;
+  min-height: 44px;
   padding: 0 var(--cedh-space-4);
   color: var(--cedh-text);
   background: var(--cedh-input-glass);
@@ -66,6 +67,7 @@
   justify-content: center;
   min-width: 0;
   height: 64rpx;
+  min-height: 44px;
   color: var(--cedh-text-soft);
   background: var(--cedh-surface-muted);
   border: var(--cedh-hairline);
@@ -89,6 +91,7 @@
 
 .random-button {
   min-height: 86rpx;
+  min-height: max(44px, 86rpx);
 }
 
 .roll-grid {
@@ -289,19 +292,49 @@
   border-color: rgba(var(--tool-entry-rgb), 0.34);
 }
 
-/* 竞逐时空承混沌工具自己的紫罗兰（首页 .home-index-random #920FB3 的提亮版） */
+/* 图鉴封面与内页共用信号黄、纸白、直角网格。 */
 .tool-entry-planechase {
-  --tool-entry-rgb: 180, 120, 245;
-  background: linear-gradient(135deg, rgba(var(--tool-entry-rgb), 0.14), var(--cedh-surface-raised) 58%);
-  border-color: rgba(var(--tool-entry-rgb), 0.34);
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  margin: 0;
+  padding: 20px;
+  text-align: left;
+  color: var(--cedh-atlas-ink);
+  background: var(--cedh-atlas-signal);
+  border: 0;
+  border-radius: 2px;
 }
-
-.tool-entry-planechase .tool-entry-title {
-  color: #e4d1ff;
+.atlas-entry-kicker {
+  font-family: var(--cedh-font-mono);
+  font-size: 11px;
+  letter-spacing: 0.06em;
+  line-height: 1.5;
 }
-
-.tool-entry-planechase .tool-entry-arrow {
-  color: #b478f5;
+.atlas-entry-main, .atlas-entry-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.atlas-entry-title {
+  font-family: var(--cedh-font-serif);
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+.atlas-entry-arrow {
+  font-size: 64px;
+  line-height: 1;
+}
+.atlas-entry-footer {
+  border-top: 1px solid var(--cedh-atlas-ink);
+  padding-top: 12px;
+  font-size: 11px;
+  line-height: 1.6;
+  flex-wrap: wrap;
 }
 
 .tool-entry-cabbage .tool-entry-title {

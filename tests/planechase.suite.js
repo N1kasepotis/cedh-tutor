@@ -340,15 +340,16 @@ test('页面已注册，且入口挂在混沌工具下', () => {
   assert.doesNotMatch(home, /竞逐时空/, '竞逐时空不该出现在首页八行里');
 });
 
-test('页面用 art_crop 当横幅、small 垫底，两层各自 src 不做替换', () => {
+test('页面只加载一张横幅；网络失败由本地图鉴占位与完整卡文承接', () => {
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/planechase/planechase.wxml'), 'utf8');
-  // 微信 image 换了 src 会重新下载同一张图，所以是两个并列的 image 各自 src，
-  // 而不是先渲染回落链再改 src
-  assert.match(wxml, /class="plane-art-base"[^>]*src="\{\{item\.art\.small\}\}"/, '缺少 small 垫底层');
+  // 浏览卡文只需一份原画，离线占位不再额外请求低清卡面。
+  assert.match(wxml, /class="art-placeholder"/, '缺少本地占位');
+  assert.match(wxml, /卡图暂不可用 · 卡文可离线阅读/, '失败时要说明卡文仍可用');
   assert.match(wxml, /src="\{\{item\.art\.artCrop\}\}"/, '缺少 art_crop 主图层');
-  // 两层必须是各自独立的 image，不能是一个 image 换 src
-  assert.equal((wxml.match(/class="plane-art-(base|main)"/g) || []).length, 2);
-  // 主图失败要摘掉自己露出垫底层，而不是留一个洞
+  assert.equal((wxml.match(/<image[^>]*src="\{\{item\.art\./g) || []).length, 1);
+  assert.match(wxml, /item\.staticLines/);
+  assert.match(wxml, /item\.chaosLines/);
+  // 失败回调按卡片身份摘掉原图，不修改已提交牌局（控制器测试验证）。
   assert.match(wxml, /binderror="hidePlaneArt"/, '主图缺少失败回落');
 
   const js = fs.readFileSync(path.join(root, 'miniprogram/pages/planechase/planechase.js'), 'utf8');

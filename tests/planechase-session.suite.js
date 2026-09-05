@@ -299,7 +299,7 @@ function pageHarness(initial, flags = {}) {
     getStorageSync(key) { if (flags.failRead) throw new Error('read'); return memory.has(key) ? clone(memory.get(key)) : ''; },
     setStorageSync(key, value) { if (flags.failWrite) throw new Error('quota'); memory.set(key, clone(value)); },
     getImageInfo(options) { flags.prefetch = options; },
-    pageScrollTo() {},
+    pageScrollTo(options) { flags.scrollTarget = options.selector; },
   };
   const file = path.join(__dirname, '../miniprogram/pages/planechase/planechase.js');
   const realRequire = createRequire(file);
@@ -316,13 +316,14 @@ function pageHarness(initial, flags = {}) {
     vm.runInNewContext(fs.readFileSync(file, 'utf8'), { wx: api, Set, Date,
       require: (name) => injected[name] || realRequire(name), Page: (definition) => { page = definition; } }, { filename: file });
     page.data = clone(page.data);
-    page.setData = function setData(patch) {
+    page.setData = function setData(patch, callback) {
       Object.entries(patch).forEach(([key, value]) => {
         const keys = key.replace(/\[(\d+)\]/g, '.$1').split('.');
         let target = this.data;
         keys.slice(0, -1).forEach((part) => { target = target[part]; });
         target[keys[keys.length - 1]] = value;
       });
+      if (callback) callback();
     };
     page.onLoad();
     return page;
@@ -330,6 +331,96 @@ function pageHarness(initial, flags = {}) {
   return { open, memory, flags };
 }
 const saved = (session) => storage.createEnvelope(S.encodeSession(session), S.SCHEMA_VERSION, () => 1);
+
+test('page：待结算自动打开结算台；读牌切换不写存档、不消耗撤销或随机数', () => {
+  const harness = pageHarness(saved(arranged()), { rng: 0 });
+  const page = harness.open();
+  assert.equal(page.data.activeView, 'planes');
+  page.primaryAction();
+  assert.equal(page.data.activeView, 'work');
+  assert.equal(harness.flags.scrollTarget, '#atlas-views');
+  const before = clone(page.session);
+  const disk = clone(harness.memory.get('planechaseState'));
+  page.selectView({ currentTarget: { dataset: { view: 'planes' } } });
+  assert.equal(page.data.primaryLabel, '前往结算台');
+  page.primaryAction();
+  assert.equal(page.data.activeView, 'work');
+  assert.deepEqual(page.session, before);
+  assert.deepEqual(harness.memory.get('planechaseState'), disk);
+  assert.equal(harness.flags.draws, 1);
+  page.primaryAction();
+  assert.notDeepEqual(page.session.game.activePlanes, before.game.activePlanes);
+});
+
+test('page：展示顺序及牌桌提示在浏览卡文时不能被底部按钮直接确认', () => {
+  let reveal = arranged([merge]);
+  reveal = resolve(reveal, (source) => source.kind === 'encounter');
+  const notes = act(arranged([ordinary[1]], [ordinary[0]]), { type: 'walk' });
+  for (const session of [reveal, notes]) {
+    const page = pageHarness(saved(session)).open();
+    assert.equal(page.data.activeView, 'work');
+    assert.equal(page.data.pendingCount, session.triggers.length + session.tableNotes.length, '展示中的同一来源不能重复计数');
+    page.selectView({ currentTarget: { dataset: { view: 'planes' } } });
+    const before = clone(page.session);
+    page.primaryAction();
+    assert.deepEqual(page.session, before);
+    assert.equal(page.data.activeView, 'work');
+    page.primaryAction();
+    assert.notDeepEqual(page.session, before);
+  }
+});
+
+test('page：多来源不隐式选择能力，复制和反击选项保持来源身份', () => {
+  const session = act(arranged([norn, ordinary[0]]), { type: 'causeChaos' });
+  const page = pageHarness(saved(session)).open();
+  const before = clone(page.session);
+  page.primaryAction();
+  assert.deepEqual(page.session, before);
+  assert.equal(page.data.pendingCount, session.triggers.length);
+  const id = session.triggers[0].id;
+  const event = { currentTarget: { dataset: { id } } };
+  page.toggleTriggerOptions(event);
+  page.copyTrigger(event);
+  assert.equal(page.data.expandedTrigger, id);
+  assert.equal(page.session.triggers.length, before.triggers.length + 1);
+  page.preventTrigger(event);
+  assert.equal(page.data.expandedTrigger, null);
+  assert.ok(!page.session.triggers.some((source) => source.id === id));
+});
+
+test('page：卡面弹层阻断底部结算与视图切换；保存失败不切换到未提交步骤', () => {
+  const harness = pageHarness(saved(arranged()), { rng: 0 });
+  const page = harness.open();
+  page.openInspect({ currentTarget: { dataset: { index: ordinary[0] } } });
+  page.primaryAction();
+  page.selectView({ currentTarget: { dataset: { view: 'work' } } });
+  assert.equal(page.data.activeView, 'planes');
+  assert.equal(page.data.rollCost, 0);
+  page.closeInspect();
+  harness.flags.failWrite = true;
+  page.primaryAction();
+  assert.equal(page.data.activeView, 'planes');
+  assert.equal(page.data.phase, 'ready');
+  harness.flags.failWrite = false;
+  page.retrySave();
+  assert.equal(page.data.activeView, 'work');
+  assert.equal(page.data.phase, 'resolve');
+});
+
+test('page：旧按钮的连续点击不能确认下一阶段，也不能重复掷空白骰', () => {
+  for (const rng of [0, 0.5]) {
+    const harness = pageHarness(saved(arranged()), { rng });
+    const page = harness.open();
+    const renderedTap = { currentTarget: { dataset: { revision: page.data.primaryRevision } } };
+    page.primaryAction(renderedTap);
+    const first = clone(page.session);
+    page.primaryAction(renderedTap);
+    assert.deepEqual(page.session, first);
+    assert.equal(harness.flags.draws, 1);
+    page.primaryAction({ currentTarget: { dataset: { revision: page.data.primaryRevision } } });
+    assert.notDeepEqual(page.session, first, '新画面的明确点击仍须有效');
+  }
+});
 
 test('page：掷出换境切后台、卸载、重开后保留待结算与撤销，不依赖定时器', () => {
   const harness = pageHarness(saved(arranged()), { rng: 0 });

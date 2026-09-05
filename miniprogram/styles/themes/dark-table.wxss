@@ -162,10 +162,25 @@
   --cedh-btn-secondary-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.12), inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
 }
 
-/* 阅读密集、固定操作栏的牌桌工具：实色底避免文字透叠，正文保持可读对比度。 */
+/* Planechase 入口与内页共用图鉴色板；信号黄沿用首页，混沌保留模块粉色。 */
+.planechase-page,
+.tool-entry-planechase {
+  --cedh-atlas-signal: #d0f03c;
+  --cedh-atlas-dark: #0c0f0b;
+  --cedh-atlas-paper: #efeadb;
+  --cedh-atlas-ink: #171916;
+  --cedh-atlas-rule-ink: #50564a;
+  --cedh-atlas-paper-line: #c9c8b7;
+  --cedh-atlas-chaos-paper: #e9dbe4;
+  --cedh-atlas-chaos-ink: #673659;
+}
+
+/* 实色台面与纸白规则页，避免长文本透叠。 */
 .planechase-page {
-  --cedh-text-soft: #c6c3c0;
-  --cedh-surface-solid: #151315;
-  --cedh-image-placeholder: #171317;
-  --cedh-overlay-glass: rgba(8, 6, 8, 0.94);
+  --cedh-text-soft: #b7b9ad;
+  --cedh-line: #343b30;
+  --cedh-line-strong: #5b6550;
+  --cedh-surface-solid: #151a12;
+  --cedh-image-placeholder: #1b2318;
+  --cedh-overlay-glass: rgba(8, 11, 7, 0.94);
 }
