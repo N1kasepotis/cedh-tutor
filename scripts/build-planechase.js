@@ -1,183 +1,123 @@
 #!/usr/bin/env node
-// 把竞逐时空的时空/异象牌烤进 config/planechase.js。
-//
-// 为什么只收 March of the Machine Commander（moc）这 50 张：
-// 全库合法的时空与异象共 161 张，但**有简体中文印刷的只有 moc 这 50 张**——
-// 经典的 Planechase Anthology（opca，61 张）从未出过中文，也早已绝版。
-// 一副牌里一半读不懂比少 61 张糟糕得多，所以默认牌库只收全中文的这一组。
-// 官方共享时空套牌下限是 min(40, 10×人数)，任何人数下 50 张都够，正好合规。
-//
-// 顺带排掉一个坑：punk「Black Lotus Unknown Planechase」45 张是 set_type=funny、
-// commander 判定 not_legal 的店家自制恶搞集，按集合过滤天然不会进来。
-//
-// 存法与 build-commander-art.js 同规则：只存 <id, 版本时间戳>，三档地址由
-// utils/scryfall-cdn.js 的 buildCdnArt 拼出，生成时逐档比对 Scryfall 真实返回。
-//
-// 取的是**简中印次的 id**，因此全屏看整张卡时是中文卡面；art_crop 的画作与英文印次相同。
-//
-// 重新生成：node scripts/build-planechase.js
-// 什么时候要重新生成：官方出了新的中文时空牌之后。
-
-const fs = require('fs');
-const path = require('path');
-const https = require('https');
-
-const ROOT = path.join(__dirname, '..');
-const OUT_FILE = path.join(ROOT, 'miniprogram', 'config', 'planechase.js');
+// 固定收录 MOC 的 50 张官方简中时空/异象。改变集合范围需要规则审查与显式迁移。
+const fs = require('node:fs');
+const path = require('node:path');
+const https = require('node:https');
+const vm = require('node:vm');
+const { compactCdnArt, buildCdnArt } = require('../miniprogram/utils/scryfall-cdn');
+const { LEGACY_CARD_IDS, PLANAR_ACTIONS } = require('../miniprogram/config/planechase-rules');
+const OUT_FILE = path.join(__dirname, '../miniprogram/config/planechase.js');
 const QUERY = '(t:plane or t:phenomenon) lang:zhs set:moc';
-const PAGE_GAP_MS = 120; // Scryfall 要求控制调用节奏
-const { compactCdnArt } = require(path.join(ROOT, 'miniprogram', 'utils', 'scryfall-cdn.js'));
+const UUID = /^[0-9a-f]{8}-(?:[0-9a-f]{4}-){3}[0-9a-f]{12}$/;
+const pause = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 
-const NEWLINE = String.fromCharCode(10);
-
-function request(url, attempt = 0) {
-  return new Promise((resolve, reject) => {
-    https.get(url, {
-      headers: {
-        'user-agent': 'cedh-tutor-build/1.0 (+https://github.com/N1kasepotis/cedh-tutor)',
-        accept: 'application/json',
-      },
-    }, (response) => {
-      const chunks = [];
-      response.on('data', (chunk) => chunks.push(chunk));
-      response.on('end', () => {
-        const body = Buffer.concat(chunks).toString('utf8');
-        if (response.statusCode !== 200) {
-          if (attempt < 2) {
-            setTimeout(() => request(url, attempt + 1).then(resolve, reject), 500 * (attempt + 1));
-            return;
-          }
-          reject(new Error('HTTP ' + response.statusCode + '：' + body.slice(0, 200)));
-          return;
-        }
-        try { resolve(JSON.parse(body)); } catch (cause) { reject(cause); }
+async function request(url) {
+  const parsed = new URL(url);
+  if (parsed.protocol !== 'https:' || parsed.hostname !== 'api.scryfall.com') throw new Error('拒绝非 Scryfall 分页地址');
+  for (let attempt = 0; ; attempt += 1) {
+    try {
+      return await new Promise((resolve, reject) => {
+        const req = https.get(url, { headers: {
+          'user-agent': 'cedh-tutor-build/2.0 (+https://github.com/N1kasepotis/cedh-tutor)',
+          accept: 'application/json',
+        } }, (response) => {
+          const chunks = [];
+          let length = 0;
+          response.on('data', (chunk) => {
+            length += chunk.length;
+            if (length > 8 * 1024 * 1024) { response.destroy(new Error('响应超过 8 MiB')); return; }
+            chunks.push(chunk);
+          });
+          response.on('error', reject);
+          response.on('end', () => {
+            const status = response.statusCode;
+            if (status !== 200) {
+              const error = new Error('HTTP ' + status);
+              error.retryable = status === 408 || status === 429 || status >= 500;
+              reject(error); return;
+            }
+            try { resolve(JSON.parse(Buffer.concat(chunks).toString('utf8'))); } catch (error) { reject(error); }
+          });
+        });
+        req.setTimeout(15000, () => req.destroy(new Error('Scryfall 请求超时')));
+        req.on('error', reject);
       });
-    }).on('error', (error) => {
-      if (attempt < 2) {
-        setTimeout(() => request(url, attempt + 1).then(resolve, reject), 500 * (attempt + 1));
-        return;
-      }
-      reject(error);
-    });
-  });
-}
-
-async function fetchAll() {
-  let url = 'https://api.scryfall.com/cards/search?include_multilingual=true&unique=prints&q='
-    + encodeURIComponent(QUERY);
-  const out = [];
-  let page = 0;
-  while (url) {
-    const json = await request(url);
-    if (!Array.isArray(json.data)) throw new Error('返回里没有 data：' + JSON.stringify(json).slice(0, 200));
-    out.push(...json.data);
-    page += 1;
-    process.stdout.write('  拉取第 ' + page + ' 页，累计 ' + out.length + ' 条');
-    url = json.has_more ? json.next_page : null;
-    if (url) await new Promise((resolve) => { setTimeout(resolve, PAGE_GAP_MS); });
+    } catch (error) {
+      if (attempt >= 2 || error.retryable === false || error instanceof SyntaxError) throw error;
+      await pause(500 * (attempt + 1));
+    }
   }
-  process.stdout.write(NEWLINE);
+}
+async function fetchAll() {
+  let url = 'https://api.scryfall.com/cards/search?include_multilingual=true&unique=prints&q=' + encodeURIComponent(QUERY);
+  const out = [];
+  const seen = new Set();
+  while (url) {
+    if (seen.has(url) || seen.size >= 10) throw new Error('分页循环或页数超限');
+    seen.add(url);
+    const json = await request(url);
+    if (!Array.isArray(json.data) || json.total_cards !== 50 || typeof json.has_more !== 'boolean') throw new Error('集合数量或分页结构改变，请人工审查');
+    out.push(...json.data);
+    if (json.has_more && typeof json.next_page !== 'string') throw new Error('缺少下一页地址');
+    url = json.has_more ? json.next_page : null;
+    if (url) await pause(120);
+  }
   return out;
 }
-
-function render(rows, meta) {
-  const lines = [
+function buildRows(cards) {
+  if (!Array.isArray(cards) || cards.length !== 50) throw new Error('必须取得完整的 50 张快照');
+  const rows = cards.map((card) => {
+    if (!card || card.set !== 'moc' || card.lang !== 'zhs'
+      || !UUID.test(card.id) || !UUID.test(card.oracle_id)
+      || !/[一-鿿]/.test(card.printed_name || '') || !/[一-鿿]/.test(card.printed_type_line || '')
+      || typeof card.printed_text !== 'string' || !card.printed_text.trim()
+      || !/^(Plane\b|Phenomenon$)/.test(card.type_line || '')) throw new Error('卡片字段、语言或类型不完整');
+    const uris = card.image_uris;
+    const compact = uris && compactCdnArt({ small: uris.small, normal: uris.normal, artCrop: uris.art_crop });
+    if (!compact || compact.id !== card.id) throw new Error('卡图 CDN 身份或地址无法验证');
+    const built = buildCdnArt(compact.id, compact.stamp);
+    if (built.small !== uris.small || built.normal !== uris.normal || built.artCrop !== uris.art_crop) throw new Error('卡图地址往返校验失败');
+    const kind = card.type_line === 'Phenomenon' ? 'X' : 'P';
+    if (kind === 'P' && !card.printed_text.split(String.fromCharCode(10)).some((line) => /^每当引发混沌/.test(line))) throw new Error('缺少混沌异能');
+    return [kind, card.printed_name, card.printed_type_line, card.printed_text, compact.id, compact.stamp, card.oracle_id];
+  });
+  for (const field of [1, 4, 6]) if (new Set(rows.map((row) => row[field])).size !== 50) throw new Error('快照存在重复身份');
+  if (rows.filter((row) => row[0] === 'P').length !== 45) throw new Error('时空/异象数量改变');
+  const ids = new Set(rows.map((row) => row[6]));
+  if (LEGACY_CARD_IDS.some((id) => !ids.has(id)) || Object.keys(PLANAR_ACTIONS).some((id) => !ids.has(id))) throw new Error('规则或迁移所需卡片缺失');
+  return rows.sort((a, b) => a[1] < b[1] ? -1 : a[1] > b[1] ? 1 : 0);
+}
+function render(rows, date = new Date().toISOString().slice(0, 10)) {
+  return [
     '// 由 scripts/build-planechase.js 生成，请勿手改。',
     '// 数据来源：Scryfall（卡面文字与图片版权归威世智及画师所有）。',
-    '// 生成日期：' + new Date().toISOString().slice(0, 10),
-    '//',
-    '// 收录范围：March of the Machine Commander（moc）的全部简体中文时空与异象牌，',
-    '// 共 ' + meta.total + ' 张（时空 ' + meta.planes + ' / 异象 ' + meta.phenomena + '）。',
-    '// 这是全库唯一有官方简中印刷的一组；opca 等集合从未出过中文，因此不收。',
-    '// 官方共享时空套牌下限 min(40, 10×人数)，' + meta.total + ' 张在任何人数下都合规。',
-    '//',
-    '// 每条：[kind, 中文名, 中文类别, 正文, scryfallId, 版本时间戳]',
-    '//   kind：P = 时空（Plane），X = 异象（Phenomenon）',
-    '//   正文里的换行分隔「常驻异能」与「每当引发混沌时」那一条；异象只有一条',
-    '//   三档图片地址由 utils/scryfall-cdn.js 的 buildCdnArt 拼出，生成时逐档比对过',
-    '',
+    '// 生成日期：' + date,
+    '// 固定范围：MOC 官方简中 50 张（时空 45 / 异象 5）。',
+    '// 2 人局按共享套牌上限随机移出 1 张异象。',
+    '// 每条：[kind, 中文名, 中文类别, 正文, scryfallId, 版本时间戳, oracleId]',
+    '// kind：P = Plane，X = Phenomenon；规则身份映射见 planechase-rules.js。',
     'const PLANECHASE_CARDS = ' + JSON.stringify(rows, null, 2) + ';',
-    '',
-    'module.exports = {',
-    '  PLANECHASE_CARDS,',
-    '};',
-    '',
-  ];
-  return lines.join(NEWLINE);
+    'module.exports = { PLANECHASE_CARDS };', '',
+  ].join(String.fromCharCode(10));
 }
-
-async function main() {
-  const cards = await fetchAll();
-  const rows = [];
-  const skipped = [];
-
-  cards.forEach((card) => {
-    const uris = card.image_uris;
-    const compact = uris ? compactCdnArt({
-      small: uris.small, normal: uris.normal, artCrop: uris.art_crop,
-    }) : null;
-    if (!compact) {
-      // 地址拼不回去就整张丢掉并报错退出——宁可构建失败，也不要线上一张 404 的卡图
-      skipped.push(card.printed_name || card.name);
-      return;
-    }
-    const kind = /Phenomenon/.test(card.type_line) ? 'X' : 'P';
-    rows.push([
-      kind,
-      card.printed_name || card.name,
-      card.printed_type_line || card.type_line,
-      card.printed_text || card.oracle_text || '',
-      compact.id,
-      compact.stamp,
-    ]);
-  });
-
-  if (skipped.length) {
-    console.error('图片地址无法压缩的卡（CDN 规则可能已变）：' + skipped.join('、'));
-    process.exit(1);
+function writeSnapshot(cards, output = OUT_FILE) {
+  // 数据、CDN 与生成代码全部验证后才写临时文件；失败不覆盖原快照。
+  const rows = buildRows(cards);
+  const source = render(rows);
+  const context = { module: { exports: {} } };
+  vm.runInNewContext(source, context, { timeout: 1000 });
+  if (JSON.stringify(context.module.exports.PLANECHASE_CARDS) !== JSON.stringify(rows)) throw new Error('生成物往返校验失败');
+  const temporary = output + '.' + process.pid + '.tmp';
+  try {
+    fs.writeFileSync(temporary, source, { encoding: 'utf8', flag: 'wx' });
+    fs.renameSync(temporary, output);
+  } finally {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
   }
-
-  rows.sort((a, b) => (a[1] < b[1] ? -1 : (a[1] > b[1] ? 1 : 0)));
-
-  const planes = rows.filter((row) => row[0] === 'P').length;
-  const phenomena = rows.length - planes;
-  const source = render(rows, { total: rows.length, planes, phenomena });
-  fs.writeFileSync(OUT_FILE, source, 'utf8');
-
-  console.log('');
-  console.log('落表 ' + rows.length + ' 张（时空 ' + planes + ' / 异象 ' + phenomena + '）');
-  console.log('写入 ' + path.relative(ROOT, OUT_FILE) + '（' + (Buffer.byteLength(source) / 1024).toFixed(1) + 'KB）');
-
-  // 自检一：拿生成物反查，逐档比对 Scryfall 原样返回。
-  // 没有这一步，拼接规则出错只会表现成「线上卡图 404」，而不是构建失败。
-  delete require.cache[require.resolve(OUT_FILE)];
-  // eslint-disable-next-line global-require, import/no-dynamic-require
-  const generated = require(OUT_FILE);
-  const { buildCdnArt } = require(path.join(ROOT, 'miniprogram', 'utils', 'scryfall-cdn.js'));
-  const byId = new Map(cards.map((card) => [card.id, card]));
-  let failed = 0;
-  generated.PLANECHASE_CARDS.forEach((row) => {
-    const card = byId.get(row[4]);
-    const built = buildCdnArt(row[4], row[5]);
-    if (!card || !built) { failed += 1; console.error('  ✗ ' + row[1] + ' 反查不到'); return; }
-    if (built.small !== card.image_uris.small
-      || built.normal !== card.image_uris.normal
-      || built.artCrop !== card.image_uris.art_crop) {
-      failed += 1;
-      console.error('  ✗ ' + row[1] + ' 拼出的地址与 Scryfall 返回不一致');
-    }
-  });
-  console.log('自检：' + generated.PLANECHASE_CARDS.length + ' 张逐档比对，不一致 ' + failed + ' 处');
-
-  // 自检二：每张时空牌都必须有「每当引发混沌时」那一条，否则掷出混沌无从高亮
-  const noChaos = generated.PLANECHASE_CARDS
-    .filter((row) => row[0] === 'P' && row[3].indexOf('引发混沌') < 0)
-    .map((row) => row[1]);
-  console.log('自检：时空牌缺混沌异能 ' + noChaos.length + ' 张' + (noChaos.length ? '（' + noChaos.join('、') + '）' : ''));
-  if (failed) process.exit(1);
+  return rows;
 }
-
-main().catch((error) => {
-  console.error('生成失败：' + error.message);
-  process.exit(1);
-});
+if (require.main === module) fetchAll().then((cards) => {
+  const rows = writeSnapshot(cards);
+  console.log('快照已原子更新：' + rows.length + ' 张，字段/身份/卡图/生成语法验证通过');
+}).catch((error) => { console.error('生成失败：' + error.message); process.exitCode = 1; });
+module.exports = { buildRows, render, writeSnapshot };

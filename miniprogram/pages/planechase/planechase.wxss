@@ -1,391 +1,50 @@
 @import "../../styles/themes/dark-table.wxss";
-
-/* 竞逐时空承混沌工具的紫罗兰（首页 .home-index-random 是 #920FB3，
-   那个明度压在暗底上读不出来，这里取提亮版本作 accent） */
-.planechase-page {
-  --module-accent-rgb: 180, 120, 245;
-  --cedh-accent: #b478f5;
-  --cedh-accent-ink: #e4d1ff;
-  --cedh-accent-soft: rgba(180, 120, 245, 0.16);
-  --cedh-accent-line: rgba(180, 120, 245, 0.4);
-}
-
-.tool-shell {
-  display: flex;
-  flex-direction: column;
-  gap: var(--cedh-space-5);
-}
-
-/* ---- 当前时空 ---- */
-
-.plane-card {
-  background: var(--cedh-surface-muted);
-  border: var(--cedh-hairline) solid var(--cedh-line);
-  overflow: hidden;
-}
-
-/* 境界交融同时换入两个时空时**上下叠**，不并排：本页是 column 布局，
-   竖屏并排会让每张画作只剩约 187rpx 宽，卡名都读不全。
-   两张一起出现时把画作槽压矮一档，让两条正文都还留在首屏内。 */
-.plane-card-split .plane-art {
-  padding-top: 30%;
-}
-
-/* 画作槽按时空牌真实比例开：art_crop 是 1214×543 ≈ 2.24:1。
-   竖屏满宽 375pt → 167pt 高，@3x 需 1125×502px，art_crop 略微不足而非超配。 */
-.plane-art {
-  position: relative;
-  width: 100%;
-  padding-top: 44.6%;
-  overflow: hidden;
-  background: #0b0c10;
-}
-
-/* 垫底层：small 只有 11KB，弱网下几乎瞬时。
-   Scryfall 把横版时空牌转了 90° 存成竖版卡框，所以这里转回来；
-   宽高互换后再旋转，恰好铺满这个横向槽（44.6% × 224% = 容器高 × 容器宽）。
-   放大 + 降透明度当色场用，**不使用 blur**：移动端要走离屏 pass，
-   而本项目从未用过它，无法在 Node 侧验证。 */
-.plane-art-base {
-  position: absolute;
-  left: 50%;
-  top: 50%;
-  width: 44.6%;
-  height: 224%;
-  opacity: 0.55;
-  /* 连这 11KB 都还没到时露出的底色——它是整个画作槽真正的最底层 */
-  background: #0b0c10;
-  z-index: 0;
-  transform: translate(-50%, -50%) rotate(90deg) scale(1.35);
-}
-
-/* 主图层：art_crop 本身就是横向画作，不需要旋转。
-   两层各自 src、不做替换——微信 image 换了 src 会重新下载同一张图。 */
-.plane-art-main {
-  position: absolute;
-  left: 0;
-  top: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 1;
-  animation: plane-art-in 260ms ease-out both;
-}
-
-@keyframes plane-art-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
-}
-
-.plane-scrim {
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 62%;
-  background: linear-gradient(180deg, rgba(6, 7, 10, 0) 0%, rgba(6, 7, 10, 0.86) 100%);
-  pointer-events: none;
-}
-
-.plane-caption {
-  position: absolute;
-  left: var(--cedh-space-4);
-  right: var(--cedh-space-4);
-  bottom: 18rpx;
-  display: flex;
-  flex-direction: column;
-  gap: 4rpx;
-}
-
-.plane-name {
-  font-size: 40rpx;
-  line-height: 1.16;
-  color: #ffffff;
-  font-family: var(--cedh-font-serif);
-}
-
-.plane-type {
-  font-size: var(--cedh-text-12);
-  color: rgba(255, 255, 255, 0.72);
-  letter-spacing: 0.06em;
-}
-
-.plane-text {
-  display: flex;
-  flex-direction: column;
-  gap: 14rpx;
-  padding: var(--cedh-space-4);
-}
-
-.plane-line {
-  font-size: 26rpx;
-  line-height: 1.62;
-  color: var(--cedh-text-soft);
-}
-
-/* 混沌那一条常态就带左侧标记，掷出混沌时整条点亮——
-   彩头是「指给你看该读哪句」，不是特效本身 */
-.plane-line-chaos {
-  padding-left: var(--cedh-space-3);
-  border-left: 4rpx solid var(--cedh-accent-line);
-  color: var(--cedh-text);
-}
-
-.plane-line-chaos.is-hot {
-  border-left-color: var(--cedh-accent);
-  background: var(--cedh-accent-soft);
-  color: var(--cedh-accent-ink);
-}
-
-/* ---- 异象与骰面修正 ---- */
-
-.encounter-bar,
-.modifier-bar {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--cedh-space-3);
-  padding: 18rpx var(--cedh-space-4);
-  background: var(--cedh-accent-soft);
-  border: var(--cedh-hairline) solid var(--cedh-accent-line);
-  font-size: var(--cedh-text-12);
-  color: var(--cedh-accent-ink);
-  line-height: 1.5;
-}
-
-.encounter-go {
-  flex: 0 0 auto;
-  padding: 10rpx var(--cedh-space-3);
-  border: var(--cedh-hairline) solid var(--cedh-accent);
-  color: var(--cedh-accent);
-  font-size: var(--cedh-text-12);
-}
-
-/* ---- 时空骰 ---- */
-
-.die-row {
-  display: flex;
-  gap: var(--cedh-space-4);
-  align-items: stretch;
-}
-
-.die {
-  flex: 0 0 44%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: 8rpx;
-  padding: var(--cedh-space-5) var(--cedh-space-3);
-  background: var(--cedh-surface-muted);
-  border: 2rpx solid var(--cedh-line);
-  /* 骰面切换不做位移，只换色与字：轮转本身已经是运动 */
-  transition: border-color 120ms linear, background-color 120ms linear;
-}
-
-.die-face {
-  font-size: 46rpx;
-  line-height: 1.1;
-  color: var(--cedh-text);
-  font-family: var(--cedh-font-serif);
-}
-
-.die-hint {
-  font-size: var(--cedh-text-10);
-  letter-spacing: 0.08em;
-  color: var(--cedh-text-faint);
-}
-
-/* 4/6 是空白——最常见的结果必须读作「无事发生」，所以它最暗、不给强调 */
-.die-blank {
-  border-color: var(--cedh-line);
-}
-
-.die-blank .die-face {
-  color: var(--cedh-text-faint);
-}
-
-.die-chaos {
-  border-color: #e0813c;
-  background: rgba(224, 129, 60, 0.14);
-}
-
-.die-chaos .die-face {
-  color: #ffb87a;
-}
-
-.die-planeswalk {
-  border-color: var(--cedh-accent);
-  background: var(--cedh-accent-soft);
-}
-
-.die-planeswalk .die-face {
-  color: var(--cedh-accent-ink);
-}
-
-.die.is-rolling .die-face {
-  color: var(--cedh-text-soft);
-}
-
-.die-side {
-  flex: 1 1 auto;
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  gap: 12rpx;
-}
-
-.die-cost {
-  display: flex;
-  align-items: baseline;
-  justify-content: space-between;
-  padding: 14rpx var(--cedh-space-3);
-  background: var(--cedh-surface-muted);
-}
-
-.die-cost-label {
-  font-size: var(--cedh-text-12);
-  color: var(--cedh-text-faint);
-}
-
-.die-cost-value {
-  font-size: 40rpx;
-  color: var(--cedh-accent-ink);
-}
-
-.die-deck {
-  font-size: var(--cedh-text-12);
-  color: var(--cedh-text-faint);
-  padding: 0 var(--cedh-space-3);
-}
-
-.die-turn {
-  padding: 14rpx var(--cedh-space-3);
-  text-align: center;
-  border: var(--cedh-hairline) solid var(--cedh-line);
-  font-size: var(--cedh-text-12);
-  color: var(--cedh-text-soft);
-}
-
-/* ---- 手动入口与展示 ---- */
-
-.manual-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--cedh-space-3);
-}
-
-.reveal-panel {
-  padding: var(--cedh-space-4);
-  display: flex;
-  flex-direction: column;
-  gap: 10rpx;
-}
-
-.reveal-title {
-  font-size: var(--cedh-text-12);
-  color: var(--cedh-text-faint);
-  letter-spacing: 0.06em;
-}
-
-.reveal-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--cedh-space-3);
-  font-size: 26rpx;
-  color: var(--cedh-text);
-}
-
-.reveal-item.is-phenomenon {
-  color: var(--cedh-text-faint);
-}
-
-.reveal-kind {
-  font-size: var(--cedh-text-10);
-  letter-spacing: 0.08em;
-  color: var(--cedh-text-faint);
-}
-
-.reveal-actions {
-  display: flex;
-  gap: var(--cedh-space-4);
-  padding-top: 6rpx;
-}
-
-.trim-note {
-  font-size: var(--cedh-text-10);
-  line-height: 1.6;
-  color: var(--cedh-text-faint);
-}
-
-/* ---- 底栏 ---- */
-
-.footer-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--cedh-space-4);
-  flex-wrap: wrap;
-}
-
-.player-counts {
-  display: flex;
-  gap: 10rpx;
-}
-
-.count-chip {
-  padding: 10rpx 18rpx;
-  border: var(--cedh-hairline) solid var(--cedh-line);
-  font-size: var(--cedh-text-12);
-  color: var(--cedh-text-faint);
-}
-
-.count-chip.on {
-  border-color: var(--cedh-accent);
-  color: var(--cedh-accent-ink);
-  background: var(--cedh-accent-soft);
-}
-
-.footer-actions {
-  display: flex;
-  gap: var(--cedh-space-4);
-}
-
-/* ---- 整张卡面 ---- */
-
-.inspect-mask {
-  position: fixed;
-  left: 0;
-  right: 0;
-  top: 0;
-  bottom: 0;
-  z-index: 40;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  gap: var(--cedh-space-4);
-  background: rgba(4, 5, 8, 0.94);
-}
-
-/* Scryfall 把横版时空牌转 90° 存成竖版卡框，这里转回来看。
-   元素本身仍是竖版（488:680 ≈ 0.718），旋转后屏幕上呈现的是
-   「元素高 × 元素宽」，所以按 92vw 定**高**、按同比例 66vw 定**宽**，
-   转完正好是 92vw 宽的横卡。两个值都用 vw：竖屏页里 vw 才是短边。 */
-.inspect-card {
-  width: 66vw;
-  height: 92vw;
-  transform: rotate(90deg);
-}
-
-.inspect-name {
-  font-size: var(--cedh-text-14);
-  color: var(--cedh-text-soft);
-}
-
-/* 系统开启「减弱动态效果」时不再淡入，直接到位 */
-@media (prefers-reduced-motion: reduce) {
-  .plane-art-main {
-    animation: none;
-  }
-}
+.planechase-page { padding-top: var(--cedh-space-5); padding-bottom: calc(160px + env(safe-area-inset-bottom)); color: var(--cedh-text); }
+.tool-shell { display: flex; flex-direction: column; gap: var(--cedh-space-5); }
+.session-header, .session-status, .turn-row, .inspect-header { display: flex; align-items: center; justify-content: space-between; gap: var(--cedh-space-3); }
+.session-eyebrow, .status-detail { font-size: 12px; line-height: 1.5; color: var(--cedh-text-soft); }
+.session-title { margin-top: var(--cedh-space-2); font-family: var(--cedh-font-serif); font-size: 24px; line-height: 1.3; }
+.phase-badge { padding: 6px 10px; color: var(--cedh-accent-ink); background: var(--cedh-accent-soft); border: 1rpx solid var(--cedh-accent-line); border-radius: var(--cedh-radius-pill); font-size: 13px; }
+.setup-toggle { flex: 0 0 auto; }
+.work-panel, .notice-panel, .plane-card { background: var(--cedh-surface-muted); border: var(--cedh-hairline); border-radius: var(--cedh-radius-2); }
+.work-panel, .notice-panel { padding: var(--cedh-space-4); display: flex; flex-direction: column; gap: var(--cedh-space-3); }
+.notice-panel { border-left: 3px solid var(--cedh-accent); }
+.error-panel { border-color: var(--cedh-accent-ink); }
+.panel-heading, .source-title { font-size: 15px; font-weight: 600; line-height: 1.5; }
+.body-copy { font-size: 14px; line-height: 1.7; color: var(--cedh-text); overflow-wrap: anywhere; }
+.muted-copy { color: var(--cedh-text-soft); }
+.action-row, .count-row { display: flex; flex-wrap: wrap; gap: 8px; }
+.pc-button { display: flex; justify-content: center; align-items: center; min-height: 44px; margin: 0; padding: 10px 14px; font-size: 13px; line-height: 1.45; color: var(--cedh-text); background: var(--cedh-input-glass); border: var(--cedh-hairline); border-radius: var(--cedh-radius-control-sm); transition: opacity 140ms ease; }
+.pc-button[disabled], .pc-primary[disabled] { opacity: 0.42; color: var(--cedh-text); background: var(--cedh-surface-muted); }
+.accent-button, .count-chip.is-selected { color: var(--cedh-accent-ink); background: var(--cedh-accent-soft); border-color: var(--cedh-accent-line); }
+.count-chip { flex: 1; min-width: 44px; }
+.pending-source { border-top: var(--cedh-hairline); padding-top: var(--cedh-space-4); display: flex; flex-direction: column; gap: var(--cedh-space-3); }
+.revealed-row, .order-row { display: flex; align-items: center; gap: 8px; }
+.reveal-name { flex: 1; justify-content: flex-start; text-align: left; }
+.order-name { flex: 1; min-width: 0; font-size: 14px; line-height: 1.5; }
+.order-button { flex: 0 0 44px; padding: 8px; }
+.plane-card { overflow: hidden; }
+.plane-art { display: block; position: relative; width: 100%; padding-top: 44.6%; border-radius: 0; background: var(--cedh-image-placeholder); overflow: hidden; }
+.plane-art-main { position: absolute; left: 0; top: 0; width: 100%; height: 100%; z-index: 1; background: var(--cedh-image-placeholder); }
+.plane-art-base { position: absolute; left: 50%; top: 50%; width: 44.6%; height: 224%; opacity: 0.55; background: var(--cedh-image-placeholder); z-index: 0; transform: translate(-50%, -50%) rotate(90deg) scale(1.35); }
+.art-caption { position: absolute; right: 10px; bottom: 10px; z-index: 2; padding: 6px 10px; border-radius: var(--cedh-radius-pill); background: var(--cedh-overlay-glass); color: var(--cedh-text); font-size: 12px; line-height: 1.5; }
+.plane-text { display: flex; flex-direction: column; gap: var(--cedh-space-3); padding: var(--cedh-space-4); }
+.plane-heading { padding-bottom: var(--cedh-space-2); }
+.plane-name { font-size: 22px; font-family: var(--cedh-font-serif); line-height: 1.4; margin-bottom: 4px; }
+.plane-line-chaos { border-left: 3px solid var(--cedh-accent); padding: 8px 12px; color: var(--cedh-accent-ink); background: var(--cedh-accent-soft); }
+.die-result { font-size: 22px; line-height: 1.4; margin-top: 4px; }
+.action-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 12px var(--cedh-page-x) calc(12px + env(safe-area-inset-bottom)); background: var(--cedh-surface-solid); border-top: var(--cedh-hairline); }
+.dock-summary { margin-bottom: 8px; font-size: 12px; line-height: 1.5; color: var(--cedh-text-soft); }
+.dock-buttons { display: flex; gap: 10px; }
+.pc-primary { flex: 1; min-width: 0; min-height: 48px; padding: 12px; font-size: 14px; letter-spacing: 0; line-height: 1.5; color: var(--cedh-ink); background: var(--cedh-accent-ink); border: 0; box-shadow: none; }
+.undo-button { flex: 0 0 60px; }
+.inspect-mask { position: fixed; left: 0; right: 0; top: 0; bottom: 0; z-index: 40; display: flex; align-items: center; justify-content: center; background: var(--cedh-overlay-glass); padding: 12px; }
+.inspect-panel { width: 100%; max-width: 640px; background: var(--cedh-surface-solid); border: var(--cedh-hairline); border-radius: var(--cedh-radius-control-sm); overflow: hidden; }
+.inspect-header { padding: 12px 16px; border-bottom: var(--cedh-hairline); }
+.inspect-scroll { height: 70vh; }
+.inspect-art { position: relative; height: 65vw; max-height: 430px; background: var(--cedh-image-placeholder); overflow: hidden; }
+.inspect-card { position: absolute; left: 50%; top: 50%; width: 65vw; height: 91vw; max-width: 430px; max-height: 598px; transform: translate(-50%, -50%) rotate(90deg); background: var(--cedh-image-placeholder); }
+.inspect-fallback { display: flex; height: 100%; padding: 20px; flex-direction: column; justify-content: center; gap: 16px; }
+.inspect-text { display: flex; flex-direction: column; gap: 10px; padding: 16px; }
+.rules-text { white-space: pre-wrap; }
+@media (prefers-reduced-motion: reduce) { .pc-button { transition: none; } }

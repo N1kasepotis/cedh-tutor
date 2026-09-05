@@ -7,23 +7,22 @@
 //   · 乙太混沦「空白结果均为混沌，直到有牌手时空换出任一时空」→ 持续性骰面修正
 // 指针表达不了任何一条，所以用分区模型：planarDeck（有序）+ activePlanes（数组）。
 //
-// 自动化边界：牌库顺序、当前时空、掷骰、费用、异象自动换出、乙太混沦的骰面修正
-// 全在应用内，因此由这里负责；一切引用生物／坟场／牌库的效应属于真实牌桌，
-// 应用无从知晓，只提供入口由玩家自己动手（与伊捷风暴的手动 ±1 校正同一条线）。
+// 本模块只做分区操作；触发、反击、复制、状态动作时序由 planechase-session 负责。
+// 玩家牌库、战场、支付与完整堆叠由实体牌桌处理，不能把操作记录当作完整规则引擎。
 
 const { PLANECHASE_CARDS } = require('../config/planechase');
+const { PLANAR_ACTIONS } = require('../config/planechase-rules');
 const { rollInteger } = require('./random');
 
 // CR 901.3a：时空骰是六面骰，一面 {PW}，一面 {CHAOS}，其余四面空白。
 const DIE_FACES = Object.freeze(['planeswalk', 'chaos', 'blank', 'blank', 'blank', 'blank']);
 
 // 乙太混沦：「时空骰掷出的空白结果均为{CHAOS}结果，直到有牌手时空换出任一时空为止」。
-// 不硬编卡名——按印刷文本识别，测试锁定「全牌库恰好一张命中」，
-// Scryfall 改了文案会立刻红，而不是悄悄失效。
+// 此正则仅用于快照文字审查；实际效应匹配使用稳定的 Oracle 身份。
 const BLANK_IS_CHAOS_PATTERN = /空白结果均为/;
 
 // 时空牌的第二条异能一律以「每当引发混沌时」起句；生成器已自检 45 张全部具备。
-const CHAOS_LINE_PATTERN = /引发混沌/;
+const CHAOS_LINE_PATTERN = /^每当引发混沌/;
 
 const NEWLINE = String.fromCharCode(10);
 
@@ -45,11 +44,13 @@ function cardAt(index) {
     isPhenomenon: isPhenomenonRow(row),
     name: row[1],
     type: row[2],
+    text: row[3],
     // 异象只有一条「当你遭遇～时」，没有混沌异能，因此整段都归 staticLines
     staticLines,
     chaosLines,
     id: row[4],
     stamp: row[5],
+    oracleId: row[6],
   };
 }
 
@@ -69,7 +70,7 @@ function planarDeckLimits(playerCount) {
 function shuffleInPlace(items, rng) {
   const random = typeof rng === 'function' ? rng : Math.random;
   for (let i = items.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1));
+    const j = rollInteger(0, i, random);
     const swap = items[i];
     items[i] = items[j];
     items[j] = swap;
@@ -129,28 +130,28 @@ function createGame(playerCount, rng) {
   return state;
 }
 
-// CR 901.9：费用等于本回合此前已掷的次数——首掷 {0}，第二次 {1}，以此类推。
+// CR 116.2i / 901.9：费用只计算本回合此前作为特殊动作掷骰的次数。
 function rollCost(state) {
   return state && Number.isInteger(state.rollsThisTurn) ? state.rollsThisTurn : 0;
 }
 
-// 只掷，不结算。换境与混沌由调用方在动画之后自行推进，
-// 这样「先定结果、再演」这条（与边缘赛跑同源）才成立。
-function rollPlanarDie(state, rng) {
+// 只掷，不结算；调用方必须先保存结果与待处理能力，才能展示提交后的状态。
+function rollPlanarDie(state, rng, options = {}) {
   if (!state) return null;
-  const cost = rollCost(state);
+  const effect = options.effect === true;
+  const cost = effect ? 0 : rollCost(state);
   const rolled = DIE_FACES[rollInteger(1, DIE_FACES.length, rng) - 1];
   const modified = rolled === 'blank' && state.dieModifier === 'blankIsChaos';
   const face = modified ? 'chaos' : rolled;
-  state.rollsThisTurn += 1;
-  state.lastRoll = { face, rolled, cost, modified };
+  if (!effect) state.rollsThisTurn += 1;
+  state.lastRoll = { face, rolled, cost, modified, source: effect ? 'effect' : 'special' };
   return state.lastRoll;
 }
 
 function phenomenonModifierFor(index) {
   const row = PLANECHASE_CARDS[index];
   if (!row || !isPhenomenonRow(row)) return 'none';
-  return BLANK_IS_CHAOS_PATTERN.test(String(row[3] || '')) ? 'blankIsChaos' : 'none';
+  return planarActionFor(index) === 'aether' ? 'blankIsChaos' : 'none';
 }
 
 // CR 901.11：把面朝上的牌置于牌库底，翻开牌库顶。
@@ -168,17 +169,18 @@ function planeswalk(state) {
   const next = state.planarDeck.shift();
   state.activePlanes = [next];
   state.pending = isPhenomenonRow(PLANECHASE_CARDS[next]) ? 'encounter' : null;
-  if (state.pending) {
-    const modifier = phenomenonModifierFor(next);
-    if (modifier !== 'none') state.dieModifier = modifier;
-  }
   return next;
 }
 
-// 异象的提醒文字就写着「（然后时空换出此异象。）」——结算完必然再换一次。
-// 拆成单独一步而不是并进 planeswalk，是为了让界面留出让人读完那段文字的时间。
-function resolveEncounter(state) {
+// 单个未复制遭遇触发的便捷内核。页面使用 session 分开记录能力与状态动作，
+// 不能拿这个函数直接结算仍有同源触发留在堆叠的异象。
+function resolveEncounter(state, options = {}) {
   if (!state || state.pending !== 'encounter') return null;
+  // 遭遇触发被反击时仍会离开异象，但不能执行其效果（CR 704.6f）。
+  if (options.resolveAbility !== false) {
+    const modifier = phenomenonModifierFor(state.activePlanes[0]);
+    if (modifier !== 'none') state.dieModifier = modifier;
+  }
   state.pending = null;
   return planeswalk(state);
 }
@@ -186,6 +188,7 @@ function resolveEncounter(state) {
 // 「展示到第 n 张时空牌为止」：境界交融要两张，艾蕾侬与撒维尼亚各要一张。
 // 只返回展示结果，不改牌库——怎么处置由玩家在界面上决定。
 function revealUntilPlanes(state, count) {
+  if (!state || !Array.isArray(state.planarDeck)) return [];
   const wanted = Math.max(1, Math.trunc(Number(count) || 0) || 1);
   const revealed = [];
   let found = 0;
@@ -198,22 +201,52 @@ function revealUntilPlanes(state, count) {
 }
 
 // 把展示出的牌里的时空牌设为当前时空，其余置底。境界交融走这条。
-function planeswalkTo(state, indices) {
+function planeswalkTo(state, indices, options = {}) {
   if (!state || !Array.isArray(indices) || !indices.length) return null;
+  if (!isDeckSelection(state, indices)) return null;
   const chosen = indices.filter((index) => !isPhenomenonRow(PLANECHASE_CARDS[index]));
   if (!chosen.length) return null;
 
+  const rest = indices.filter((index) => chosen.indexOf(index) < 0);
+  const orderedRest = options.bottomOrder || rest;
+  if (!isPermutation(orderedRest, rest)) return null;
+  // 树种核心不换出任何「时空」；若旧来源在异象期间结算，异象仍需换出。
+  const append = options.append === true && state.activePlanes.every((index) => !isPhenomenonRow(PLANECHASE_CARDS[index]));
+
   const leftAPlane = state.activePlanes.some((index) => !isPhenomenonRow(PLANECHASE_CARDS[index]));
-  if (leftAPlane) state.dieModifier = 'none';
+  if (leftAPlane && !append) state.dieModifier = 'none';
 
   const taken = new Set(indices);
-  const rest = indices.filter((index) => chosen.indexOf(index) < 0);
   state.planarDeck = state.planarDeck.filter((index) => !taken.has(index));
-  state.activePlanes.forEach((index) => state.planarDeck.push(index));
-  rest.forEach((index) => state.planarDeck.push(index));
-  state.activePlanes = chosen.slice();
+  if (!append) state.activePlanes.forEach((index) => state.planarDeck.push(index));
+  orderedRest.forEach((index) => state.planarDeck.push(index));
+  state.activePlanes = append ? state.activePlanes.concat(chosen) : chosen.slice();
   state.pending = null;
   return state.activePlanes.slice();
+}
+
+function isPermutation(items, expected) {
+  return Array.isArray(items) && items.length === expected.length
+    && new Set(items).size === items.length && items.every((index) => expected.includes(index));
+}
+
+function isDeckSelection(state, indices) {
+  return Boolean(state && Array.isArray(state.planarDeck) && Array.isArray(indices)
+    && indices.length && new Set(indices).size === indices.length
+    && indices.every((index) => Number.isInteger(index) && cardAt(index) && state.planarDeck.includes(index)));
+}
+
+// 撒维尼亚：仅展示牌的混沌触发，牌本身不换入；触发结算前展示牌已全部置底。
+function bottomRevealed(state, indices, order = indices) {
+  if (!isDeckSelection(state, indices) || !isPermutation(order, indices)) return false;
+  const taken = new Set(indices);
+  state.planarDeck = state.planarDeck.filter((index) => !taken.has(index)).concat(order);
+  return true;
+}
+
+function planarActionFor(index) {
+  const row = PLANECHASE_CARDS[index];
+  return row ? PLANAR_ACTIONS[row[6]] || '' : '';
 }
 
 // 新回合：费用归零。骰面修正不在此清除——它只由「换出一个时空」结束。
@@ -240,7 +273,7 @@ function cloneGame(state) {
     rollsThisTurn: state.rollsThisTurn,
     pending: state.pending,
     trimmed: (state.trimmed || []).slice(),
-    limits: state.limits,
+    limits: Object.assign({}, state.limits),
     lastRoll: state.lastRoll ? Object.assign({}, state.lastRoll) : null,
   };
 }
@@ -261,6 +294,9 @@ module.exports = {
   resolveEncounter,
   revealUntilPlanes,
   planeswalkTo,
+  bottomRevealed,
+  planarActionFor,
+  isPermutation,
   endTurn,
   setDieModifier,
   cloneGame,

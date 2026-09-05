@@ -30,12 +30,13 @@ test('快照：50 张全中文，时空 45 / 异象 5，无同名', () => {
   assert.equal(phenomena.length, 5);
 
   PLANECHASE_CARDS.forEach((row, i) => {
-    assert.equal(row.length, 6, `第 ${i} 条字段数不对`);
+    assert.equal(row.length, 7, `第 ${i} 条字段数不对`);
     // 中文名：没有中文字符说明这张卡没有简中印刷，不该进这份快照
     assert.match(row[1], /[一-鿿]/, `第 ${i} 条卡名不是中文：${row[1]}`);
     assert.match(row[2], /[一-鿿]/, `第 ${i} 条类别不是中文：${row[2]}`);
     assert.ok(row[3], `${row[1]} 没有正文`);
     assert.match(row[4], /^[0-9a-f]{8}-[0-9a-f]{4}-/, `${row[1]} 的 scryfallId 不合法`);
+    assert.match(row[6], /^[0-9a-f]{8}-[0-9a-f]{4}-/, `${row[1]} 的 Oracle ID 不合法`);
   });
 
   // CR 901.3：同一副时空套牌内不得有同名牌
@@ -45,7 +46,7 @@ test('快照：50 张全中文，时空 45 / 异象 5，无同名', () => {
 
 test('快照：每张时空牌都有混沌异能，异象都没有', () => {
   PLANECHASE_CARDS.forEach((row) => {
-    const hasChaos = P.CHAOS_LINE_PATTERN.test(row[3]);
+    const hasChaos = row[3].split(NEWLINE).some((line) => P.CHAOS_LINE_PATTERN.test(line));
     if (row[0] === 'P') {
       assert.ok(hasChaos, `时空牌「${row[1]}」没有「每当引发混沌时」，掷出混沌将无从高亮`);
     } else {
@@ -247,7 +248,7 @@ test('乙太混沦：空白改判混沌，且异象自身的换出不结束它',
   game.planarDeck = [aether].concat(game.planarDeck.filter((i) => i !== aether));
 
   P.planeswalk(game);
-  assert.equal(game.dieModifier, 'blankIsChaos', '遭遇乙太混沦应开启骰面修正');
+  assert.equal(game.dieModifier, 'none', '仅遭遇乙太混沦不能提前执行其触发效应');
 
   // 「直到有牌手时空换出任一**时空**」——异象自己那次自动换出离开的是异象，
   // 不是时空，因此修正必须存活。这条极易写反。

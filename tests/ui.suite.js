@@ -629,8 +629,8 @@ test('home removes particles while other interfaces retain theme-matched particl
   assert.match(particleWxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.particle-canvas\s*{[^}]*display:\s*none/);
 });
 test('quiz and result action controls stay inside mobile width', () => {
-  const quizWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/quiz/quiz.wxml'), 'utf8');
-  const resultWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/result/result.wxml'), 'utf8');
+  const quizWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/quiz/quiz.wxml'), 'utf8').replace(/\r\n/g, '\n');
+  const resultWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/result/result.wxml'), 'utf8').replace(/\r\n/g, '\n');
   const quizJson = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/pages/quiz/quiz.json'), 'utf8'));
   const resultJson = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/pages/result/result.json'), 'utf8'));
   const quizWxss = fs.readFileSync(path.join(root, 'miniprogram/pages/quiz/quiz.wxss'), 'utf8');

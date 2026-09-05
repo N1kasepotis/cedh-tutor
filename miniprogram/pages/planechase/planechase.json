@@ -3,7 +3,5 @@
   "navigationBarBackgroundColor": "#050505",
   "navigationBarTextStyle": "white",
   "backgroundColor": "#050505",
-  "usingComponents": {
-    "particle-background": "/components/particle-background/particle-background"
-  }
+  "usingComponents": {}
 }

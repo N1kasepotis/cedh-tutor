@@ -97,6 +97,19 @@ function categoryOf(variant) {
   return 'other';
 }
 
+// API 分页顺序不构成档位保证。先显式排序，后面的配对去重才能保留最高档；
+// 同档位按既有产出优先级，再按稳定 id 排序，避免网络返回顺序改变快照。
+function prioritizeVariants(variants) {
+  const rank = (variant) => CATEGORIES.findIndex(([key]) => key === categoryOf(variant));
+  return variants.slice().sort((a, b) => {
+    const bracket = (TAG_TO_BRACKET[b.bracketTag] || 0) - (TAG_TO_BRACKET[a.bracketTag] || 0);
+    const category = rank(a) - rank(b);
+    const aId = String(a.id || '');
+    const bId = String(b.id || '');
+    return bracket || category || (aId < bId ? -1 : aId > bId ? 1 : 0);
+  });
+}
+
 // 与 utils/bracket.js 的 canonicalCardKey 同规则，用来跟手工库比对去重
 function canonicalKey(name) {
   return String(name || '')
@@ -204,7 +217,7 @@ async function main() {
   let inScope = 0;
   let skippedCurated = 0;
 
-  all.forEach((variant) => {
+  prioritizeVariants(all).forEach((variant) => {
     const bracket = TAG_TO_BRACKET[variant.bracketTag];
     if (!bracket) return; // 含禁牌（B）或标签缺失的一律不收
     const infinite = featureNames(variant).some((name) => /^Infinite/i.test(name));
@@ -259,7 +272,9 @@ async function main() {
   if (failed) process.exit(1);
 }
 
-main().catch((error) => {
+if (require.main === module) main().catch((error) => {
   console.error(`生成失败：${error.message}`);
   process.exit(1);
 });
+
+module.exports = { prioritizeVariants };

@@ -3,6 +3,7 @@
 
 .tracker,
 .random,
+.planechase-page,
 .playtest,
 .bracket,
 .meta,
@@ -21,6 +22,7 @@
   --cedh-text-soft: rgba(255, 254, 250, 0.68);
   --cedh-text-faint: rgba(255, 254, 250, 0.46);
   --cedh-line: rgba(255, 249, 224, 0.18);
+  --cedh-hairline: 1rpx solid var(--cedh-line);
   --cedh-surface: rgba(255, 249, 224, 0.08);
   --cedh-surface-raised: rgba(255, 249, 224, 0.12);
   --cedh-surface-muted: rgba(255, 249, 224, 0.07);
@@ -40,6 +42,7 @@
   --cedh-input-glass: rgba(var(--module-accent-rgb), 0.09);
 }
 
+.planechase-page,
 .random {
   --module-accent-rgb: 190, 112, 158;
   --cedh-accent: #be709e;
@@ -88,6 +91,7 @@
 /* 玻璃面板：继承 tracker .deck-card 的顶部高光效果 */
 .tracker .surface,
 .random .surface,
+.planechase-page .surface,
 .playtest .surface,
 .bracket .surface,
 .meta .surface,
@@ -143,6 +147,7 @@
 }
 
 .random,
+.planechase-page,
 .playtest,
 .bracket,
 .cabbage-page,
@@ -155,4 +160,12 @@
   --cedh-btn-secondary-bg: var(--cedh-surface-muted);
   --cedh-btn-secondary-border: var(--cedh-hairline);
   --cedh-btn-secondary-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.12), inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
+}
+
+/* 阅读密集、固定操作栏的牌桌工具：实色底避免文字透叠，正文保持可读对比度。 */
+.planechase-page {
+  --cedh-text-soft: #c6c3c0;
+  --cedh-surface-solid: #151315;
+  --cedh-image-placeholder: #171317;
+  --cedh-overlay-glass: rgba(8, 6, 8, 0.94);
 }

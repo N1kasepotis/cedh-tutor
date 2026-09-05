@@ -168,6 +168,24 @@ function removeStorage(key, options = {}) {
   }
 }
 
+// 恢复损坏存档前保留原始值。只有备份成功，调用方才可开始新局。
+function backupStorage(key, backupKey, options = {}) {
+  const api = getStorageApi(options.api);
+  if (!api || typeof api.getStorageSync !== 'function' || !backupKey || backupKey === key) {
+    return { ok: false, error: storageError('storage_unavailable') };
+  }
+  try {
+    const original = api.getStorageSync(key);
+    const existing = api.getStorageSync(backupKey);
+    if (existing !== undefined && existing !== null && existing !== '') {
+      return { ok: false, error: storageError('backup_already_exists') };
+    }
+    return writeStorage(backupKey, { originalKey: key, original }, { ...options, api });
+  } catch (cause) {
+    return { ok: false, error: storageError('storage_read_failed', cause) };
+  }
+}
+
 module.exports = {
   STORAGE_MARKER,
   DEFAULT_SCHEMA_VERSION,
@@ -176,4 +194,5 @@ module.exports = {
   readStorage,
   writeStorage,
   removeStorage,
+  backupStorage,
 };
