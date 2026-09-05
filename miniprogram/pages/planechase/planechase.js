@@ -108,7 +108,7 @@ Page({
   decorateCard(index) {
     const card = P.cardAt(index);
     const art = buildCdnArt(card.id, card.stamp) || {};
-    return { ...card, art, folio: String(index + 1).padStart(2, '0'), artFailed: this.failedArt.has(card.id) };
+    return { ...card, art, artFailed: this.failedArt.has(card.id) };
   },
 
   syncView() {

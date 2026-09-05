@@ -2,11 +2,6 @@
   <particle-background palette="random"></particle-background>
 
   <view class="content-layer random-shell">
-    <button class="tool-entry-planechase" aria-label="竞逐时空：共享时空套牌、时空骰，打开牌桌" hover-class="pressable-active" hover-stay-time="120" bindtap="goPlanechase">
-      <view class="atlas-entry-kicker">PLANECHASE / 竞逐时空</view>
-      <view class="atlas-entry-main"><view class="atlas-entry-title">下一站，<view>未知时空。</view></view><text class="atlas-entry-arrow" aria-hidden="true">↗</text></view>
-      <view class="atlas-entry-footer"><text>共享套牌 · 时空骰 · 续局</text><text>打开牌桌 →</text></view>
-    </button>
     <view class="random-panel surface">
       <view class="panel-title">随机数</view>
       <view class="range-row">
@@ -95,6 +90,14 @@
       <view class="tool-entry-text">
         <view class="tool-entry-title">伊捷风暴</view>
         <view class="tool-entry-sub">Ral, Monsoon Mage</view>
+      </view>
+      <view class="tool-entry-arrow">›</view>
+    </view>
+
+    <view class="random-panel surface tool-entry tool-entry-planechase" aria-role="button" aria-label="竞逐时空：共享时空套牌与时空骰" hover-class="pressable-active" hover-stay-time="120" bindtap="goPlanechase">
+      <view class="tool-entry-text">
+        <view class="tool-entry-title">竞逐时空</view>
+        <view class="tool-entry-sub">共享时空套牌 · 时空骰</view>
       </view>
       <view class="tool-entry-arrow">›</view>
     </view>

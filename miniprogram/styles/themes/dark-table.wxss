@@ -1,4 +1,4 @@
-/* 暗色台面主题（tracker / random / playtest / cabbage / izzet 共用）：黑底 + 羊皮纸白 + 砖红点缀。
+/* 功能页共用暗色台面：黑色背景、浅色文字、半透明面板；各模块只覆盖语义强调色。
    页面样式只允许引用这里定义的变量；改主题色只改本文件。 */
 
 .tracker,
@@ -162,25 +162,9 @@
   --cedh-btn-secondary-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.12), inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
 }
 
-/* Planechase 入口与内页共用图鉴色板；信号黄沿用首页，混沌保留模块粉色。 */
-.planechase-page,
-.tool-entry-planechase {
-  --cedh-atlas-signal: #d0f03c;
-  --cedh-atlas-dark: #0c0f0b;
-  --cedh-atlas-paper: #efeadb;
-  --cedh-atlas-ink: #171916;
-  --cedh-atlas-rule-ink: #50564a;
-  --cedh-atlas-paper-line: #c9c8b7;
-  --cedh-atlas-chaos-paper: #e9dbe4;
-  --cedh-atlas-chaos-ink: #673659;
-}
-
-/* 实色台面与纸白规则页，避免长文本透叠。 */
+/* 固定操作栏和卡面弹层必须遮住背后文字；页面其余部分共用混沌工具主题。 */
 .planechase-page {
-  --cedh-text-soft: #b7b9ad;
-  --cedh-line: #343b30;
-  --cedh-line-strong: #5b6550;
-  --cedh-surface-solid: #151a12;
-  --cedh-image-placeholder: #1b2318;
-  --cedh-overlay-glass: rgba(8, 11, 7, 0.94);
+  --cedh-surface-solid: #151315;
+  --cedh-image-placeholder: #171317;
+  --cedh-overlay-glass: rgba(8, 6, 8, 0.94);
 }

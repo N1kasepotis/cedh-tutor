@@ -292,51 +292,17 @@
   border-color: rgba(var(--tool-entry-rgb), 0.34);
 }
 
-/* 图鉴封面与内页共用信号黄、纸白、直角网格。 */
+/* 与同组工具入口共用面板、标题、箭头；颜色继承混沌工具。 */
 .tool-entry-planechase {
-  width: 100%;
-  display: flex;
-  flex-direction: column;
-  gap: 18px;
-  margin: 0;
-  padding: 20px;
-  text-align: left;
-  color: var(--cedh-atlas-ink);
-  background: var(--cedh-atlas-signal);
-  border: 0;
-  border-radius: 2px;
+  background: linear-gradient(135deg, rgba(var(--module-accent-rgb), 0.14), var(--cedh-surface-raised) 58%);
+  border-color: var(--cedh-accent-line);
 }
-.atlas-entry-kicker {
-  font-family: var(--cedh-font-mono);
-  font-size: 11px;
-  letter-spacing: 0.06em;
-  line-height: 1.5;
+.tool-entry-planechase .tool-entry-title {
+  color: var(--cedh-accent-ink);
 }
-.atlas-entry-main, .atlas-entry-footer {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px;
+.tool-entry-planechase .tool-entry-arrow {
+  color: var(--cedh-accent);
 }
-.atlas-entry-title {
-  font-family: var(--cedh-font-serif);
-  font-size: 32px;
-  font-weight: 700;
-  line-height: 1.25;
-  letter-spacing: -0.03em;
-}
-.atlas-entry-arrow {
-  font-size: 64px;
-  line-height: 1;
-}
-.atlas-entry-footer {
-  border-top: 1px solid var(--cedh-atlas-ink);
-  padding-top: 12px;
-  font-size: 11px;
-  line-height: 1.6;
-  flex-wrap: wrap;
-}
-
 .tool-entry-cabbage .tool-entry-title {
   color: #bce8c9;
 }
