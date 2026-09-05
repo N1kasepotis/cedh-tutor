@@ -3,12 +3,11 @@
 /* 与混沌工具共用背景、面板和按钮 token；这里只定义内容布局。 */
 .session-title, .plane-name, .desk-title, .source-title, .meter-value { font-family: var(--cedh-font-serif); }
 .section-kicker, .rule-label, .source-id, .reveal-index, .note-index, .cost-value { font-family: var(--cedh-font-mono); }
-.planechase-page { padding-bottom: calc(176px + env(safe-area-inset-bottom)); color: var(--cedh-text); }
+.planechase-page { padding-bottom: calc(148px + env(safe-area-inset-bottom)); color: var(--cedh-text); }
 .tool-shell { max-width: 680px; margin: 0 auto; display: flex; flex-direction: column; gap: var(--cedh-space-6); }
 .session-header, .source-header, .console-heading, .turn-row, .inspect-header { display: flex; align-items: center; justify-content: space-between; gap: var(--cedh-space-3); }
 .session-heading { min-width: 0; }
 .session-title { font-size: 24px; font-weight: 400; line-height: 1.25; letter-spacing: -0.02em; }
-.session-subtitle { margin-top: var(--cedh-space-2); color: var(--cedh-text-soft); font-size: 12px; line-height: 1.5; }
 .setup-toggle { flex: 0 0 auto; }
 .session-meter { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--cedh-space-3); padding: var(--cedh-space-5); background: var(--cedh-surface-raised); }
 .meter-cell { display: flex; flex-direction: column; align-items: center; gap: var(--cedh-space-2); }
@@ -36,7 +35,6 @@
 .rule-label, .section-kicker { font-size: 12px; font-weight: 600; letter-spacing: 0.08em; line-height: 1.5; color: var(--cedh-text-soft); }
 .chaos-section { padding: var(--cedh-space-4); background: var(--cedh-accent-soft); border: 1rpx solid var(--cedh-accent-line); border-radius: var(--cedh-radius-2); display: flex; flex-direction: column; gap: var(--cedh-space-3); }
 .chaos-label { display: flex; align-items: center; gap: 6px; color: var(--cedh-accent-ink); }
-.chaos-symbol { font-size: 18px; line-height: 1; }
 .work-panel, .notice-panel { padding: var(--cedh-space-5); display: flex; flex-direction: column; gap: var(--cedh-space-3); }
 .notice-panel, .error-panel { border-color: var(--cedh-accent-line); }
 .error-panel .section-kicker { color: var(--cedh-accent-ink); }
@@ -47,16 +45,12 @@
 .count-chip { flex: 1; min-width: 44px; }
 .setup-divider { height: 1rpx; background: var(--cedh-line); margin: var(--cedh-space-2) 0; }
 .modifier-strip { display: flex; gap: var(--cedh-space-3); padding: var(--cedh-space-4); background: var(--cedh-accent-soft); border: 1rpx solid var(--cedh-accent-line); border-radius: var(--cedh-radius-2); }
-.modifier-symbol { font-size: 26px; line-height: 1.2; color: var(--cedh-accent-ink); }
 .pending-link { display: flex; justify-content: space-between; align-items: center; gap: var(--cedh-space-3); width: 100%; margin: 0; padding: var(--cedh-space-4); text-align: left; background: var(--cedh-accent-soft); color: var(--cedh-accent-ink); border: 1rpx solid var(--cedh-accent-line); border-radius: var(--cedh-radius-2); }
-.pending-link-hint { margin-top: 4px; font-size: 12px; line-height: 1.6; color: var(--cedh-text-soft); }
 .desk-heading { display: flex; flex-direction: column; gap: var(--cedh-space-3); }
 .desk-title { font-size: 24px; line-height: 1.3; font-weight: 400; }
 .active-reference { display: flex; align-items: center; flex-wrap: wrap; gap: 0 12px; padding-bottom: var(--cedh-space-3); border-bottom: var(--cedh-hairline); }
 .reference-label { color: var(--cedh-text-soft); font-size: 12px; }
 .reference-card, .reveal-name { min-width: 44px; min-height: 44px; margin: 0; padding: 10px 0; background: transparent; color: var(--cedh-text); border-radius: var(--cedh-radius-control-sm); font-size: 13px; line-height: 1.6; text-align: left; }
-.ready-note { display: flex; flex-direction: column; gap: var(--cedh-space-3); align-items: flex-start; padding: var(--cedh-space-4) 0; }
-.ready-mark { color: var(--cedh-accent-ink); font-size: 28px; line-height: 1; }
 .pending-source { padding: var(--cedh-space-5); display: flex; flex-direction: column; gap: var(--cedh-space-3); background: var(--cedh-surface-raised); }
 .source-kind { color: var(--cedh-accent-ink); font-size: 12px; }
 .source-id { color: var(--cedh-text-soft); font-size: 12px; }
@@ -88,11 +82,9 @@
 .planechase-page .card-art-credit { color: var(--cedh-text-soft); font-size: 10px; }
 .action-dock { position: fixed; left: 0; right: 0; bottom: 0; z-index: 10; padding: 10px var(--cedh-page-x) calc(12px + env(safe-area-inset-bottom)); background: var(--cedh-surface-solid); border-top: var(--cedh-hairline); }
 .dock-summary { display: flex; align-items: baseline; gap: 7px; margin: 0 auto 9px; max-width: 680px; font-size: 11px; line-height: 1.6; color: var(--cedh-text-soft); }
-.save-indicator { width: 5px; height: 5px; flex: 0 0 5px; border-radius: var(--cedh-radius-pill); background: var(--cedh-accent-ink); }
-.save-pending { background: var(--cedh-text); }
 .dock-buttons { display: flex; gap: var(--cedh-space-3); max-width: 680px; margin: 0 auto; }
-.pc-primary { flex: 1; min-width: 0; min-height: 62px; padding: 10px 12px; letter-spacing: 0; }
-.primary-copy { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.pc-primary { flex: 1; min-width: 0; min-height: 52px; padding: 10px 12px; letter-spacing: 0; }
+.primary-copy { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; }
 .primary-label { font-size: 14px; font-weight: 600; line-height: 1.4; }
 .primary-hint { font-size: 12px; font-weight: 400; line-height: 1.5; }
 .undo-button { flex: 0 0 64px; }

@@ -8,6 +8,8 @@
 
 预商业化审查与后续放行条件见 [docs/precommercial-review.md](docs/precommercial-review.md)；Planechase 的规则、恢复与验证记录见 [docs/planechase-review.md](docs/planechase-review.md)。竞逐时空的界面一致性、交互及验收记录见 [docs/planechase-atlas-design.md](docs/planechase-atlas-design.md)。
 
+竞逐时空文案遵循「每处提示只说明当前操作」：移除重复标题、装饰中点和底栏圆点，按钮使用简短动作词，掷骰费用在主按钮内并排显示。规则正文保持完整；响应时机、置底顺序及存档失败提示仍保留。
+
 ## 当前模块（13 页）
 
 1. **首页** `pages/index`

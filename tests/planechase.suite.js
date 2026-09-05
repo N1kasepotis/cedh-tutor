@@ -344,7 +344,7 @@ test('页面只加载一张横幅；网络失败由本地图鉴占位与完整�
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/planechase/planechase.wxml'), 'utf8');
   // 浏览卡文只需一份原画，离线占位不再额外请求低清卡面。
   assert.match(wxml, /class="art-placeholder"/, '缺少本地占位');
-  assert.match(wxml, /卡图暂不可用 · 卡文可离线阅读/, '失败时要说明卡文仍可用');
+  assert.match(wxml, /卡图不可用，卡文可离线阅读/, '失败时要说明卡文仍可用');
   assert.match(wxml, /src="\{\{item\.art\.artCrop\}\}"/, '缺少 art_crop 主图层');
   assert.equal((wxml.match(/<image[^>]*src="\{\{item\.art\./g) || []).length, 1);
   assert.match(wxml, /item\.staticLines/);

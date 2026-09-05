@@ -2,25 +2,26 @@
   <particle-background palette="random"></particle-background>
   <view class="content-layer tool-shell" aria-hidden="{{inspect ? true : false}}">
     <view class="session-header">
-      <view class="session-heading"><view class="session-title">共享时空套牌</view><view class="session-subtitle">当前时空与牌桌结算</view></view>
+      <view class="session-heading"><view class="session-title">共享时空套牌</view></view>
       <button class="pc-button setup-toggle {{setupOpen ? 'is-selected' : ''}}" hover-class="pressable-active" hover-stay-time="120" bindtap="toggleSetup" aria-expanded="{{setupOpen}}">{{setupOpen ? '收起设置' : '对局设置'}}</button>
     </view>
     <view wx:if="{{saveError}}" class="surface notice-panel error-panel" aria-role="alert">
-      <view class="section-kicker">存档保护</view><view class="panel-heading">{{recovery ? '需要恢复对局' : '保存未完成'}}</view><view class="body-copy">{{saveError}}</view>
+      <view class="panel-heading">{{recovery ? '恢复对局' : '保存失败'}}</view><view class="body-copy">{{saveError}}</view>
       <view class="action-row">
         <button class="pc-button accent-button" hover-class="pressable-active" hover-stay-time="120" bindtap="retrySave" disabled="{{saving}}">{{recovery ? '重试读取' : '重试保存'}}</button>
         <button wx:if="{{hasSession && !recovery}}" class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="cancelSave">取消本次操作</button>
         <button wx:if="{{recovery}}" class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="goBack">返回混沌工具</button>
-        <button wx:if="{{canRecover}}" class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="recoverNewGame" disabled="{{saving}}">备份原存档并开始新局</button>
+        <button wx:if="{{canRecover}}" class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="recoverNewGame" disabled="{{saving}}">备份并开新局</button>
       </view>
     </view>
     <block wx:if="{{hasSession}}">
       <view wx:if="{{setupOpen}}" class="surface work-panel setup-panel">
-        <view class="section-kicker">对局设置</view><view class="body-copy muted-copy">选择人数会开始新局，可撤销。MOC 官方简中 50 张；2 人局随机移出 1 张异象。</view>
+        <view class="section-kicker">对局人数</view><view class="body-copy muted-copy">更改人数或重新洗牌会开始新局，可撤销。</view>
         <view class="count-row"><button wx:for="{{playerCounts}}" wx:key="*this" class="pc-button count-chip {{playerCount === item ? 'is-selected' : ''}}" data-count="{{item}}" bindtap="changePlayerCount" hover-class="pressable-active" hover-stay-time="120" disabled="{{saving || saveError}}">{{item}} 人</button></view>
         <view wx:if="{{trimmedText}}" class="body-copy muted-copy">{{trimmedText}}</view>
-        <button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="restart" disabled="{{saving || saveError}}">重新洗牌开局 · 可撤销</button>
-        <view class="setup-divider"></view><view class="panel-heading">响应中的牌桌效应</view><view class="body-copy muted-copy">仅在牌张效应要求时使用。效应掷骰不会增加本回合的普通掷骰费用。</view>
+        <button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="restart" disabled="{{saving || saveError}}">重新洗牌</button>
+        <view class="body-copy muted-copy">MOC 简中套牌 50 张，双人局随机移出 1 张异象。开局翻牌不触发异能。</view>
+        <view class="setup-divider"></view><view class="panel-heading">牌张效应</view><view class="body-copy muted-copy">仅按牌张效应使用，效应掷骰不增加普通掷骰费用。</view>
         <view class="action-row">
           <button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="effectRoll" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">效应掷骰</button>
           <button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="manualPlaneswalk" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">效应换境</button>
@@ -36,78 +37,77 @@
         <button class="view-tab {{activeView === 'planes' ? 'is-active' : ''}}" aria-role="tab" aria-selected="{{activeView === 'planes'}}" aria-label="当前时空，{{planes.length}} 张" data-view="planes" bindtap="selectView" hover-class="pressable-active" hover-stay-time="120">当前时空<text class="tab-index">{{planes.length}}</text></button>
         <button class="view-tab {{activeView === 'work' ? 'is-active' : ''}}" aria-role="tab" aria-selected="{{activeView === 'work'}}" aria-label="结算台，{{pendingCount}} 项待处理" data-view="work" bindtap="selectView" hover-class="pressable-active" hover-stay-time="120">结算台<text class="tab-count {{pendingCount ? 'has-pending' : ''}}">{{pendingCount}}</text></button>
       </view>
-      <view wx:if="{{modifierOn}}" class="modifier-strip"><text class="modifier-symbol" aria-hidden="true">◎</text><view><view class="panel-heading">乙太混沦生效中</view><view class="body-copy muted-copy">空白视为混沌，直到从时空换出。追加时空不会结束此效应。</view></view></view>
+      <view wx:if="{{modifierOn}}" class="modifier-strip"><view><view class="panel-heading">乙太混沦生效中</view><view class="body-copy muted-copy">空白视为混沌，换出时空后结束。追加时空不影响此效应。</view></view></view>
       <view wx:if="{{actionError}}" class="surface notice-panel" aria-role="alert"><view class="body-copy">{{actionError}}</view><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="dismissActionError">知道了</button></view>
       <view wx:if="{{activeView === 'planes'}}" class="plane-list">
-        <button wx:if="{{phase !== 'ready'}}" class="pending-link" hover-class="pressable-active" hover-stay-time="120" bindtap="showWork"><view><view class="panel-heading">{{phaseLabel}}</view><view class="pending-link-hint">查看结算台，完成后继续掷骰</view></view><text aria-hidden="true">↗</text></button>
+        <button wx:if="{{phase !== 'ready'}}" class="pending-link" hover-class="pressable-active" hover-stay-time="120" bindtap="showWork"><view class="panel-heading">{{phaseLabel}}</view><text>去结算</text></button>
         <view wx:for="{{planes}}" wx:key="id" class="plane-card surface">
           <button class="plane-art" hover-class="pressable-active" hover-stay-time="120" data-index="{{item.index}}" bindtap="openInspect" aria-label="查看{{item.name}}完整卡面与文字">
-            <view class="art-placeholder" aria-hidden="true"><text class="placeholder-label">{{item.artFailed ? '卡图暂不可用 · 卡文可离线阅读' : '正在加载时空卡图'}}</text></view>
+            <view class="art-placeholder" aria-hidden="true"><text class="placeholder-label">{{item.artFailed ? '卡图不可用，卡文可离线阅读' : '卡图加载中'}}</text></view>
             <image wx:if="{{!item.artFailed}}" class="plane-art-main" src="{{item.art.artCrop}}" mode="aspectFill" lazy-load="{{true}}" data-id="{{item.id}}" binderror="hidePlaneArt"></image>
-            <text class="art-caption">完整卡面 ↗</text>
+            <text class="art-caption">查看卡面</text>
           </button>
           <view class="plane-text">
             <view class="plane-heading"><view class="plane-name">{{item.name}}</view><view class="plane-type">{{item.type}}</view></view>
             <view class="rule-section" wx:if="{{item.staticLines.length}}"><view class="rule-label">{{item.isPhenomenon ? '遭遇异象' : '时空效应'}}</view><view wx:for="{{item.staticLines}}" wx:for-item="line" wx:key="*this" class="body-copy">{{line}}</view></view>
-            <view class="chaos-section" wx:if="{{item.chaosLines.length}}"><view class="rule-label chaos-label"><text class="chaos-symbol" aria-hidden="true">◎</text>混沌效应</view><view wx:for="{{item.chaosLines}}" wx:for-item="line" wx:key="*this" class="body-copy">{{line}}</view></view>
+            <view class="chaos-section" wx:if="{{item.chaosLines.length}}"><view class="rule-label chaos-label">混沌效应</view><view wx:for="{{item.chaosLines}}" wx:for-item="line" wx:key="*this" class="body-copy">{{line}}</view></view>
           </view>
         </view>
       </view>
       <view wx:else id="pending-work" class="resolution-desk">
-        <view class="desk-heading"><view class="section-kicker">待结算事项</view><view class="desk-title">{{phase === 'ready' ? '一切就绪。' : phaseLabel}}</view><view class="body-copy muted-copy">{{phaseHint}}</view></view>
+        <view class="desk-heading"><view class="desk-title">{{phaseLabel}}</view><view wx:if="{{phaseHint}}" class="body-copy muted-copy">{{phaseHint}}</view></view>
         <view class="active-reference"><text class="reference-label">当前</text><button wx:for="{{planes}}" wx:key="id" class="reference-card" hover-class="pressable-active" hover-stay-time="120" data-index="{{item.index}}" bindtap="openInspect">{{item.name}} ↗</button></view>
-        <view wx:if="{{phase === 'ready'}}" class="ready-note"><view class="ready-mark" aria-hidden="true">✓</view><view class="panel-heading">没有待处理事项</view><view class="body-copy muted-copy">牌局已保存在本机。你可以切回当前时空，或直接掷骰。</view></view>
         <block wx:if="{{phase === 'resolve'}}">
           <view wx:for="{{triggers}}" wx:key="id" class="pending-source surface">
-            <view class="source-header"><text class="source-kind">{{item.label}}</text><text class="source-id">#{{item.id}}</text></view>
+            <view class="source-header"><text class="source-kind">{{item.label}}</text><text wx:if="{{triggers.length > 1}}" class="source-id">{{index + 1}}</text></view>
             <view class="source-title">{{item.name}}</view><view wx:for="{{item.lines}}" wx:for-item="line" wx:key="*this" class="body-copy">{{line}}</view>
-            <button class="pc-button source-resolve" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="resolveTrigger" disabled="{{saving || saveError}}">{{item.actionLabel}}<text aria-hidden="true">→</text></button>
-            <button class="source-options" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="toggleTriggerOptions" aria-expanded="{{expandedTrigger === item.id}}">反击 / 复制<text aria-hidden="true">{{expandedTrigger === item.id ? '−' : '+'}}</text></button>
-            <view wx:if="{{expandedTrigger === item.id}}" class="action-row"><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="preventTrigger" disabled="{{saving || saveError}}">被反击／阻止</button><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="copyTrigger" disabled="{{saving || saveError}}">添加触发副本</button></view>
+            <button class="pc-button source-resolve" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="resolveTrigger" disabled="{{saving || saveError}}">{{item.actionLabel}}</button>
+            <button class="source-options" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="toggleTriggerOptions" aria-expanded="{{expandedTrigger === item.id}}">反击与复制<text aria-hidden="true">{{expandedTrigger === item.id ? '−' : '+'}}</text></button>
+            <view wx:if="{{expandedTrigger === item.id}}" class="action-row"><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="preventTrigger" disabled="{{saving || saveError}}">已被反击或阻止</button><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="copyTrigger" disabled="{{saving || saveError}}">复制触发</button></view>
           </view>
         </block>
-        <view wx:elif="{{phase === 'exit'}}" class="surface notice-panel"><view class="panel-heading">该异象的触发已处理</view><view class="body-copy">相关触发都已离开堆叠后，点击底部按钮时空换出。被反击也会在此步骤换出。</view></view>
+        <view wx:elif="{{phase === 'exit'}}" class="surface notice-panel"><view class="body-copy">确认相关触发均已离开堆叠后换出。触发被反击也需换出。</view></view>
         <view wx:elif="{{phase === 'reveal'}}" class="surface work-panel reveal-panel">
           <view class="panel-heading">{{revealLabel}}</view>
           <view class="reveal-register"><view wx:for="{{revealed}}" wx:key="index" class="revealed-row"><text class="reveal-index">{{index + 1}}</text><button class="reveal-name" hover-class="pressable-active" hover-stay-time="120" data-index="{{item.index}}" bindtap="openInspect">{{item.name}} ↗</button><text class="reveal-kind">{{item.isPhenomenon ? '异象' : '时空'}}</text></view></view>
-          <view wx:if="{{exitOrder.length > 1}}" class="order-heading"><view class="panel-heading">先放入 · 换出的时空</view><view class="body-copy muted-copy">先置底换出的时空，再放展示的其他牌。上方先被抽到。</view></view>
+          <view wx:if="{{exitOrder.length > 1}}" class="order-heading"><view class="panel-heading">换出时空的顺序</view><view class="body-copy muted-copy">先置底换出的时空，再放展示牌。上方先抽到。</view></view>
           <view wx:if="{{exitOrder.length > 1}}" wx:for="{{exitOrder}}" wx:key="index" class="order-row">
-            <text class="order-name">{{index + 1}}. {{item.name}}</text>
+            <text class="reveal-index">{{index + 1}}</text><text class="order-name">{{item.name}}</text>
             <button class="pc-button order-button" hover-class="pressable-active" hover-stay-time="120" data-group="exit" data-index="{{item.index}}" data-delta="-1" bindtap="moveBottomCard" disabled="{{!item.canUp || saving || saveError}}" aria-label="上移{{item.name}}">↑</button>
             <button class="pc-button order-button" hover-class="pressable-active" hover-stay-time="120" data-group="exit" data-index="{{item.index}}" data-delta="1" bindtap="moveBottomCard" disabled="{{!item.canDown || saving || saveError}}" aria-label="下移{{item.name}}">↓</button>
           </view>
-          <view wx:if="{{bottomOrder.length}}" class="order-heading"><view class="panel-heading">置底顺序</view><view class="body-copy muted-copy">上方先被抽到。用箭头调整后，点击底部按钮结算。</view></view>
+          <view wx:if="{{bottomOrder.length}}" class="order-heading"><view class="panel-heading">置底顺序</view><view class="body-copy muted-copy">上方先抽到，可用箭头调整</view></view>
           <view wx:for="{{bottomOrder}}" wx:key="index" class="order-row">
-            <text class="order-name">{{index + 1}}. {{item.name}}</text>
+            <text class="reveal-index">{{index + 1}}</text><text class="order-name">{{item.name}}</text>
             <button class="pc-button order-button" hover-class="pressable-active" hover-stay-time="120" data-index="{{item.index}}" data-delta="-1" bindtap="moveBottomCard" disabled="{{!item.canUp || saving || saveError}}" aria-label="上移{{item.name}}">↑</button>
             <button class="pc-button order-button" hover-class="pressable-active" hover-stay-time="120" data-index="{{item.index}}" data-delta="1" bindtap="moveBottomCard" disabled="{{!item.canDown || saving || saveError}}" aria-label="下移{{item.name}}">↓</button>
           </view>
         </view>
-        <view wx:if="{{tableNotes.length}}" class="surface notice-panel table-notes"><view class="section-kicker">牌桌待核对</view><view wx:for="{{tableNotes}}" wx:key="*this" class="table-note"><text class="note-index">{{index + 1}}</text><view class="body-copy">{{item}}</view></view><view class="body-copy muted-copy">请在实体牌桌处理这些触发。树种核心的进场触发已单独列入待结算能力。</view><button wx:if="{{phase !== 'notes'}}" class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="acknowledgeNotes" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">这些牌桌事项已处理</button></view>
+        <view wx:if="{{tableNotes.length}}" class="surface notice-panel table-notes"><view wx:if="{{phase !== 'notes'}}" class="section-kicker">在牌桌处理</view><view wx:for="{{tableNotes}}" wx:key="*this" class="table-note"><text class="note-index">{{index + 1}}</text><view class="body-copy">{{item}}</view></view><button wx:if="{{phase !== 'notes'}}" class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="acknowledgeNotes" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">已处理</button></view>
       </view>
       <view class="turn-console surface">
         <view class="console-heading"><text class="section-kicker">时空骰</text><text class="console-cost">下次费用 <text class="cost-value">{{rollCost}}</text></text></view>
         <view class="turn-row">
-          <view class="die-display"><view class="die-tile die-{{dieFace}}" aria-hidden="true">{{dieFace === 'chaos' ? '◎' : dieFace === 'planeswalk' ? '↗' : dieFace === 'blank' ? '—' : '·'}}</view><view><view class="status-detail">最近掷骰</view><view class="die-result">{{dieLabel}}</view></view></view>
-          <button class="pc-button next-turn" hover-class="pressable-active" hover-stay-time="120" bindtap="nextTurn" disabled="{{phase !== 'ready' || saving || saveError}}"><text>新回合</text><text class="next-turn-hint">费用归零 ↗</text></button>
+          <view class="die-display"><view wx:if="{{dieFace !== 'idle'}}" class="die-tile die-{{dieFace}}" aria-hidden="true">{{dieFace === 'chaos' ? '◎' : dieFace === 'planeswalk' ? '↗' : '—'}}</view><view><view wx:if="{{dieFace !== 'idle'}}" class="status-detail">上次结果</view><view class="die-result">{{dieLabel}}</view></view></view>
+          <button class="pc-button next-turn" hover-class="pressable-active" hover-stay-time="120" bindtap="nextTurn" disabled="{{phase !== 'ready' || saving || saveError}}"><text>新回合</text><text class="next-turn-hint">费用归零</text></button>
         </view>
-        <view class="console-rule">普通掷骰：自己的行动阶段、堆叠为空且拥有优先权时，由玩家支付费用后进行。</view>
+        <view class="console-rule">普通掷骰须在自己的行动阶段、堆叠为空且有优先权时，支付费用后进行。</view>
       </view>
     </block>
-    <view class="card-art-credit">卡面图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师所有</view>
+    <view class="card-art-credit">卡图来自 Scryfall，版权归 Wizards of the Coast 及画师所有</view>
   </view>
   <view wx:if="{{hasSession}}" class="action-dock" aria-hidden="{{inspect ? true : false}}">
-    <view class="dock-summary"><text class="save-indicator {{saveError ? 'save-pending' : ''}}" aria-hidden="true"></text><text>{{saveError ? '操作尚未提交 · 请先处理保存问题' : lastAction}}</text></view>
+    <view class="dock-summary"><text>{{saveError ? '请先处理保存问题' : lastAction}}</text></view>
     <view class="dock-buttons">
-      <button class="primary-button pc-primary" hover-class="pressable-active" hover-stay-time="120" data-revision="{{primaryRevision}}" bindtap="primaryAction" disabled="{{saving || saveError}}"><view class="primary-copy"><text class="primary-label">{{primaryLabel}}</text><text class="primary-hint">{{primaryHint}}</text></view></button>
+      <button class="primary-button pc-primary" hover-class="pressable-active" hover-stay-time="120" data-revision="{{primaryRevision}}" bindtap="primaryAction" disabled="{{saving || saveError}}"><view class="primary-copy"><text class="primary-label">{{primaryLabel}}</text><text wx:if="{{primaryHint}}" class="primary-hint">{{primaryHint}}</text></view></button>
       <button class="pc-button undo-button" hover-class="pressable-active" hover-stay-time="120" bindtap="undo" disabled="{{!canUndo || saving || saveError}}">撤销</button>
     </view>
   </view>
   <view wx:if="{{inspect}}" class="inspect-mask" bindtap="closeInspect" catchtouchmove="stopPropagation">
     <view class="inspect-panel" catchtap="stopPropagation" aria-role="dialog" aria-label="{{inspect.name}}完整卡面">
-      <view class="inspect-header"><view><view class="section-kicker">完整卡面与规则</view><text class="panel-heading">{{inspect.name}}</text></view><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="closeInspect" aria-label="关闭卡面">关闭</button></view>
+      <view class="inspect-header"><view><text class="panel-heading">{{inspect.name}}</text></view><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="closeInspect" aria-label="关闭卡面">关闭</button></view>
       <scroll-view scroll-y="{{true}}" class="inspect-scroll">
-        <view class="inspect-art"><image wx:if="{{!inspectFailed}}" class="inspect-card" src="{{inspect.art.normal}}" mode="aspectFit" lazy-load="{{true}}" data-id="{{inspect.id}}" binderror="failInspect"></image><view wx:else class="inspect-fallback"><view class="body-copy">卡图暂时无法加载，下方文字仍可阅读。</view><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="retryInspect">重试卡图</button></view></view>
+        <view class="inspect-art"><image wx:if="{{!inspectFailed}}" class="inspect-card" src="{{inspect.art.normal}}" mode="aspectFit" lazy-load="{{true}}" data-id="{{inspect.id}}" binderror="failInspect"></image><view wx:else class="inspect-fallback"><view class="body-copy">卡图不可用，仍可阅读下方卡文</view><button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="retryInspect">重试卡图</button></view></view>
         <view class="inspect-text"><view class="body-copy muted-copy">{{inspect.type}}</view><view class="body-copy rules-text">{{inspect.text}}</view></view>
       </scroll-view>
     </view>

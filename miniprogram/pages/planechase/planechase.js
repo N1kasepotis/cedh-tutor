@@ -5,8 +5,8 @@ const { setKeepScreenOn } = require('../../utils/keep-screen-on');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, writeStorage, backupStorage } = require('../../utils/storage');
 const STORAGE_KEY = 'planechaseState';
-const PHASE_LABELS = { ready: '可以继续掷骰', resolve: '能力待结算', exit: '异象待换出', reveal: '处理展示牌', notes: '牌桌事项待处理' };
-const REVEAL_LABELS = { merge: '同时换入两张时空', append: '追加时空，保留当前时空', echo: '引发展示牌的混沌，全部置底', leave: '全部换出，按指定顺序置底' };
+const PHASE_LABELS = { ready: '暂无待结算事项', resolve: '能力待结算', exit: '异象待换出', reveal: '处理展示牌', notes: '处理牌桌效应' };
+const REVEAL_LABELS = { merge: '同时换入两张时空', append: '追加时空', echo: '展示牌置底并引发混沌', leave: '全部换出并置底' };
 const FACE_LABELS = { blank: '空白', chaos: '混沌', planeswalk: '换境' };
 
 Page({
@@ -66,7 +66,7 @@ Page({
     } catch (error) { saved = { ok: false }; }
     if (!saved.ok) {
       this.pendingCommit = candidate;
-      this.setData({ saving: false, saveError: '本次操作尚未保存，牌局没有推进。请重试保存或取消本次操作。' });
+      this.setData({ saving: false, saveError: '牌局未推进，请重试或取消本次操作。' });
       return false;
     }
     this.session = candidate;
@@ -80,7 +80,7 @@ Page({
     if (!this.session || this.pendingCommit || this.data.recovery || this.data.saving || this.data.inspect) return;
     const candidate = S.transition(this.session, action);
     if (candidate) { this.setData({ actionError: '' }); this.commit(candidate); }
-    else this.setData({ actionError: '此步骤暂时无法执行。请先处理现有待结算事项，或撤销回到上一步。' });
+    else this.setData({ actionError: '请先完成待结算事项，或撤销上一步。' });
   },
 
   retrySave() {
@@ -122,11 +122,9 @@ Page({
     // 结算步骤变化时展示实际待处理内容；浏览卡文不提交牌局，也不改变撤销记录。
     const activeView = !this.data.hasSession || phase !== this.data.phase
       ? phase === 'ready' ? 'planes' : 'work' : this.data.activeView;
-    const phaseHint = { ready: '确认优先权后，可进行本回合的下一次普通掷骰。',
-      resolve: '按实际堆叠顺序选择能力；响应操作可在设置中记录。',
-      exit: '相关触发已离开堆叠，接下来从异象换出。',
-      reveal: '查看展示结果，并确认牌库底的顺序。',
-      notes: '请先在实体牌桌处理下列效应。' }[phase];
+    const phaseHint = { ready: '可查看当前时空或继续掷骰',
+      resolve: '处理响应后，按堆叠顺序结算',
+      exit: '', reveal: '', notes: '请在牌桌完成下列效应' }[phase];
     const orderedCards = (indices) => indices.map((index, position, all) => ({ index, name: P.cardAt(index).name, canUp: position > 0, canDown: position < all.length - 1 }));
     this.setData({
       hasSession: true, phase, phaseLabel: PHASE_LABELS[phase], phaseHint, activeView,
@@ -137,23 +135,24 @@ Page({
       playerCount: game.playerCount, deckLeft: game.planarDeck.length,
       rollCost: P.rollCost(game), dieFace: roll ? roll.face : 'idle',
       dieLabel: roll ? FACE_LABELS[roll.face] + (roll.modified ? '（空白改判）' : '') : '尚未掷骰',
-      lastAction: session.lastAction, canUndo: Boolean(session.undo),
+      // 旧存档也移除装饰分隔点；只调整显示，不重写对局。
+      lastAction: session.lastAction.replace(/ · /g, '，'), canUndo: Boolean(session.undo),
       modifierOn: game.dieModifier === 'blankIsChaos',
       tableNotes: session.tableNotes,
-      trimmedText: game.trimmed.length ? `${game.playerCount} 人局异象上限 ${game.limits.maxPhenomena} 张，本局移出：${game.trimmed.join('、')}` : '',
+      trimmedText: game.trimmed.length ? `本局移出：${game.trimmed.join('、')}` : '',
       canLeavePhenomenon: S.canLeavePhenomenon(session),
       triggers: session.triggers.map((source) => {
         const card = P.cardAt(source.cardIndex);
         const kind = P.planarActionFor(source.cardIndex);
         const isWalk = source.kind === 'walk';
         const isEntry = source.kind === 'entryChaos';
-        return { ...source, name: isWalk ? '时空骰 · 换境触发' : card.name,
+        return { ...source, name: isWalk ? '时空骰' : card.name,
           label: isWalk ? '换境' : isEntry ? '进场触发' : source.kind === 'chaos' ? '混沌' : '遭遇触发',
-          lines: isWalk ? ['先处理牌桌响应；此触发成功结算后才会换境。']
+          lines: isWalk ? ['此触发结算后换境。']
             : isEntry ? card.staticLines : source.kind === 'chaos' ? card.chaosLines : card.staticLines,
           actionLabel: isWalk ? '结算换境' : isEntry ? '结算并引发混沌'
-            : kind === 'append' ? '展示并追加时空' : kind === 'echo' ? '展示时空，引发其混沌'
-              : kind === 'merge' ? '展示至两张时空' : '此能力已结算' };
+            : kind === 'append' ? '展示下一时空' : kind === 'echo' ? '展示下一时空'
+              : kind === 'merge' ? '展示两张时空' : '已结算' };
       }),
       revealed: reveal ? reveal.indices.map((index) => this.decorateCard(index)) : [],
       bottomOrder: reveal ? orderedCards(reveal.bottomOrder) : [],
@@ -170,10 +169,9 @@ Page({
     const onlyTrigger = phase === 'resolve' && this.data.triggers.length === 1 ? this.data.triggers[0] : null;
     this.setData({
       primaryRevision: this.data.primaryRevision + 1,
-      primaryLabel: browsePending ? '前往结算台' : onlyTrigger ? onlyTrigger.actionLabel : { ready: '掷时空骰', resolve: '选择待结算能力',
-        exit: '从此异象换出', reveal: '确认顺序并结算', notes: '牌桌事项已处理' }[phase],
-      primaryHint: phase === 'ready' ? `支付 ${rollCost} 点法术力` : browsePending ? this.data.phaseLabel
-        : onlyTrigger ? '确认牌桌响应已处理' : phase === 'resolve' ? '点击对应能力的结算按钮' : '确认牌桌处理后继续',
+      primaryLabel: browsePending ? '前往结算台' : onlyTrigger ? onlyTrigger.actionLabel : { ready: '掷时空骰', resolve: '选择能力',
+        exit: '换出异象', reveal: '确认并结算', notes: '已处理' }[phase],
+      primaryHint: phase === 'ready' ? rollCost ? `${rollCost} 法术力` : '免费' : '',
     });
   },
   selectView(event) {

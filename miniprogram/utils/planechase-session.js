@@ -39,7 +39,7 @@ function isGame(game) {
 function frameOf(session) { const frame = copy(session); delete frame.undo; return frame; }
 function createSession(playerCount = 4, rng = Math.random) {
   return { game: P.createGame(PLAYER_COUNTS.includes(playerCount) ? playerCount : 4, rng),
-    triggers: [], nextTrigger: 1, visit: 1, reveal: null, lastAction: '新对局 · 开局翻牌不触发异能',
+    triggers: [], nextTrigger: 1, visit: 1, reveal: null, lastAction: '新对局已开始',
     tableNotes: [], undo: null };
 }
 function isTrigger(source, nextId, visit) {
@@ -189,8 +189,8 @@ function transition(session, action, rng = Math.random) {
       const result = P.rollPlanarDie(next.game, rng, { effect: action.effect === true });
       if (result.face === 'planeswalk') addTrigger(next, 'walk');
       if (result.face === 'chaos') addChaos(next, next.game.activePlanes);
-      next.lastAction = (action.effect ? '效应掷骰' : '掷骰支付 ' + result.cost) + ' · '
-        + { blank: '空白', chaos: '混沌', planeswalk: '换境触发' }[result.face];
+      next.lastAction = (action.effect ? '效应掷骰：' : result.cost ? '支付 ' + result.cost + ' 法术力，掷出' : '免费掷出')
+        + { blank: '空白', chaos: '混沌', planeswalk: '换境' }[result.face];
       next.tableNotes = next.tableNotes.concat(next.game.activePlanes.flatMap((index) => P.cardAt(index).staticLines.filter((line) => /每当你掷时空骰/.test(line))));
       break;
     }
@@ -223,23 +223,23 @@ function transition(session, action, rng = Math.random) {
         : source.kind === 'entryChaos' ? 'entryChaos' : P.planarActionFor(source.cardIndex);
       if (action.prevented) {
         removeTrigger(next, source.id);
-        next.lastAction = '此触发已被反击／阻止 · 掷骰次数保留';
+        next.lastAction = '触发已被反击或阻止，掷骰次数保留';
       } else if (kind === 'walk') {
         beginWalk(next, source.id);
       } else if (kind === 'entryChaos') {
         removeTrigger(next, source.id);
         addChaos(next, next.game.activePlanes);
-        next.lastAction = '树种核心的进场触发已结算 · 当前时空引发混沌';
+        next.lastAction = '进场触发已结算，当前时空引发混沌';
       } else if (['append', 'echo', 'merge'].includes(kind)) {
         const indices = P.revealUntilPlanes(next.game, kind === 'merge' ? 2 : 1);
         next.reveal = { kind, sourceId: source.id, indices,
           bottomOrder: kind === 'echo' ? indices.slice() : indices.filter((index) => !isPlane(index)),
           exitOrder: kind === 'merge' ? before.slice() : [] };
-        next.lastAction = '展示牌等待按指定顺序处理';
+        next.lastAction = '请确认置底顺序';
       } else {
         if (source.kind === 'encounter' && kind === 'aether') next.game.dieModifier = 'blankIsChaos';
         removeTrigger(next, source.id);
-        next.lastAction = P.cardAt(source.cardIndex).name + '的此项能力已结算';
+        next.lastAction = P.cardAt(source.cardIndex).name + '的能力已结算';
       }
       break;
     }
@@ -271,13 +271,13 @@ function transition(session, action, rng = Math.random) {
       }
       removeTrigger(next, reveal.sourceId);
       next.reveal = null;
-      next.lastAction = reveal.kind === 'echo' ? '展示牌已置底 · 处理该时空的混沌' : '展示与换境步骤已完成';
+      next.lastAction = reveal.kind === 'echo' ? '展示牌已置底，待结算混沌' : '展示与换境已完成';
       noteTransition(next, before);
       break;
     }
     case 'turn':
       if (phase !== 'ready') return null;
-      P.endTurn(next.game); next.lastAction = '新回合 · 掷骰费用归零'; next.tableNotes = [];
+      P.endTurn(next.game); next.lastAction = '新回合，掷骰费用归零'; next.tableNotes = [];
       break;
     case 'acknowledgeNotes':
       if (phase === 'reveal' || !next.tableNotes.length) return null;
