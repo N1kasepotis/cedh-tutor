@@ -1,5 +1,5 @@
 <view class="page planechase-page">
-  <particle-background palette="random"></particle-background>
+  <view class="planechase-backdrop" aria-hidden="true"><particle-background palette="random"></particle-background></view>
   <view class="content-layer tool-shell" aria-hidden="{{inspect ? true : false}}">
     <view class="session-header">
       <view class="session-heading"><view class="session-title">共享时空套牌</view></view>
@@ -55,7 +55,7 @@
         </view>
       </view>
       <view wx:else id="pending-work" class="resolution-desk">
-        <view class="desk-heading"><view class="desk-title">{{phaseLabel}}</view><view wx:if="{{phaseHint}}" class="body-copy muted-copy">{{phaseHint}}</view></view>
+        <view class="desk-heading"><view class="desk-title">{{phaseLabel}}</view><view wx:if="{{phaseHint}}" class="desk-hint">{{phaseHint}}</view></view>
         <view class="active-reference"><text class="reference-label">当前</text><button wx:for="{{planes}}" wx:key="id" class="reference-card" hover-class="pressable-active" hover-stay-time="120" data-index="{{item.index}}" bindtap="openInspect">{{item.name}} ↗</button></view>
         <block wx:if="{{phase === 'resolve'}}">
           <view wx:for="{{triggers}}" wx:key="id" class="pending-source surface">
@@ -88,10 +88,10 @@
       <view class="turn-console surface">
         <view class="console-heading"><text class="section-kicker">时空骰</text><text class="console-cost">下次费用 <text class="cost-value">{{rollCost}}</text></text></view>
         <view class="turn-row">
-          <view class="die-display"><view wx:if="{{dieFace !== 'idle'}}" class="die-tile die-{{dieFace}}" aria-hidden="true">{{dieFace === 'chaos' ? '◎' : dieFace === 'planeswalk' ? '↗' : '—'}}</view><view><view wx:if="{{dieFace !== 'idle'}}" class="status-detail">上次结果</view><view class="die-result">{{dieLabel}}</view></view></view>
+          <view class="die-display"><view wx:if="{{dieFace !== 'idle'}}" class="die-tile die-{{dieFace}}" aria-hidden="true">{{dieFace === 'chaos' ? '◎' : dieFace === 'planeswalk' ? '↗' : '—'}}</view><view class="die-copy"><view wx:if="{{dieFace !== 'idle'}}" class="status-detail">上次结果</view><view class="die-result">{{dieLabel}}</view><view wx:if="{{dieModified}}" class="status-detail">空白改判</view></view></view>
           <button class="pc-button next-turn" hover-class="pressable-active" hover-stay-time="120" bindtap="nextTurn" disabled="{{phase !== 'ready' || saving || saveError}}"><text>新回合</text><text class="next-turn-hint">费用归零</text></button>
         </view>
-        <view class="console-rule">普通掷骰须在自己的行动阶段、堆叠为空且有优先权时，支付费用后进行。</view>
+        <view class="console-rule">自己的行动阶段，堆叠为空且有优先权时可付费掷骰。</view>
       </view>
     </block>
     <view class="card-art-credit">卡图来自 Scryfall，版权归 Wizards of the Coast 及画师所有</view>

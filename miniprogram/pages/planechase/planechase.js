@@ -5,14 +5,14 @@ const { setKeepScreenOn } = require('../../utils/keep-screen-on');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, writeStorage, backupStorage } = require('../../utils/storage');
 const STORAGE_KEY = 'planechaseState';
-const PHASE_LABELS = { ready: '暂无待结算事项', resolve: '能力待结算', exit: '异象待换出', reveal: '处理展示牌', notes: '处理牌桌效应' };
+const PHASE_LABELS = { ready: '暂无待结算事项', resolve: '能力待结算', exit: '异象待换出', reveal: '处理展示牌', notes: '牌桌待确认' };
 const REVEAL_LABELS = { merge: '同时换入两张时空', append: '追加时空', echo: '展示牌置底并引发混沌', leave: '全部换出并置底' };
 const FACE_LABELS = { blank: '空白', chaos: '混沌', planeswalk: '换境' };
 
 Page({
   data: {
     planes: [], phase: 'ready', phaseLabel: '', playerCount: 4, deckLeft: 0,
-    rollCost: 0, dieFace: 'idle', dieLabel: '尚未掷骰', lastAction: '',
+    rollCost: 0, dieFace: 'idle', dieLabel: '尚未掷骰', dieModified: false, lastAction: '',
     primaryLabel: '掷时空骰', canUndo: false, setupOpen: false, playerCounts: S.PLAYER_COUNTS,
     modifierOn: false, trimmedText: '', tableNotes: [], triggers: [], revealed: [],
     bottomOrder: [], exitOrder: [], canLeavePhenomenon: false, revealLabel: '', inspect: null, inspectFailed: false,
@@ -124,7 +124,7 @@ Page({
       ? phase === 'ready' ? 'planes' : 'work' : this.data.activeView;
     const phaseHint = { ready: '可查看当前时空或继续掷骰',
       resolve: '处理响应后，按堆叠顺序结算',
-      exit: '', reveal: '', notes: '请在牌桌完成下列效应' }[phase];
+      exit: '', reveal: '', notes: '核对下列事项后继续' }[phase];
     const orderedCards = (indices) => indices.map((index, position, all) => ({ index, name: P.cardAt(index).name, canUp: position > 0, canDown: position < all.length - 1 }));
     this.setData({
       hasSession: true, phase, phaseLabel: PHASE_LABELS[phase], phaseHint, activeView,
@@ -134,7 +134,7 @@ Page({
       planes: game.activePlanes.map((index) => this.decorateCard(index)),
       playerCount: game.playerCount, deckLeft: game.planarDeck.length,
       rollCost: P.rollCost(game), dieFace: roll ? roll.face : 'idle',
-      dieLabel: roll ? FACE_LABELS[roll.face] + (roll.modified ? '（空白改判）' : '') : '尚未掷骰',
+      dieLabel: roll ? FACE_LABELS[roll.face] : '尚未掷骰', dieModified: Boolean(roll && roll.modified),
       // 旧存档也移除装饰分隔点；只调整显示，不重写对局。
       lastAction: session.lastAction.replace(/ · /g, '，'), canUndo: Boolean(session.undo),
       modifierOn: game.dieModifier === 'blankIsChaos',
