@@ -66,7 +66,7 @@ Page({
     } catch (error) { saved = { ok: false }; }
     if (!saved.ok) {
       this.pendingCommit = candidate;
-      this.setData({ saving: false, saveError: '牌局未推进，请重试或取消本次操作。' });
+      this.setData({ saving: false, saveError: '牌局未推进，请重试或取消本次操作。' }, () => this.scrollToSaveNotice());
       return false;
     }
     this.session = candidate;
@@ -188,6 +188,10 @@ Page({
   scrollToViews() {
     if (this.unloaded || this.data.inspect) return;
     if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ selector: '#atlas-views', duration: 0, fail: () => {} });
+  },
+  scrollToSaveNotice() {
+    if (this.unloaded || this.data.inspect || !this.data.saveError) return;
+    if (typeof wx.pageScrollTo === 'function') wx.pageScrollTo({ selector: '#save-notice', duration: 0, fail: () => {} });
   },
   primaryAction(event) {
     if (this.data.inspect || this.data.saving || this.data.saveError) return;

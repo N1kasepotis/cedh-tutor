@@ -448,6 +448,7 @@ test('page：写盘失败不推进牌局；重试保存相同候选，不重新�
   page.rollDie();
   assert.deepEqual(page.session, before);
   assert.ok(page.data.saveError);
+  assert.equal(harness.flags.scrollTarget, '#save-notice', '失败后应将重试与取消操作带入视口');
   page.rollDie();
   assert.equal(harness.flags.draws, 1);
   harness.flags.failWrite = false;
