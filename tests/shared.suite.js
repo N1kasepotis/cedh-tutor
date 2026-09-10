@@ -565,7 +565,7 @@ test('WXSS 不得留下 WXML 与 JS 都够不着的孤儿样式', () => {
   const walk = (dir) => {
     fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
       const full = path.join(dir, entry.name);
-      if (entry.isDirectory()) walk(full);
+      if (entry.isDirectory() && entry.name !== 'node_modules') walk(full);
       else files.push(full);
     });
   };
@@ -662,12 +662,13 @@ test('README 的基线数字与真值一致', () => {
       else if (entry.name.endsWith('.js')) jsFiles.push(full);
     });
   };
-  ['miniprogram', 'scripts', 'tests'].forEach((dir) => walk(path.join(root, dir)));
+  ['miniprogram', 'scripts', 'tests', 'cloudfunctions'].forEach((dir) => walk(path.join(root, dir)));
   assert.equal(stated('语法门禁文件数', /当前基线：(\d+) 个 JavaScript 文件/), jsFiles.length);
 
   // 指挥官库人数与页面数
   const { commanders } = require('../miniprogram/config/commanders');
   assert.equal(stated('推荐诊断覆盖人数', /推荐诊断覆盖 \d+\/(\d+) 位主将/), commanders.length);
   const appJson = JSON.parse(fs.readFileSync(path.join(root, 'miniprogram/app.json'), 'utf8'));
-  assert.equal(stated('页面数', /## 当前模块（(\d+) 页）/), appJson.pages.length);
+  const pageCount = appJson.pages.length + (appJson.subPackages || []).reduce((sum, item) => sum + item.pages.length, 0);
+  assert.equal(stated('页面数', /## 当前模块（(\d+) 页）/), pageCount);
 });

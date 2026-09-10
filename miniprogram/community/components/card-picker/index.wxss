@@ -1,0 +1,17 @@
+@import "../../styles.wxss";
+.picker-results {
+  height: 52vh;
+  margin-top: 16rpx;
+}
+.picker-shell button.picker-result {
+  display: flex;
+  width: 100%;
+  gap: 22rpx;
+  text-align: left;
+  justify-content: flex-start;
+  margin-bottom: 14rpx;
+}
+.picker-shell input {
+  box-sizing: border-box;
+  min-width: 0;
+}

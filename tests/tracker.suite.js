@@ -428,7 +428,7 @@ test('主将头像优先用 CDN 直链，解析不到才按名回落', () => {
 
   // 解析结束后无条件重渲染一次：没命中的那些还等着这一步放开回落地址。
   // 旧版要求「至少一张命中才重渲染」，会把全都没命中的情况永远卡成空白。
-  assert.match(js, /this\.artReady = true;\s*\n\s*if \(this\.pageActive\) this\.applyDecks\(data\.decks, false\);/,
+  assert.match(js, /this\.artReady = true;\s*\n\s*if \(this\.pageActive\) this\.applyDecks\(this\.data\.decks, false\);/,
     '解析结束要放开回落并重渲染，不能再要求「至少一张命中」');
   assert.match(js, /if \(!names\.length\) this\.artReady = true;/,
     '没有主将名时也要放开回落，否则头像永远空白');

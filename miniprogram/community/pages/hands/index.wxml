@@ -1,0 +1,49 @@
+<view class="studio">
+  <text class="eyebrow">OPENING SEVEN / 05</text>
+  <text class="title">这手留不留</text>
+  <view class="subtitle">先做决定，再看看另一种思路。</view>
+  <picker
+    range="{{questions}}"
+    range-key="title"
+    value="{{index}}"
+    bindchange="select"
+  >
+    <view class="panel row between">
+      <text>{{index + 1}} / {{questions.length}}　{{hand.title}}</text>
+      <text>▾</text>
+    </view>
+  </picker>
+  <view class="section-title section">{{hand.commander}}</view>
+  <view class="subtitle">{{hand.context}}</view>
+  <view class="hand-list">
+    <view wx:for="{{hand.cards}}" wx:key="*this" class="hand-card">
+      <text class="hand-number">{{index + 1}}</text>
+      <text class="card-name">{{item}}</text>
+    </view>
+  </view>
+  <community-poll
+    poll-id="{{'hand:' + hand.id}}"
+    choices="{{choices}}"
+    bindanswer="reveal"
+  />
+  <button wx:if="{{!revealed}}" class="link" bindtap="reveal">
+    直接查看讨论思路
+  </button>
+  <view wx:if="{{revealed}}" class="section">
+    <view class="panel">
+      <view class="section-title">如果保留</view>
+      <view class="subtitle">{{hand.keep}}</view>
+    </view>
+    <view class="panel">
+      <view class="section-title">如果调度</view>
+      <view class="subtitle">{{hand.mull}}</view>
+    </view>
+    <view class="notice">
+      这是讨论题，不设唯一标准答案。桌面信息、套牌构成与调度次数都会改变选择。
+    </view>
+  </view>
+  <view class="actions">
+    <button bindtap="practice">去套牌试玩练习</button>
+    <button open-type="share">和朋友讨论</button>
+  </view>
+</view>

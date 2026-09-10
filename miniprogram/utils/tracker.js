@@ -72,11 +72,19 @@ function sortMatches(matches) {
       result: match.result,
       seat: normalizeSeat(match.seat),
       seatLabel: normalizeSeat(match.seat) ? SEAT_LABELS[normalizeSeat(match.seat)] : '座位未知',
+      ...(match.review ? { review: normalizeReview(match.review) } : {}),
     }))
     .sort((a, b) => {
       if (a.date !== b.date) return a.date.localeCompare(b.date);
       return String(a.id).localeCompare(String(b.id));
     });
+}
+
+function normalizeReview(review) {
+  return ['turningPoint', 'keyCard', 'nextChange'].reduce((result, key) => {
+    result[key] = typeof review[key] === 'string' ? Array.from(review[key].trim()).slice(0, 160).join('') : '';
+    return result;
+  }, {});
 }
 
 function normalizeTrackerData(raw, commanderLibrary, config) {
@@ -117,6 +125,7 @@ function serializeTrackerData(data) {
         date: match.date,
         result: match.result,
         seat: match.seat,
+        ...(match.review ? { review: normalizeReview(match.review) } : {}),
       })),
     })),
   };
@@ -157,6 +166,11 @@ function buildTrackerExportText(data, config) {
     lines.push('对局记录：');
     matches.forEach((match) => {
       lines.push(`${match.date} ｜ ${RESULT_LABELS[match.result]} ｜ ${match.seatLabel || '座位未知'}`);
+      if (match.review) {
+        [['turningPoint', '转折'], ['keyCard', '关键单卡'], ['nextChange', '下次调整']].forEach(([key, label]) => {
+          if (match.review[key]) lines.push(`${label}：${match.review[key]}`);
+        });
+      }
     });
   });
 

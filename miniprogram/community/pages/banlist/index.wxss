@@ -1,0 +1,10 @@
+@import "../../styles.wxss";
+.studio button.ban-card {
+  display: flex;
+  width: 100%;
+  text-align: left;
+  justify-content: space-between;
+  gap: 20rpx;
+  margin-top: 14rpx;
+  padding: 28rpx 22rpx;
+}

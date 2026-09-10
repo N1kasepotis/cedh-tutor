@@ -107,6 +107,13 @@
               </view>
             </picker>
           </view>
+          <button class="review-toggle" data-id="{{item.id}}" bindtap="toggleReview">{{item.reviewOpen ? '收起复盘' : '赛后一分钟 · 选填'}}</button>
+          <view wx:if="{{item.reviewOpen}}" class="review-fields">
+            <label class="review-label">这局的转折</label><textarea class="review-input" maxlength="160" placeholder="哪个决定改变了这局？" value="{{item.pendingReview.turningPoint}}" data-id="{{item.id}}" data-field="turningPoint" bindinput="reviewInput"/>
+            <label class="review-label">关键单卡</label><input class="review-input" maxlength="160" placeholder="发挥最大，或暴露问题的那张牌" value="{{item.pendingReview.keyCard}}" data-id="{{item.id}}" data-field="keyCard" bindinput="reviewInput"/>
+            <label class="review-label">下次调整</label><textarea class="review-input" maxlength="160" placeholder="下次想改变什么？" value="{{item.pendingReview.nextChange}}" data-id="{{item.id}}" data-field="nextChange" bindinput="reviewInput"/>
+            <button class="review-toggle" data-id="{{item.id}}" bindtap="goSwaps">打开这套牌的换牌备忘录</button>
+          </view>
           <view class="record-actions">
             <button class="primary-button add-match-button" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="addMatch">{{item.editingMatchId ? '保存修改' : '添加对局'}}</button>
             <button wx:if="{{item.editingMatchId}}" class="text-button cancel-edit-button" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cancelEdit">取消</button>

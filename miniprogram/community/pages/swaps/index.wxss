@@ -1,0 +1,9 @@
+@import "../../styles.wxss";
+.swap-pair {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 16rpx;
+}
+.swap-pair .label {
+  margin-top: 0;
+}

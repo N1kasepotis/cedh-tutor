@@ -98,6 +98,9 @@
       </view>
     </view>
 
+    <view class="home-community-entry" aria-role="button" aria-label="牌友空间" hover-class="home-community-active" bindtap="goCommunity">
+      <text>牌友空间</text><text>名片 / 讨论 / 复盘 →</text>
+    </view>
     <view class="home-colophon" aria-label="版次与授权信息">
       <text class="home-colophon-item">BY CPP123 + 345</text>
       <text class="home-colophon-item home-colophon-center">MIT LICENSE</text>

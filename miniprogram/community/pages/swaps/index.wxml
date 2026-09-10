@@ -1,0 +1,94 @@
+<view class="studio">
+  <text class="eyebrow">DECK JOURNAL / 04</text>
+  <text class="title">换牌备忘录</text>
+  <view class="subtitle">每次调整，都留一个可以回头验证的理由。</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:if="{{!decks.length}}" class="panel">
+    <view class="subtitle">
+      先在“我的主将”建立套牌，换牌记录就能关联之后的对局。
+    </view>
+    <button class="primary" bindtap="tracker">建立套牌</button>
+  </view>
+  <block wx:else>
+    <picker
+      range="{{decks}}"
+      range-key="name"
+      value="{{deckIndex}}"
+      bindchange="deck"
+    >
+      <view class="panel card-name">{{decks[deckIndex].name}} ▾</view>
+    </picker>
+    <view class="swap-pair">
+      <view class="panel">
+        <text class="label">换出</text>
+        <view class="card-name">{{outCard.displayName || '选择单卡'}}</view>
+        <button class="link" data-target="outCard" bindtap="choose">
+          {{outCard ? '更换' : '搜索'}}
+        </button>
+      </view>
+      <view class="panel">
+        <text class="label">换入</text>
+        <view class="card-name">{{inCard.displayName || '选择单卡'}}</view>
+        <button class="link" data-target="inCard" bindtap="choose">
+          {{inCard ? '更换' : '搜索'}}
+        </button>
+      </view>
+    </view>
+    <label class="label" for="swap-goal">希望改善什么</label>
+    <textarea
+      id="swap-goal"
+      maxlength="160"
+      placeholder="例如：减少三回合前没有互动的开局"
+      value="{{goal}}"
+      bindinput="goal"
+    />
+    <picker range="{{targets}}" value="{{targetIndex}}" bindchange="target">
+      <view class="notice">再打 {{targets[targetIndex]}} 场后复盘 ▾</view>
+    </picker>
+    <button class="primary" bindtap="save">记录这次换牌</button>
+  </block>
+  <view class="section">
+    <view class="section-title">正在观察与已归档</view>
+    <view wx:if="{{!swaps.length}}" class="empty">调整记录会留在这里。</view>
+    <view wx:for="{{swaps}}" wx:key="id" class="panel">
+      <view class="muted">{{item.deckName}}</view>
+      <view class="section-title section">
+        {{item.outCard.displayName}} → {{item.inCard.displayName}}
+      </view>
+      <view class="subtitle">{{item.goal}}</view>
+      <view class="notice">
+        {{item.status === 'kept' ? '已保留' : item.status === 'reverted' ?
+        '已换回' : item.ready ? '可以复盘了' : '观察中'}} · 新增 {{item.played}}
+        / {{item.target}} 场
+      </view>
+      <view wx:if="{{item.review}}" class="subtitle">
+        复盘：{{item.review}}
+      </view>
+      <block wx:if="{{editing === item.id}}">
+        <textarea
+          maxlength="240"
+          placeholder="实际改善了吗？哪些情况还需要观察？"
+          value="{{review}}"
+          bindinput="review"
+        />
+        <view class="actions">
+          <button data-status="kept" bindtap="finish">保留</button>
+          <button data-status="reverted" bindtap="finish">换回</button>
+          <button data-status="testing" bindtap="finish">继续观察</button>
+        </view>
+      </block>
+      <view wx:else class="actions">
+        <button data-id="{{item.id}}" bindtap="edit">记下复盘</button>
+        <button data-id="{{item.id}}" bindtap="remove">删除</button>
+      </view>
+    </view>
+  </view>
+  <view class="credit">
+    对局数来自现有战绩，按新增记录计算。是否保留由你决定；这里不会把少量样本当成胜率提升的证明。
+  </view>
+  <card-picker
+    visible="{{picker}}"
+    bindselect="selected"
+    bindclose="closePicker"
+  />
+</view>

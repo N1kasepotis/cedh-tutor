@@ -1,0 +1,1 @@
+{ "navigationBarTitleText": "换牌备忘录", "navigationBarBackgroundColor": "#070707", "navigationBarTextStyle": "white", "usingComponents": { "card-picker": "../../components/card-picker/index" } }

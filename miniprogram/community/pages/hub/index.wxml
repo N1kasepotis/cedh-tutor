@@ -1,0 +1,41 @@
+<view class="studio">
+  <text class="eyebrow">OFF THE TABLE</text>
+  <view class="title hub-title">
+    <view>牌局之外，</view>
+    <view>也有好故事。</view>
+  </view>
+  <view class="subtitle">从三张牌开始，认识一个玩家。</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view class="hub-stats">
+    <view>
+      <text class="number">{{saved}}</text>
+      <text class="muted">张名片</text>
+    </view>
+    <view>
+      <text class="number">{{pending}}</text>
+      <text class="muted">次换牌观察</text>
+    </view>
+  </view>
+  <button
+    wx:for="{{entries}}"
+    wx:key="id"
+    class="hub-entry"
+    data-id="{{item.id}}"
+    bindtap="open"
+  >
+    <text class="entry-number">{{item.number}}</text>
+    <view class="grow">
+      <view class="entry-title">{{item.title}}</view>
+      <view class="muted">{{item.description}}</view>
+    </view>
+    <text class="entry-arrow">↗</text>
+  </button>
+  <view class="section panel">
+    <view class="section-title">刚打完一局？</view>
+    <view class="subtitle">在战绩里记下转折、关键单卡和下次调整。</view>
+    <button class="link" bindtap="tracker">赛后一分钟 →</button>
+  </view>
+  <view class="credit">
+    名片草稿、个人看法、换牌记录和战绩保存在本机。只有你主动提交的内容会进入社区。
+  </view>
+</view>

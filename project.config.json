@@ -3,6 +3,7 @@
   "appid": "wx7b9be8205eb508e6",
   "projectname": "cedh-mentor",
   "miniprogramRoot": "miniprogram/",
+  "cloudfunctionRoot": "cloudfunctions/",
   "setting": {
     "urlCheck": true,
     "es6": true,

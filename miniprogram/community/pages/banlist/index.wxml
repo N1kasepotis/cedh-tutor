@@ -1,0 +1,56 @@
+<view class="studio">
+  <text class="eyebrow">COMMANDER / 02</text>
+  <text class="title">禁牌观察</text>
+  <view class="subtitle">官方规则与玩家意见，分别看清。</view>
+  <view class="notice">官方列表快照 · 核对于 {{banlist.checkedAt}}</view>
+  <view wx:if="{{selected}}">
+    <button class="link" bindtap="close">返回禁牌列表</button>
+    <view class="panel">
+      <text class="badge">{{selected.status}}</text>
+      <view class="section-title section">{{selected.name}}</view>
+      <view wx:if="{{selected.status !== '禁用'}}" class="subtitle">
+        该限制仅适用于行侣位置，不能解读为整张牌全面禁用。
+      </view>
+      <button class="link" bindtap="source">复制官方来源链接</button>
+    </view>
+    <view class="section">
+      <community-poll poll-id="{{pollId}}" choices="{{choices}}" />
+    </view>
+  </view>
+  <block wx:else>
+    <input
+      placeholder="搜索英文牌名，如 Mana Crypt"
+      value="{{query}}"
+      bindinput="search"
+      maxlength="80"
+    />
+    <button
+      wx:for="{{cards}}"
+      wx:key="id"
+      class="ban-card"
+      data-id="{{item.id}}"
+      bindtap="select"
+    >
+      <text class="card-name grow">{{item.name}}</text>
+      <text class="badge">{{item.status}}</text>
+    </button>
+    <view wx:if="{{!cards.length}}" class="empty">
+      列表中没有匹配项；这不等于该牌一定合法。
+    </view>
+    <view class="section">
+      <view class="section-title">类别限制</view>
+      <view
+        wx:for="{{banlist.restrictions}}"
+        wx:key="*this"
+        class="list-item subtitle"
+      >
+        {{item}}
+      </view>
+      <button class="link" bindtap="source">复制完整官方列表链接</button>
+    </view>
+    <view class="credit">
+      此页为 Commander
+      指定禁牌与类别限制快照，不替代完整赛制合法性检查。官方列表变化后会开启新的意见轮次，旧票不会转入新轮次。
+    </view>
+  </block>
+</view>

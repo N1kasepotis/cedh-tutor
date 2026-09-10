@@ -14,6 +14,11 @@
     "pages/result/result",
     "pages/meta/meta"
   ],
+  "subPackages": [{
+    "root": "community",
+    "name": "community",
+    "pages": ["pages/hub/index", "pages/passport/index", "pages/banlist/index", "pages/table/index", "pages/swaps/index", "pages/hands/index"]
+  }],
   "window": {
     "navigationBarTitleText": "cEDH Tutor",
     "navigationBarBackgroundColor": "#FFFFFF",

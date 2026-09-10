@@ -83,6 +83,8 @@ Page({
       validate: (value) => Boolean(value && Array.isArray(value.decks)),
     });
     const data = normalizeTrackerData(stored.value, commanders, trackerConfig);
+    this.storageReadable = stored.ok;
+    if (!stored.ok) wx.showToast({ title: '战绩读取失败，已保留原始数据', icon: 'none' });
     this.applyDecks(data.decks, false);
 
     // 主将头像批量解析成 CDN 直链：最多 5 副牌 × 2 位拍档，一次请求就够。
@@ -96,7 +98,7 @@ Page({
       prefetchCardArt(names).then(() => {
         // 无论命中与否都要重渲染：没命中的那些还等着这一步放开回落地址
         this.artReady = true;
-        if (this.pageActive) this.applyDecks(data.decks, false);
+        if (this.pageActive) this.applyDecks(this.data.decks, false);
       });
     }
   },
@@ -170,9 +172,12 @@ Page({
     const decorated = this.decorateDecks(normalizedDecks);
     const chartSignature = buildChartSignature(decorated);
     const shouldRedrawCharts = chartSignature !== this.chartDataSignature;
-    this.chartDataSignature = chartSignature;
 
     if (shouldPersist) {
+      if (this.storageReadable === false) {
+        wx.showToast({ title: '请重新打开战绩后重试', icon: 'none' });
+        return false;
+      }
       const stored = writeStorage(trackerConfig.storageKey, serializeTrackerData({
         version: trackerConfig.version,
         decks: decorated,
@@ -180,8 +185,13 @@ Page({
         schemaVersion: trackerConfig.version,
         validate: (value) => Boolean(value && Array.isArray(value.decks)),
       });
-      if (!stored.ok) wx.showToast({ title: '战绩保存失败，请重试', icon: 'none' });
+      if (!stored.ok) {
+        wx.showToast({ title: '战绩保存失败，请重试', icon: 'none' });
+        return false;
+      }
     }
+
+    this.chartDataSignature = chartSignature;
 
     this.setData({
       decks: decorated,
@@ -342,12 +352,13 @@ Page({
         date: deck.pendingDate || todayString(),
         result,
         seat,
+        ...(deck.pendingReview ? { review: deck.pendingReview } : {}),
       };
       const matches = deck.editingMatchId
         ? deck.matches.map((match) => (match.id === deck.editingMatchId ? record : match))
         : [...deck.matches, record];
 
-      return { ...deck, matches: sortMatches(matches), editingMatchId: null };
+      return { ...deck, matches: sortMatches(matches), editingMatchId: null, pendingReview: null, reviewOpen: false };
     });
 
     this.applyDecks(decks);
@@ -366,6 +377,8 @@ Page({
         pendingDate: match.date,
         pendingResult: match.result,
         pendingSeat: match.seat || 'seat1',
+        pendingReview: match.review || null,
+        reviewOpen: Boolean(match.review),
       };
     });
     this.applyDecks(decks, false);
@@ -374,7 +387,7 @@ Page({
   cancelEdit(event) {
     const deckId = event.currentTarget.dataset.id;
     const decks = this.data.decks.map((deck) => (
-      deck.id === deckId ? { ...deck, editingMatchId: null } : deck
+      deck.id === deckId ? { ...deck, editingMatchId: null, pendingReview: null, reviewOpen: false } : deck
     ));
     this.applyDecks(decks, false);
   },
@@ -385,6 +398,21 @@ Page({
       deck.id === deckId ? { ...deck, historyExpanded: !deck.historyExpanded } : deck
     ));
     this.applyDecks(decks, false);
+  },
+
+  toggleReview(event) {
+    const deckId = event.currentTarget.dataset.id;
+    this.applyDecks(this.data.decks.map((deck) => deck.id === deckId ? { ...deck, reviewOpen: !deck.reviewOpen } : deck), false);
+  },
+
+  reviewInput(event) {
+    const { id, field } = event.currentTarget.dataset;
+    if (!['turningPoint', 'keyCard', 'nextChange'].includes(field)) return;
+    this.applyDecks(this.data.decks.map((deck) => deck.id === id ? { ...deck, pendingReview: { ...deck.pendingReview, [field]: event.detail.value } } : deck), false);
+  },
+
+  goSwaps(event) {
+    wx.navigateTo({ url: `/community/pages/swaps/index?deckId=${encodeURIComponent(event.currentTarget.dataset.id)}` });
   },
 
   confirmDeleteMatch(event) {

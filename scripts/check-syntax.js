@@ -4,13 +4,13 @@ const path = require('path');
 const vm = require('vm');
 
 const root = path.resolve(__dirname, '..');
-const roots = ['miniprogram', 'scripts', 'tests'];
+const roots = ['miniprogram', 'scripts', 'tests', 'cloudfunctions'];
 const files = [];
 
 function collect(directory) {
   fs.readdirSync(directory, { withFileTypes: true }).forEach((entry) => {
     const absolute = path.join(directory, entry.name);
-    if (entry.isDirectory()) collect(absolute);
+    if (entry.isDirectory() && entry.name !== 'node_modules') collect(absolute);
     else if (entry.isFile() && entry.name.endsWith('.js')) files.push(absolute);
   });
 }

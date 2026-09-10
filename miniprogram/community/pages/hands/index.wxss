@@ -1,0 +1,18 @@
+@import "../../styles.wxss";
+.hand-list {
+  margin: 32rpx 0;
+  border-top: 1rpx solid rgba(255, 255, 255, 0.2);
+}
+.hand-card {
+  display: flex;
+  align-items: center;
+  gap: 26rpx;
+  border-bottom: 1rpx solid rgba(255, 255, 255, 0.14);
+  padding: 24rpx 10rpx;
+}
+.hand-number {
+  font-size: 24rpx;
+  color: #e5bad3;
+  width: 32rpx;
+  flex-shrink: 0;
+}

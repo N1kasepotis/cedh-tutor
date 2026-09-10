@@ -1,0 +1,79 @@
+<view class="studio poll-panel">
+  <view class="section-title">你的看法</view>
+  <view class="actions">
+    <button
+      wx:for="{{choices}}"
+      wx:key="id"
+      class="{{localChoice === item.id ? 'chosen' : ''}}"
+      data-choice="{{item.id}}"
+      bindtap="choose"
+      disabled="{{busy}}"
+    >
+      {{item.label}}
+    </button>
+  </view>
+  <view class="row wrap">
+    <picker
+      range="{{perspectives}}"
+      value="{{perspective}}"
+      bindchange="perspective"
+      disabled="{{busy}}"
+    >
+      <view class="notice">我的视角：{{perspectives[perspective]}} ▾</view>
+    </picker>
+    <picker
+      range="{{reasons}}"
+      value="{{reason}}"
+      bindchange="reason"
+      disabled="{{busy}}"
+    >
+      <view class="notice">理由：{{reasons[reason]}} ▾</view>
+    </picker>
+  </view>
+  <view wx:if="{{localChoice && remembered}}" class="muted">
+    选择保存在本机；提交后才计入社区。
+  </view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view class="actions">
+    <button
+      class="primary"
+      bindtap="submit"
+      disabled="{{busy || !localChoice || !online}}"
+      loading="{{busy}}"
+    >
+      {{mine ? '更新我的投票' : '提交社区投票'}}
+    </button>
+    <button wx:if="{{mine}}" bindtap="retract" disabled="{{busy}}">
+      撤回投票
+    </button>
+  </view>
+  <view wx:if="{{!online}}" class="notice">
+    社区服务待开通，目前只记录个人看法。
+  </view>
+  <view wx:if="{{stats}}" class="section">
+    <view class="row between">
+      <text class="section-title">社区意见</text>
+      <picker range="{{views}}" value="{{view}}" bindchange="filter">
+        <view class="notice">{{views[view]}} ▾</view>
+      </picker>
+    </view>
+    <view class="muted">{{sample}} 人参与 · {{unknown}} 人不了解</view>
+    <view wx:for="{{rows}}" wx:key="id" class="list-item">
+      <view class="row between">
+        <text>{{item.label}}</text>
+        <text>
+          {{item.count}} 票{{known ? ' / ' + item.percent + '%' : ''}}
+        </text>
+      </view>
+      <view class="bar-track">
+        <view class="bar-fill" style="width:{{item.percent}}%" />
+      </view>
+    </view>
+    <view class="credit">
+      比例仅含明确表态者。自愿参与样本，不代表全体玩家，也不改变官方规则。
+    </view>
+  </view>
+  <button wx:if="{{online}}" class="link" bindtap="refresh" disabled="{{busy}}">
+    刷新社区结果
+  </button>
+</view>

@@ -1,0 +1,78 @@
+<view class="studio">
+  <text class="eyebrow">BEFORE THE GAME / 03</text>
+  <text class="title">本桌怎么玩</text>
+  <view class="subtitle">先把期待说清楚，再一起开局。</view>
+  <view wx:if="{{error}}" class="error">{{error}}</view>
+  <view wx:for="{{fields}}" wx:key="key" class="agreement-line">
+    <text class="number">0{{index + 1}}</text>
+    <view class="grow">
+      <text class="label">{{item.label}}</text>
+      <picker
+        range="{{item.options}}"
+        value="{{values[item.key]}}"
+        data-key="{{item.key}}"
+        bindchange="change"
+        disabled="{{incoming || busy}}"
+      >
+        <view class="agreement-value">
+          {{item.options[values[item.key]]}} {{incoming ? '' : '▾'}}
+        </view>
+      </picker>
+    </view>
+  </view>
+  <view class="notice">这份约定不衡量套牌强度，也不替代开局前的讨论。</view>
+  <view wx:if="{{!incoming}}" class="actions">
+    <button bindtap="save" disabled="{{busy}}">保存本桌</button>
+    <button
+      class="primary"
+      bindtap="publish"
+      disabled="{{busy}}"
+      loading="{{busy}}"
+    >
+      {{remote ? '更新分享约定' : '生成分享约定'}}
+    </button>
+  </view>
+  <view wx:if="{{remote && !dirty}}" class="panel">
+    <view class="section-title">开局确认</view>
+    <view class="muted">
+      {{agreement ? agreement.count + ' 位玩家已确认' : '刷新查看确认人数'}}
+    </view>
+    <view class="actions">
+      <button class="primary" bindtap="agree" disabled="{{busy}}">
+        {{agreement.agreed ? '撤回我的确认' : '我同意本桌约定'}}
+      </button>
+      <button open-type="share">发给牌友</button>
+    </view>
+    <button class="link" bindtap="refresh" disabled="{{busy}}">
+      刷新确认状态
+    </button>
+  </view>
+  <view wx:if="{{dirty && remote}}" class="notice">
+    约定已修改，更新分享后，所有玩家需要重新确认。
+  </view>
+  <view class="actions">
+    <button bindtap="copy">复制约定文本</button>
+    <button bindtap="newTable" disabled="{{busy}}">以此新建一桌</button>
+  </view>
+  <button
+    wx:if="{{remote && !incoming && !remote.revoked}}"
+    class="link"
+    bindtap="revoke"
+    disabled="{{busy}}"
+  >
+    撤回公开约定
+  </button>
+  <view wx:if="{{!incoming && history.length}}" class="section">
+    <view class="section-title">最近的牌桌</view>
+    <button
+      wx:for="{{history}}"
+      wx:key="id"
+      class="saved-table"
+      data-id="{{item.id}}"
+      bindtap="loadSaved"
+      disabled="{{busy}}"
+    >
+      {{item.date}} · {{fields[0].options[item.values.level]}}
+    </button>
+  </view>
+</view>

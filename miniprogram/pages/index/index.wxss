@@ -567,3 +567,6 @@ page {
     animation: none;
   }
 }
+/* A single doorway keeps community tools out of the main game-tool grid. */
+.home-community-entry { flex:0 0 44px; width:100%; box-sizing:border-box; display:flex; align-items:center; justify-content:space-between; padding:0 40rpx 0 20rpx; background:#0A0A0A; color:#FFFFFF; font-size:13px; }
+.home-community-active { color:#00B3FF; }

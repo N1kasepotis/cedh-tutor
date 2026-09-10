@@ -40,6 +40,7 @@ const HOME_ACTION_COUNT = 8;
 const REDACTION_LINE_COUNT = 9;
 
 Page({
+  goCommunity() { wx.navigateTo({ url: '/community/pages/hub/index' }); },
   data: {
     homeNavClearancePx: 96,
     // 事故色 glitch 行：每次进首页随机让一个功能入口"故障"成电光蓝，制造不可预测的粗野破坏感
