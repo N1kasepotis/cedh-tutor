@@ -62,10 +62,10 @@ Page({
         date: new Date().toLocaleDateString(),
       };
       const state = local.update((state) => {
-        state.tables = [
-          item,
-          ...state.tables.filter((old) => old.id !== item.id),
-        ].slice(0, 20);
+        state.tables = [item, ...state.tables.filter((old) => old.id !== item.id)].slice(
+          0,
+          20,
+        );
       });
       this.setData({ history: state.tables });
       if (notify) wx.showToast({ title: '约定已保存', icon: 'success' });
@@ -113,8 +113,7 @@ Page({
         dirty: false,
         agreement: null,
       });
-      if (this.persist(false))
-        wx.showToast({ title: '可分享给牌友', icon: 'success' });
+      if (this.persist(false)) wx.showToast({ title: '可分享给牌友', icon: 'success' });
     });
   },
   refresh() {
@@ -151,19 +150,18 @@ Page({
   copy() {
     wx.setClipboardData({
       data: [
-        '本桌怎么玩',
+        '对局约定',
         ...TABLE_FIELDS.map(
-          (field) =>
-            `${field.label}：${field.options[this.data.values[field.key]]}`,
+          (field) => `${field.label}：${field.options[this.data.values[field.key]]}`,
         ),
-        '开局前一起确认；遇到分歧先讨论。',
+        '开局前一起确认；遇到分歧先讨论',
       ].join('\n'),
     });
   },
   onShareAppMessage() {
     return this.data.remote && !this.data.dirty
       ? {
-          title: '本桌怎么玩：开局前一起确认',
+          title: '对局约定：开局前一起确认',
           path: `/community/pages/table/index?id=${this.data.remote.id}`,
         }
       : { title: '一起定下本桌约定', path: '/community/pages/table/index' };

@@ -510,10 +510,21 @@ test('全站网络图：有占位底、挂 lazy-load', () => {
   const missingLazy = [];
   let checked = 0;
 
-  fs.readdirSync(pagesDir).forEach((page) => {
-    const wxmlPath = path.join(pagesDir, page, `${page}.wxml`);
-    const wxssPath = path.join(pagesDir, page, `${page}.wxss`);
-    if (!fs.existsSync(wxmlPath)) return;
+  const templates = [];
+  const collectTemplates = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach(entry => {
+      const file = path.join(dir, entry.name);
+      if (entry.isDirectory()) collectTemplates(file);
+      else if (entry.name.endsWith('.wxml')) templates.push(file);
+    });
+  };
+  collectTemplates(pagesDir);
+  collectTemplates(path.join(root, 'miniprogram/community'));
+  const communityWxss = fs.readFileSync(path.join(root, 'miniprogram/community/styles.wxss'), 'utf8');
+  templates.forEach((wxmlPath) => {
+    const page = path.relative(root, wxmlPath);
+    const wxssPath = wxmlPath.replace(/\.wxml$/, '.wxss');
+    const inCommunity = page.replace(/\\/g, '/').startsWith('miniprogram/community/');
     const wxml = fs.readFileSync(wxmlPath, 'utf8');
     const wxss = fs.existsSync(wxssPath) ? fs.readFileSync(wxssPath, 'utf8') : '';
 
@@ -521,9 +532,10 @@ test('全站网络图：有占位底、挂 lazy-load', () => {
       const src = (tag.match(/src="([^"]*)"/) || [])[1] || '';
       if (!src.includes('{{')) return; // 只管网络图；本地静态图不走加载态
       const cls = ((tag.match(/class="([^"]+)"/) || [])[1] || '').split(/\s+/)[0];
-      if (!cls) return;
+      if (!cls && !inCommunity) return;
       checked += 1;
-      const own = rulesFor(wxss, cls) + rulesFor(appWxss, cls);
+      const own = rulesFor(wxss, cls) + rulesFor(appWxss, cls)
+        + (inCommunity ? rulesFor(communityWxss, 'studio') + rulesFor(communityWxss, 'picker-shell') : '');
       // 容器：模板里紧挨着这枚 image 的上一个 class
       const parentCls = ((wxml.slice(0, wxml.indexOf(tag)).match(/class="([^"]+)"[^<]*$/) || [])[1] || '')
         .split(/\s+/)[0];

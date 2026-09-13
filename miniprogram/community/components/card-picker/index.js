@@ -1,5 +1,6 @@
 const cards = require('../../utils/cards');
 Component({
+  options: { styleIsolation: 'apply-shared' },
   properties: { visible: Boolean },
   data: {
     query: '',
@@ -22,20 +23,7 @@ Component({
       '한국어',
       'Русский',
     ],
-    codes: [
-      'any',
-      'en',
-      'zhs',
-      'zht',
-      'ja',
-      'de',
-      'fr',
-      'it',
-      'es',
-      'pt',
-      'ko',
-      'ru',
-    ],
+    codes: ['any', 'en', 'zhs', 'zht', 'ja', 'de', 'fr', 'it', 'es', 'pt', 'ko', 'ru'],
     more: false,
   },
   lifetimes: {
@@ -102,8 +90,7 @@ Component({
       }
     },
     choose(event) {
-      const selected =
-        this.data.results[Number(event.currentTarget.dataset.index)];
+      const selected = this.data.results[Number(event.currentTarget.dataset.index)];
       if (!selected) return;
       if (this.data.mode === 'search') {
         this.oracle = selected.oracleId;

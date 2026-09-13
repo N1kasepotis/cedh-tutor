@@ -1,9 +1,50 @@
-@import "../../styles.wxss";
+@import '../../styles.wxss';
 .swap-pair {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-  gap: 16rpx;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 18rpx;
+  margin-top: 22rpx;
+}
+.swap-pair .panel {
+  margin-top: 0;
+  padding: 24rpx 20rpx;
 }
 .swap-pair .label {
   margin-top: 0;
+}
+.swap-art {
+  width: 100%;
+  height: 288rpx;
+  display: block;
+  margin-bottom: 20rpx;
+  border-radius: 10rpx;
+}
+.swap-art-empty {
+  height: 200rpx;
+  border: 1rpx dashed var(--cedh-accent-line);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 48rpx;
+  color: var(--cedh-accent-ink);
+  margin: 18rpx 0;
+}
+.swap-pair .card-name {
+  min-height: 80rpx;
+  font-size: 28rpx;
+}
+.swap-record-cards {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 28rpx minmax(0, 1fr);
+  gap: 12rpx;
+  align-items: center;
+  margin: 24rpx 0;
+}
+.swap-record-cards image {
+  width: 100%;
+  height: 240rpx;
+  display: block;
+}
+.swap-record-cards text {
+  color: var(--cedh-accent-ink);
 }

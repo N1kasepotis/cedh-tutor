@@ -5,11 +5,7 @@ function wrap(ctx, text, x, y, width, lineHeight, maxLines = 4) {
   for (let index = 0; index < characters.length; index += 1) {
     const next = line + characters[index];
     if (ctx.measureText(next).width > width && line) {
-      ctx.fillText(
-        row === maxLines - 1 ? `${line.slice(0, -1)}…` : line,
-        x,
-        y + row * lineHeight,
-      );
+      ctx.fillText(line, x, y + row * lineHeight);
       if (++row >= maxLines) return;
       line = characters[index];
     } else line = next;
@@ -47,9 +43,9 @@ async function render(page, passport, artOnly) {
   canvas.width = 750;
   canvas.height = 1200;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0b090b';
+  ctx.fillStyle = '#0b0b09';
   ctx.fillRect(0, 0, 750, 1200);
-  ctx.fillStyle = '#e5bad3';
+  ctx.fillStyle = '#e6d8ad';
   ctx.font = '22px sans-serif';
   ctx.fillText('THREE CARDS / 三张牌认识你', 44, 60);
   ctx.fillStyle = '#fffefa';
@@ -71,19 +67,19 @@ async function render(page, passport, artOnly) {
       img.width * scale,
       img.height * scale,
     );
-    ctx.fillStyle = '#e5bad3';
+    ctx.fillStyle = '#e6d8ad';
     ctx.font = '22px sans-serif';
-    ctx.fillText(['设计之选', '我的打法', '私藏单卡'][index], 246, y + 26);
+    ctx.fillText(['最佳设计', '打法代表', '常用妙妙牌'][index], 246, y + 26);
     ctx.fillStyle = '#fffefa';
     ctx.font = 'bold 27px sans-serif';
     wrap(ctx, slot.displayName || slot.name, 246, y + 68, 452, 34, 2);
     ctx.font = '23px sans-serif';
-    ctx.fillStyle = '#bbb2b9';
+    ctx.fillStyle = '#bab8ab';
     wrap(ctx, slot.reason, 246, y + 144, 452, 30, 3);
     ctx.font = '17px sans-serif';
     wrap(
       ctx,
-      `${slot.lang} / ${slot.set} #${slot.number} · ${slot.artist}`,
+      `${slot.lang} / ${slot.set} #${slot.number}　${slot.artist}`,
       246,
       y + 239,
       452,
@@ -91,13 +87,9 @@ async function render(page, passport, artOnly) {
       1,
     );
   }
-  ctx.fillStyle = '#9c9098';
+  ctx.fillStyle = '#a7a69a';
   ctx.font = '18px sans-serif';
-  ctx.fillText(
-    'cEDH 导师 · 卡图 Scryfall · © Wizards of the Coast / 画师',
-    44,
-    1164,
-  );
+  ctx.fillText('cEDH 导师　卡图 Scryfall　© Wizards of the Coast / 画师', 44, 1164);
   return new Promise((resolve, reject) =>
     wx.canvasToTempFilePath(
       {

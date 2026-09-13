@@ -35,8 +35,7 @@ function valid(value) {
           VIEWS.includes(vote.perspective),
       ) &&
       value.tables.every(
-        (entry) =>
-          entry && typeof entry.id === 'string' && Boolean(table(entry.values)),
+        (entry) => entry && typeof entry.id === 'string' && Boolean(table(entry.values)),
       ) &&
       value.swaps.every(
         (entry) =>

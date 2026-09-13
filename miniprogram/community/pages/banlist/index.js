@@ -1,9 +1,12 @@
 const { banlist } = require('../../shared/catalog');
+const images = require('../../shared/ban-cards');
+const cards = banlist.cards.map((card) => ({ ...images[card.id], ...card }));
 Page({
   data: {
     banlist,
     query: '',
-    cards: banlist.cards,
+    cards,
+    imageErrors: {},
     selected: null,
     pollId: '',
     choices: [
@@ -16,15 +19,12 @@ Page({
     const query = event.detail.value.toLowerCase().trim();
     this.setData({
       query,
-      cards: banlist.cards.filter((card) =>
-        card.name.toLowerCase().includes(query),
-      ),
+      cards: cards.filter((card) => card.name.toLowerCase().includes(query)),
     });
   },
   select(event) {
-    const selected = banlist.cards.find(
-      (card) => card.id === event.currentTarget.dataset.id,
-    );
+    const selected = cards.find((card) => card.id === event.currentTarget.dataset.id);
+    if (!selected) return;
     this.setData({
       selected,
       pollId: `${banlist.round}:${selected.id}`,
@@ -42,6 +42,14 @@ Page({
   close() {
     this.setData({ selected: null });
   },
+  imageFailed(event) {
+    const id = event.currentTarget.dataset.id;
+    if (cards.some((card) => card.id === id))
+      this.setData({ ['imageErrors.' + id]: true });
+  },
+  retryImages() {
+    this.setData({ imageErrors: {} });
+  },
   source() {
     wx.setClipboardData({
       data: (this.data.selected && this.data.selected.source) || banlist.source,
@@ -49,7 +57,7 @@ Page({
   },
   onShareAppMessage() {
     return {
-      title: 'Commander 禁牌观察',
+      title: 'Commander 禁牌表',
       path: '/community/pages/banlist/index',
     };
   },

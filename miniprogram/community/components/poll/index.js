@@ -1,6 +1,7 @@
 const api = require('../../utils/api');
 const local = require('../../utils/local');
 Component({
+  options: { styleIsolation: 'apply-shared' },
   properties: { pollId: String, choices: Array },
   data: {
     localChoice: '',
@@ -44,13 +45,9 @@ Component({
             ? ['casual', 'competitive', 'both'].indexOf(stance.perspective)
             : 2,
           reason: stance
-            ? [
-                'balance',
-                'diversity',
-                'experience',
-                'identity',
-                'unsure',
-              ].indexOf(stance.reason)
+            ? ['balance', 'diversity', 'experience', 'identity', 'unsure'].indexOf(
+                stance.reason,
+              )
             : 4,
           stats: null,
           mine: null,
@@ -107,14 +104,9 @@ Component({
     decorate() {
       const counts =
         this.data.stats &&
-        this.data.stats[
-          ['all', 'casual', 'competitive', 'both'][this.data.view]
-        ];
+        this.data.stats[['all', 'casual', 'competitive', 'both'][this.data.view]];
       if (!counts) return;
-      const sample = Object.values(counts).reduce(
-        (sum, value) => sum + value,
-        0,
-      );
+      const sample = Object.values(counts).reduce((sum, value) => sum + value, 0);
       const known = sample - (counts.unknown || 0);
       this.setData({
         sample,
@@ -125,9 +117,7 @@ Component({
           .map((choice) => ({
             ...choice,
             count: counts[choice.id] || 0,
-            percent: known
-              ? Math.round(((counts[choice.id] || 0) * 100) / known)
-              : 0,
+            percent: known ? Math.round(((counts[choice.id] || 0) * 100) / known) : 0,
           })),
       });
     },
@@ -157,8 +147,7 @@ Component({
       return this.request('poll');
     },
     submit() {
-      if (this.remember())
-        return this.request('vote', { vote: this.voteValue() });
+      if (this.remember()) return this.request('vote', { vote: this.voteValue() });
     },
     retract() {
       return this.request('vote', { retract: true });

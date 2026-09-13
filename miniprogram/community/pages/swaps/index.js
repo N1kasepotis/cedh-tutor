@@ -36,9 +36,7 @@ Page({
       const swaps = state.swaps.map((entry) => {
         const deck = decks.find((deck) => deck.id === entry.deckId);
         const played = deck
-          ? deck.matches.filter(
-              (match) => !entry.baselineIds.includes(match.id),
-            ).length
+          ? deck.matches.filter((match) => !entry.baselineIds.includes(match.id)).length
           : 0;
         return {
           ...entry,
@@ -77,12 +75,7 @@ Page({
   save() {
     try {
       const deck = this.data.decks[this.data.deckIndex];
-      if (
-        !deck ||
-        !this.data.inCard ||
-        !this.data.outCard ||
-        !this.data.goal.trim()
-      )
+      if (!deck || !this.data.inCard || !this.data.outCard || !this.data.goal.trim())
         throw new Error('请选择套牌、换入换出的牌，并写下目标');
       if (this.data.inCard.oracleId === this.data.outCard.oracleId)
         throw new Error('换牌记录需要两张不同的牌；更换卡画可在名片中操作');
@@ -136,7 +129,7 @@ Page({
     const id = event.currentTarget.dataset.id;
     wx.showModal({
       title: '删除换牌记录',
-      content: '只删除这条备忘录，战绩保留。',
+      content: '删除这条调牌记录，保留战绩',
       success: (result) => {
         if (!result.confirm) return;
         try {

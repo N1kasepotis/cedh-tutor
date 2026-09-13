@@ -6,6 +6,7 @@ const poster = require('../../utils/poster');
 Page({
   data: {
     labels: domain.SLOT_LABELS,
+    hints: ['你最欣赏哪张牌的设计', '哪张牌最能代表你的打法', '你最常带上的妙妙单卡'],
     nickname: '',
     slots: [null, null, null],
     reasons: ['', '', ''],
@@ -155,8 +156,7 @@ Page({
         remote: { id: result.id, version: result.version, active: true },
         shareReady: true,
       });
-      if (this.saveDraft(false))
-        wx.showToast({ title: '可分享给朋友', icon: 'success' });
+      if (this.saveDraft(false)) wx.showToast({ title: '可分享给朋友', icon: 'success' });
     });
   },
   revoke() {
@@ -230,8 +230,7 @@ Page({
       wx.saveImageToPhotosAlbum({
         filePath: this.data.posterPath,
         success: resolve,
-        fail: () =>
-          reject(new Error('未能保存，可在右上角设置中允许相册权限后重试')),
+        fail: () => reject(new Error('未能保存，可在右上角设置中允许相册权限后重试')),
       }),
     );
     wx.showToast({ title: '已存入相册', icon: 'success' });
@@ -246,15 +245,6 @@ Page({
   privacyContract() {
     wx.openPrivacyContract({
       fail: () => this.setData({ error: '隐私说明暂时打不开，请稍后重试' }),
-    });
-  },
-  report() {
-    return ui.run(this, async () => {
-      await api.call('report', {
-        id: this.data.friend.id,
-        reason: 'inappropriate',
-      });
-      wx.showToast({ title: '举报已记录', icon: 'none' });
     });
   },
   onShareAppMessage() {

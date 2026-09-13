@@ -109,7 +109,7 @@ function createService({ repository, moderate, resolveCard, now = Date.now }) {
         return { id: publicId, version: next.version, content };
       });
     }
-    if (['getShare', 'revoke', 'report', 'agree'].includes(event.action)) {
+    if (['getShare', 'revoke', 'agree'].includes(event.action)) {
       if (typeof event.id !== 'string' || !/^[a-f0-9]{64}$/.test(event.id))
         domain.fail('NOT_FOUND');
       return repository.transaction(async (tx) => {
@@ -127,16 +127,6 @@ function createService({ repository, moderate, resolveCard, now = Date.now }) {
             updatedAt: stamp,
           });
           return { version: entry.version + 1 };
-        }
-        if (event.action === 'report') {
-          if (!['inappropriate', 'misleading', 'other'].includes(event.reason))
-            domain.fail('INVALID_INPUT');
-          await tx.set(`report-${hash(event.id, owner)}`, {
-            shareId: event.id,
-            reason: event.reason,
-            updatedAt: stamp,
-          });
-          return { received: true };
         }
         let agreement = null;
         if (entry.kind === 'table') {

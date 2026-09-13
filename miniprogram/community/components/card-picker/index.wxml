@@ -1,10 +1,10 @@
 <view wx:if="{{visible}}" class="modal-mask picker-shell" catchtap="close">
   <view class="modal-sheet" catchtap="noop">
     <view class="row between">
-      <text class="section-title">
-        {{mode === 'search' ? '先选一张牌' : '选择卡画与语言'}}
-      </text>
-      <button bindtap="close" aria-label="关闭选牌">关闭</button>
+      <text class="section-title">{{mode === 'search' ? '搜索单卡' : '选择版本'}}</text>
+      <button hover-class="pressable-active" bindtap="close" aria-label="关闭选牌">
+        关闭
+      </button>
     </view>
     <view wx:if="{{mode === 'search'}}" class="row">
       <input
@@ -16,10 +16,18 @@
         confirm-type="search"
         maxlength="100"
       />
-      <button bindtap="search" disabled="{{busy || !query}}">搜索</button>
+      <button
+        hover-class="pressable-active"
+        bindtap="search"
+        disabled="{{busy || !query}}"
+      >
+        搜索
+      </button>
     </view>
     <view wx:else class="row between">
-      <button bindtap="back" disabled="{{busy}}">重选牌</button>
+      <button hover-class="pressable-active" bindtap="back" disabled="{{busy}}">
+        重选牌
+      </button>
       <picker range="{{languages}}" value="{{language}}" bindchange="language">
         <view class="notice">{{languages[language]}} ▾</view>
       </picker>
@@ -27,6 +35,7 @@
     <view wx:if="{{error}}" class="error">{{error}}</view>
     <scroll-view scroll-y class="picker-results">
       <button
+        hover-class="pressable-active"
         wx:for="{{results}}"
         wx:key="printId"
         class="picker-result"
@@ -38,24 +47,26 @@
         <image
           wx:if="{{item.image}}"
           class="thumb"
-          src="{{item.image}}"
+          src="{{item.thumb || item.image}}"
           mode="aspectFit"
           lazy-load
         />
         <view class="grow">
           <view class="card-name">{{item.displayName}}</view>
           <view class="muted">{{item.name}}</view>
-          <view class="notice">
-            {{item.lang}} / {{item.set}} #{{item.number}}
-          </view>
+          <view class="notice">{{item.lang}} / {{item.set}} #{{item.number}}</view>
         </view>
       </button>
-      <view wx:if="{{busy}}" class="empty">正在查找…</view>
+      <view wx:if="{{busy}}" class="empty">正在查找</view>
       <view wx:if="{{!busy && !results.length}}" class="empty">
-        {{mode === 'prints' ? '该语言暂无可用版本，试试所有语言' :
-        '输入牌名，再选择真实印刷版本'}}
+        {{mode === 'prints' ? '该语言暂无可用版本，试试所有语言' : '输入中英文牌名'}}
       </view>
-      <button wx:if="{{more}}" bindtap="more" disabled="{{busy}}">
+      <button
+        hover-class="pressable-active"
+        wx:if="{{more}}"
+        bindtap="more"
+        disabled="{{busy}}"
+      >
         加载更多版本
       </button>
     </scroll-view>

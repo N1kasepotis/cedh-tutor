@@ -1,1 +1,5 @@
-{ "navigationBarTitleText": "本桌怎么玩", "navigationBarBackgroundColor": "#070707", "navigationBarTextStyle": "white" }
+{
+  "navigationBarTitleText": "对局约定",
+  "navigationBarBackgroundColor": "#070707",
+  "navigationBarTextStyle": "white"
+}

@@ -6,9 +6,9 @@ const banlist = {
   format: 'Commander',
   source: 'https://magic.wizards.com/en/banned-restricted-list',
   restrictions: [
-    '所有 Conspiracy 类型牌不可使用。',
-    '所有涉及 ante（赌注）的牌不可使用。',
-    '官方列明涉及种族或文化冒犯的牌不可使用。',
+    '所有 Conspiracy 类型牌不可使用',
+    '所有涉及 ante（赌注）的牌不可使用',
+    '官方列明涉及种族或文化冒犯的牌不可使用',
   ],
   cards: [
     'Ancestral Recall',
@@ -71,10 +71,10 @@ banlist.cards.push({
 const hands = [
   {
     id: 'yuriko-resource-v1',
-    title: '有起点，也有保护',
+    title: '二地加互动',
     commander: "Yuriko, the Tiger's Shadow",
     context:
-      '四人 cEDH · 2 号位 · 首次七张 · 仍有一次免费调度。套牌以低费忍者与穿透生物为主。',
+      '四人 cEDH，2 号位，首次七张\n还有一次免费调度，套牌以低费忍者与穿透生物为主',
     cards: [
       'Island',
       'Swamp',
@@ -84,15 +84,14 @@ const hands = [
       'Daze',
       'Snuff Out',
     ],
-    keep: '两张地与低费生物提供展开路线；Daze 和 Snuff Out 提供有限互动。保留时需要决定是否先留法术力，而非机械地把生物全部下完。',
-    mull: '如果已知前位是高速组合，且这手无法在关键窗口有效阻止，免费调度可以寻找更合适的互动。不能只因有两张地就自动保留。',
+    keep: '两张地加低费生物能展开，Daze 和 Snuff Out 能应对部分威胁，留牌后要安排好下生物与留互动的时机',
+    mull: '如果前位主将偏竞速，而这手互动挡不住关键回合，可以用免费调度找更合适的起手',
   },
   {
     id: 'kinnan-no-mana-v1',
-    title: '强牌很多，法术力在哪',
+    title: '零地起手',
     commander: 'Kinnan, Bonder Prodigy',
-    context:
-      '四人高强度局 · 1 号位 · 首次七张 · 仍有一次免费调度。没有可在零费下启动的法术力来源。',
+    context: '四人高强度局，1 号位，首次七张\n还有一次免费调度，没有零费法术力来源',
     cards: [
       'Basalt Monolith',
       'Thrasios, Triton Hero',
@@ -102,15 +101,15 @@ const hands = [
       'Mystical Tutor',
       'Finale of Devastation',
     ],
-    keep: '保留意味着依赖后续抓牌才能启动；手里的潜力不等于现在能执行的路线。若选择留牌，应明确愿意承担连续空过的代价。',
-    mull: '倾向调度。这手没有地，也没有可立即使用的法术力来源。免费调度的目标是可执行的开局，而非更多昂贵的强牌。',
+    keep: '这手只能等后续抓到法术力才能展开，留牌需承担连续空过的风险',
+    mull: '零地也没有能启动的加速，倾向用免费调度找能正常展开的起手',
   },
   {
     id: 'winota-engine-v1',
-    title: '有引擎，缺保护',
+    title: '展开齐，缺保护',
     commander: 'Winota, Joiner of Forces',
     context:
-      '四人高强度局 · 4 号位 · 首次七张 · 仍有一次免费调度。桌上有蓝色互动套牌，但没有额外已知信息。',
+      '四人高强度局，4 号位，首次七张\n还有一次免费调度，对手有蓝色套牌，其余信息未知',
     cards: [
       'Plains',
       'Mountain',
@@ -120,14 +119,12 @@ const hands = [
       'Legion Warboss',
       'Blade Historian',
     ],
-    keep: '法术力与非人类进攻者都在，计划较明确。需要考虑主将被处理后的后续，而不只计算理想情况下的爆发。',
-    mull: '希望寻找保护或干扰时，可以利用免费调度。代价是放弃目前完整的法术力基础，不能把未知对手互动当成确定会发生的事。',
+    keep: '地、加速和非人类进攻者齐全，可以围绕主将展开，仍需考虑主将被解后的后续',
+    mull: '若想找保护或干扰，可以免费调度，但会放弃这手已经齐备的法术力与进攻者',
   },
 ];
 function poll(id) {
-  const banned = banlist.cards.find(
-    (entry) => `${banlist.round}:${entry.id}` === id,
-  );
+  const banned = banlist.cards.find((entry) => `${banlist.round}:${entry.id}` === id);
   if (banned) return { id, choices: ['keep', 'unban', 'unknown'] };
   const hand = hands.find((entry) => `hand:${entry.id}` === id);
   return hand ? { id, choices: ['keep', 'mull', 'unknown'] } : null;

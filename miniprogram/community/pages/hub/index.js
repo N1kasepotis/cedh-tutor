@@ -1,44 +1,38 @@
 const local = require('../../utils/local');
 const ui = require('../../utils/page');
+const cardIndex = require('../../shared/ban-cards');
+const coverCards = ['ancestral-recall', 'black-lotus', 'time-walk'].map(
+  (id) => cardIndex[id],
+);
 Page({
   data: {
+    coverCards,
     saved: 0,
     pending: 0,
     error: '',
     entries: [
       {
-        id: 'passport',
-        number: '01',
-        title: '三张牌认识你',
-        description: '做一张名片，也看看牌友的选择',
-        tag: '表达',
-      },
-      {
         id: 'banlist',
-        number: '02',
-        title: '禁牌观察',
-        description: '官方禁表与你对禁牌的看法',
+        title: '禁牌表',
+        description: '卡图与解禁投票',
         tag: '讨论',
       },
       {
         id: 'table',
-        number: '03',
-        title: '本桌怎么玩',
-        description: '开局前，把期待说清楚',
+        title: '对局约定',
+        description: '强度 代牌 无限组合技',
         tag: '开局',
       },
       {
         id: 'swaps',
-        number: '04',
-        title: '换牌备忘录',
-        description: '记录调整，跟踪实战，再做决定',
+        title: '调牌记录',
+        description: '换入换出 实战复盘',
         tag: '调整',
       },
       {
         id: 'hands',
-        number: '05',
         title: '这手留不留',
-        description: '七张牌，两种思路',
+        description: '起手七张 留牌还是调度',
         tag: '练习',
       },
     ],
@@ -48,6 +42,11 @@ Page({
       const state = local.load();
       this.setData({
         saved: Object.keys(state.passports).length,
+        coverCards:
+          state.passports.player &&
+          state.passports.player.slots.every((slot) => slot && slot.image)
+            ? state.passports.player.slots
+            : coverCards,
         pending: state.swaps.filter((item) => item.status === 'testing').length,
       });
     } catch (error) {
@@ -56,7 +55,7 @@ Page({
   },
   open(event) {
     const id = event.currentTarget.dataset.id;
-    if (this.data.entries.some((entry) => entry.id === id))
+    if (id === 'passport' || this.data.entries.some((entry) => entry.id === id))
       wx.navigateTo({ url: `/community/pages/${id}/index` });
   },
   tracker() {
@@ -64,7 +63,7 @@ Page({
   },
   onShareAppMessage() {
     return {
-      title: '牌友空间：分享你的三张牌',
+      title: 'EDH 牌桌：分享你的三张牌',
       path: '/community/pages/hub/index',
     };
   },

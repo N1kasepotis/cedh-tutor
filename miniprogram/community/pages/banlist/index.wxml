@@ -1,56 +1,108 @@
-<view class="studio">
-  <text class="eyebrow">COMMANDER / 02</text>
-  <text class="title">禁牌观察</text>
-  <view class="subtitle">官方规则与玩家意见，分别看清。</view>
-  <view class="notice">官方列表快照 · 核对于 {{banlist.checkedAt}}</view>
+<view class="studio banlist">
+  <view class="page-heading">
+    <text class="eyebrow">EDH 牌桌</text>
+    <text class="title">禁牌表</text>
+    <view class="subtitle">查禁牌 看卡图 聊解禁</view>
+  </view>
   <view wx:if="{{selected}}">
-    <button class="link" bindtap="close">返回禁牌列表</button>
-    <view class="panel">
-      <text class="badge">{{selected.status}}</text>
-      <view class="section-title section">{{selected.name}}</view>
-      <view wx:if="{{selected.status !== '禁用'}}" class="subtitle">
-        该限制仅适用于行侣位置，不能解读为整张牌全面禁用。
+    <button hover-class="pressable-active" class="link" bindtap="close">
+      ← 全部禁牌
+    </button>
+    <view class="ban-detail">
+      <image
+        lazy-load
+        wx:if="{{!imageErrors[selected.id]}}"
+        class="detail-card"
+        src="{{selected.image}}"
+        mode="aspectFit"
+        data-id="{{selected.id}}"
+        binderror="imageFailed"
+      />
+      <view wx:else class="empty">
+        卡图暂未加载
+        <button hover-class="pressable-active" class="link" bindtap="retryImages">
+          重试卡图
+        </button>
       </view>
-      <button class="link" bindtap="source">复制官方来源链接</button>
+      <view class="detail-caption">
+        <text class="badge">{{selected.status}}</text>
+        <text class="muted">{{selected.artist}}</text>
+      </view>
+      <view class="section-title">{{selected.name}}</view>
+      <view wx:if="{{selected.status !== '禁用'}}" class="notice">
+        仅禁止用作行侣，仍可放入主牌或担任指挥官
+      </view>
+      <button hover-class="pressable-active" class="link" bindtap="source">
+        复制官方出处链接 →
+      </button>
     </view>
     <view class="section">
       <community-poll poll-id="{{pollId}}" choices="{{choices}}" />
     </view>
   </view>
   <block wx:else>
+    <view class="list-toolbar">
+      <text>{{cards.length}} 张牌</text>
+      <text class="muted">核对日期 {{banlist.checkedAt}}</text>
+    </view>
     <input
-      placeholder="搜索英文牌名，如 Mana Crypt"
+      class="ban-search"
+      placeholder="搜索牌名，例如 Mana Crypt"
       value="{{query}}"
       bindinput="search"
       maxlength="80"
     />
-    <button
-      wx:for="{{cards}}"
-      wx:key="id"
-      class="ban-card"
-      data-id="{{item.id}}"
-      bindtap="select"
-    >
-      <text class="card-name grow">{{item.name}}</text>
-      <text class="badge">{{item.status}}</text>
-    </button>
+    <view class="ban-grid">
+      <button
+        hover-class="pressable-active"
+        wx:for="{{cards}}"
+        wx:key="id"
+        class="ban-card"
+        data-id="{{item.id}}"
+        bindtap="select"
+        aria-label="{{item.name}} {{item.status}} 查看卡牌与投票"
+      >
+        <view class="ban-image-wrap">
+          <image
+            wx:if="{{!imageErrors[item.id]}}"
+            class="ban-image"
+            src="{{item.image}}"
+            mode="aspectFit"
+            lazy-load
+            data-id="{{item.id}}"
+            binderror="imageFailed"
+          />
+          <view wx:else class="ban-image-fallback">
+            卡图暂未加载
+            <text>点开后重试</text>
+          </view>
+        </view>
+        <view class="ban-name">{{item.name}}</view>
+        <view class="ban-caption">
+          <text class="{{item.status === '禁用' ? 'muted' : 'limited-status'}}">
+            {{item.status}}
+          </text>
+          <text>→</text>
+        </view>
+      </button>
+    </view>
     <view wx:if="{{!cards.length}}" class="empty">
-      列表中没有匹配项；这不等于该牌一定合法。
+      <view>未找到这张牌</view>
+      <view>赛制合法性请查完整官方列表</view>
     </view>
     <view class="section">
-      <view class="section-title">类别限制</view>
-      <view
-        wx:for="{{banlist.restrictions}}"
-        wx:key="*this"
-        class="list-item subtitle"
-      >
+      <view class="section-title">另有类别限制</view>
+      <view wx:for="{{banlist.restrictions}}" wx:key="*this" class="list-item subtitle">
         {{item}}
       </view>
-      <button class="link" bindtap="source">复制完整官方列表链接</button>
+      <button hover-class="pressable-active" class="link" bindtap="source">
+        复制官方禁牌表链接 →
+      </button>
     </view>
     <view class="credit">
-      此页为 Commander
-      指定禁牌与类别限制快照，不替代完整赛制合法性检查。官方列表变化后会开启新的意见轮次，旧票不会转入新轮次。
+      <view>适用 Commander 赛制</view>
+      <view>投票只收集玩家意见，不改变禁限规定</view>
+      <view>卡图 Scryfall　版权 Wizards of the Coast 与画师</view>
     </view>
   </block>
 </view>

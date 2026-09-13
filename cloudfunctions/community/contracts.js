@@ -1,14 +1,14 @@
 'use strict';
 
 // Portable domain contract. scripts/sync-community.js copies this to the cloud function.
-const SLOT_LABELS = ['设计之选', '我的打法', '私藏单卡'];
+const SLOT_LABELS = ['最佳设计', '打法代表', '常用妙妙牌'];
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
 const VIEWS = ['casual', 'competitive', 'both'];
 const REASONS = ['balance', 'diversity', 'experience', 'identity', 'unsure'];
 const TABLE_FIELDS = [
   {
     key: 'level',
-    label: '本桌目标',
+    label: '对局强度',
     options: ['轻松主题局', '优化休闲局', '高强度对局', 'cEDH'],
   },
   {
@@ -18,7 +18,7 @@ const TABLE_FIELDS = [
   },
   {
     key: 'combo',
-    label: '无限组合',
+    label: '无限组合技',
     options: ['可以使用', '开局前说明', '本桌避免'],
   },
   {
@@ -43,8 +43,7 @@ function text(value, max, required = false) {
     return '';
   }
   const clean = value.trim().replace(/[\u0000-\u001f\u007f]/g, ' ');
-  if (Array.from(clean).length > max || (required && !clean))
-    fail('INVALID_INPUT');
+  if (Array.from(clean).length > max || (required && !clean)) fail('INVALID_INPUT');
   return clean;
 }
 function passport(input) {
@@ -74,11 +73,7 @@ function table(input) {
   return result;
 }
 function ballot(input, allowed) {
-  if (
-    !input ||
-    !allowed.includes(input.choice) ||
-    !VIEWS.includes(input.perspective)
-  )
+  if (!input || !allowed.includes(input.choice) || !VIEWS.includes(input.perspective))
     fail('INVALID_VOTE');
   if (input.reason && !REASONS.includes(input.reason)) fail('INVALID_VOTE');
   return {
@@ -123,8 +118,7 @@ function replaceBallot(counts, oldVote, nextVote, choices) {
   return next;
 }
 function imageUrl(value) {
-  return typeof value === 'string' &&
-    /^https:\/\/cards\.scryfall\.io\//.test(value)
+  return typeof value === 'string' && /^https:\/\/cards\.scryfall\.io\//.test(value)
     ? value
     : '';
 }
@@ -137,26 +131,20 @@ function card(raw) {
     printId: raw.id,
     oracleId: raw.oracle_id || front.oracle_id || raw.id,
     name: String(raw.name || ''),
-    displayName: String(
-      raw.printed_name || front.printed_name || raw.name || '',
-    ),
+    displayName: String(raw.printed_name || front.printed_name || raw.name || ''),
     lang: String(raw.lang || 'en'),
     set: String(raw.set || ''),
     number: String(raw.collector_number || ''),
     artist: String(raw.artist || front.artist || ''),
     image: imageUrl(images.normal),
+    thumb: imageUrl(images.small),
     art: imageUrl(images.art_crop),
-    back: imageUrl(
-      faces[1] && faces[1].image_uris && faces[1].image_uris.normal,
-    ),
+    back: imageUrl(faces[1] && faces[1].image_uris && faces[1].image_uris.normal),
     rules: String(
       raw.printed_text ||
         raw.oracle_text ||
         faces
-          .map(
-            (face) =>
-              `${face.name}\n${face.printed_text || face.oracle_text || ''}`,
-          )
+          .map((face) => `${face.name}\n${face.printed_text || face.oracle_text || ''}`)
           .join('\n\n'),
     ),
   };

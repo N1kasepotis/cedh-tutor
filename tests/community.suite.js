@@ -5,6 +5,27 @@ const path = require('node:path');
 const domain = require('../miniprogram/community/shared/contracts');
 const { banlist } = require('../miniprogram/community/shared/catalog');
 const { createService } = require('../cloudfunctions/community/service');
+const banImages = require('../miniprogram/community/shared/ban-cards');
+
+test('every banned card has a complete image entry from a matching print', () => {
+  assert.deepEqual(Object.keys(banImages).sort(), banlist.cards.map(card => card.id).sort());
+  for (const card of banlist.cards) {
+    const entry = banImages[card.id];
+    assert.ok(entry.name.split(' // ').includes(card.name));
+    assert.match(entry.printId, domain.UUID);
+    for (const key of ['image', 'art']) {
+      const url = new URL(entry[key]);
+      assert.equal(url.protocol, 'https:');
+      assert.equal(url.hostname, 'cards.scryfall.io');
+      assert.ok(url.pathname.includes(entry.printId));
+    }
+  }
+});
+
+test('retired report action cannot create any public or report record', async () => {
+  const { service } = fixture();
+  await assert.rejects(service({ action: 'report', id: 'a'.repeat(64), reason: 'other' }, owner), { code: 'INVALID_INPUT' });
+});
 const {
   serializeTrackerData,
   normalizeTrackerData,

@@ -1,10 +1,105 @@
-@import "../../styles.wxss";
-.studio button.ban-card {
+@import '../../styles.wxss';
+.list-toolbar {
   display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-top: 36rpx;
+  font-size: 27rpx;
+  color: var(--cedh-accent-ink);
+}
+.studio input.ban-search {
+  margin: 22rpx 0 30rpx;
+}
+.ban-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 32rpx 22rpx;
+}
+.studio button.ban-card:not([size='mini']) {
+  display: block;
   width: 100%;
   text-align: left;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  border-radius: 0;
+}
+.ban-image-wrap {
+  height: 440rpx;
+  border-radius: 16rpx;
+  overflow: hidden;
+  background: var(--cedh-image-placeholder);
+}
+.ban-image {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+.ban-image-fallback {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+  gap: 16rpx;
+  color: var(--cedh-text-soft);
+  font-size: 25rpx;
+}
+.ban-image-fallback text {
+  font-size: 23rpx;
+}
+.ban-name {
+  font-size: 27rpx;
+  line-height: 1.45;
+  margin: 18rpx 0 10rpx;
+  overflow-wrap: anywhere;
+}
+.ban-caption {
+  display: flex;
+  align-items: center;
   justify-content: space-between;
-  gap: 20rpx;
-  margin-top: 14rpx;
-  padding: 28rpx 22rpx;
+  gap: 8rpx;
+  color: var(--cedh-accent-ink);
+  font-size: 23rpx;
+  font-weight: 400;
+}
+.ban-caption .muted {
+  font-size: 23rpx;
+}
+.limited-status {
+  color: var(--cedh-accent-ink);
+}
+.ban-detail {
+  margin-top: 12rpx;
+}
+.detail-card {
+  display: block;
+  width: 100%;
+  height: 710rpx;
+}
+.detail-caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16rpx;
+  margin: 28rpx 0;
+}
+@media (min-width: 600px) {
+  .ban-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+  .ban-image-wrap {
+    height: 300rpx;
+  }
+}
+
+.ban-name {
+  font-size: 14px;
+}
+.ban-caption,
+.ban-caption .muted {
+  font-size: 12px;
 }

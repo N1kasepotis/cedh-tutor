@@ -1,18 +1,31 @@
-@import "../../styles.wxss";
+@import '../../styles.wxss';
+.hand-context {
+  display: block;
+  white-space: pre-line;
+}
 .hand-list {
-  margin: 32rpx 0;
-  border-top: 1rpx solid rgba(255, 255, 255, 0.2);
+  margin: 30rpx 0 40rpx;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12rpx;
 }
 .hand-card {
   display: flex;
   align-items: center;
-  gap: 26rpx;
-  border-bottom: 1rpx solid rgba(255, 255, 255, 0.14);
-  padding: 24rpx 10rpx;
+  min-height: 104rpx;
+  border: 1rpx solid var(--cedh-line);
+  border-left: 4rpx solid var(--cedh-accent);
+  border-radius: 8rpx;
+  background: var(--cedh-surface);
+  padding: 20rpx;
 }
-.hand-number {
-  font-size: 24rpx;
-  color: #e5bad3;
-  width: 32rpx;
-  flex-shrink: 0;
+.hand-card .card-name {
+  font-size: 27rpx;
+}
+.hand-card:last-child {
+  grid-column: 1 / -1;
+}
+
+.hand-card .card-name {
+  font-size: 14px;
 }

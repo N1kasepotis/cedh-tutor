@@ -1,6 +1,8 @@
 /* 功能页共用暗色台面：黑色背景、浅色文字、半透明面板；各模块只覆盖语义强调色。
    页面样式只允许引用这里定义的变量；改主题色只改本文件。 */
 
+.studio,
+.picker-shell,
 .tracker,
 .random,
 .planechase-page,
@@ -146,6 +148,8 @@
   --cedh-btn-secondary-shadow: 0 14rpx 34rpx rgba(54, 42, 31, 0.055), inset 0 1rpx 0 rgba(255, 255, 255, 0.62);
 }
 
+.studio,
+.picker-shell,
 .random,
 .planechase-page,
 .playtest,
@@ -160,6 +164,25 @@
   --cedh-btn-secondary-bg: var(--cedh-surface-muted);
   --cedh-btn-secondary-border: var(--cedh-hairline);
   --cedh-btn-secondary-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.12), inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
+}
+
+/* EDH 牌桌沿用战绩页的金色强调，与共同暗色台面保持一致 */
+.studio,
+.picker-shell {
+  --cedh-accent: #cdb774;
+  --cedh-accent-ink: #e6d8ad;
+  --cedh-accent-soft: rgba(205, 183, 116, 0.14);
+  --cedh-accent-line: rgba(205, 183, 116, 0.4);
+  --cedh-line: rgba(205, 183, 116, 0.24);
+  --cedh-surface: rgba(255, 249, 224, 0.08);
+  --cedh-surface-raised: rgba(255, 249, 224, 0.12);
+  --cedh-input-glass: rgba(205, 183, 116, 0.1);
+  --cedh-image-placeholder: #191915;
+  --cedh-surface-solid: #161612;
+  --cedh-danger: #df91a2;
+  --cedh-danger-soft: #392127;
+  --cedh-disabled-bg: #24241f;
+  --cedh-text-credit: #a7a69a;
 }
 
 /* 固定操作栏和卡面弹层必须遮住背后文字；页面其余部分共用混沌工具主题。 */

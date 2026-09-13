@@ -1,1 +1,5 @@
-{ "navigationBarTitleText": "牌友空间", "navigationBarBackgroundColor": "#070707", "navigationBarTextStyle": "white" }
+{
+  "navigationBarTitleText": "EDH 牌桌",
+  "navigationBarBackgroundColor": "#070707",
+  "navigationBarTextStyle": "white"
+}
