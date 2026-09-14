@@ -44,8 +44,8 @@
   position: fixed;
   left: -2000px;
   top: 0;
-  width: 750px;
-  height: 1200px;
+  width: 900px;
+  height: 1440px;
   pointer-events: none;
 }
 .poster-preview {

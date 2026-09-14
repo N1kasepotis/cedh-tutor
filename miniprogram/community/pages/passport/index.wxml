@@ -3,7 +3,6 @@
   <text class="title">三张牌认识你</text>
   <view wx:if="{{friend}}" class="section">
     <view class="section-title">{{friend.content.nickname ? friend.content.nickname + ' 的三张牌' : '牌友的三张牌'}}</view>
-    <view class="muted">{{friend.content.deckName}}</view>
     <view class="friend-gallery">
       <button
         hover-class="pressable-active"
@@ -51,18 +50,6 @@
     </view>
     <view class="rule" />
   </view>
-  <picker
-    range="{{deckOptions}}"
-    range-key="name"
-    value="{{deckIndex}}"
-    bindchange="switchDeck"
-    disabled="{{busy}}"
-  >
-    <view class="panel row between">
-      <text class="grow">{{deckOptions[deckIndex].name}}</text>
-      <text>切换 ▾</text>
-    </view>
-  </picker>
   <label class="label" for="nickname">署名</label>
   <input
     id="nickname"

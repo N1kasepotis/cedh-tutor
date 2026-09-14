@@ -10,6 +10,18 @@ const banImages = require('../miniprogram/community/shared/ban-cards');
 const vm = require('node:vm');
 const { createRequire } = require('node:module');
 
+test('one player profile takes precedence and legacy deck drafts remain available for migration', () => {
+  const { playerPassport } = require('../miniprogram/community/utils/local');
+  const old = { id: 'deck-draft', slots: [{ name: 'card' }, null, null] };
+  const fuller = { id: 'fuller', slots: [{}, {}, {}] };
+  const state = { passports: { deck: old, second: fuller } };
+  assert.equal(playerPassport(state), fuller);
+  assert.equal(state.passports.deck, old);
+  state.passports.player = { id: 'player-draft', slots: [null, null, null] };
+  assert.equal(playerPassport(state), state.passports.player);
+  assert.equal(playerPassport({ passports: {} }), null);
+});
+
 test('unavailable tracker data does not prevent initializing and saving a player passport', () => {
   const filename = path.resolve(
     __dirname,
@@ -42,9 +54,9 @@ test('unavailable tracker data does not prevent initializing and saving a player
       },
     };
     page.onLoad({});
-    assert.equal(page.key, 'player');
+    assert.equal(page.data.deckOptions, undefined);
     assert.equal(typeof page.draftId, 'string');
-    assert.match(page.data.error, /战绩读取失败/);
+    assert.equal(page.data.error, '');
     page.save();
     assert.equal(page.data.error, '');
     assert.equal(
@@ -92,6 +104,7 @@ test('poster identifies blocked download domains and releases a stalled image re
   ]) {
     const sandbox = {
       module: { exports: {} },
+      require: createRequire(filename),
       wx: { getImageInfo },
       setTimeout: (callback) => setImmediate(callback),
       clearTimeout: clearImmediate,
@@ -109,6 +122,18 @@ test('poster identifies blocked download domains and releases a stalled image re
       expected,
     );
   }
+});
+
+test('poster wraps English at word boundaries while keeping long tokens within the panel', () => {
+  const { wrap } = require('../miniprogram/community/utils/poster');
+  const lines = [];
+  const ctx = { measureText: (value) => ({ width: value.length }), fillText: (value) => lines.push(value) };
+  wrap(ctx, 'Players Like Really Long Card Names', 0, 0, 16, 20, 4);
+  assert.deepEqual(lines, ['Players Like', 'Really Long Card', 'Names']);
+  lines.length = 0;
+  wrap(ctx, 'ABCDEFGHIJKLMNOPQRST', 0, 0, 8, 20, 4);
+  assert.equal(lines.join(''), 'ABCDEFGHIJKLMNOPQRST');
+  assert.ok(lines.every((line) => line.length <= 8));
 });
 
 test('every banned card has a complete image entry from a matching print', () => {

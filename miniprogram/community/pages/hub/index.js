@@ -40,12 +40,13 @@ Page({
   onShow() {
     try {
       const state = local.load();
+      const profile = local.playerPassport(state);
       this.setData({
-        saved: Object.keys(state.passports).length,
+        saved: profile ? 1 : 0,
         coverCards:
-          state.passports.player &&
-          state.passports.player.slots.every((slot) => slot && slot.image)
-            ? state.passports.player.slots
+          profile &&
+          profile.slots.every((slot) => slot && slot.image)
+            ? profile.slots
             : coverCards,
         pending: state.swaps.filter((item) => item.status === 'testing').length,
       });

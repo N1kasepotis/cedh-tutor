@@ -1,16 +1,33 @@
-function wrap(ctx, text, x, y, width, lineHeight, maxLines = 4) {
+const { SLOT_LABELS } = require('../shared/contracts');
+
+function textLines(ctx, text, width) {
+  const lines = [];
   let line = '';
-  let row = 0;
-  const characters = Array.from(String(text || ''));
-  for (let index = 0; index < characters.length; index += 1) {
-    const next = line + characters[index];
-    if (ctx.measureText(next).width > width && line) {
-      ctx.fillText(line, x, y + row * lineHeight);
-      if (++row >= maxLines) return;
-      line = characters[index];
-    } else line = next;
+  const tokens = String(text || '').match(/[A-Za-z0-9]+|\s+|./gu) || [];
+  for (const token of tokens) {
+    if (!line && !token.trim()) continue;
+    if (line && ctx.measureText(line + token).width > width) {
+      lines.push(line.trimEnd());
+      line = '';
+    }
+    const value = line ? token : token.trimStart();
+    for (const character of Array.from(value)) {
+      if (line && ctx.measureText(line + character).width > width) {
+        lines.push(line.trimEnd());
+        line = '';
+      }
+      line += character;
+    }
   }
-  ctx.fillText(line, x, y + row * lineHeight);
+  if (line) lines.push(line.trimEnd());
+  return lines;
+}
+function wrap(ctx, text, x, y, width, lineHeight, maxLines = 4) {
+  textLines(ctx, text, width)
+    .slice(0, maxLines)
+    .forEach((line, index) => {
+      ctx.fillText(line, x, y + index * lineHeight);
+    });
 }
 function boundedTask(milliseconds, message, start) {
   return new Promise((resolve, reject) => {
@@ -60,6 +77,44 @@ function image(canvas, url) {
     });
   });
 }
+function cover(ctx, img, x, y, width, height) {
+  const scale = Math.max(width / img.width, height / img.height);
+  const sw = width / scale;
+  const sh = height / scale;
+  ctx.drawImage(
+    img,
+    (img.width - sw) / 2,
+    (img.height - sh) / 2,
+    sw,
+    sh,
+    x,
+    y,
+    width,
+    height,
+  );
+}
+function fitText(
+  ctx,
+  text,
+  x,
+  y,
+  width,
+  initialSize,
+  lines,
+  maxHeight = Infinity,
+) {
+  const value = String(text || '');
+  let size = initialSize;
+  // Measure at export resolution so long names retain their full text.
+  while (size > 14) {
+    ctx.font = `bold ${size}px sans-serif`;
+    const count = textLines(ctx, value, width).length;
+    if (count <= lines && count * size * 1.18 <= maxHeight) break;
+    size -= 1;
+  }
+  ctx.font = `bold ${size}px sans-serif`;
+  wrap(ctx, value, x, y, width, size * 1.18, lines);
+}
 async function render(page, passport, artOnly) {
   const canvas = await boundedTask(
     5000,
@@ -75,63 +130,122 @@ async function render(page, passport, artOnly) {
             : reject(new Error('画布尚未就绪，请重试')),
         ),
   );
-  canvas.width = 750;
-  canvas.height = 1200;
+  // Download before drawing so errors never leave a partially exported poster.
+  const pictures = await Promise.all(
+    passport.slots.map((slot) => {
+      const url = artOnly ? slot.art || slot.image : slot.image;
+      if (!url) throw new Error('所选版本暂无卡图，请换一个版本后导出');
+      return image(canvas, url);
+    }),
+  );
+  canvas.width = 900;
+  canvas.height = 1440;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0b0b09';
-  ctx.fillRect(0, 0, 750, 1200);
-  ctx.fillStyle = '#e6d8ad';
-  ctx.font = '22px sans-serif';
-  ctx.fillText('THREE CARDS / 三张牌认识你', 44, 60);
-  ctx.fillStyle = '#fffefa';
-  ctx.font = 'bold 42px sans-serif';
-  wrap(ctx, passport.nickname || '我的三张牌', 44, 124, 650, 46, 2);
-  ctx.font = '22px sans-serif';
-  wrap(ctx, passport.deckName || '', 44, 218, 650, 28, 2);
+  ctx.fillStyle = '#10120f';
+  ctx.fillRect(0, 0, 900, 1440);
+  const accents = ['#e6ce8b', '#a9c8bd', '#d7afa1'];
+  // The three spine marks match the three choices below.
+  accents.forEach((color, index) => {
+    ctx.fillStyle = color;
+    ctx.fillRect(0, index * 480, 10, 480);
+  });
+  ctx.fillStyle = '#e6ce8b';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('EDH  /  PLAYER PROFILE', 40, 48);
+  ctx.textAlign = 'right';
+  ctx.fillStyle = '#363a30';
+  ctx.font = 'bold 156px serif';
+  ctx.fillText('03', 865, 188);
+  ctx.textAlign = 'left';
+  ctx.fillStyle = '#fff8e8';
+  fitText(ctx, passport.nickname || '我的三张牌', 40, 116, 700, 60, 2);
+  ctx.fillStyle = '#b9b9a7';
+  ctx.font = '24px sans-serif';
+  ctx.fillText('三张牌认识我', 42, 218);
   for (let index = 0; index < 3; index += 1) {
     const slot = passport.slots[index];
-    const y = 290 + index * 272;
-    const url = artOnly ? slot.art || slot.image : slot.image;
-    if (!url) throw new Error('所选版本暂无卡图，请换一个版本后导出');
-    const img = await image(canvas, url);
-    const scale = Math.min(174 / img.width, 244 / img.height);
-    ctx.drawImage(
-      img,
-      44 + (174 - img.width * scale) / 2,
-      y + (244 - img.height * scale) / 2,
-      img.width * scale,
-      img.height * scale,
+    const img = pictures[index];
+    const y = 250 + index * 356;
+    const accent = accents[index];
+    ctx.save();
+    ctx.beginPath();
+    ctx.rect(30, y, 840, 334);
+    ctx.clip();
+    cover(ctx, img, 30, y, 840, 334);
+    const shade = ctx.createLinearGradient(30, y, 870, y);
+    shade.addColorStop(
+      0,
+      artOnly ? 'rgba(12,16,13,0.04)' : 'rgba(12,16,13,0.70)',
     );
-    ctx.fillStyle = '#e6d8ad';
-    ctx.font = '22px sans-serif';
-    ctx.fillText(
-      ['最喜欢的设计', '代表打法的牌', '常用妙妙牌'][index],
-      246,
-      y + 26,
-    );
-    ctx.fillStyle = '#fffefa';
-    ctx.font = 'bold 27px sans-serif';
-    wrap(ctx, slot.displayName || slot.name, 246, y + 68, 452, 34, 2);
-    ctx.font = '23px sans-serif';
-    ctx.fillStyle = '#bab8ab';
-    wrap(ctx, slot.reason, 246, y + 144, 452, 30, 3);
-    ctx.font = '17px sans-serif';
+    shade.addColorStop(0.36, 'rgba(12,16,13,0.78)');
+    shade.addColorStop(0.62, 'rgba(12,16,13,0.96)');
+    shade.addColorStop(1, '#111710');
+    ctx.fillStyle = shade;
+    ctx.fillRect(30, y, 840, 334);
+    if (!artOnly) {
+      ctx.shadowColor = 'rgba(0,0,0,0.65)';
+      ctx.shadowBlur = 18;
+      ctx.shadowOffsetY = 6;
+      const scale = Math.min(212 / img.width, 298 / img.height);
+      ctx.drawImage(
+        img,
+        50 + (212 - img.width * scale) / 2,
+        y + 18 + (298 - img.height * scale) / 2,
+        img.width * scale,
+        img.height * scale,
+      );
+      ctx.shadowBlur = 0;
+      ctx.shadowOffsetY = 0;
+    }
+    ctx.fillStyle = accent;
+    ctx.fillRect(30, y, 840, 2);
+    ctx.font = 'bold 21px sans-serif';
+    ctx.fillText(SLOT_LABELS[index], 302, y + 39);
+    ctx.fillStyle = '#fffaf0';
+    fitText(ctx, slot.displayName || slot.name, 300, y + 92, 514, 39, 3, 82);
+    if (slot.reason) {
+      ctx.fillStyle = accent;
+      ctx.fillRect(302, y + 168, 24, 3);
+      ctx.fillStyle = '#e1e0d4';
+      ctx.font = '25px sans-serif';
+      wrap(ctx, slot.reason, 302, y + 204, 510, 33, 3);
+    }
+    ctx.fillStyle = '#b9bdac';
+    ctx.font = '18px sans-serif';
     wrap(
       ctx,
-      `${slot.lang} / ${slot.set} #${slot.number}　${slot.artist}`,
-      246,
-      y + 239,
-      452,
-      20,
+      `${slot.lang.toUpperCase()} / ${slot.set.toUpperCase()} #${slot.number}`,
+      302,
+      y + 300,
+      500,
+      21,
       1,
     );
+    ctx.textAlign = 'right';
+    ctx.fillStyle = accent;
+    ctx.font = 'bold 22px serif';
+    ctx.fillText(`0${index + 1}`, 848, y + 39);
+    ctx.textAlign = 'left';
+    ctx.restore();
   }
-  ctx.fillStyle = '#a7a69a';
-  ctx.font = '18px sans-serif';
-  ctx.fillText(
-    'cEDH 导师　卡图 Scryfall　© Wizards of the Coast / 画师',
-    44,
-    1164,
+  ctx.fillStyle = '#d0c397';
+  ctx.font = 'bold 20px sans-serif';
+  ctx.fillText('cEDH Tutor', 40, 1354);
+  ctx.fillStyle = '#b9bdac';
+  ctx.font = '17px sans-serif';
+  ctx.fillText('卡图 Scryfall  /  © Wizards of the Coast', 40, 1385);
+  // Artist credit is separate from the card panels so a long name cannot overlap a note.
+  fitText(
+    ctx,
+    passport.slots
+      .map((slot) => slot.artist)
+      .filter(Boolean)
+      .join(' / '),
+    40,
+    1411,
+    820,
+    16,
+    2,
   );
   return boundedTask(10000, '图片导出超时，请重试', (resolve, reject) =>
     wx.canvasToTempFilePath(

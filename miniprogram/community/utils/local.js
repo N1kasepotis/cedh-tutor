@@ -72,4 +72,11 @@ function update(mutator) {
 function id() {
   return `${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 10)}`;
 }
-module.exports = { load, update, id };
+// Prefer the existing player profile. Older deck drafts remain intact as backups.
+function playerPassport(state) {
+  if (state.passports.player) return state.passports.player;
+  return Object.values(state.passports).sort(
+    (left, right) => right.slots.filter(Boolean).length - left.slots.filter(Boolean).length,
+  )[0] || null;
+}
+module.exports = { load, update, id, playerPassport };

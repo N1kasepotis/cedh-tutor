@@ -10,8 +10,6 @@ Page({
     nickname: '',
     slots: [null, null, null],
     reasons: ['', '', ''],
-    deckIndex: 0,
-    deckOptions: [{ id: 'player', name: '玩家名片' }],
     picker: false,
     busy: false,
     error: '',
@@ -27,17 +25,9 @@ Page({
   },
   onLoad(options) {
     this.disposed = false;
-    this.key = 'player';
     this.draftId = local.id();
     try {
-      this.loadDraft('player');
-    } catch (error) {
-      ui.error(this, error);
-    }
-    try {
-      this.setData({
-        deckOptions: [{ id: 'player', name: '玩家名片' }, ...ui.decks()],
-      });
+      this.loadDraft();
     } catch (error) {
       ui.error(this, error);
     }
@@ -55,14 +45,13 @@ Page({
   onUnload() {
     this.disposed = true;
   },
-  loadDraft(key) {
-    const draft = local.load().passports[key] || {
+  loadDraft() {
+    const draft = local.playerPassport(local.load()) || {
       id: local.id(),
       nickname: '',
       slots: [null, null, null],
       remote: null,
     };
-    this.key = key;
     this.draftId = draft.id;
     this.setData({
       nickname: draft.nickname,
@@ -75,16 +64,6 @@ Page({
       feedback: '',
     });
     this.compare();
-  },
-  switchDeck(event) {
-    if (!this.saveDraft(false)) return;
-    const index = Number(event.detail.value);
-    try {
-      this.loadDraft(this.data.deckOptions[index].id);
-      this.setData({ deckIndex: index });
-    } catch (error) {
-      ui.error(this, error);
-    }
   },
   nickname(event) {
     this.setData({
@@ -122,9 +101,7 @@ Page({
   content() {
     return {
       nickname: this.data.nickname,
-      deckName: this.data.deckIndex
-        ? this.data.deckOptions[this.data.deckIndex].name
-        : '',
+      deckName: '',
       slots: this.data.slots.map((slot, index) =>
         slot ? { ...slot, reason: this.data.reasons[index] } : null,
       ),
@@ -134,7 +111,7 @@ Page({
     try {
       const content = this.content();
       local.update((state) => {
-        state.passports[this.key] = {
+        state.passports.player = {
           id: this.draftId,
           ...content,
           remote: this.data.remote,
