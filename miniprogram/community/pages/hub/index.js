@@ -7,7 +7,6 @@ const coverCards = ['ancestral-recall', 'black-lotus', 'time-walk'].map(
 Page({
   data: {
     coverCards,
-    saved: 0,
     pending: 0,
     error: '',
     entries: [
@@ -21,7 +20,7 @@ Page({
         id: 'table',
         title: '对局约定',
         description: '聊好这桌怎么玩',
-        tag: '开局',
+        tag: '条约',
       },
       {
         id: 'swaps',
@@ -42,7 +41,6 @@ Page({
       const state = local.load();
       const profile = local.playerPassport(state);
       this.setData({
-        saved: profile ? 1 : 0,
         coverCards:
           profile &&
           profile.slots.every((slot) => slot && slot.image)
@@ -58,9 +56,6 @@ Page({
     const id = event.currentTarget.dataset.id;
     if (id === 'passport' || this.data.entries.some((entry) => entry.id === id))
       wx.navigateTo({ url: `/community/pages/${id}/index` });
-  },
-  tracker() {
-    wx.navigateTo({ url: '/pages/tracker/tracker' });
   },
   onShareAppMessage() {
     return {

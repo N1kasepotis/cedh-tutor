@@ -46,21 +46,6 @@
   line-height: 1.3;
   font-weight: 700;
 }
-.feature-copy {
-  color: var(--cedh-text-soft);
-  font-size: 25rpx;
-  line-height: 1.65;
-  margin-top: 16rpx;
-}
-.feature-action {
-  display: flex;
-  justify-content: space-between;
-  border-top: 1rpx solid var(--cedh-line);
-  margin-top: 28rpx;
-  padding-top: 22rpx;
-  color: var(--cedh-accent-ink);
-  font-size: 28rpx;
-}
 .tool-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -96,17 +81,6 @@
   font-size: 32rpx;
   color: var(--cedh-accent-ink);
 }
-.studio button.review-entry:not([size='mini']) {
-  width: 100%;
-  margin-top: 22rpx;
-  gap: 24rpx;
-  padding: 28rpx 0;
-  border: 0;
-  border-top: 1rpx solid var(--cedh-line);
-  border-radius: 0;
-  background: transparent;
-  text-align: left;
-}
 @media (max-width: 350px) {
   .entry-card {
     width: 164rpx;
@@ -126,9 +100,6 @@
 
 .tool-label {
   font-size: 12px;
-}
-.feature-copy {
-  font-size: 13px;
 }
 .tool-entry .muted {
   font-size: 13px;

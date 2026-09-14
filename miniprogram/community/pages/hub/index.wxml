@@ -27,11 +27,6 @@
         />
       </view>
       <view class="feature-title">三张牌认识你</view>
-      <view class="feature-copy">最喜欢的设计　代表打法的牌　常用妙妙牌</view>
-      <view class="feature-action">
-        {{saved ? '编辑我的名片' : '选出我的三张牌'}}
-        <text>→</text>
-      </view>
     </button>
     <view class="section-heading">
       <text>牌桌工具</text>
@@ -53,13 +48,6 @@
         <view class="muted">{{item.description}}</view>
       </button>
     </view>
-    <button hover-class="pressable-active" class="review-entry" bindtap="tracker">
-      <view class="grow">
-        <view class="entry-title">对局复盘</view>
-        <view class="muted">记下关键回合和下次调整</view>
-      </view>
-      <text class="entry-arrow">→</text>
-    </button>
     <view wx:if="{{pending}}" class="notice">{{pending}} 条调牌记录待复盘</view>
   </view>
 </view>

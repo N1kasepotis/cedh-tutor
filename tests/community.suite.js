@@ -626,3 +626,16 @@ test('hands page shows seat, stage and the cited verdict with a copyable source 
   assert.match(js, /wx\.setClipboardData\(\{ data: this\.data\.source\.url \}\)/);
   assert.match(js, /title: `这手留不留：\$\{hand\.short\}，\$\{hand\.seat\} 号位`/);
 });
+
+// 入口页按用户要求精简：三张牌入口不写三类选牌说明、不留“编辑我的名片 →”一行，
+// 对局约定的标签叫“条约”，也不再从这里跳去战绩页复盘
+test('EDH 牌桌 hub keeps the passport entry lean and has no tracker shortcut', () => {
+  const dir = path.join(__dirname, '../miniprogram/community/pages/hub');
+  const wxml = fs.readFileSync(path.join(dir, 'index.wxml'), 'utf8');
+  const js = fs.readFileSync(path.join(dir, 'index.js'), 'utf8');
+  assert.doesNotMatch(wxml, /最喜欢的设计|编辑我的名片|feature-copy|feature-action/);
+  assert.doesNotMatch(wxml, /对局复盘|bindtap="tracker"/);
+  assert.doesNotMatch(js, /pages\/tracker\/tracker/);
+  assert.match(js, /id: 'table',[\s\S]*?tag: '条约'/);
+  assert.doesNotMatch(js, /'开局'/);
+});
