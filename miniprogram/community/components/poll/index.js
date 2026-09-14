@@ -2,7 +2,12 @@ const api = require('../../utils/api');
 const local = require('../../utils/local');
 Component({
   options: { styleIsolation: 'apply-shared' },
-  properties: { pollId: String, choices: Array },
+  properties: {
+    pollId: String,
+    choices: Array,
+    // 练习题用：点选项即投票；不显示赛制、理由、改票撤票与刷新，投过票才显示比例
+    compact: { type: Boolean, value: false },
+  },
   data: {
     localChoice: '',
     remembered: false,
@@ -21,6 +26,7 @@ Component({
     mine: null,
     busy: false,
     error: '',
+    closed: false,
     online: api.available(),
     updated: '',
   },
@@ -55,6 +61,7 @@ Component({
           rows: [],
           busy: false,
           error: '',
+          closed: false,
         });
       } catch (error) {
         this.setData({ error: error.message });
@@ -85,12 +92,13 @@ Component({
       }
     },
     choose(event) {
-      this.setData({
-        localChoice: event.currentTarget.dataset.choice,
-        error: '',
-      });
+      const choice = event.currentTarget.dataset.choice;
+      this.setData({ localChoice: choice, error: '' });
       this.remember();
-      this.triggerEvent('answer', { choice: this.data.localChoice });
+      this.triggerEvent('answer', { choice });
+      const { online, closed, mine } = this.data;
+      if (this.properties.compact && online && !closed && !(mine && mine.choice === choice))
+        this.request('vote', { vote: this.voteValue() });
     },
     toggleDetails() {
       this.setData({ details: !this.data.details });
@@ -148,8 +156,14 @@ Component({
         });
         this.decorate();
       } catch (error) {
-        if (request === this.requestId)
-          this.setData({ error: error.message, busy: false });
+        if (request !== this.requestId) return;
+        // 服务端不认这个题号（换题后云函数还没重新部署，或禁牌表换了轮次）：刷新也没用，
+        // 投票整块收起，不把“选项已变化”这类用户做不了任何事的提示摆出来
+        if (error.code === 'INVALID_VOTE')
+          this.setData({ closed: true, stats: null, mine: null, busy: false });
+        // 练习题进页时读票失败不打扰作答；投票这类用户主动的操作失败仍要说清楚
+        else if (this.properties.compact && action === 'poll') this.setData({ busy: false });
+        else this.setData({ error: error.message, busy: false });
       }
     },
     refresh() {

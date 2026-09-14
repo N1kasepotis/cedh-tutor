@@ -3,7 +3,6 @@
   <view class="content-layer">
     <text class="eyebrow">EDH 牌桌</text>
     <text class="title">这手留不留</text>
-    <view class="subtitle">社区公开讨论过的起手，先投票，再看来源判断</view>
     <picker range="{{labels}}" value="{{index}}" bindchange="select">
       <view class="panel surface row between">
         <text>{{labels[index]}}</text>
@@ -22,6 +21,7 @@
       </view>
     </view>
     <community-poll
+      compact="{{true}}"
       poll-id="{{'hand:' + hand.id}}"
       choices="{{choices}}"
       bindanswer="reveal"
@@ -47,7 +47,6 @@
       </button>
     </view>
     <view class="actions">
-      <button hover-class="pressable-active" bindtap="practice">用我的套牌练习</button>
       <button hover-class="pressable-active" open-type="share">发给牌友</button>
     </view>
   </view>

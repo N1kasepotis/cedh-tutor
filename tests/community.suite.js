@@ -639,3 +639,117 @@ test('EDH 牌桌 hub keeps the passport entry lean and has no tracker shortcut',
   assert.match(js, /id: 'table',[\s\S]*?tag: '条约'/);
   assert.doesNotMatch(js, /'开局'/);
 });
+
+// 这手留不留按用户要求精简：七张牌格同宽同高；投票只有一步，不显示赛制、理由、改票撤票与刷新，
+// 投过票才看比例；不再跳去试玩页
+test('hands page stays lean: equal card boxes and a one-tap poll without extra controls', () => {
+  const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+  const wxss = read('miniprogram/community/pages/hands/index.wxss');
+  const list = wxss.match(/\.hand-list\s*\{[^}]*\}/)[0];
+  assert.match(list, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
+  assert.match(list, /grid-auto-rows: 1fr/, '牌名折行时整组一起变高，七格保持同高');
+  assert.doesNotMatch(wxss, /grid-column|last-child|nth-child/, '不让某一张牌单独占满一行');
+
+  const wxml = read('miniprogram/community/pages/hands/index.wxml');
+  assert.match(wxml, /<community-poll\s+compact="\{\{true\}\}"/);
+  assert.doesNotMatch(wxml, /用我的套牌练习|bindtap="practice"|先投票/);
+  const js = read('miniprogram/community/pages/hands/index.js');
+  assert.doesNotMatch(js, /playtest/);
+  assert.match(js, /`\$\{index \+ 1\} \/ \$\{hands\.length\}　\$\{hand\.short\}`/);
+
+  const pollWxml = read('miniprogram/community/components/poll/index.wxml');
+  assert.match(pollWxml, /<block wx:if="\{\{!compact && !closed\}\}">[\s\S]*?bindtap="toggleDetails"/);
+  assert.match(pollWxml, /<view wx:if="\{\{!compact && !closed\}\}" class="actions">[\s\S]*?bindtap="submit"/);
+  assert.match(pollWxml, /wx:if="\{\{stats && \(!compact \|\| localChoice\)\}\}"/, '练习题投过票才显示比例');
+  assert.doesNotMatch(read('miniprogram/community/utils/api.js'), /投票选项已变化/);
+});
+
+// “投票选项已变化，请刷新”出在服务端不认新题号（换题后云函数还没重新部署）：每道题一进来就报，
+// 刷新也没用。练习题现在点选项即投票；服务端不认题号时整块投票安静收起，也不发投票请求。
+test('compact poll votes in one tap and goes quiet when the server does not know the question', async () => {
+  const filename = path.resolve(__dirname, '../miniprogram/community/components/poll/index.js');
+  const previous = global.wx;
+  const stored = new Map();
+  const calls = [];
+  const events = [];
+  let serverKnowsPoll = false;
+  let definition;
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  try {
+    global.wx = {
+      getStorageSync: (key) => (stored.has(key) ? stored.get(key) : ''),
+      setStorageSync: (key, value) => stored.set(key, value),
+      cloud: {
+        init() {},
+        callFunction: async ({ data }) => {
+          calls.push(data);
+          if (!serverKnowsPoll) return { result: { ok: false, code: 'INVALID_VOTE' } };
+          return {
+            result: {
+              ok: true,
+              data: {
+                counts: { all: { keep: 3, mull: 1, unknown: 1 } },
+                mine: data.vote || null,
+                updatedAt: 1,
+              },
+            },
+          };
+        },
+      },
+    };
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Component: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+    });
+    const poll = {
+      ...definition.methods,
+      properties: {
+        pollId: 'hand:ptw-kinnan-turn-one',
+        choices: [
+          { id: 'keep', label: '保留' },
+          { id: 'mull', label: '调度' },
+          { id: 'unknown', label: '还没想好' },
+        ],
+        compact: true,
+      },
+      data: structuredClone(definition.data),
+      setData(value) {
+        Object.assign(this.data, value);
+      },
+      triggerEvent(name, detail) {
+        events.push({ name, choice: detail.choice });
+      },
+    };
+    const tap = (choice) => poll.choose({ currentTarget: { dataset: { choice } } });
+    const votes = () => calls.filter((call) => call.action === 'vote');
+
+    poll.loadPoll();
+    await settle();
+    assert.equal(poll.data.closed, true, '服务端不认题号时收起投票');
+    assert.equal(poll.data.error, '', '不再摆出用户无能为力的错误提示');
+    tap('keep');
+    assert.equal(events.length, 1);
+    assert.equal(events[0].name, 'answer');
+    assert.equal(events[0].choice, 'keep');
+    assert.equal(votes().length, 0, '题目未开放时不发投票请求');
+
+    serverKnowsPoll = true;
+    poll.loadPoll();
+    await settle();
+    assert.equal(poll.data.closed, false);
+    tap('mull');
+    await settle();
+    assert.equal(votes().length, 1, '点选项即投票，不用再按一次投票');
+    assert.equal(votes()[0].vote.choice, 'mull');
+    assert.equal(poll.data.mine.choice, 'mull');
+    assert.deepEqual(Array.from(poll.data.rows, (row) => [row.id, row.percent]), [['keep', 75], ['mull', 25]]);
+    tap('mull');
+    await settle();
+    assert.equal(votes().length, 1, '重复点同一个选项不重复投票');
+  } finally {
+    global.wx = previous;
+  }
+});

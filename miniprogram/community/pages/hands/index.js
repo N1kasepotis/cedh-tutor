@@ -1,7 +1,6 @@
 const { hands, handSources } = require('../../shared/catalog');
-const labels = hands.map(
-  (hand, index) => `${index + 1} / ${hands.length}　${hand.short}　${hand.seat} 号位`,
-);
+// 座次放在对局条件里，选择器只留序号和主将
+const labels = hands.map((hand, index) => `${index + 1} / ${hands.length}　${hand.short}`);
 Page({
   data: {
     labels,
@@ -31,9 +30,6 @@ Page({
   },
   copySource() {
     wx.setClipboardData({ data: this.data.source.url });
-  },
-  practice() {
-    wx.navigateTo({ url: '/pages/playtest/playtest' });
   },
   onShareAppMessage() {
     const { hand } = this.data;
