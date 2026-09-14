@@ -6,7 +6,8 @@ const poster = require('../../utils/poster');
 Page({
   data: {
     labels: domain.SLOT_LABELS,
-    hints: ['你最欣赏哪张牌的设计', '哪张牌最能代表你的打法', '你套牌里的常客'],
+    hints: ['看一眼就心动的那张', '牌友一看就知道你怎么玩的那张', '每次打出来都让全桌愣一下的那张'],
+    slotIndex: 0,
     nickname: '',
     slots: [null, null, null],
     reasons: ['', '', ''],
@@ -79,7 +80,8 @@ Page({
   },
   choose(event) {
     this.slotIndex = Number(event.currentTarget.dataset.index);
-    this.setData({ picker: true });
+    // 告诉选牌弹层这次是为哪一格打开的：换了一格就从头搜索
+    this.setData({ picker: true, slotIndex: this.slotIndex });
   },
   closePicker() {
     this.setData({ picker: false });

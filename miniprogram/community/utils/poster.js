@@ -3,6 +3,8 @@ const { SLOT_LABELS } = require('../shared/contracts');
 // 深暗极简：冷黑底、银白与冷灰的文字层级，钴蓝只出现一次（标题下的短线）。
 // 不画三色色条、右上角大号编号和每段序号；层级只靠字号、间距和留白区分。
 const MARGIN = 64;
+const MINI_PROGRAM_CODE = '/assets/cT_logo_v.2.jpg';
+const CODE_SIZE = 112;
 const COLORS = {
   field: '#050507',
   plate: '#0C0E12',
@@ -106,6 +108,15 @@ function image(canvas, url) {
         );
       },
     });
+  });
+}
+// 包里的小程序码不走网络，直接交给画布加载；失败时说清是二维码，不冒充卡图下载失败
+function asset(canvas, src) {
+  return boundedTask(5000, '小程序码加载超时，请重试', (resolve, reject) => {
+    const img = canvas.createImage();
+    img.onload = () => resolve(img);
+    img.onerror = () => reject(new Error('小程序码加载失败，请重试'));
+    img.src = src;
   });
 }
 function cover(ctx, img, x, y, width, height) {
@@ -217,6 +228,7 @@ async function render(page, passport, artOnly) {
       return image(canvas, url);
     }),
   );
+  const code = await asset(canvas, MINI_PROGRAM_CODE);
   canvas.width = 900;
   canvas.height = 1440;
   const ctx = canvas.getContext('2d');
@@ -224,16 +236,39 @@ async function render(page, passport, artOnly) {
   ctx.fillStyle = COLORS.field;
   ctx.fillRect(0, 0, 900, 1440);
 
+  // 右上角小程序码：白底圆角方块保证长按能识别，下面一行小字说明用途
+  const codeX = 900 - MARGIN - CODE_SIZE;
+  ctx.save();
+  ctx.fillStyle = '#FFFFFF';
+  roundedRect(ctx, codeX, 64, CODE_SIZE, CODE_SIZE, 14);
+  ctx.fill();
+  ctx.clip();
+  const codeScale = Math.min(CODE_SIZE / code.width, CODE_SIZE / code.height);
+  ctx.drawImage(
+    code,
+    codeX + (CODE_SIZE - code.width * codeScale) / 2,
+    64 + (CODE_SIZE - code.height * codeScale) / 2,
+    code.width * codeScale,
+    code.height * codeScale,
+  );
+  ctx.restore();
+  ctx.fillStyle = COLORS.faint;
+  ctx.font = '14px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('长按识别，选出你的三张牌', 900 - MARGIN, 64 + CODE_SIZE + 26);
+  ctx.textAlign = 'left';
+
   ctx.fillStyle = COLORS.meta;
   ctx.font = '15px sans-serif';
   tracked(ctx, 'EDH / PLAYER PROFILE', MARGIN, 92, 3);
   ctx.fillStyle = COLORS.display;
+  // 标题收窄到二维码说明文字的左侧，长署名折行也不会压到二维码
   const titleBottom = fitText(
     ctx,
     passport.nickname || '我的三张牌',
     MARGIN,
     168,
-    900 - MARGIN * 2,
+    900 - MARGIN * 2 - 184,
     64,
     2,
     104,

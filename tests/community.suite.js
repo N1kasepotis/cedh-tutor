@@ -791,7 +791,14 @@ test('passport poster draws a quiet dark layout without colour spines or index n
       measureText: (value) => ({ width: Array.from(String(value)).length * 12 }),
       fillText: (text, x, y) => log.push({ op: 'text', text: String(text), x, y, fill, align }),
       fillRect: (x, y, w, h) => log.push({ op: 'rect', x, y, w, h, fill }),
-      drawImage: (...args) => log.push({ op: 'image', count: args.length }),
+      drawImage: (img, ...rest) =>
+        log.push({
+          op: 'image',
+          url: img.url,
+          count: rest.length + 1,
+          x: rest.length === 8 ? rest[4] : rest[0],
+          y: rest.length === 8 ? rest[5] : rest[1],
+        }),
       fill: () => log.push({ op: 'fill', fill }),
       beginPath() {},
       moveTo() {},
@@ -808,7 +815,8 @@ test('passport poster draws a quiet dark layout without colour spines or index n
       createImage: () => {
         const img = { width: 488, height: 680 };
         Object.defineProperty(img, 'src', {
-          set() {
+          set(value) {
+            img.url = value;
             setImmediate(() => img.onload());
           },
         });
@@ -878,16 +886,66 @@ test('passport poster draws a quiet dark layout without colour spines or index n
     assert.equal(log.filter((entry) => entry.fill === '#2454FF').length, 1, '钴蓝只出现一次');
     for (const entry of texts) assert.ok(entry.x >= 64 && entry.x <= 836, `${entry.text} 超出左右边距`);
     const images = log.filter((entry) => entry.op === 'image');
-    assert.equal(images.length, 3);
+    const code = images.filter((entry) => entry.url === '/assets/cT_logo_v.2.jpg');
+    const cardsDrawn = images.filter((entry) => entry.url !== '/assets/cT_logo_v.2.jpg');
+    assert.equal(code.length, 1, '画一次小程序码');
+    assert.ok(code[0].x >= 700 && code[0].y <= 100, '小程序码在右上角');
+    assert.equal(cardsDrawn.length, 3);
     assert.ok(
-      images.every((entry) => entry.count === (artOnly ? 9 : 5)),
+      cardsDrawn.every((entry) => entry.count === (artOnly ? 9 : 5)),
       artOnly ? '卡画模式裁成左侧画带' : '全卡模式整张等比放入',
     );
     const joined = texts.map((entry) => entry.text).join('');
     for (const label of ['最喜欢的设计', '代表打法的牌', '常用妙妙牌']) assert.ok(joined.includes(label));
     assert.equal(joined.includes('三张牌认识我'), Boolean(nickname), '没署名时不重复“三张牌认识我”');
     assert.ok(joined.includes('Wizards of the Coast') && joined.includes('Myles Wohl'), '卡图与画师署名保留');
+    assert.ok(joined.includes('长按识别'), '小程序码下有一行用途说明');
   }
+});
+
+// 三张牌名片：填写提示改成让人想分享的问法；选牌弹层记住为哪个问题打开，换了问题就从头搜索，
+// 同一格误关再打开仍保留上次结果
+test('passport prompts invite sharing and the card picker starts fresh for a different question', () => {
+  const dir = path.join(__dirname, '../miniprogram/community');
+  const pageJs = fs.readFileSync(path.join(dir, 'pages/passport/index.js'), 'utf8');
+  const pageWxml = fs.readFileSync(path.join(dir, 'pages/passport/index.wxml'), 'utf8');
+  assert.match(pageJs, /hints: \['看一眼就心动的那张', '牌友一看就知道你怎么玩的那张', '每次打出来都让全桌愣一下的那张'\]/);
+  assert.match(pageWxml, /placeholder="牌桌上大家怎么叫你，不填也行"/);
+  assert.match(pageWxml, /placeholder="为什么是它？一句话让牌友懂你"/);
+  assert.doesNotMatch(pageJs + pageWxml, /你最欣赏哪张牌的设计|说说为什么选它/);
+  assert.match(pageWxml, /<card-picker[^>]*context="\{\{'slot-' \+ slotIndex\}\}"/);
+  assert.match(
+    fs.readFileSync(path.join(dir, 'pages/swaps/index.wxml'), 'utf8'),
+    /<card-picker[^>]*context="\{\{cardTarget\}\}"/,
+  );
+
+  const filename = path.join(dir, 'components/card-picker/index.js');
+  let definition;
+  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+    Component: (value) => {
+      definition = value;
+    },
+    require: createRequire(filename),
+  });
+  const picker = {
+    ...definition.methods,
+    data: structuredClone(definition.data),
+    setData(value) {
+      Object.assign(this.data, value);
+    },
+  };
+  definition.lifetimes.attached.call(picker);
+  const open = definition.observers['visible, context'];
+  open.call(picker, true, 'slot-0');
+  picker.setData({ query: 'Sol Ring', results: [{ printId: 'x' }], mode: 'prints', language: 2 });
+  open.call(picker, false, 'slot-0');
+  open.call(picker, true, 'slot-0');
+  assert.equal(picker.data.query, 'Sol Ring', '同一格重开保留上次搜索');
+  open.call(picker, true, 'slot-1');
+  assert.equal(picker.data.query, '', '换了问题清空搜索词');
+  assert.equal(picker.data.results.length, 0);
+  assert.equal(picker.data.mode, 'search');
+  assert.equal(picker.data.language, 0);
 });
 
 // 牌友打开分享名片时只看对方的三张牌和短评，不再和自己的选择逐项对照：万智牌太多，很难选到同一张

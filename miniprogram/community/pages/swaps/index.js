@@ -11,6 +11,7 @@ Page({
     review: '',
     editing: '',
     picker: false,
+    cardTarget: '',
     busy: false,
     error: '',
     targets: [0, 3, 5, 10],
@@ -65,7 +66,8 @@ Page({
   },
   choose(event) {
     this.cardTarget = event.currentTarget.dataset.target;
-    this.setData({ picker: true });
+    // 换出与换入是两个问题：切换目标时选牌弹层从头搜索
+    this.setData({ picker: true, cardTarget: this.cardTarget });
   },
   closePicker() {
     this.setData({ picker: false });

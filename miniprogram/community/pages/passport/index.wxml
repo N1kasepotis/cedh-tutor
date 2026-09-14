@@ -35,7 +35,7 @@
     <label class="label" for="nickname">署名</label>
     <input
       id="nickname"
-      placeholder="怎么称呼你，不填也可以"
+      placeholder="牌桌上大家怎么叫你，不填也行"
       value="{{nickname}}"
       bindinput="nickname"
       maxlength="20"
@@ -87,7 +87,7 @@
         </view>
       </view>
       <input
-        placeholder="说说为什么选它，选填"
+        placeholder="为什么是它？一句话让牌友懂你"
         maxlength="40"
         value="{{reasons[index]}}"
         data-index="{{index}}"
@@ -153,6 +153,7 @@
     </view>
     <card-picker
       id="passport-picker"
+      context="{{'slot-' + slotIndex}}"
       visible="{{picker}}"
       bindselect="selected"
       bindclose="closePicker"

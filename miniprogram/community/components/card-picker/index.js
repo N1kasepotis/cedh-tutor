@@ -1,7 +1,8 @@
 const cards = require('../../utils/cards');
 Component({
   options: { styleIsolation: 'apply-shared' },
-  properties: { visible: Boolean },
+  // context 标明这次为哪个问题打开（名片的第几格、调牌的换出或换入）
+  properties: { visible: Boolean, context: String },
   data: {
     query: '',
     results: [],
@@ -26,6 +27,14 @@ Component({
     codes: ['any', 'en', 'zhs', 'zht', 'ja', 'de', 'fr', 'it', 'es', 'pt', 'ko', 'ru'],
     more: false,
   },
+  observers: {
+    'visible, context'(visible, context) {
+      if (!visible) return;
+      // 换了问题就从头搜索，不让用户先手动清掉上一格的结果；同一格误关再打开仍保留
+      if (this.openedContext !== undefined && this.openedContext !== context) this.reset();
+      this.openedContext = context;
+    },
+  },
   lifetimes: {
     attached() {
       this.sequence = 0;
@@ -35,6 +44,21 @@ Component({
     },
   },
   methods: {
+    reset() {
+      this.sequence = (this.sequence || 0) + 1;
+      this.oracle = '';
+      this.page = 1;
+      this.all = [];
+      this.setData({
+        query: '',
+        results: [],
+        busy: false,
+        error: '',
+        mode: 'search',
+        language: 0,
+        more: false,
+      });
+    },
     input(event) {
       this.setData({ query: event.detail.value });
     },

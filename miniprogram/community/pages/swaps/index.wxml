@@ -116,6 +116,6 @@
       </view>
     </view>
     <view wx:if="{{decks[deckIndex].id}}" class="credit">关联套牌后，自动统计调牌后的场数</view>
-    <card-picker visible="{{picker}}" bindselect="selected" bindclose="closePicker" />
+    <card-picker context="{{cardTarget}}" visible="{{picker}}" bindselect="selected" bindclose="closePicker" />
   </view>
 </view>
