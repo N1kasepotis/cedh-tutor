@@ -528,3 +528,101 @@ test('postgame reviews survive tracker load, save and export without changing le
   );
   assert.match(buildTrackerExportText(saved, {}), /关键单卡：Swan Song/);
 });
+
+// 六页的文字面板和输入框沿用功能页的玻璃层：面板挂 .surface，吃 dark-table 那条顶部高光
+// 与柔和投影；输入框用 input-glass + hairline + radius token。赛后一分钟的输入框在 tracker
+// 页里，同样换成玻璃底，不再是一块不透明的深色。
+test('EDH 牌桌 panels and text fields reuse the shared glass surface', () => {
+  const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
+  const glass = read('miniprogram/styles/themes/dark-table.wxss').match(
+    /([^{}]*)\{\s*box-shadow: var\(--cedh-shadow-soft\), inset 0 1rpx 0 rgba\(255, 255, 255, 0\.72\);\s*\}/,
+  );
+  assert.ok(glass, 'dark-table 应有一条玻璃面板规则');
+  assert.match(glass[1], /\.studio \.surface/);
+  assert.match(glass[1], /\.picker-shell \.surface/);
+
+  for (const name of ['hub', 'passport', 'banlist', 'table', 'swaps', 'hands']) {
+    const markup = read(`miniprogram/community/pages/${name}/index.wxml`);
+    for (const [, value] of markup.matchAll(/class="([^"]*)"/g)) {
+      const tokens = value.split(/\s+/);
+      if (tokens.includes('panel')) assert.ok(tokens.includes('surface'), `${name} 的 class="${value}" 缺少 surface`);
+    }
+  }
+  assert.match(read('miniprogram/community/pages/hands/index.wxml'), /class="hand-card surface"/);
+  assert.match(read('miniprogram/community/pages/passport/index.wxml'), /class="portrait-slot surface"/);
+
+  const field = read('miniprogram/community/styles.wxss').match(
+    /\.studio input,\s*\.studio textarea,\s*\.picker-shell input\s*\{[^}]*\}/,
+  )[0];
+  assert.match(field, /background: var\(--cedh-input-glass\)/);
+  assert.match(field, /border: var\(--cedh-hairline\)/);
+  assert.match(field, /border-radius: var\(--cedh-radius-2\)/);
+  assert.match(
+    read('miniprogram/community/pages/table/index.wxss'),
+    /\.agreement-value\s*\{[^}]*background: var\(--cedh-input-glass\)/,
+  );
+
+  const reviewInput = read('miniprogram/pages/tracker/tracker.wxss').match(/\n\.review-input\s*\{[^}]*\}/)[0];
+  assert.match(reviewInput, /background: var\(--cedh-input-glass\)/);
+  assert.match(reviewInput, /border: var\(--cedh-hairline\)/);
+});
+
+test('ban grid drops the repeated 禁用 label and only marks the Lutri restriction', () => {
+  const markup = fs.readFileSync(
+    path.join(__dirname, '../miniprogram/community/pages/banlist/index.wxml'),
+    'utf8',
+  );
+  const grid = markup.slice(
+    markup.indexOf('<view class="ban-grid">'),
+    markup.indexOf('<view wx:if="{{!cards.length}}"'),
+  );
+  assert.match(
+    grid,
+    /<text wx:if="\{\{item\.status !== '禁用'\}\}" class="limited-status">\{\{item\.status\}\}<\/text>/,
+  );
+  assert.equal((grid.match(/\{\{item\.status\}\}/g) || []).length, 1, '列表只在非「禁用」状态时渲染状态文字');
+  assert.match(
+    grid,
+    /aria-label="\{\{item\.status === '禁用' \? item\.name : item\.name \+ '，' \+ item\.status\}\}，查看卡牌与投票"/,
+  );
+  assert.deepEqual(
+    banlist.cards.filter((card) => card.status !== '禁用').map((card) => card.id),
+    ['lutri-the-spellchaser'],
+  );
+});
+
+test('practice hands cite public cEDH discussion, drop authored titles and avoid banned cards', () => {
+  const { hands, handSources, poll } = require('../miniprogram/community/shared/catalog');
+  const banned = new Set(banlist.cards.filter((card) => card.status === '禁用').map((card) => card.name));
+  assert.equal(hands.length, 10);
+  assert.equal(new Set(hands.map((hand) => hand.id)).size, hands.length);
+  for (const hand of hands) {
+    assert.equal(hand.title, undefined, `${hand.id} 不再使用自拟的起手标题`);
+    assert.ok(hand.commander && hand.short && hand.stage && hand.table, `${hand.id} 缺少主将或对局条件`);
+    assert.ok([1, 2, 3, 4].includes(hand.seat));
+    assert.equal(hand.cards.length, 7);
+    assert.equal(new Set(hand.cards).size, 7, `${hand.id} 应是七张不同的牌`);
+    for (const card of hand.cards) assert.ok(!banned.has(card), `${hand.id} 含有禁牌 ${card}`);
+    assert.ok(['keep', 'mull'].includes(hand.verdict));
+    assert.ok(hand.reasons.length >= 2, `${hand.id} 需要写清理由`);
+    for (const line of hand.reasons) assert.doesNotMatch(line, /^\s*$|[。.…]$|·/);
+    assert.match((handSources[hand.source] || {}).url || '', /^https:\/\//, `${hand.id} 需要可复制的来源链接`);
+    assert.deepEqual(poll(`hand:${hand.id}`).choices, ['keep', 'mull', 'unknown']);
+  }
+  assert.deepEqual([...new Set(hands.map((hand) => hand.verdict))].sort(), ['keep', 'mull']);
+  assert.equal(poll('hand:yuriko-resource-v1'), null, '旧的自拟题目不再接受投票');
+});
+
+test('hands page shows seat, stage and the cited verdict with a copyable source link', () => {
+  const dir = path.join(__dirname, '../miniprogram/community/pages/hands');
+  const wxml = fs.readFileSync(path.join(dir, 'index.wxml'), 'utf8');
+  const js = fs.readFileSync(path.join(dir, 'index.js'), 'utf8');
+  assert.doesNotMatch(wxml + js, /hand\.title/);
+  assert.match(wxml, /\{\{hand\.seat\}\} 号位/);
+  assert.match(wxml, /\{\{hand\.stage\}\}/);
+  assert.match(wxml, /wx:for="\{\{hand\.reasons\}\}"/);
+  assert.match(wxml, /hand\.verdict === 'keep' \? '留' : '调度'/);
+  assert.match(wxml, /bindtap="copySource"/);
+  assert.match(js, /wx\.setClipboardData\(\{ data: this\.data\.source\.url \}\)/);
+  assert.match(js, /title: `这手留不留：\$\{hand\.short\}，\$\{hand\.seat\} 号位`/);
+});

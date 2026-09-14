@@ -1,4 +1,5 @@
 <view class="page planechase-page">
+  <particle-background palette="random"></particle-background>
   <view class="content-layer tool-shell" aria-hidden="{{inspect ? true : false}}">
     <view class="session-header">
       <view class="session-heading"><view class="session-title">共享时空套牌</view><view wx:if="{{hasSession}}" class="session-meta"><text>{{playerCount}} 人对局</text><text>牌库 {{deckLeft}} 张</text></view></view>

@@ -1,5 +1,8 @@
 {
   "navigationBarTitleText": "对局约定",
   "navigationBarBackgroundColor": "#070707",
-  "navigationBarTextStyle": "white"
+  "navigationBarTextStyle": "white",
+  "usingComponents": {
+    "particle-background": "/components/particle-background/particle-background"
+  }
 }

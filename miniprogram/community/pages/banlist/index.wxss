@@ -65,8 +65,8 @@
   font-size: 23rpx;
   font-weight: 400;
 }
-.ban-caption .muted {
-  font-size: 23rpx;
+.ban-arrow {
+  margin-left: auto;
 }
 .limited-status {
   color: var(--cedh-accent-ink);
@@ -99,7 +99,6 @@
 .ban-name {
   font-size: 14px;
 }
-.ban-caption,
-.ban-caption .muted {
+.ban-caption {
   font-size: 12px;
 }

@@ -2,5 +2,8 @@
   "navigationBarTitleText": "调牌记录",
   "navigationBarBackgroundColor": "#070707",
   "navigationBarTextStyle": "white",
-  "usingComponents": { "card-picker": "../../components/card-picker/index" }
+  "usingComponents": {
+    "card-picker": "../../components/card-picker/index",
+    "particle-background": "/components/particle-background/particle-background"
+  }
 }

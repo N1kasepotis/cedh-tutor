@@ -2,12 +2,14 @@ const { commanders } = require('../../config/commanders');
 const { trackerConfig } = require('../../config/tracker');
 const {
   RESULT_LABELS,
+  buildReviewLines,
   buildSeatWinRateSeries,
   buildTrackerExportText,
   buildWinRateSeries,
   calculateDeckStats,
   createEmptyDeck,
   filterCommanders,
+  hasReviewContent,
   normalizeTrackerData,
   serializeTrackerData,
   sortMatches,
@@ -119,12 +121,19 @@ Page({
           ? 'name-tight'
           : (longestDisplayLineLength > 22 ? 'name-compact' : ''),
       ].filter(Boolean).join(' ');
-      const matches = sortMatches(deck.matches).map((match, matchIndex) => ({
-        ...match,
-        sequence: matchIndex + 1,
-        label: RESULT_LABELS[match.result],
-        seatClass: match.seat || 'seat-unknown',
-      }));
+      const matches = sortMatches(deck.matches).map((match, matchIndex) => {
+        const reviewLines = buildReviewLines(match.review);
+        return {
+          ...match,
+          sequence: matchIndex + 1,
+          label: RESULT_LABELS[match.result],
+          seatClass: match.seat || 'seat-unknown',
+          reviewLines,
+          hasReview: reviewLines.length > 0,
+          // 展开哪一局只放在页面内存里、不进存储；刚存完复盘的那局默认展开，让用户看到内容去了哪
+          reviewOpen: reviewLines.length > 0 && deck.openReviewMatchId === match.id,
+        };
+      });
       const newestMatches = matches.slice().reverse();
       const pendingResult = deck.pendingResult || 'win';
       const pendingSeat = deck.pendingSeat || 'seat1';
@@ -352,13 +361,21 @@ Page({
         date: deck.pendingDate || todayString(),
         result,
         seat,
-        ...(deck.pendingReview ? { review: deck.pendingReview } : {}),
+        // 只点开过、没写字的赛后一分钟不存：否则记录行会挂一个点开是空白的「复盘」标签
+        ...(hasReviewContent(deck.pendingReview) ? { review: deck.pendingReview } : {}),
       };
       const matches = deck.editingMatchId
         ? deck.matches.map((match) => (match.id === deck.editingMatchId ? record : match))
         : [...deck.matches, record];
 
-      return { ...deck, matches: sortMatches(matches), editingMatchId: null, pendingReview: null, reviewOpen: false };
+      return {
+        ...deck,
+        matches: sortMatches(matches),
+        editingMatchId: null,
+        pendingReview: null,
+        reviewOpen: false,
+        openReviewMatchId: record.review ? record.id : deck.openReviewMatchId,
+      };
     });
 
     this.applyDecks(decks);
@@ -378,7 +395,7 @@ Page({
         pendingResult: match.result,
         pendingSeat: match.seat || 'seat1',
         pendingReview: match.review || null,
-        reviewOpen: Boolean(match.review),
+        reviewOpen: hasReviewContent(match.review),
       };
     });
     this.applyDecks(decks, false);
@@ -403,6 +420,15 @@ Page({
   toggleReview(event) {
     const deckId = event.currentTarget.dataset.id;
     this.applyDecks(this.data.decks.map((deck) => deck.id === deckId ? { ...deck, reviewOpen: !deck.reviewOpen } : deck), false);
+  },
+
+  toggleMatchReview(event) {
+    const { deckId, matchId } = event.currentTarget.dataset;
+    this.applyDecks(this.data.decks.map((deck) => (
+      deck.id === deckId
+        ? { ...deck, openReviewMatchId: deck.openReviewMatchId === matchId ? null : matchId }
+        : deck
+    )), false);
   },
 
   reviewInput(event) {

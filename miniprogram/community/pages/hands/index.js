@@ -1,9 +1,13 @@
-const { hands } = require('../../shared/catalog');
+const { hands, handSources } = require('../../shared/catalog');
+const labels = hands.map(
+  (hand, index) => `${index + 1} / ${hands.length}　${hand.short}　${hand.seat} 号位`,
+);
 Page({
   data: {
-    questions: hands,
+    labels,
     index: 0,
     hand: hands[0],
+    source: handSources[hands[0].source],
     revealed: false,
     choices: [
       { id: 'keep', label: '保留' },
@@ -16,7 +20,8 @@ Page({
     if (index >= 0) this.selectIndex(index);
   },
   selectIndex(index) {
-    this.setData({ index, hand: hands[index], revealed: false });
+    const hand = hands[index];
+    this.setData({ index, hand, source: handSources[hand.source], revealed: false });
   },
   select(event) {
     this.selectIndex(Number(event.detail.value));
@@ -24,13 +29,17 @@ Page({
   reveal() {
     this.setData({ revealed: true });
   },
+  copySource() {
+    wx.setClipboardData({ data: this.data.source.url });
+  },
   practice() {
     wx.navigateTo({ url: '/pages/playtest/playtest' });
   },
   onShareAppMessage() {
+    const { hand } = this.data;
     return {
-      title: `这手留不留：${this.data.hand.title}`,
-      path: `/community/pages/hands/index?id=${this.data.hand.id}`,
+      title: `这手留不留：${hand.short}，${hand.seat} 号位`,
+      path: `/community/pages/hands/index?id=${hand.id}`,
     };
   },
 });

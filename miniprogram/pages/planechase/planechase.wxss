@@ -14,7 +14,7 @@
   box-shadow: none;
 }
 
-/* 阅读页保留共用暗色材质，不挂载持续绘制的装饰画布。 */
+/* 背景挂载与混沌工具同色的粒子组件；卡文面板仍用共用暗色半透明材质。 */
 .session-title, .plane-name, .desk-title, .source-title { font-family: var(--cedh-font-serif); }
 .section-kicker, .rule-label, .source-id, .reveal-index, .note-index { font-family: var(--cedh-font-mono); }
 .planechase-page { padding-bottom: calc(148px + env(safe-area-inset-bottom)); color: var(--cedh-text); }

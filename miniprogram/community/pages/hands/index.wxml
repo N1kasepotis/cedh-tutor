@@ -1,45 +1,54 @@
 <view class="studio">
-  <text class="eyebrow">EDH 牌桌</text>
-  <text class="title">这手留不留</text>
-  <view class="subtitle">看起手与座次，选留牌还是调度</view>
-  <picker range="{{questions}}" range-key="title" value="{{index}}" bindchange="select">
-    <view class="panel row between">
-      <text>{{index + 1}} / {{questions.length}}　{{hand.title}}</text>
-      <text>▾</text>
+  <particle-background palette="tracker"></particle-background>
+  <view class="content-layer">
+    <text class="eyebrow">EDH 牌桌</text>
+    <text class="title">这手留不留</text>
+    <view class="subtitle">社区公开讨论过的起手，先投票，再看来源判断</view>
+    <picker range="{{labels}}" value="{{index}}" bindchange="select">
+      <view class="panel surface row between">
+        <text>{{labels[index]}}</text>
+        <text>▾</text>
+      </view>
+    </picker>
+    <view class="section-title section">{{hand.commander}}</view>
+    <view class="subtitle hand-context">
+      <view>4 人 cEDH，{{hand.seat}} 号位</view>
+      <view>{{hand.stage}}</view>
+      <view>{{hand.table}}</view>
     </view>
-  </picker>
-  <view class="section-title section">{{hand.commander}}</view>
-  <text class="subtitle hand-context">{{hand.context}}</text>
-  <view class="hand-list">
-    <view wx:for="{{hand.cards}}" wx:key="*this" class="hand-card">
-      <text class="card-name">{{item}}</text>
+    <view class="hand-list">
+      <view wx:for="{{hand.cards}}" wx:key="*this" class="hand-card surface">
+        <text class="card-name">{{item}}</text>
+      </view>
     </view>
-  </view>
-  <community-poll
-    poll-id="{{'hand:' + hand.id}}"
-    choices="{{choices}}"
-    bindanswer="reveal"
-  />
-  <button
-    hover-class="pressable-active"
-    wx:if="{{!revealed}}"
-    class="link"
-    bindtap="reveal"
-  >
-    查看留牌与调度思路
-  </button>
-  <view wx:if="{{revealed}}" class="section">
-    <view class="panel">
-      <view class="section-title">留牌思路</view>
-      <view class="subtitle">{{hand.keep}}</view>
+    <community-poll
+      poll-id="{{'hand:' + hand.id}}"
+      choices="{{choices}}"
+      bindanswer="reveal"
+    />
+    <button
+      hover-class="pressable-active"
+      wx:if="{{!revealed}}"
+      class="link"
+      bindtap="reveal"
+    >
+      查看来源判断
+    </button>
+    <view wx:if="{{revealed}}" class="panel surface">
+      <view class="row between">
+        <text class="section-title verdict-title">来源判断</text>
+        <text class="badge">{{hand.verdict === 'keep' ? '留' : '调度'}}</text>
+      </view>
+      <view wx:for="{{hand.reasons}}" wx:key="*this" class="subtitle hand-reason">{{item}}</view>
+      <view class="muted hand-source">{{source.name}}{{source.published ? '，' + source.published : ''}}</view>
+      <view class="muted">{{source.title}}</view>
+      <button hover-class="pressable-active" class="link" bindtap="copySource">
+        复制来源链接
+      </button>
     </view>
-    <view class="panel">
-      <view class="section-title">调度思路</view>
-      <view class="subtitle">{{hand.mull}}</view>
+    <view class="actions">
+      <button hover-class="pressable-active" bindtap="practice">用我的套牌练习</button>
+      <button hover-class="pressable-active" open-type="share">发给牌友</button>
     </view>
-  </view>
-  <view class="actions">
-    <button hover-class="pressable-active" bindtap="practice">用我的套牌练习</button>
-    <button hover-class="pressable-active" open-type="share">发给牌友</button>
   </view>
 </view>

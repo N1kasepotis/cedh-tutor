@@ -49,3 +49,7 @@
 4. 在 iOS / Android 验证大字体、底部手势区、横屏卡面、滚动至末尾和屏幕阅读器。需记录设备、微信版本和问题截图；本轮未替代此项。
 
 自动检查命令：`node scripts/check-syntax.js`、`node --test tests/*.js`、`node scripts/diagnose-coverage.js --strict`。原生编译覆盖全部 WXML / WXSS。最终 Git 提交与 CI 结果以交付记录为准。
+
+## 2026-09-14 更新
+
+用户要求竞逐时空与其他功能页一样显示背景粒子，上表“背景”一行的取消挂载已撤回：页面重新挂载 `particle-background palette="random"`，正文包在 `content-layer` 内。原先担心的连线穿过阅读区仍然存在，由组件既有的帧率降档、内存告警降档与系统减弱动态效果设置兜底。

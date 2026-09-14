@@ -11,7 +11,7 @@
 | 层 | 文件 / 内容 | 契约 |
 |---|---|---|
 | 领域 | `miniprogram/community/shared/contracts.js` | 字段验证、印刷版本归一化、投票替换、名片对照 |
-| 内容 | `miniprogram/community/shared/catalog.js` | 有日期的禁牌快照与固定开手题；改变轮次才开启新的投票池 |
+| 内容 | `miniprogram/community/shared/catalog.js` | 有日期的禁牌快照与附来源的开手题；改变禁牌轮次或开手题 ID 才开启新的投票池 |
 | 本机 | `community/utils/local.js` | 通过既有 storage envelope 读写，损坏或未来版本停止写入 |
 | 社区 | `community/utils/api.js` | 显式云环境、统一错误、只通过云函数访问数据库 |
 | 后端 | `cloudfunctions/community/service.js` | 服务端用户身份、字段白名单、审核、所有权、事务与限流 |
@@ -103,4 +103,6 @@ Commander 禁表核对于 2026-09-09，包含 42 张全面禁用牌及 Lutri 的
 
 名片保存具体 print ID 与其真实语言、卡图、画师；oracle ID 用来判断同牌不同版本。不会把某语言的文字贴到另一语言的卡图上。Scryfall 无该语言/卡图时明确展示空结果或错误。[卡牌搜索与印刷版本](https://scryfall.com/docs/api/cards/search)
 
-开手题是署明条件的人工讨论情境，不是计算器证明的最优解，也不把社区多数票标成规则答案。
+开手题整理自公开讨论（Play to Win 播客的起手测试、Matt Sperling 在 TopDeck.gg 的调度文章），页面显示的是来源的判断和按回合写出的理由，不是计算器证明的最优解；社区票数单独显示，也不标成规则答案。牌张于 2026-09-14 按 Scryfall 核对 Commander 合法性，测试挡住当前禁牌表里的牌。
+
+2026-09-14 开手题 ID 整体更换，旧的三道自拟题不再接受投票。云函数按 `catalog.js` 判定题目是否存在，需要用同步后的副本重新部署 `community`，新题才能投票；部署前新题投票会返回 `INVALID_VOTE`。

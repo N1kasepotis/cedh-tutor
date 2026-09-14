@@ -597,6 +597,8 @@ test('home removes particles while other interfaces retain theme-matched particl
     ['miniprogram/pages/bracket/bracket.wxml', 'bracket'],
     ['miniprogram/pages/cabbage/cabbage.wxml', 'cabbage'],
     ['miniprogram/pages/izzet/izzet.wxml', 'izzet'],
+    ['miniprogram/pages/planechase/planechase.wxml', 'random'],
+    ...['hub', 'passport', 'banlist', 'table', 'swaps', 'hands'].map((name) => [`miniprogram/community/pages/${name}/index.wxml`, 'tracker']),
   ];
 
   assert.doesNotMatch(indexWxml, /particle-background|particleCanvas/);
@@ -611,6 +613,20 @@ test('home removes particles while other interfaces retain theme-matched particl
     );
     assert.ok(particleConfig.palettes && particleConfig.palettes[palette], `${palette} palette 应在 config/particle.js 收录`);
   });
+  // 竞逐时空与 EDH 牌桌是后来接回粒子的页面。画布是 position: fixed + z-index: 0，
+  // 正文若不包进 content-layer，非定位内容会画在画布下面，点击也会落到画布上
+  paletteMounts
+    .filter(([file]) => /planechase|community/.test(file))
+    .forEach(([file, palette]) => {
+      const markup = fs.readFileSync(path.join(root, file), 'utf8');
+      assert.match(
+        markup,
+        new RegExp(`<particle-background palette="${palette}"></particle-background>\\s*<view class="content-layer[ "]`),
+        `${file} 的正文要紧跟粒子组件包进 content-layer`,
+      );
+      const pageJson = JSON.parse(fs.readFileSync(path.join(root, file.replace(/\.wxml$/, '.json')), 'utf8'));
+      assert.equal(pageJson.usingComponents['particle-background'], '/components/particle-background/particle-background');
+    });
 
   assert.doesNotMatch(particleComponent, /CLUSTER_|clustered|fieldHeightVh|dotColor|lineColor/);
   assert.doesNotMatch(particleWxml, /fieldHeightVh|style=/);

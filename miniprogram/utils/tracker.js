@@ -80,11 +80,30 @@ function sortMatches(matches) {
     });
 }
 
+// 赛后一分钟的三项；标签与 tracker 页的填写表单一致，存储归一、展开查看与判空都读这一份
+const REVIEW_FIELDS = [
+  ['turningPoint', '这局的转折'],
+  ['keyCard', '关键单卡'],
+  ['nextChange', '下次调整'],
+];
+
 function normalizeReview(review) {
-  return ['turningPoint', 'keyCard', 'nextChange'].reduce((result, key) => {
+  return REVIEW_FIELDS.reduce((result, [key]) => {
     result[key] = typeof review[key] === 'string' ? Array.from(review[key].trim()).slice(0, 160).join('') : '';
     return result;
   }, {});
+}
+
+// 只返回填了字的项：对局记录行据此决定挂不挂「复盘」标签、展开后显示哪几行
+function buildReviewLines(review) {
+  if (!review || typeof review !== 'object') return [];
+  return REVIEW_FIELDS
+    .map(([key, label]) => ({ key, label, text: typeof review[key] === 'string' ? review[key].trim() : '' }))
+    .filter((line) => line.text);
+}
+
+function hasReviewContent(review) {
+  return buildReviewLines(review).length > 0;
 }
 
 function normalizeTrackerData(raw, commanderLibrary, config) {
@@ -331,12 +350,14 @@ module.exports = {
   RESULT_LABELS,
   SEAT_OPTIONS,
   buildFrequencySeries,
+  buildReviewLines,
   buildSeatWinRateSeries,
   buildTrackerExportText,
   buildWinRateSeries,
   calculateDeckStats,
   createEmptyDeck,
   filterCommanders,
+  hasReviewContent,
   normalizeTrackerData,
   serializeTrackerData,
   sortMatches,

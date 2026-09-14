@@ -1,94 +1,97 @@
 <view class="studio">
-  <text class="eyebrow">EDH 牌桌</text>
-  <text class="title">对局约定</text>
-  <view class="subtitle">这桌怎么玩</view>
-  <view wx:if="{{error}}" class="error">{{error}}</view>
-  <view wx:for="{{fields}}" wx:key="key" class="agreement-line">
-    <view class="grow">
-      <text class="label">{{item.label}}</text>
-      <picker
-        range="{{item.options}}"
-        value="{{values[item.key]}}"
-        data-key="{{item.key}}"
-        bindchange="change"
-        disabled="{{incoming || busy}}"
-      >
-        <view class="agreement-value">
-          {{item.options[values[item.key]]}} {{incoming ? '' : '▾'}}
-        </view>
-      </picker>
+  <particle-background palette="tracker"></particle-background>
+  <view class="content-layer">
+    <text class="eyebrow">EDH 牌桌</text>
+    <text class="title">对局约定</text>
+    <view class="subtitle">这桌怎么玩</view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <view wx:for="{{fields}}" wx:key="key" class="agreement-line">
+      <view class="grow">
+        <text class="label">{{item.label}}</text>
+        <picker
+          range="{{item.options}}"
+          value="{{values[item.key]}}"
+          data-key="{{item.key}}"
+          bindchange="change"
+          disabled="{{incoming || busy}}"
+        >
+          <view class="agreement-value">
+            {{item.options[values[item.key]]}} {{incoming ? '' : '▾'}}
+          </view>
+        </picker>
+      </view>
     </view>
-  </view>
-  <view wx:if="{{!incoming}}" class="actions">
-    <button hover-class="pressable-active" bindtap="save" disabled="{{busy}}">
-      保存本桌
-    </button>
-    <button
-      hover-class="pressable-active"
-      class="primary"
-      bindtap="publish"
-      disabled="{{busy}}"
-      loading="{{busy}}"
-    >
-      {{remote ? '更新分享' : '生成分享'}}
-    </button>
-  </view>
-  <view wx:if="{{remote && !dirty}}" class="panel">
-    <view class="section-title">牌友确认</view>
-    <view class="muted">
-      {{agreement ? agreement.count + ' 位玩家已确认' : '刷新查看确认人数'}}
-    </view>
-    <view class="actions">
+    <view wx:if="{{!incoming}}" class="actions">
+      <button hover-class="pressable-active" bindtap="save" disabled="{{busy}}">
+        保存本桌
+      </button>
       <button
         hover-class="pressable-active"
         class="primary"
-        bindtap="agree"
+        bindtap="publish"
+        disabled="{{busy}}"
+        loading="{{busy}}"
+      >
+        {{remote ? '更新分享' : '生成分享'}}
+      </button>
+    </view>
+    <view wx:if="{{remote && !dirty}}" class="panel surface">
+      <view class="section-title">牌友确认</view>
+      <view class="muted">
+        {{agreement ? agreement.count + ' 位玩家已确认' : '刷新查看确认人数'}}
+      </view>
+      <view class="actions">
+        <button
+          hover-class="pressable-active"
+          class="primary"
+          bindtap="agree"
+          disabled="{{busy}}"
+        >
+          {{agreement.agreed ? '取消确认' : '没问题'}}
+        </button>
+        <button hover-class="pressable-active" open-type="share">发给牌友</button>
+      </view>
+      <button
+        hover-class="pressable-active"
+        class="link"
+        bindtap="refresh"
         disabled="{{busy}}"
       >
-        {{agreement.agreed ? '取消确认' : '没问题'}}
+        刷新确认状态
       </button>
-      <button hover-class="pressable-active" open-type="share">发给牌友</button>
+    </view>
+    <view wx:if="{{dirty && remote}}" class="notice">
+      分享还没更新，更新后会重新统计确认人数
+    </view>
+    <view class="actions">
+      <button hover-class="pressable-active" bindtap="copy">复制约定</button>
+      <button hover-class="pressable-active" bindtap="newTable" disabled="{{busy}}">
+        另存一桌
+      </button>
     </view>
     <button
       hover-class="pressable-active"
+      wx:if="{{remote && !incoming && !remote.revoked}}"
       class="link"
-      bindtap="refresh"
+      bindtap="revoke"
       disabled="{{busy}}"
     >
-      刷新确认状态
+      停止分享
     </button>
-  </view>
-  <view wx:if="{{dirty && remote}}" class="notice">
-    分享还没更新，更新后会重新统计确认人数
-  </view>
-  <view class="actions">
-    <button hover-class="pressable-active" bindtap="copy">复制约定</button>
-    <button hover-class="pressable-active" bindtap="newTable" disabled="{{busy}}">
-      另存一桌
-    </button>
-  </view>
-  <button
-    hover-class="pressable-active"
-    wx:if="{{remote && !incoming && !remote.revoked}}"
-    class="link"
-    bindtap="revoke"
-    disabled="{{busy}}"
-  >
-    停止分享
-  </button>
-  <view wx:if="{{!incoming && history.length}}" class="section">
-    <view class="section-title">已存约定</view>
-    <button
-      hover-class="pressable-active"
-      wx:for="{{history}}"
-      wx:key="id"
-      class="saved-table"
-      data-id="{{item.id}}"
-      bindtap="loadSaved"
-      disabled="{{busy}}"
-    >
-      <text>{{fields[0].options[item.values.level]}}</text>
-      <text class="muted">{{item.date}}</text>
-    </button>
+    <view wx:if="{{!incoming && history.length}}" class="section">
+      <view class="section-title">已存约定</view>
+      <button
+        hover-class="pressable-active"
+        wx:for="{{history}}"
+        wx:key="id"
+        class="saved-table"
+        data-id="{{item.id}}"
+        bindtap="loadSaved"
+        disabled="{{busy}}"
+      >
+        <text>{{fields[0].options[item.values.level]}}</text>
+        <text class="muted">{{item.date}}</text>
+      </button>
+    </view>
   </view>
 </view>

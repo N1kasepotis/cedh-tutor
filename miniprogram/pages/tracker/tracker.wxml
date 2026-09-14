@@ -107,8 +107,9 @@
               </view>
             </picker>
           </view>
-          <button class="review-toggle" data-id="{{item.id}}" bindtap="toggleReview">{{item.reviewOpen ? '收起复盘' : '赛后一分钟 · 选填'}}</button>
+          <button class="review-toggle" data-id="{{item.id}}" bindtap="toggleReview">{{item.reviewOpen ? '收起复盘' : '赛后一分钟'}}</button>
           <view wx:if="{{item.reviewOpen}}" class="review-fields">
+            <view class="review-hint">保存对局后，点对局记录里的「复盘」查看</view>
             <label class="review-label">这局的转折</label><textarea class="review-input" maxlength="160" placeholder="哪个决定改变了这局？" value="{{item.pendingReview.turningPoint}}" data-id="{{item.id}}" data-field="turningPoint" bindinput="reviewInput"/>
             <label class="review-label">关键单卡</label><input class="review-input" maxlength="160" placeholder="发挥最大，或暴露问题的那张牌" value="{{item.pendingReview.keyCard}}" data-id="{{item.id}}" data-field="keyCard" bindinput="reviewInput"/>
             <label class="review-label">下次调整</label><textarea class="review-input" maxlength="160" placeholder="下次想改变什么？" value="{{item.pendingReview.nextChange}}" data-id="{{item.id}}" data-field="nextChange" bindinput="reviewInput"/>
@@ -125,24 +126,30 @@
             <text>对局记录</text>
             <view wx:if="{{item.matches.length > 5}}" class="text-button history-toggle" aria-role="button" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="toggleMatchHistory">{{item.historyToggleLabel}}</view>
           </view>
-          <view
-            wx:for="{{item.visibleMatches}}"
-            wx:for-item="match"
-            wx:key="id"
-            class="match-row"
-            data-deck-id="{{item.id}}"
-            data-match-id="{{match.id}}"
-            bindlongpress="confirmDeleteMatch"
-          >
-            <view class="match-identity">
-              <text class="match-sequence mono">#{{match.sequence}}</text>
-              <text class="match-date mono">{{match.date}}</text>
+          <view wx:for="{{item.visibleMatches}}" wx:for-item="match" wx:key="id" class="match-item">
+            <view
+              class="match-row"
+              data-deck-id="{{item.id}}"
+              data-match-id="{{match.id}}"
+              bindlongpress="confirmDeleteMatch"
+            >
+              <view class="match-identity">
+                <text class="match-sequence mono">#{{match.sequence}}</text>
+                <text class="match-date mono">{{match.date}}</text>
+                <view wx:if="{{match.hasReview}}" class="match-review-toggle {{match.reviewOpen ? 'is-open' : ''}}" aria-role="button" aria-expanded="{{match.reviewOpen}}" aria-label="{{match.reviewOpen ? '收起这局的赛后一分钟' : '查看这局的赛后一分钟'}}" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="toggleMatchReview">复盘</view>
+              </view>
+              <view class="match-seat {{match.seatClass}}">{{match.seatLabel}}</view>
+              <view class="match-result {{match.result}}">{{match.label}}</view>
+              <view class="match-row-actions">
+                <view class="match-action match-edit" aria-role="button" aria-label="编辑这条对局" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="editMatch">改</view>
+                <view class="match-action match-delete" aria-role="button" aria-label="删除这条对局" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmDeleteMatch">删</view>
+              </view>
             </view>
-            <view class="match-seat {{match.seatClass}}">{{match.seatLabel}}</view>
-            <view class="match-result {{match.result}}">{{match.label}}</view>
-            <view class="match-row-actions">
-              <view class="match-action match-edit" aria-role="button" aria-label="编辑这条对局" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="editMatch">改</view>
-              <view class="match-action match-delete" aria-role="button" aria-label="删除这条对局" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmDeleteMatch">删</view>
+            <view wx:if="{{match.reviewOpen}}" class="match-review">
+              <view wx:for="{{match.reviewLines}}" wx:for-item="line" wx:key="key" class="match-review-line">
+                <text class="match-review-label">{{line.label}}</text>
+                <text class="match-review-text">{{line.text}}</text>
+              </view>
             </view>
           </view>
         </view>

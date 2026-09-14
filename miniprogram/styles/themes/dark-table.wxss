@@ -90,7 +90,9 @@
   --cedh-line-strong: rgba(var(--module-accent-rgb), 0.38);
 }
 
-/* 玻璃面板：继承 tracker .deck-card 的顶部高光效果 */
+/* 玻璃面板：继承 tracker .deck-card 的顶部高光效果；EDH 牌桌分包（.studio / .picker-shell）共用同一条 */
+.studio .surface,
+.picker-shell .surface,
 .tracker .surface,
 .random .surface,
 .planechase-page .surface,

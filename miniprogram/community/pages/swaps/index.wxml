@@ -1,118 +1,121 @@
 <view class="studio">
-  <text class="eyebrow">EDH 牌桌</text>
-  <text class="title">调牌记录</text>
-  <view class="subtitle">换了什么，试下来怎么样</view>
-  <view wx:if="{{error}}" class="error">{{error}}</view>
-  <block>
-    <picker range="{{decks}}" range-key="name" value="{{deckIndex}}" bindchange="deck">
-      <view class="panel card-name">{{decks[deckIndex].name}} ▾</view>
-    </picker>
-    <view class="swap-pair">
-      <view class="panel">
-        <text class="label">换出</text>
-        <image
-          lazy-load
-          wx:if="{{outCard.image}}"
-          class="swap-art"
-          src="{{outCard.image}}"
-          mode="aspectFit"
-        />
-        <view wx:else class="swap-art-empty">＋</view>
-        <view class="card-name">{{outCard.displayName || '选择单卡'}}</view>
-        <button
-          hover-class="pressable-active"
-          class="link"
-          data-target="outCard"
-          bindtap="choose"
-        >
-          {{outCard ? '更换' : '搜索'}}
-        </button>
-      </view>
-      <view class="panel">
-        <text class="label">换入</text>
-        <image
-          lazy-load
-          wx:if="{{inCard.image}}"
-          class="swap-art"
-          src="{{inCard.image}}"
-          mode="aspectFit"
-        />
-        <view wx:else class="swap-art-empty">＋</view>
-        <view class="card-name">{{inCard.displayName || '选择单卡'}}</view>
-        <button
-          hover-class="pressable-active"
-          class="link"
-          data-target="inCard"
-          bindtap="choose"
-        >
-          {{inCard ? '更换' : '搜索'}}
-        </button>
-      </view>
-    </view>
-    <label class="label" for="swap-goal">调牌备注</label>
-    <textarea
-      id="swap-goal"
-      maxlength="160"
-      placeholder="想补互动，还是试张新牌？可以先不写"
-      value="{{goal}}"
-      bindinput="goal"
-    />
-    <picker wx:if="{{decks[deckIndex].id}}" range="{{targetLabels}}" value="{{targetIndex}}" bindchange="target">
-      <view class="notice">{{targetLabels[targetIndex]}} ▾</view>
-    </picker>
-    <button hover-class="pressable-active" class="primary" bindtap="save">
-      记录调整
-    </button>
-  </block>
-  <view class="section">
-    <view class="section-title">调牌历史</view>
-    <view wx:if="{{!swaps.length}}" class="empty">还没有调牌记录</view>
-    <view wx:for="{{swaps}}" wx:key="id" class="panel">
-      <view class="muted">{{item.deckName}}</view>
-      <view class="section-title section">
-        {{item.outCard.displayName}} → {{item.inCard.displayName}}
-      </view>
-      <view class="swap-record-cards">
-        <image src="{{item.outCard.image}}" mode="aspectFit" lazy-load />
-        <text>→</text>
-        <image src="{{item.inCard.image}}" mode="aspectFit" lazy-load />
-      </view>
-      <view class="subtitle">{{item.goal}}</view>
-      <view class="notice">
-        {{item.status === 'kept' ? '已保留' : item.status === 'reverted' ? '已换回' :
-        item.ready ? '待复盘' : '测试中'}}
-        <view wx:if="{{item.deckId}}">已打 {{item.played}} 场{{item.target ? ' / 计划 ' + item.target + ' 场' : ''}}</view>
-      </view>
-      <view wx:if="{{item.review}}" class="subtitle">复盘：{{item.review}}</view>
-      <block wx:if="{{editing === item.id}}">
-        <textarea
-          maxlength="240"
-          placeholder="这张牌在哪些对局有用，是否值得保留"
-          value="{{review}}"
-          bindinput="review"
-        />
-        <view class="actions">
-          <button hover-class="pressable-active" data-status="kept" bindtap="finish">
-            保留
-          </button>
-          <button hover-class="pressable-active" data-status="reverted" bindtap="finish">
-            换回
-          </button>
-          <button hover-class="pressable-active" data-status="testing" bindtap="finish">
-            继续测试
+  <particle-background palette="tracker"></particle-background>
+  <view class="content-layer">
+    <text class="eyebrow">EDH 牌桌</text>
+    <text class="title">调牌记录</text>
+    <view class="subtitle">换了什么，试下来怎么样</view>
+    <view wx:if="{{error}}" class="error">{{error}}</view>
+    <block>
+      <picker range="{{decks}}" range-key="name" value="{{deckIndex}}" bindchange="deck">
+        <view class="panel surface card-name">{{decks[deckIndex].name}} ▾</view>
+      </picker>
+      <view class="swap-pair">
+        <view class="panel surface">
+          <text class="label">换出</text>
+          <image
+            lazy-load
+            wx:if="{{outCard.image}}"
+            class="swap-art"
+            src="{{outCard.image}}"
+            mode="aspectFit"
+          />
+          <view wx:else class="swap-art-empty">＋</view>
+          <view class="card-name">{{outCard.displayName || '选择单卡'}}</view>
+          <button
+            hover-class="pressable-active"
+            class="link"
+            data-target="outCard"
+            bindtap="choose"
+          >
+            {{outCard ? '更换' : '搜索'}}
           </button>
         </view>
-      </block>
-      <view wx:else class="actions">
-        <button hover-class="pressable-active" data-id="{{item.id}}" bindtap="edit">
-          复盘
-        </button>
-        <button hover-class="pressable-active" data-id="{{item.id}}" bindtap="remove">
-          删除
-        </button>
+        <view class="panel surface">
+          <text class="label">换入</text>
+          <image
+            lazy-load
+            wx:if="{{inCard.image}}"
+            class="swap-art"
+            src="{{inCard.image}}"
+            mode="aspectFit"
+          />
+          <view wx:else class="swap-art-empty">＋</view>
+          <view class="card-name">{{inCard.displayName || '选择单卡'}}</view>
+          <button
+            hover-class="pressable-active"
+            class="link"
+            data-target="inCard"
+            bindtap="choose"
+          >
+            {{inCard ? '更换' : '搜索'}}
+          </button>
+        </view>
+      </view>
+      <label class="label" for="swap-goal">调牌备注</label>
+      <textarea
+        id="swap-goal"
+        maxlength="160"
+        placeholder="想补互动，还是试张新牌？可以先不写"
+        value="{{goal}}"
+        bindinput="goal"
+      />
+      <picker wx:if="{{decks[deckIndex].id}}" range="{{targetLabels}}" value="{{targetIndex}}" bindchange="target">
+        <view class="notice">{{targetLabels[targetIndex]}} ▾</view>
+      </picker>
+      <button hover-class="pressable-active" class="primary" bindtap="save">
+        记录调整
+      </button>
+    </block>
+    <view class="section">
+      <view class="section-title">调牌历史</view>
+      <view wx:if="{{!swaps.length}}" class="empty">还没有调牌记录</view>
+      <view wx:for="{{swaps}}" wx:key="id" class="panel surface">
+        <view class="muted">{{item.deckName}}</view>
+        <view class="section-title section">
+          {{item.outCard.displayName}} → {{item.inCard.displayName}}
+        </view>
+        <view class="swap-record-cards">
+          <image src="{{item.outCard.image}}" mode="aspectFit" lazy-load />
+          <text>→</text>
+          <image src="{{item.inCard.image}}" mode="aspectFit" lazy-load />
+        </view>
+        <view class="subtitle">{{item.goal}}</view>
+        <view class="notice">
+          {{item.status === 'kept' ? '已保留' : item.status === 'reverted' ? '已换回' :
+          item.ready ? '待复盘' : '测试中'}}
+          <view wx:if="{{item.deckId}}">已打 {{item.played}} 场{{item.target ? ' / 计划 ' + item.target + ' 场' : ''}}</view>
+        </view>
+        <view wx:if="{{item.review}}" class="subtitle">复盘：{{item.review}}</view>
+        <block wx:if="{{editing === item.id}}">
+          <textarea
+            maxlength="240"
+            placeholder="这张牌在哪些对局有用，是否值得保留"
+            value="{{review}}"
+            bindinput="review"
+          />
+          <view class="actions">
+            <button hover-class="pressable-active" data-status="kept" bindtap="finish">
+              保留
+            </button>
+            <button hover-class="pressable-active" data-status="reverted" bindtap="finish">
+              换回
+            </button>
+            <button hover-class="pressable-active" data-status="testing" bindtap="finish">
+              继续测试
+            </button>
+          </view>
+        </block>
+        <view wx:else class="actions">
+          <button hover-class="pressable-active" data-id="{{item.id}}" bindtap="edit">
+            复盘
+          </button>
+          <button hover-class="pressable-active" data-id="{{item.id}}" bindtap="remove">
+            删除
+          </button>
+        </view>
       </view>
     </view>
+    <view wx:if="{{decks[deckIndex].id}}" class="credit">关联套牌后，自动统计调牌后的场数</view>
+    <card-picker visible="{{picker}}" bindselect="selected" bindclose="closePicker" />
   </view>
-  <view wx:if="{{decks[deckIndex].id}}" class="credit">关联套牌后，自动统计调牌后的场数</view>
-  <card-picker visible="{{picker}}" bindselect="selected" bindclose="closePicker" />
 </view>

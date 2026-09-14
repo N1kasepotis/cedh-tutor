@@ -16,7 +16,7 @@
   min-height: max(44px, 88rpx);
   display: flex;
   align-items: center;
-  background: var(--cedh-surface);
+  background: var(--cedh-input-glass);
   border: 1rpx solid var(--cedh-accent-line);
   border-radius: 12rpx;
 }

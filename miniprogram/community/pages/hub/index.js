@@ -32,7 +32,7 @@ Page({
       {
         id: 'hands',
         title: '这手留不留',
-        description: '一起聊聊起手选择',
+        description: '社区讨论过的真实起手',
         tag: '练习',
       },
     ],

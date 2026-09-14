@@ -1,213 +1,216 @@
 <view class="studio">
-  <text class="eyebrow">EDH 牌桌</text>
-  <text class="title">三张牌认识你</text>
-  <view wx:if="{{friend}}" class="section">
-    <view class="section-title">{{friend.content.nickname ? friend.content.nickname + ' 的三张牌' : '牌友的三张牌'}}</view>
-    <view class="friend-gallery">
-      <button
-        hover-class="pressable-active"
-        wx:for="{{labels}}"
-        wx:key="*this"
-        class="gallery-card"
-        data-index="{{index}}"
-        data-friend="true"
-        bindtap="viewCard"
-        aria-label="查看 {{item}}：{{friend.content.slots[index].displayName}}"
-      >
+  <particle-background palette="tracker"></particle-background>
+  <view class="content-layer">
+    <text class="eyebrow">EDH 牌桌</text>
+    <text class="title">三张牌认识你</text>
+    <view wx:if="{{friend}}" class="section">
+      <view class="section-title">{{friend.content.nickname ? friend.content.nickname + ' 的三张牌' : '牌友的三张牌'}}</view>
+      <view class="friend-gallery">
+        <button
+          hover-class="pressable-active"
+          wx:for="{{labels}}"
+          wx:key="*this"
+          class="gallery-card"
+          data-index="{{index}}"
+          data-friend="true"
+          bindtap="viewCard"
+          aria-label="查看 {{item}}：{{friend.content.slots[index].displayName}}"
+        >
+          <image
+            lazy-load
+            class="gallery-image"
+            src="{{friend.content.slots[index].image}}"
+            mode="aspectFit"
+          />
+          <text class="muted">{{item}}</text>
+        </button>
+      </view>
+      <view wx:for="{{comparison}}" wx:key="label" class="panel surface">
+        <view class="row between">
+          <text>{{item.label}}</text>
+          <text class="badge">{{item.match}}</text>
+        </view>
+        <view class="row comparison-row">
+          <view class="grow">
+            <view class="muted">我的选择</view>
+            <view class="card-name">{{item.left.displayName || '还没选'}}</view>
+          </view>
+          <view class="grow">
+            <view class="muted">对方的选择</view>
+            <button
+              hover-class="pressable-active"
+              class="link"
+              data-index="{{index}}"
+              data-friend="true"
+              bindtap="viewCard"
+            >
+              {{item.right.displayName}}
+            </button>
+          </view>
+        </view>
+        <view class="muted">{{item.right.reason}}</view>
+      </view>
+      <view class="rule" />
+    </view>
+    <label class="label" for="nickname">署名</label>
+    <input
+      id="nickname"
+      placeholder="怎么称呼你，不填也可以"
+      value="{{nickname}}"
+      bindinput="nickname"
+      maxlength="20"
+      disabled="{{busy}}"
+    />
+    <view wx:for="{{labels}}" wx:key="*this" class="portrait-slot surface">
+      <view class="row">
+        <view class="section-title">{{item}}</view>
+      </view>
+      <view class="slot-hint">{{hints[index]}}</view>
+      <view class="row slot-body">
         <image
           lazy-load
-          class="gallery-image"
-          src="{{friend.content.slots[index].image}}"
+          wx:if="{{slots[index].image}}"
+          class="slot-image"
+          src="{{slots[index].image}}"
           mode="aspectFit"
+          data-index="{{index}}"
+          bindtap="viewCard"
+          binderror="imageFailed"
+          aria-label="查看 {{slots[index].displayName}}"
         />
-        <text class="muted">{{item}}</text>
-      </button>
-    </view>
-    <view wx:for="{{comparison}}" wx:key="label" class="panel">
-      <view class="row between">
-        <text>{{item.label}}</text>
-        <text class="badge">{{item.match}}</text>
-      </view>
-      <view class="row comparison-row">
+        <button
+          hover-class="pressable-active"
+          wx:else
+          class="slot-empty"
+          data-index="{{index}}"
+          bindtap="choose"
+          disabled="{{busy}}"
+          aria-label="为{{item}}选牌"
+        >
+          <text class="slot-plus">＋</text>
+          <text>选一张牌</text>
+        </button>
         <view class="grow">
-          <view class="muted">我的选择</view>
-          <view class="card-name">{{item.left.displayName || '还没选'}}</view>
-        </view>
-        <view class="grow">
-          <view class="muted">对方的选择</view>
+          <view class="card-name">{{slots[index].displayName || '还没选'}}</view>
+          <view wx:if="{{slots[index]}}" class="muted">
+            {{slots[index].lang}} / {{slots[index].set}} #{{slots[index].number}}
+          </view>
           <button
             hover-class="pressable-active"
             class="link"
             data-index="{{index}}"
-            data-friend="true"
-            bindtap="viewCard"
+            bindtap="choose"
+            disabled="{{busy}}"
           >
-            {{item.right.displayName}}
+            {{slots[index] ? '换一张 / 换版本' : '搜索牌名'}}
           </button>
         </view>
       </view>
-      <view class="muted">{{item.right.reason}}</view>
-    </view>
-    <view class="rule" />
-  </view>
-  <label class="label" for="nickname">署名</label>
-  <input
-    id="nickname"
-    placeholder="怎么称呼你，不填也可以"
-    value="{{nickname}}"
-    bindinput="nickname"
-    maxlength="20"
-    disabled="{{busy}}"
-  />
-  <view wx:for="{{labels}}" wx:key="*this" class="portrait-slot">
-    <view class="row">
-      <view class="section-title">{{item}}</view>
-    </view>
-    <view class="slot-hint">{{hints[index]}}</view>
-    <view class="row slot-body">
-      <image
-        lazy-load
-        wx:if="{{slots[index].image}}"
-        class="slot-image"
-        src="{{slots[index].image}}"
-        mode="aspectFit"
+      <input
+        placeholder="说说为什么选它，选填"
+        maxlength="40"
+        value="{{reasons[index]}}"
         data-index="{{index}}"
-        bindtap="viewCard"
-        binderror="imageFailed"
-        aria-label="查看 {{slots[index].displayName}}"
+        bindinput="reason"
+        disabled="{{busy}}"
       />
+    </view>
+    <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+    <view wx:if="{{feedback}}" class="notice" role="status">{{feedback}}</view>
+    <view class="actions">
+      <button hover-class="pressable-active" bindtap="save" disabled="{{busy}}">
+        保存到本机
+      </button>
       <button
         hover-class="pressable-active"
-        wx:else
-        class="slot-empty"
-        data-index="{{index}}"
-        bindtap="choose"
+        class="primary"
+        bindtap="publish"
+        loading="{{busy}}"
         disabled="{{busy}}"
-        aria-label="为{{item}}选牌"
       >
-        <text class="slot-plus">＋</text>
-        <text>选一张牌</text>
+        生成分享名片
       </button>
-      <view class="grow">
-        <view class="card-name">{{slots[index].displayName || '还没选'}}</view>
-        <view wx:if="{{slots[index]}}" class="muted">
-          {{slots[index].lang}} / {{slots[index].set}} #{{slots[index].number}}
-        </view>
-        <button
-          hover-class="pressable-active"
-          class="link"
-          data-index="{{index}}"
-          bindtap="choose"
-          disabled="{{busy}}"
-        >
-          {{slots[index] ? '换一张 / 换版本' : '搜索牌名'}}
-        </button>
-      </view>
     </view>
-    <input
-      placeholder="说说为什么选它，选填"
-      maxlength="40"
-      value="{{reasons[index]}}"
-      data-index="{{index}}"
-      bindinput="reason"
-      disabled="{{busy}}"
-    />
-  </view>
-  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
-  <view wx:if="{{feedback}}" class="notice" role="status">{{feedback}}</view>
-  <view class="actions">
-    <button hover-class="pressable-active" bindtap="save" disabled="{{busy}}">
-      保存到本机
-    </button>
+    <view wx:if="{{shareReady}}" class="actions">
+      <button hover-class="pressable-active" class="primary" open-type="share">
+        分享给牌友
+      </button>
+    </view>
     <button
       hover-class="pressable-active"
-      class="primary"
-      bindtap="publish"
-      loading="{{busy}}"
+      wx:if="{{remote.active}}"
+      class="link"
+      bindtap="revoke"
       disabled="{{busy}}"
     >
-      生成分享名片
+      停止分享
     </button>
-  </view>
-  <view wx:if="{{shareReady}}" class="actions">
-    <button hover-class="pressable-active" class="primary" open-type="share">
-      分享给牌友
-    </button>
-  </view>
-  <button
-    hover-class="pressable-active"
-    wx:if="{{remote.active}}"
-    class="link"
-    bindtap="revoke"
-    disabled="{{busy}}"
-  >
-    停止分享
-  </button>
-  <view class="section">
-    <view class="section-title">名片海报</view>
-    <view class="row between">
-      <text class="muted">只展示卡画</text>
-      <switch checked="{{artOnly}}" bindchange="mode" color="#cdb774" />
+    <view class="section">
+      <view class="section-title">名片海报</view>
+      <view class="row between">
+        <text class="muted">只展示卡画</text>
+        <switch checked="{{artOnly}}" bindchange="mode" color="#cdb774" />
+      </view>
+      <button hover-class="pressable-active" bindtap="generatePoster" disabled="{{busy}}" loading="{{busy}}">
+        {{busy ? '正在处理' : '生成名片图片'}}
+      </button>
     </view>
-    <button hover-class="pressable-active" bindtap="generatePoster" disabled="{{busy}}" loading="{{busy}}">
-      {{busy ? '正在处理' : '生成名片图片'}}
-    </button>
-  </view>
-  <view wx:if="{{posterPath}}">
-    <image
-      lazy-load
-      class="poster-preview"
-      src="{{posterPath}}"
-      mode="widthFix"
-      bindtap="previewPoster"
-    />
-    <button hover-class="pressable-active" bindtap="saveImage" disabled="{{busy}}">
-      保存到相册
-    </button>
-  </view>
-  <canvas id="passport-poster" type="2d" class="poster-canvas" />
-  <view class="credit">
-    <view>卡图来自 Scryfall，版权归 Wizards of the Coast 与画师所有</view>
-  </view>
-  <card-picker
-    id="passport-picker"
-    visible="{{picker}}"
-    bindselect="selected"
-    bindclose="closePicker"
-  />
-  <view wx:if="{{detail}}" class="modal-mask" catchtap="closeDetail">
-    <scroll-view scroll-y class="modal-sheet" catchtap="noop">
-      <button hover-class="pressable-active" bindtap="closeDetail">关闭卡牌</button>
-      <image lazy-load class="image-card" src="{{detail.image}}" mode="aspectFit" />
+    <view wx:if="{{posterPath}}">
       <image
         lazy-load
-        wx:if="{{detail.back}}"
-        class="image-card"
-        src="{{detail.back}}"
-        mode="aspectFit"
+        class="poster-preview"
+        src="{{posterPath}}"
+        mode="widthFix"
+        bindtap="previewPoster"
       />
-      <view class="section-title">{{detail.displayName}}</view>
-      <text class="subtitle">{{detail.rules}}</text>
-    </scroll-view>
-  </view>
-  <view wx:if="{{privacy}}" class="modal-mask">
-    <view class="modal-sheet">
-      <view class="section-title">保存名片图片</view>
-      <view class="subtitle">保存这张名片需要相册权限</view>
-      <button hover-class="pressable-active" class="link" bindtap="privacyContract">
-        查看隐私保护指引
+      <button hover-class="pressable-active" bindtap="saveImage" disabled="{{busy}}">
+        保存到相册
       </button>
-      <view class="actions">
-        <button hover-class="pressable-active" bindtap="declinePrivacy">暂不保存</button>
-        <button
-          hover-class="pressable-active"
-          id="album-privacy-agree"
-          class="primary"
-          open-type="agreePrivacyAuthorization"
-          bindagreeprivacyauthorization="agreePrivacy"
-        >
-          同意并保存
+    </view>
+    <canvas id="passport-poster" type="2d" class="poster-canvas" />
+    <view class="credit">
+      <view>卡图来自 Scryfall，版权归 Wizards of the Coast 与画师所有</view>
+    </view>
+    <card-picker
+      id="passport-picker"
+      visible="{{picker}}"
+      bindselect="selected"
+      bindclose="closePicker"
+    />
+    <view wx:if="{{detail}}" class="modal-mask" catchtap="closeDetail">
+      <scroll-view scroll-y class="modal-sheet" catchtap="noop">
+        <button hover-class="pressable-active" bindtap="closeDetail">关闭卡牌</button>
+        <image lazy-load class="image-card" src="{{detail.image}}" mode="aspectFit" />
+        <image
+          lazy-load
+          wx:if="{{detail.back}}"
+          class="image-card"
+          src="{{detail.back}}"
+          mode="aspectFit"
+        />
+        <view class="section-title">{{detail.displayName}}</view>
+        <text class="subtitle">{{detail.rules}}</text>
+      </scroll-view>
+    </view>
+    <view wx:if="{{privacy}}" class="modal-mask">
+      <view class="modal-sheet">
+        <view class="section-title">保存名片图片</view>
+        <view class="subtitle">保存这张名片需要相册权限</view>
+        <button hover-class="pressable-active" class="link" bindtap="privacyContract">
+          查看隐私保护指引
         </button>
+        <view class="actions">
+          <button hover-class="pressable-active" bindtap="declinePrivacy">暂不保存</button>
+          <button
+            hover-class="pressable-active"
+            id="album-privacy-agree"
+            class="primary"
+            open-type="agreePrivacyAuthorization"
+            bindagreeprivacyauthorization="agreePrivacy"
+          >
+            同意并保存
+          </button>
+        </view>
       </view>
     </view>
   </view>

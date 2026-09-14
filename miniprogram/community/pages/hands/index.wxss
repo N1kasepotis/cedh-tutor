@@ -1,7 +1,6 @@
 @import '../../styles.wxss';
 .hand-context {
   display: block;
-  white-space: pre-line;
 }
 .hand-list {
   margin: 30rpx 0 40rpx;
@@ -24,6 +23,15 @@
 }
 .hand-card:last-child {
   grid-column: 1 / -1;
+}
+.verdict-title {
+  margin-bottom: 0;
+}
+.hand-reason {
+  margin-top: 16rpx;
+}
+.hand-source {
+  margin-top: 28rpx;
 }
 
 .hand-card .card-name {

@@ -1,107 +1,108 @@
 <view class="studio banlist">
-  <view class="page-heading">
-    <text class="eyebrow">EDH 牌桌</text>
-    <text class="title">禁牌表</text>
-    <view class="subtitle">Commander 禁牌与解禁投票</view>
-  </view>
-  <view wx:if="{{selected}}">
-    <button hover-class="pressable-active" class="link" bindtap="close">
-      ← 全部禁牌
-    </button>
-    <view class="ban-detail">
-      <image
-        lazy-load
-        wx:if="{{!imageErrors[selected.id]}}"
-        class="detail-card"
-        src="{{selected.image}}"
-        mode="aspectFit"
-        data-id="{{selected.id}}"
-        binderror="imageFailed"
-      />
-      <view wx:else class="empty">
-        卡图暂未加载
-        <button hover-class="pressable-active" class="link" bindtap="retryImages">
-          重试卡图
+  <particle-background palette="tracker"></particle-background>
+  <view class="content-layer">
+    <view class="page-heading">
+      <text class="eyebrow">EDH 牌桌</text>
+      <text class="title">禁牌表</text>
+      <view class="subtitle">Commander 禁牌与解禁投票</view>
+    </view>
+    <view wx:if="{{selected}}">
+      <button hover-class="pressable-active" class="link" bindtap="close">
+        ← 全部禁牌
+      </button>
+      <view class="ban-detail">
+        <image
+          lazy-load
+          wx:if="{{!imageErrors[selected.id]}}"
+          class="detail-card"
+          src="{{selected.image}}"
+          mode="aspectFit"
+          data-id="{{selected.id}}"
+          binderror="imageFailed"
+        />
+        <view wx:else class="empty">
+          卡图暂未加载
+          <button hover-class="pressable-active" class="link" bindtap="retryImages">
+            重试卡图
+          </button>
+        </view>
+        <view class="detail-caption">
+          <text class="badge">{{selected.status}}</text>
+          <text class="muted">{{selected.artist}}</text>
+        </view>
+        <view class="section-title">{{selected.name}}</view>
+        <view wx:if="{{selected.status !== '禁用'}}" class="notice">
+          仅禁止用作行侣，仍可放入主牌或担任指挥官
+        </view>
+        <button hover-class="pressable-active" class="link" bindtap="source">
+          复制公告链接
         </button>
       </view>
-      <view class="detail-caption">
-        <text class="badge">{{selected.status}}</text>
-        <text class="muted">{{selected.artist}}</text>
+      <view class="section">
+        <community-poll id="ban-vote" poll-id="{{pollId}}" choices="{{choices}}" />
       </view>
-      <view class="section-title">{{selected.name}}</view>
-      <view wx:if="{{selected.status !== '禁用'}}" class="notice">
-        仅禁止用作行侣，仍可放入主牌或担任指挥官
+    </view>
+    <block wx:else>
+      <view class="list-toolbar">
+        <text>{{cards.length}} 张牌</text>
+        <text class="muted">更新于 {{banlist.checkedAt}}</text>
       </view>
-      <button hover-class="pressable-active" class="link" bindtap="source">
-        复制公告链接
-      </button>
-    </view>
-    <view class="section">
-      <community-poll id="ban-vote" poll-id="{{pollId}}" choices="{{choices}}" />
-    </view>
-  </view>
-  <block wx:else>
-    <view class="list-toolbar">
-      <text>{{cards.length}} 张牌</text>
-      <text class="muted">更新于 {{banlist.checkedAt}}</text>
-    </view>
-    <input
-      class="ban-search"
-      placeholder="搜索牌名，例如 Mana Crypt"
-      value="{{query}}"
-      bindinput="search"
-      maxlength="80"
-    />
-    <view class="ban-grid">
-      <button
-        hover-class="pressable-active"
-        wx:for="{{cards}}"
-        wx:key="id"
-        class="ban-card"
-        data-id="{{item.id}}"
-        bindtap="select"
-        aria-label="{{item.name}} {{item.status}} 查看卡牌与投票"
-      >
-        <view class="ban-image-wrap">
-          <image
-            wx:if="{{!imageErrors[item.id]}}"
-            class="ban-image"
-            src="{{item.image}}"
-            mode="aspectFit"
-            lazy-load
-            data-id="{{item.id}}"
-            binderror="imageFailed"
-          />
-          <view wx:else class="ban-image-fallback">
-            卡图暂未加载
-            <text>点开后重试</text>
+      <input
+        class="ban-search"
+        placeholder="搜索牌名，例如 Mana Crypt"
+        value="{{query}}"
+        bindinput="search"
+        maxlength="80"
+      />
+      <view class="ban-grid">
+        <button
+          hover-class="pressable-active"
+          wx:for="{{cards}}"
+          wx:key="id"
+          class="ban-card"
+          data-id="{{item.id}}"
+          bindtap="select"
+          aria-label="{{item.status === '禁用' ? item.name : item.name + '，' + item.status}}，查看卡牌与投票"
+        >
+          <view class="ban-image-wrap">
+            <image
+              wx:if="{{!imageErrors[item.id]}}"
+              class="ban-image"
+              src="{{item.image}}"
+              mode="aspectFit"
+              lazy-load
+              data-id="{{item.id}}"
+              binderror="imageFailed"
+            />
+            <view wx:else class="ban-image-fallback">
+              卡图暂未加载
+              <text>点开后重试</text>
+            </view>
           </view>
-        </view>
-        <view class="ban-name">{{item.name}}</view>
-        <view class="ban-caption">
-          <text class="{{item.status === '禁用' ? 'muted' : 'limited-status'}}">
-            {{item.status}}
-          </text>
-          <text>→</text>
-        </view>
-      </button>
-    </view>
-    <view wx:if="{{!cards.length}}" class="empty">
-      <view>未找到这张牌</view>
-      <view>试试英文牌名</view>
-    </view>
-    <view class="section">
-      <view class="section-title">其他禁用类别</view>
-      <view wx:for="{{banlist.restrictions}}" wx:key="*this" class="list-item subtitle">
-        {{item}}
+          <view class="ban-name">{{item.name}}</view>
+          <view class="ban-caption">
+            <text wx:if="{{item.status !== '禁用'}}" class="limited-status">{{item.status}}</text>
+            <text class="ban-arrow">→</text>
+          </view>
+        </button>
       </view>
-      <button hover-class="pressable-active" class="link" bindtap="source">
-        复制官方禁牌表链接
-      </button>
-    </view>
-    <view class="credit">
-      <view>适用 Commander 赛制</view>
-      <view>卡图 Scryfall　版权 Wizards of the Coast 与画师</view>
-    </view>
-  </block>
+      <view wx:if="{{!cards.length}}" class="empty">
+        <view>未找到这张牌</view>
+        <view>试试英文牌名</view>
+      </view>
+      <view class="section">
+        <view class="section-title">其他禁用类别</view>
+        <view wx:for="{{banlist.restrictions}}" wx:key="*this" class="list-item subtitle">
+          {{item}}
+        </view>
+        <button hover-class="pressable-active" class="link" bindtap="source">
+          复制官方禁牌表链接
+        </button>
+      </view>
+      <view class="credit">
+        <view>适用 Commander 赛制</view>
+        <view>卡图 Scryfall　版权 Wizards of the Coast 与画师</view>
+      </view>
+    </block>
+  </view>
 </view>

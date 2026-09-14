@@ -433,3 +433,90 @@ test('主将头像优先用 CDN 直链，解析不到才按名回落', () => {
   assert.match(js, /if \(!names\.length\) this\.artReady = true;/,
     '没有主将名时也要放开回落，否则头像永远空白');
 });
+
+// 赛后一分钟原先只有点「改」才看得到，对局记录行上没有任何痕迹。现在存过复盘的对局挂「复盘」
+// 标签，刚保存的那局默认展开；只点开没写字的不存成空复盘。这里真驱动页面对象走一遍。
+test('赛后一分钟保存后，对局记录行可以直接展开查看', () => {
+  const vm = require('node:vm');
+  const { createRequire } = require('node:module');
+  const { buildReviewLines, hasReviewContent } = require('../miniprogram/utils/tracker');
+  assert.deepEqual(
+    buildReviewLines({ turningPoint: ' 留住了反击 ', keyCard: '', nextChange: '换一张去除' }),
+    [
+      { key: 'turningPoint', label: '这局的转折', text: '留住了反击' },
+      { key: 'nextChange', label: '下次调整', text: '换一张去除' },
+    ],
+  );
+  assert.equal(hasReviewContent({ turningPoint: '  ', keyCard: '', nextChange: '' }), false);
+  assert.equal(hasReviewContent(null), false);
+
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/tracker/tracker.wxml'), 'utf8');
+  assert.match(wxml, /\{\{item\.reviewOpen \? '收起复盘' : '赛后一分钟'\}\}/);
+  assert.doesNotMatch(wxml, /选填/);
+  assert.match(wxml, /wx:if="\{\{match\.hasReview\}\}"[^>]*bindtap="toggleMatchReview"/);
+  assert.match(wxml, /wx:if="\{\{match\.reviewOpen\}\}" class="match-review"/);
+
+  const filename = path.join(root, 'miniprogram/pages/tracker/tracker.js');
+  const previous = global.wx;
+  const stored = new Map();
+  let definition;
+  try {
+    global.wx = {
+      getStorageSync: (key) => (stored.has(key) ? stored.get(key) : ''),
+      setStorageSync: (key, value) => stored.set(key, value),
+      showToast: () => {},
+    };
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Page: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+      setTimeout,
+      clearTimeout,
+    });
+    const page = {
+      ...definition,
+      data: structuredClone(definition.data),
+      pageActive: false,
+      storageReadable: true,
+      setData(value, callback) {
+        Object.assign(this.data, value);
+        if (callback) callback();
+      },
+    };
+    const tap = (dataset) => ({ currentTarget: { dataset } });
+    page.applyDecks([{
+      id: 'deck',
+      commander: null,
+      matches: [],
+      pendingDate: '2026-09-14',
+      pendingResult: 'loss',
+      pendingSeat: 'seat2',
+      reviewOpen: true,
+      pendingReview: { turningPoint: '  ', keyCard: 'Swan Song', nextChange: '' },
+    }], false);
+    page.addMatch(tap({ id: 'deck' }));
+
+    const [saved] = page.data.decks[0].visibleMatches;
+    assert.deepEqual(saved.reviewLines.map((line) => [line.label, line.text]), [['关键单卡', 'Swan Song']]);
+    assert.equal(saved.hasReview, true);
+    assert.equal(saved.reviewOpen, true, '刚保存的复盘要直接展开，用户才知道内容存到了哪里');
+    assert.equal(page.data.decks[0].reviewOpen, false, '保存后收起填写区');
+
+    page.toggleMatchReview(tap({ deckId: 'deck', matchId: saved.id }));
+    assert.equal(page.data.decks[0].visibleMatches[0].reviewOpen, false);
+    page.toggleMatchReview(tap({ deckId: 'deck', matchId: saved.id }));
+    assert.equal(page.data.decks[0].visibleMatches[0].reviewOpen, true);
+
+    page.toggleReview(tap({ id: 'deck' }));
+    page.reviewInput({ currentTarget: { dataset: { id: 'deck', field: 'turningPoint' } }, detail: { value: '   ' } });
+    page.addMatch(tap({ id: 'deck' }));
+    const matches = page.data.decks[0].matches;
+    assert.equal(matches.length, 2);
+    assert.equal(matches.find((match) => match.id !== saved.id).review, undefined, '只点开、没写字的赛后一分钟不存成空复盘');
+    assert.equal(matches.find((match) => match.id === saved.id).reviewOpen, true, '新对局没存复盘时，不收起已经展开的那局');
+  } finally {
+    global.wx = previous;
+  }
+});
