@@ -2,26 +2,64 @@
 .hand-context {
   display: block;
 }
-/* 七张牌格同宽同高：牌名折行时整组一起变高，不让某一张显得更重要 */
-.hand-list {
+/* 起手七张沿用套牌试玩的手牌区：暗色横条里放 66×92 的卡图瓦片，七张同样大小，放不下时横向滑动 */
+.hand {
+  display: flex;
+  height: 108px;
   margin: 30rpx 0 40rpx;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  grid-auto-rows: 1fr;
-  gap: 12rpx;
+  overflow: hidden;
+  white-space: nowrap;
+  background: var(--cedh-surface-muted);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
 }
-.hand-card {
+.hand-track {
+  display: inline-flex;
+  align-items: center;
+  width: max-content;
+  min-width: 100%;
+  height: 100%;
+  padding-right: 8px;
+  white-space: nowrap;
+}
+/* 卡图铺满瓦片；必须 position: relative，否则绝对定位的图会逃到外层叠在一起 */
+.card-tile {
+  position: relative;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  min-height: 104rpx;
+  justify-content: center;
+  width: 66px;
+  height: 92px;
+  padding: 6rpx;
+  background: var(--cedh-surface-raised);
   border: 1rpx solid var(--cedh-line);
-  border-left: 4rpx solid var(--cedh-accent);
   border-radius: 8rpx;
-  background: var(--cedh-surface);
-  padding: 20rpx;
+  overflow: hidden;
 }
+.card-art {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.hand-card {
+  flex: 0 0 auto;
+  display: inline-flex;
+  margin: 8px 0 8px 8px;
+  vertical-align: top;
+}
+/* 没有卡图时退回卡名 */
 .hand-card .card-name {
-  font-size: 27rpx;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  min-width: 0;
+  color: var(--cedh-text);
+  font-size: 15rpx;
+  line-height: 1.18;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 .verdict-title {
   margin-bottom: 0;
@@ -31,8 +69,4 @@
 }
 .hand-source {
   margin-top: 28rpx;
-}
-
-.hand-card .card-name {
-  font-size: 14px;
 }

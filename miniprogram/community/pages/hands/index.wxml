@@ -15,11 +15,22 @@
       <view>{{hand.stage}}</view>
       <view>{{hand.table}}</view>
     </view>
-    <view class="hand-list">
-      <view wx:for="{{hand.cards}}" wx:key="*this" class="hand-card surface">
-        <text class="card-name">{{item}}</text>
+    <scroll-view class="hand" scroll-x enable-flex aria-label="起手七张">
+      <view class="hand-track">
+        <view
+          wx:for="{{cards}}"
+          wx:key="name"
+          class="card-tile hand-card"
+          aria-role="button"
+          aria-label="查看 {{item.name}}"
+          data-index="{{index}}"
+          bindtap="previewCard"
+        >
+          <image wx:if="{{item.thumb}}" class="card-art" src="{{item.thumb}}" mode="aspectFill" lazy-load="{{true}}"></image>
+          <view wx:else class="card-name">{{item.name}}</view>
+        </view>
       </view>
-    </view>
+    </scroll-view>
     <community-poll
       compact="{{true}}"
       poll-id="{{'hand:' + hand.id}}"
@@ -49,5 +60,6 @@
     <view class="actions">
       <button hover-class="pressable-active" open-type="share">发给牌友</button>
     </view>
+    <view class="credit">卡图 Scryfall　版权 Wizards of the Coast 与画师</view>
   </view>
 </view>

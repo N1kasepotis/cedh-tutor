@@ -548,7 +548,6 @@ test('EDH 牌桌 panels and text fields reuse the shared glass surface', () => {
       if (tokens.includes('panel')) assert.ok(tokens.includes('surface'), `${name} 的 class="${value}" 缺少 surface`);
     }
   }
-  assert.match(read('miniprogram/community/pages/hands/index.wxml'), /class="hand-card surface"/);
   assert.match(read('miniprogram/community/pages/passport/index.wxml'), /class="portrait-slot surface"/);
 
   const field = read('miniprogram/community/styles.wxss').match(
@@ -645,12 +644,22 @@ test('EDH 牌桌 hub keeps the passport entry lean and has no tracker shortcut',
 test('hands page stays lean: equal card boxes and a one-tap poll without extra controls', () => {
   const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   const wxss = read('miniprogram/community/pages/hands/index.wxss');
-  const list = wxss.match(/\.hand-list\s*\{[^}]*\}/)[0];
-  assert.match(list, /grid-template-columns: repeat\(2, minmax\(0, 1fr\)\)/);
-  assert.match(list, /grid-auto-rows: 1fr/, '牌名折行时整组一起变高，七格保持同高');
-  assert.doesNotMatch(wxss, /grid-column|last-child|nth-child/, '不让某一张牌单独占满一行');
+  const tileSize = (css) => {
+    const tile = css.match(/\.card-tile\s*\{[^}]*\}/)[0];
+    return [tile.match(/width:\s*(\d+px)/)[1], tile.match(/height:\s*(\d+px)/)[1]];
+  };
+  assert.deepEqual(
+    tileSize(wxss),
+    tileSize(read('miniprogram/pages/playtest/playtest.wxss')),
+    '七张牌用套牌试玩手牌区同样大小的卡图瓦片',
+  );
+  assert.doesNotMatch(wxss, /grid-column|last-child|nth-child/, '不让某一张牌显得更大');
 
   const wxml = read('miniprogram/community/pages/hands/index.wxml');
+  assert.match(wxml, /<scroll-view class="hand" scroll-x/);
+  assert.match(wxml, /class="card-tile hand-card"[\s\S]*?bindtap="previewCard"/);
+  assert.match(wxml, /<image wx:if="\{\{item\.thumb\}\}" class="card-art"[^>]*lazy-load/);
+  assert.match(wxml, /卡图 Scryfall[^<]*Wizards of the Coast/);
   assert.match(wxml, /<community-poll\s+compact="\{\{true\}\}"/);
   assert.doesNotMatch(wxml, /用我的套牌练习|bindtap="practice"|先投票/);
   const js = read('miniprogram/community/pages/hands/index.js');
@@ -890,4 +899,23 @@ test('shared passport shows the friend picks without a card-by-card comparison',
   assert.match(wxml, /friend\.content\.slots\[index\]\.displayName/);
   assert.match(wxml, /friend\.content\.slots\[index\]\.reason/);
   assert.equal(domain.compare, undefined, '只供对照用的 compare 已删除');
+});
+
+// 起手瓦片的卡图直链随包提供（scripts/build-hand-card-index.js 单批查询生成）：换题后没重跑脚本就会缺图
+test('every practice hand card has a verified image from a matching print', () => {
+  const { hands } = require('../miniprogram/community/shared/catalog');
+  const handCards = require('../miniprogram/community/shared/hand-cards');
+  const names = [...new Set(hands.flatMap((hand) => hand.cards))];
+  assert.deepEqual(Object.keys(handCards).sort(), [...names].sort());
+  for (const name of names) {
+    const entry = handCards[name];
+    assert.ok(entry.name.split(' // ').includes(name), `${name} 对应到了别的牌`);
+    assert.match(entry.printId, domain.UUID);
+    for (const key of ['thumb', 'image']) {
+      const url = new URL(entry[key]);
+      assert.equal(url.protocol, 'https:');
+      assert.equal(url.hostname, 'cards.scryfall.io');
+      assert.ok(url.pathname.includes(entry.printId), `${name} 的 ${key} 不是同一印刷版本`);
+    }
+  }
 });
