@@ -109,3 +109,23 @@
 .slot-hint {
   font-size: 13px;
 }
+
+/* 三项标签各占一行，和署名输入框同一套玻璃底 */
+.tag-fields {
+  margin: 12rpx 0 8rpx;
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
+  background: var(--cedh-input-glass);
+}
+.tag-field {
+  justify-content: space-between;
+  gap: 16rpx;
+  padding: 0 22rpx;
+}
+.tag-fields picker + picker .tag-field {
+  border-top: 1rpx solid var(--cedh-line);
+}
+.tag-chosen {
+  font-size: 14px;
+  color: var(--cedh-accent-ink);
+}

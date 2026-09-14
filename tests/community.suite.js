@@ -763,143 +763,397 @@ test('compact poll votes in one tap and goes quiet when the server does not know
   }
 });
 
-// 名片海报按用户要求改成深暗极简：去掉三段色条、右上角大号“03”和每段序号；冷黑底、冷灰银白文字层级，
-// 钴蓝只出现一次。全卡模式把整张牌等比放进左侧，卡画模式在左侧裁成画带；没署名时不重复“三张牌认识我”。
-test('passport poster draws a quiet dark layout without colour spines or index numerals', async () => {
+// 名片海报：暗色收藏档案 × 玩家批注。先认识玩家（署名字最大、只画玩家自选的标签），再读三张牌（整张卡等比加投影、
+// 短评比牌名更大更亮、版本编号退到卡图下），最后在底部参与区接力（邀请语、小程序码、版权与画师）。
+// 不画色条和编号；文字只用暖灰层级，强调色只给标题短线和三类记号。
+async function drawPassportPoster(passport, { artOnly = false, pixels = null } = {}) {
   const filename = path.resolve(__dirname, '../miniprogram/community/utils/poster.js');
-  const source = fs.readFileSync(filename, 'utf8');
-  const draw = async (artOnly, nickname) => {
-    const log = [];
-    let fill = '';
-    let align = 'left';
-    const ctx = {
-      set fillStyle(value) {
-        fill = value;
-      },
-      get fillStyle() {
-        return fill;
-      },
-      set textAlign(value) {
-        align = value;
-      },
-      get textAlign() {
-        return align;
-      },
-      strokeStyle: '',
-      lineWidth: 1,
-      font: '10px sans-serif',
-      measureText: (value) => ({ width: Array.from(String(value)).length * 12 }),
-      fillText: (text, x, y) => log.push({ op: 'text', text: String(text), x, y, fill, align }),
-      fillRect: (x, y, w, h) => log.push({ op: 'rect', x, y, w, h, fill }),
-      drawImage: (img, ...rest) =>
-        log.push({
-          op: 'image',
-          url: img.url,
-          count: rest.length + 1,
-          x: rest.length === 8 ? rest[4] : rest[0],
-          y: rest.length === 8 ? rest[5] : rest[1],
-        }),
-      fill: () => log.push({ op: 'fill', fill }),
-      beginPath() {},
-      moveTo() {},
-      arcTo() {},
-      closePath() {},
-      rect() {},
-      clip() {},
-      stroke() {},
-      save() {},
-      restore() {},
-    };
-    const canvas = {
-      getContext: () => ctx,
-      createImage: () => {
-        const img = { width: 488, height: 680 };
-        Object.defineProperty(img, 'src', {
-          set(value) {
-            img.url = value;
-            setImmediate(() => img.onload());
-          },
-        });
-        return img;
-      },
-    };
-    const page = {
-      createSelectorQuery() {
-        return {
-          select() {
-            return this;
-          },
-          fields() {
-            return this;
-          },
-          exec(callback) {
-            callback([{ node: canvas }]);
-          },
-        };
-      },
-    };
-    const sandbox = {
-      module: { exports: {} },
-      require: createRequire(filename),
-      wx: {
-        getImageInfo: ({ src, success }) => success({ path: src }),
-        canvasToTempFilePath: ({ success }) => success({ tempFilePath: 'poster.png' }),
-      },
-      setTimeout,
-      clearTimeout,
-    };
-    vm.runInNewContext(source, sandbox);
-    const slot = (name) => ({
-      name,
-      displayName: name,
-      reason: '每局都想在第一回合放下',
-      lang: 'en',
-      set: 'msc',
-      number: '211',
-      artist: 'Myles Wohl',
-      image: 'https://cards.scryfall.io/normal/front/a.jpg',
-      art: 'https://cards.scryfall.io/art_crop/front/a.jpg',
-    });
-    const result = await sandbox.module.exports.render(
-      page,
-      { nickname, slots: [slot('Swords to Plowshares'), slot("Uro, Titan of Nature's Wrath"), slot('Sol Ring')] },
-      artOnly,
-    );
-    return { result, log };
+  const log = [];
+  let fill = '';
+  const sizeOf = (value) => Number(/(\d+)px/.exec(value)[1]);
+  const ctx = {
+    font: '10px sans-serif',
+    textAlign: 'left',
+    strokeStyle: '',
+    lineWidth: 1,
+    shadowColor: '',
+    shadowOffsetY: 0,
+    set fillStyle(value) {
+      fill = value;
+    },
+    get fillStyle() {
+      return fill;
+    },
+    set shadowBlur(value) {
+      log.push({ op: 'shadow', blur: value });
+    },
+    get shadowBlur() {
+      return 0;
+    },
+    // 拉丁字符按半个字宽估算，汉字按一个字宽
+    measureText(value) {
+      const size = sizeOf(this.font);
+      return {
+        width: Array.from(String(value)).reduce(
+          (sum, character) => sum + (character.charCodeAt(0) < 256 ? 0.55 : 1) * size,
+          0,
+        ),
+      };
+    },
+    fillText(text, x, y) {
+      log.push({ op: 'text', text: String(text), x, y, fill, size: sizeOf(this.font) });
+    },
+    fillRect: (x, y, w, h) => log.push({ op: 'rect', x, y, w, h, fill }),
+    drawImage: (img, ...rest) =>
+      log.push({
+        op: 'image',
+        url: img.url,
+        count: rest.length + 1,
+        x: rest[0],
+        y: rest[1],
+        w: rest[2],
+        h: rest[3],
+      }),
+    fill: () => log.push({ op: 'fill', fill }),
+    getImageData: () => {
+      if (!pixels) throw new Error('tainted');
+      return { data: pixels };
+    },
+    createRadialGradient: () => ({ addColorStop() {} }),
+    stroke() {},
+    beginPath() {},
+    moveTo() {},
+    lineTo() {},
+    arc() {},
+    arcTo() {},
+    quadraticCurveTo() {},
+    closePath() {},
+    rect() {},
+    clip() {},
+    save() {},
+    restore() {},
   };
+  const canvas = {
+    width: 0,
+    height: 0,
+    getContext: () => ctx,
+    createImage: () => {
+      const img = { width: 488, height: 680 };
+      Object.defineProperty(img, 'src', {
+        set(value) {
+          img.url = value;
+          setImmediate(() => img.onload());
+        },
+      });
+      return img;
+    },
+  };
+  const page = {
+    createSelectorQuery() {
+      return {
+        select() {
+          return this;
+        },
+        fields() {
+          return this;
+        },
+        exec(callback) {
+          callback([{ node: canvas }]);
+        },
+      };
+    },
+  };
+  let exported = null;
+  const sandbox = {
+    module: { exports: {} },
+    require: createRequire(filename),
+    wx: {
+      getImageInfo: ({ src, success }) => success({ path: src }),
+      canvasToTempFilePath: (options) => {
+        exported = options;
+        options.success({ tempFilePath: 'poster.png' });
+      },
+    },
+    setTimeout,
+    clearTimeout,
+  };
+  vm.runInNewContext(fs.readFileSync(filename, 'utf8'), sandbox);
+  const result = await sandbox.module.exports.render(page, passport, artOnly);
+  return { result, log, canvas, exported };
+}
+function posterSlot(name, extra = {}) {
+  return {
+    name,
+    displayName: name,
+    reason: '每局都想在第一回合放下',
+    lang: 'en',
+    set: 'msc',
+    number: '211',
+    artist: 'Myles Wohl',
+    image: 'https://cards.scryfall.io/normal/front/a.jpg',
+    art: 'https://cards.scryfall.io/art_crop/front/a.jpg',
+    ...extra,
+  };
+}
 
-  for (const [artOnly, nickname] of [[false, '周末指挥官'], [true, '']]) {
-    const { result, log } = await draw(artOnly, nickname);
+test('passport poster reads as a player archive with the QR relay at the bottom', async () => {
+  const neutrals = ['#F4EEE4', '#ECE5D9', '#CEC6B9', '#B2AA9D', '#8C8478', '#6F675C'];
+  const tagWords = domain.PASSPORT_TAGS.flatMap((field) => field.options);
+  const slots = [
+    posterSlot('Swords to Plowshares', { displayName: '化剑为犁', lang: 'zhs' }),
+    posterSlot("Uro, Titan of Nature's Wrath"),
+    posterSlot('Deflecting Swat', { artist: 'Izzy' }),
+  ];
+  for (const [artOnly, nickname, tags] of [
+    [false, '周末指挥官', { level: 3, speed: 1, interaction: 2 }],
+    [true, '', {}],
+  ]) {
+    const { result, log, canvas, exported } = await drawPassportPoster(
+      { nickname, tags, slots },
+      { artOnly },
+    );
     assert.equal(result, 'poster.png');
+    assert.equal(canvas.width, 900);
+    assert.deepEqual(
+      [exported.destWidth, exported.destHeight],
+      [900, canvas.height],
+      '按实际画布尺寸导出',
+    );
     const texts = log.filter((entry) => entry.op === 'text');
-    assert.ok(!texts.some((entry) => /^0[1-3]$/.test(entry.text)), '不再画 01 到 03 的编号');
+    const joined = texts.map((entry) => entry.text).join('');
+    assert.ok(!texts.some((entry) => /^0[1-3]$/.test(entry.text)), '不画 01 到 03 的编号');
     assert.ok(
       !log.some((entry) => entry.op === 'rect' && entry.x === 0 && entry.w <= 12 && entry.h >= 400),
-      '不再画左侧色条',
+      '不画左侧色条',
     );
-    const neutrals = ['#F1F2F5', '#B3B8C2', '#888E97', '#575E6A'];
     assert.deepEqual(
       texts.filter((entry) => !neutrals.includes(entry.fill)).map((entry) => entry.text),
       [],
-      '文字只用银白与冷灰层级',
+      '文字只用暖灰层级，强调色不上字',
     );
-    assert.equal(log.filter((entry) => entry.fill === '#2454FF').length, 1, '钴蓝只出现一次');
-    for (const entry of texts) assert.ok(entry.x >= 64 && entry.x <= 836, `${entry.text} 超出左右边距`);
+    for (const entry of texts) {
+      assert.ok(entry.x >= 64 && entry.x <= 836, `${entry.text} 超出左右边距`);
+      assert.ok(entry.y <= canvas.height - 40, `${entry.text} 超出画布底部`);
+    }
+
+    // 身份层：署名（没署名时是“我的三张牌”）是全图最大的字；“三张牌认识我”只在有署名时出现
+    const title = texts.find((entry) => entry.text === (nickname || '我的三张牌'));
+    assert.ok(title && texts.every((entry) => entry.size <= title.size), '署名字最大');
+    assert.equal(joined.includes('三张牌认识我'), Boolean(nickname));
+    // 标签只画玩家选过的，顺序是对局强度、套牌速度、干扰对手；没选就一个也不画
+    assert.deepEqual(
+      texts.filter((entry) => tagWords.includes(entry.text)).map((entry) => entry.text),
+      nickname ? ['cEDH', '中速', '康完你的康他的'] : [],
+    );
+
+    // 三张牌：整张卡等比画入并带投影；短评比牌名更大、更亮；中文印刷版本附小号英文原名
     const images = log.filter((entry) => entry.op === 'image');
     const code = images.filter((entry) => entry.url === '/assets/cT_logo_v.2.jpg');
-    const cardsDrawn = images.filter((entry) => entry.url !== '/assets/cT_logo_v.2.jpg');
-    assert.equal(code.length, 1, '画一次小程序码');
-    assert.ok(code[0].x >= 700 && code[0].y <= 100, '小程序码在右上角');
-    assert.equal(cardsDrawn.length, 3);
+    const cards = images.filter((entry) => entry.url !== '/assets/cT_logo_v.2.jpg');
+    assert.equal(cards.length, 3);
+    for (const card of cards) {
+      assert.equal(card.count, 5, '卡图整张画入，不裁切');
+      assert.ok(Math.abs(card.h / card.w - 680 / 488) < 0.01, '保留卡图原比例');
+    }
     assert.ok(
-      cardsDrawn.every((entry) => entry.count === (artOnly ? 9 : 5)),
-      artOnly ? '卡画模式裁成左侧画带' : '全卡模式整张等比放入',
+      log.filter((entry) => entry.op === 'shadow' && entry.blur > 0).length >= 3,
+      '每张卡都有投影',
     );
-    const joined = texts.map((entry) => entry.text).join('');
-    for (const label of ['最喜欢的设计', '代表打法的牌', '常用妙妙牌']) assert.ok(joined.includes(label));
-    assert.equal(joined.includes('三张牌认识我'), Boolean(nickname), '没署名时不重复“三张牌认识我”');
-    assert.ok(joined.includes('Wizards of the Coast') && joined.includes('Myles Wohl'), '卡图与画师署名保留');
-    assert.ok(joined.includes('长按识别'), '小程序码下有一行用途说明');
+    const reasons = texts.filter((entry) => entry.text === '每局都想在第一回合放下');
+    const names = ['化剑为犁', "Uro, Titan of Nature's Wrath", 'Deflecting Swat'].map((text) =>
+      texts.find((entry) => entry.text === text),
+    );
+    assert.equal(reasons.length, 3);
+    assert.ok(names.every(Boolean), '三张牌名都画出来');
+    assert.ok(
+      reasons.every((reason) => names.every((name) => reason.size > name.size)),
+      '短评字号大于牌名',
+    );
+    assert.ok(
+      reasons.every((reason) =>
+        names.every((name) => neutrals.indexOf(reason.fill) < neutrals.indexOf(name.fill)),
+      ),
+      '短评比牌名更亮',
+    );
+    const original = texts.find((entry) => entry.text === 'Swords to Plowshares');
+    assert.ok(original && original.size < names[0].size, '中文印刷版本附较小的英文原名');
+    assert.equal(
+      texts.filter((entry) => entry.text === 'Deflecting Swat').length,
+      1,
+      '英文版本的牌名只写一次',
+    );
+    for (const label of domain.SLOT_LABELS) assert.ok(joined.includes(label));
+    // 收藏注释：版本、编号和语言用小字贴在每张卡图下方
+    assert.ok(joined.includes('MSC #211 · ZHS') && joined.includes('MSC #211 · EN'));
+    const notes = texts.filter((entry) => entry.text === 'M' && entry.x === 64);
+    assert.equal(notes.length, 3, '三张牌各有一行收藏注释');
+    notes.forEach((note, index) => {
+      const bottom = cards[index].y + cards[index].h;
+      assert.ok(note.y > bottom && note.y < bottom + 60, '收藏注释贴在卡图下方');
+      assert.ok(note.size < reasons[index].size);
+    });
+
+    // 底部参与区：小程序码在右侧，邀请语、版权和画师都在三张牌下面
+    const lastCardBottom = Math.max(...cards.map((card) => card.y + card.h));
+    assert.equal(code.length, 1, '画一次小程序码');
+    assert.ok(code[0].x >= 640 && code[0].y > lastCardBottom, '小程序码在底部右侧');
+    for (const phrase of [
+      '这是我看待万智牌的方式，你呢？',
+      '长按识别',
+      'Wizards of the Coast',
+      'Myles Wohl',
+      'Izzy',
+    ]) {
+      const entry = texts.find((item) => item.text.includes(phrase));
+      assert.ok(entry && entry.y > lastCardBottom, `${phrase} 在底部参与区`);
+    }
+  }
+});
+
+// 短评折行：逗号句号不放在行首（连同前一个字一起换行）；末行只剩一两个字时，优先在上一行的逗号后断开，
+// 找不到停顿就挪到末行凑满四个字
+test('poster reasons keep punctuation off line starts and never end on a lone character', async () => {
+  const reasons = [
+    '开局先找它然后慢慢等对手把威胁全部拍，再处理掉',
+    '喜欢它的规则设计：一句话，没有多余的字',
+    '零费改对象，对手的移除换去拆他自己的主将',
+  ];
+  const slots = reasons.map((reason) => posterSlot('Sol Ring', { reason }));
+  const { log } = await drawPassportPoster({ nickname: '牌友', slots });
+  assert.deepEqual(
+    log.filter((entry) => entry.op === 'text' && entry.size === 30).map((entry) => entry.text),
+    [
+      '开局先找它然后慢慢等对手把威胁全部',
+      '拍，再处理掉',
+      '喜欢它的规则设计：一句话，',
+      '没有多余的字',
+      '零费改对象，对手的移除换去拆他自',
+      '己的主将',
+    ],
+  );
+});
+
+// 强调色取自“最喜欢的设计”那张卡画：色相跟着卡画走，饱和度压低；读不到像素或卡画是灰阶时退回暖灰
+test('poster accent is a muted hue taken from the favourite design art', async () => {
+  const { accentFrom } = require('../miniprogram/community/utils/poster');
+  const paint = (red, green, blue) =>
+    Uint8ClampedArray.from({ length: 4000 }, (_, index) => [red, green, blue, 255][index % 4]);
+  const channels = (hex) => [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16));
+  const saturation = (hex) => {
+    const [red, green, blue] = channels(hex).map((value) => value / 255);
+    const max = Math.max(red, green, blue);
+    const min = Math.min(red, green, blue);
+    return max === min ? 0 : (max - min) / (1 - Math.abs(max + min - 1));
+  };
+  const red = channels(accentFrom(paint(220, 40, 40)));
+  assert.ok(red[0] > red[1] + 20 && Math.abs(red[1] - red[2]) <= 2, '红色卡画取出偏红的强调色');
+  const blue = channels(accentFrom(paint(40, 60, 200)));
+  assert.ok(blue[2] > blue[0] + 20 && blue[2] > blue[1] + 20, '蓝色卡画取出偏蓝的强调色');
+  for (const hex of [accentFrom(paint(220, 40, 40)), accentFrom(paint(40, 60, 200))]) {
+    assert.ok(saturation(hex) <= 0.35, `${hex} 饱和度压低`);
+    assert.ok(channels(hex).reduce((sum, value) => sum + value, 0) / 3 > 120, `${hex} 在墨黑底上够亮`);
+  }
+  const fallback = accentFrom(paint(128, 128, 128));
+  assert.equal(accentFrom(paint(30, 30, 30)), fallback, '灰阶卡画退回同一个暖灰');
+  assert.ok(saturation(fallback) <= 0.35);
+
+  const slots = [0, 1, 2].map(() => posterSlot('Sol Ring'));
+  const pixels = paint(40, 60, 200);
+  for (const [options, accent] of [
+    [{ pixels }, accentFrom(pixels)],
+    [{}, fallback],
+  ]) {
+    const { log } = await drawPassportPoster({ nickname: '牌友', slots }, options);
+    const uses = log.filter((entry) => entry.fill === accent);
+    assert.equal(uses.length, 4, '强调色只画标题短线和三类记号');
+    assert.ok(uses.every((entry) => entry.op !== 'text'));
+  }
+});
+
+// 名片标签由玩家自己挑：词汇沿用对局约定的强度分级和问卷里的速度、干扰选项，不根据所选卡牌推断；
+// 本机草稿和分享都带上，坏数据不显示也不挡住名片
+test('passport tags are picked by the player from existing vocabulary and kept in drafts and shares', () => {
+  const { questions } = require('../miniprogram/config/questionnaire');
+  const question = (id) => questions.find((item) => item.id === id);
+  const [level, speed, interaction] = domain.PASSPORT_TAGS;
+  assert.deepEqual(
+    [level.label, level.options],
+    [domain.TABLE_FIELDS[0].label, domain.TABLE_FIELDS[0].options],
+  );
+  for (const [field, id] of [
+    [speed, 'speed'],
+    [interaction, 'interaction'],
+  ]) {
+    assert.equal(field.label, question(id).title);
+    assert.deepEqual(field.options, question(id).options.map((option) => option.text));
+  }
+  assert.deepEqual(
+    domain.passport({ ...passport, tags: { level: 3, interaction: 0 } }).tags,
+    { level: 3, interaction: 0 },
+  );
+  assert.deepEqual(domain.passport(passport).tags, {}, '不选标签也能分享');
+  for (const tags of [{ level: 4 }, { speed: -1 }, { speed: 1.5 }, { interaction: '2' }, [1], 'cEDH']) {
+    assert.throws(() => domain.passport({ ...passport, tags }), { code: 'INVALID_INPUT' });
+  }
+  assert.deepEqual(domain.tagLabels({ interaction: 2, level: 3 }), ['cEDH', '康完你的康他的']);
+  assert.deepEqual(domain.tagLabels({ level: 9 }), [], '坏数据不显示');
+
+  const dir = path.join(__dirname, '../miniprogram/community/pages/passport');
+  const wxml = fs.readFileSync(path.join(dir, 'index.wxml'), 'utf8');
+  assert.match(wxml, /<picker\s+wx:for="\{\{tagFields\}\}"[^>]*bindchange="tag"/);
+  assert.match(wxml, /wx:for="\{\{friendTags\}\}"/);
+  assert.match(fs.readFileSync(path.join(dir, 'index.js'), 'utf8'), /friendTags: domain\.tagLabels\(friend\.content\.tags\)/);
+
+  const filename = path.join(dir, 'index.js');
+  const saved = new Map();
+  const previous = global.wx;
+  try {
+    global.wx = {
+      getStorageSync: (key) => saved.get(key) || '',
+      setStorageSync: (key, value) => saved.set(key, value),
+      showToast: () => {},
+    };
+    let definition;
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Page: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+    });
+    const open = () => {
+      const page = {
+        ...definition,
+        data: structuredClone(definition.data),
+        setData(value) {
+          for (const [key, next] of Object.entries(value)) {
+            const item = /^(\w+)\[(\d+)\]$/.exec(key);
+            if (item) this.data[item[1]][Number(item[2])] = next;
+            else this.data[key] = next;
+          }
+        },
+      };
+      page.onLoad({});
+      return page;
+    };
+    const pick = (page, index, value) =>
+      page.tag({
+        currentTarget: { dataset: { index: String(index) } },
+        detail: { value: String(value) },
+      });
+    const page = open();
+    assert.deepEqual(Array.from(page.data.tagFields[1].range), ['不填', 'Turbo', '中速', '控制']);
+    assert.deepEqual({ ...page.content().tags }, {}, '默认不替玩家选');
+    pick(page, 0, 4);
+    pick(page, 2, 3);
+    assert.deepEqual({ ...page.content().tags }, { level: 3, interaction: 2 });
+    page.save();
+    const reopened = open();
+    assert.deepEqual(Array.from(reopened.data.tagIndexes), [4, 0, 3], '本机草稿保留标签');
+    pick(reopened, 0, 0);
+    assert.deepEqual({ ...reopened.content().tags }, { interaction: 2 }, '改回不填就去掉这一项');
+  } finally {
+    global.wx = previous;
   }
 });
 
@@ -911,7 +1165,12 @@ test('passport prompts invite sharing and the card picker starts fresh for a dif
   const pageWxml = fs.readFileSync(path.join(dir, 'pages/passport/index.wxml'), 'utf8');
   assert.match(pageJs, /hints: \['看一眼就心动的那张', '牌友一看就知道你怎么玩的那张', '每次打出来都让全桌愣一下的那张'\]/);
   assert.match(pageWxml, /placeholder="牌桌上大家怎么叫你，不填也行"/);
-  assert.match(pageWxml, /placeholder="为什么是它？一句话让牌友懂你"/);
+  // 短评提示按三类选牌分别问：设计问喜欢它哪一点，打法问怎么玩，妙妙牌问它妙在哪
+  assert.match(
+    pageJs,
+    /reasonHints: \['原画、规则设计还是实战体验？', '用它说说你喜欢怎么玩', '它在你的牌组里妙在哪？'\]/,
+  );
+  assert.match(pageWxml, /placeholder="\{\{reasonHints\[index\]\}\}"/);
   assert.doesNotMatch(pageJs + pageWxml, /你最欣赏哪张牌的设计|说说为什么选它/);
   assert.match(pageWxml, /<card-picker[^>]*context="\{\{'slot-' \+ slotIndex\}\}"/);
   assert.match(

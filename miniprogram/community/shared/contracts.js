@@ -32,6 +32,17 @@ const TABLE_FIELDS = [
     options: ['30 分钟', '60 分钟', '90 分钟', '不限时'],
   },
 ];
+// Passport tags are picked by the player and never inferred from the chosen cards. The wording
+// reuses the table agreement's power levels and the questionnaire's speed and interaction options.
+const PASSPORT_TAGS = [
+  { key: 'level', label: TABLE_FIELDS[0].label, options: TABLE_FIELDS[0].options },
+  { key: 'speed', label: '套牌速度', options: ['Turbo', '中速', '控制'] },
+  {
+    key: 'interaction',
+    label: '干扰对手',
+    options: ['Stax 锁场', '适度互动', '康完你的康他的', '各扫门前雪'],
+  },
+];
 function fail(code) {
   const error = new Error(code);
   error.code = code;
@@ -46,12 +57,37 @@ function text(value, max, required = false) {
   if (Array.from(clean).length > max || (required && !clean)) fail('INVALID_INPUT');
   return clean;
 }
+function passportTags(input) {
+  if (input === undefined || input === null) return {};
+  if (typeof input !== 'object' || Array.isArray(input)) fail('INVALID_INPUT');
+  const result = {};
+  PASSPORT_TAGS.forEach(({ key, options }) => {
+    const value = input[key];
+    if (value === undefined || value === null) return;
+    if (!Number.isInteger(value) || value < 0 || value >= options.length)
+      fail('INVALID_INPUT');
+    result[key] = value;
+  });
+  return result;
+}
+// Display helper: malformed tags are hidden instead of breaking a draft or a shared passport.
+function tagLabels(input) {
+  try {
+    const tags = passportTags(input);
+    return PASSPORT_TAGS.filter(({ key }) => key in tags).map(
+      ({ key, options }) => options[tags[key]],
+    );
+  } catch (_) {
+    return [];
+  }
+}
 function passport(input) {
   if (!input || !Array.isArray(input.slots) || input.slots.length !== 3)
     fail('INVALID_INPUT');
   return {
     nickname: text(input.nickname, 20),
     deckName: text(input.deckName, 50),
+    tags: passportTags(input.tags),
     slots: input.slots.map((slot) => {
       if (!slot || !UUID.test(slot.printId)) fail('INVALID_CARD');
       return {
@@ -156,8 +192,11 @@ module.exports = {
   VIEWS,
   REASONS,
   TABLE_FIELDS,
+  PASSPORT_TAGS,
   fail,
   text,
+  passportTags,
+  tagLabels,
   passport,
   table,
   ballot,

@@ -5,6 +5,9 @@
     <text class="title">三张牌认识你</text>
     <view wx:if="{{friend}}" class="section">
       <view class="section-title">{{friend.content.nickname ? friend.content.nickname + ' 的三张牌' : '牌友的三张牌'}}</view>
+      <view wx:if="{{friendTags.length}}" class="metadata">
+        <text wx:for="{{friendTags}}" wx:key="*this" class="badge">{{item}}</text>
+      </view>
       <view class="friend-gallery">
         <button
           hover-class="pressable-active"
@@ -41,6 +44,23 @@
       maxlength="20"
       disabled="{{busy}}"
     />
+    <view class="label">标签</view>
+    <view class="tag-fields">
+      <picker
+        wx:for="{{tagFields}}"
+        wx:key="key"
+        range="{{item.range}}"
+        value="{{tagIndexes[index]}}"
+        data-index="{{index}}"
+        bindchange="tag"
+        disabled="{{busy}}"
+      >
+        <view class="tag-field">
+          <text class="muted">{{item.label}}</text>
+          <text class="{{tagIndexes[index] ? 'tag-chosen' : 'muted'}}">{{item.range[tagIndexes[index]]}} ▾</text>
+        </view>
+      </picker>
+    </view>
     <view wx:for="{{labels}}" wx:key="*this" class="portrait-slot surface">
       <view class="row">
         <view class="section-title">{{item}}</view>
@@ -87,7 +107,7 @@
         </view>
       </view>
       <input
-        placeholder="为什么是它？一句话让牌友懂你"
+        placeholder="{{reasonHints[index]}}"
         maxlength="40"
         value="{{reasons[index]}}"
         data-index="{{index}}"
