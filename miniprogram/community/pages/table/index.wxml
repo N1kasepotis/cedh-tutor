@@ -1,7 +1,7 @@
 <view class="studio">
   <text class="eyebrow">EDH 牌桌</text>
   <text class="title">对局约定</text>
-  <view class="subtitle">开局前确认强度、代牌与组合技</view>
+  <view class="subtitle">这桌怎么玩</view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:for="{{fields}}" wx:key="key" class="agreement-line">
     <view class="grow">
@@ -19,7 +19,6 @@
       </picker>
     </view>
   </view>
-  <view class="notice">请按实际套牌情况商量后选择</view>
   <view wx:if="{{!incoming}}" class="actions">
     <button hover-class="pressable-active" bindtap="save" disabled="{{busy}}">
       保存本桌
@@ -31,11 +30,11 @@
       disabled="{{busy}}"
       loading="{{busy}}"
     >
-      {{remote ? '更新约定' : '发布约定'}}
+      {{remote ? '更新分享' : '生成分享'}}
     </button>
   </view>
   <view wx:if="{{remote && !dirty}}" class="panel">
-    <view class="section-title">开局确认</view>
+    <view class="section-title">牌友确认</view>
     <view class="muted">
       {{agreement ? agreement.count + ' 位玩家已确认' : '刷新查看确认人数'}}
     </view>
@@ -46,7 +45,7 @@
         bindtap="agree"
         disabled="{{busy}}"
       >
-        {{agreement.agreed ? '撤回我的确认' : '确认本桌约定'}}
+        {{agreement.agreed ? '取消确认' : '没问题'}}
       </button>
       <button hover-class="pressable-active" open-type="share">发给牌友</button>
     </view>
@@ -60,12 +59,12 @@
     </button>
   </view>
   <view wx:if="{{dirty && remote}}" class="notice">
-    约定已修改，更新分享后，所有玩家需要重新确认
+    分享还没更新，更新后会重新统计确认人数
   </view>
   <view class="actions">
     <button hover-class="pressable-active" bindtap="copy">复制约定</button>
     <button hover-class="pressable-active" bindtap="newTable" disabled="{{busy}}">
-      再开一桌
+      另存一桌
     </button>
   </view>
   <button
@@ -75,7 +74,7 @@
     bindtap="revoke"
     disabled="{{busy}}"
   >
-    撤回公开约定
+    停止分享
   </button>
   <view wx:if="{{!incoming && history.length}}" class="section">
     <view class="section-title">已存约定</view>

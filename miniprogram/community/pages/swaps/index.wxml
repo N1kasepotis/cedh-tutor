@@ -1,15 +1,9 @@
 <view class="studio">
   <text class="eyebrow">EDH 牌桌</text>
   <text class="title">调牌记录</text>
-  <view class="subtitle">记下换入换出，打几局再决定</view>
+  <view class="subtitle">换了什么，试下来怎么样</view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
-  <view wx:if="{{!decks.length}}" class="panel">
-    <view class="subtitle">先在“我的主将”建一套牌，再记调整</view>
-    <button hover-class="pressable-active" class="primary" bindtap="tracker">
-      建立套牌
-    </button>
-  </view>
-  <block wx:else>
+  <block>
     <picker range="{{decks}}" range-key="name" value="{{deckIndex}}" bindchange="deck">
       <view class="panel card-name">{{decks[deckIndex].name}} ▾</view>
     </picker>
@@ -55,16 +49,16 @@
         </button>
       </view>
     </view>
-    <label class="label" for="swap-goal">调牌理由</label>
+    <label class="label" for="swap-goal">调牌备注</label>
     <textarea
       id="swap-goal"
       maxlength="160"
-      placeholder="例如：增加前期互动，少留只能自闭展开的起手"
+      placeholder="想补互动，还是试张新牌？可以先不写"
       value="{{goal}}"
       bindinput="goal"
     />
-    <picker range="{{targets}}" value="{{targetIndex}}" bindchange="target">
-      <view class="notice">再打 {{targets[targetIndex]}} 场后复盘 ▾</view>
+    <picker wx:if="{{decks[deckIndex].id}}" range="{{targetLabels}}" value="{{targetIndex}}" bindchange="target">
+      <view class="notice">{{targetLabels[targetIndex]}} ▾</view>
     </picker>
     <button hover-class="pressable-active" class="primary" bindtap="save">
       记录调整
@@ -87,7 +81,7 @@
       <view class="notice">
         {{item.status === 'kept' ? '已保留' : item.status === 'reverted' ? '已换回' :
         item.ready ? '待复盘' : '测试中'}}
-        <view>已打 {{item.played}} / {{item.target}} 场</view>
+        <view wx:if="{{item.deckId}}">已打 {{item.played}} 场{{item.target ? ' / 计划 ' + item.target + ' 场' : ''}}</view>
       </view>
       <view wx:if="{{item.review}}" class="subtitle">复盘：{{item.review}}</view>
       <block wx:if="{{editing === item.id}}">
@@ -119,6 +113,6 @@
       </view>
     </view>
   </view>
-  <view class="credit">场数按建立记录后新增的战绩计算</view>
+  <view wx:if="{{decks[deckIndex].id}}" class="credit">关联套牌后，自动统计调牌后的场数</view>
   <card-picker visible="{{picker}}" bindselect="selected" bindclose="closePicker" />
 </view>

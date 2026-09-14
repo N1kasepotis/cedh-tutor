@@ -37,7 +37,6 @@
       <view class="section-title">调度思路</view>
       <view class="subtitle">{{hand.mull}}</view>
     </view>
-    <view class="notice">讨论按题目条件展开，实际选择还取决于套牌构成与对手</view>
   </view>
   <view class="actions">
     <button hover-class="pressable-active" bindtap="practice">用我的套牌练习</button>

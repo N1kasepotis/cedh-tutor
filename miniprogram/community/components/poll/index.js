@@ -6,12 +6,13 @@ Component({
   data: {
     localChoice: '',
     remembered: false,
-    perspective: 2,
-    perspectives: ['休闲 EDH', 'cEDH', '两者都玩'],
+    perspective: 0,
+    perspectives: ['不填写', '休闲 EDH', 'cEDH', '两者都玩'],
     view: 0,
-    views: ['全部参与者', '休闲 EDH', 'cEDH', '两者都玩'],
+    views: ['全部参与者', '休闲 EDH', 'cEDH', '两者都玩', '未填写'],
     reason: 4,
-    reasons: ['平衡性', '套牌多样性', '对局体验', '玩法特色', '暂无理由'],
+    reasons: ['强度', '套牌多样性', '对局体验', '玩法特色', '不填写'],
+    details: false,
     stats: null,
     rows: [],
     sample: 0,
@@ -42,8 +43,8 @@ Component({
           localChoice: (stance && stance.choice) || '',
           remembered: Boolean(stance),
           perspective: stance
-            ? ['casual', 'competitive', 'both'].indexOf(stance.perspective)
-            : 2,
+            ? ['unspecified', 'casual', 'competitive', 'both'].indexOf(stance.perspective)
+            : 0,
           reason: stance
             ? ['balance', 'diversity', 'experience', 'identity', 'unsure'].indexOf(
                 stance.reason,
@@ -63,7 +64,9 @@ Component({
     voteValue() {
       return {
         choice: this.data.localChoice,
-        perspective: ['casual', 'competitive', 'both'][this.data.perspective],
+        perspective: ['unspecified', 'casual', 'competitive', 'both'][
+          this.data.perspective
+        ],
         reason: ['balance', 'diversity', 'experience', 'identity', 'unsure'][
           this.data.reason
         ],
@@ -89,6 +92,9 @@ Component({
       this.remember();
       this.triggerEvent('answer', { choice: this.data.localChoice });
     },
+    toggleDetails() {
+      this.setData({ details: !this.data.details });
+    },
     perspective(event) {
       this.setData({ perspective: Number(event.detail.value) });
       if (this.data.localChoice) this.remember();
@@ -104,7 +110,10 @@ Component({
     decorate() {
       const counts =
         this.data.stats &&
-        this.data.stats[['all', 'casual', 'competitive', 'both'][this.data.view]];
+        (this.data.stats[
+          ['all', 'casual', 'competitive', 'both', 'unspecified'][this.data.view]
+        ] ||
+          {});
       if (!counts) return;
       const sample = Object.values(counts).reduce((sum, value) => sum + value, 0);
       const known = sample - (counts.unknown || 0);
@@ -147,7 +156,9 @@ Component({
       return this.request('poll');
     },
     submit() {
-      if (this.remember()) return this.request('vote', { vote: this.voteValue() });
+      if (!this.data.localChoice) return;
+      this.remember();
+      return this.request('vote', { vote: this.voteValue() });
     },
     retract() {
       return this.request('vote', { retract: true });

@@ -1,10 +1,9 @@
 <view class="studio">
   <text class="eyebrow">EDH 牌桌</text>
   <text class="title">三张牌认识你</text>
-  <view class="subtitle">选出最佳设计、打法代表和常用妙妙牌</view>
   <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
   <view wx:if="{{friend}}" class="section">
-    <view class="section-title">{{friend.content.nickname}} 的三张牌</view>
+    <view class="section-title">{{friend.content.nickname ? friend.content.nickname + ' 的三张牌' : '牌友的三张牌'}}</view>
     <view class="muted">{{friend.content.deckName}}</view>
     <view class="friend-gallery">
       <button
@@ -34,7 +33,7 @@
       <view class="row comparison-row">
         <view class="grow">
           <view class="muted">我的选择</view>
-          <view class="card-name">{{item.left.displayName || '尚未选牌'}}</view>
+          <view class="card-name">{{item.left.displayName || '还没选'}}</view>
         </view>
         <view class="grow">
           <view class="muted">对方的选择</view>
@@ -65,10 +64,10 @@
       <text>切换 ▾</text>
     </view>
   </picker>
-  <label class="label" for="nickname">名片署名</label>
+  <label class="label" for="nickname">署名</label>
   <input
     id="nickname"
-    placeholder="怎么称呼你"
+    placeholder="怎么称呼你，不填也可以"
     value="{{nickname}}"
     bindinput="nickname"
     maxlength="20"
@@ -104,7 +103,7 @@
         <text>选一张牌</text>
       </button>
       <view class="grow">
-        <view class="card-name">{{slots[index].displayName || '等你选牌'}}</view>
+        <view class="card-name">{{slots[index].displayName || '还没选'}}</view>
         <view wx:if="{{slots[index]}}" class="muted">
           {{slots[index].lang}} / {{slots[index].set}} #{{slots[index].number}}
         </view>
@@ -115,12 +114,12 @@
           bindtap="choose"
           disabled="{{busy}}"
         >
-          {{slots[index] ? '换牌或卡画' : '搜索牌名'}}
+          {{slots[index] ? '换一张 / 换版本' : '搜索牌名'}}
         </button>
       </view>
     </view>
     <input
-      placeholder="为什么选它，可不填"
+      placeholder="说说为什么选它，选填"
       maxlength="40"
       value="{{reasons[index]}}"
       data-index="{{index}}"
@@ -137,9 +136,9 @@
       class="primary"
       bindtap="publish"
       loading="{{busy}}"
-      disabled="{{busy || !slots[0] || !slots[1] || !slots[2] || !nickname}}"
+      disabled="{{busy || !slots[0] || !slots[1] || !slots[2]}}"
     >
-      发布名片
+      生成分享名片
     </button>
   </view>
   <view wx:if="{{shareReady}}" class="actions">
@@ -154,7 +153,7 @@
     bindtap="revoke"
     disabled="{{busy}}"
   >
-    撤回公开名片
+    停止分享
   </button>
   <view class="section">
     <view class="section-title">名片海报</view>
@@ -180,7 +179,6 @@
   </view>
   <canvas id="passport-poster" type="2d" class="poster-canvas" />
   <view class="credit">
-    <view>草稿保存在本机，发布后可撤回</view>
     <view>卡图来自 Scryfall，版权归 Wizards of the Coast 与画师所有</view>
   </view>
   <card-picker

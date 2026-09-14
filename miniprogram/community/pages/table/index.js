@@ -3,7 +3,7 @@ const local = require('../../utils/local');
 const api = require('../../utils/api');
 const ui = require('../../utils/page');
 function defaults() {
-  return { level: 1, proxy: 0, combo: 1, turns: 1, time: 1 };
+  return { level: 1, proxy: 0, combo: 0, turns: 0, time: 1 };
 }
 Page({
   data: {
@@ -29,7 +29,7 @@ Page({
       this.setData({ incoming: true });
       ui.run(this, async () => {
         const result = await api.call('getShare', { id: options.id });
-        if (result.kind !== 'table') throw new Error('这不是牌桌约定');
+        if (result.kind !== 'table') throw new Error('这个分享不是对局约定');
         this.setData({
           values: result.content,
           remote: result,
@@ -154,16 +154,15 @@ Page({
         ...TABLE_FIELDS.map(
           (field) => `${field.label}：${field.options[this.data.values[field.key]]}`,
         ),
-        '开局前一起确认；遇到分歧先讨论',
       ].join('\n'),
     });
   },
   onShareAppMessage() {
     return this.data.remote && !this.data.dirty
       ? {
-          title: '对局约定：开局前一起确认',
+          title: '这桌怎么玩',
           path: `/community/pages/table/index?id=${this.data.remote.id}`,
         }
-      : { title: '一起定下本桌约定', path: '/community/pages/table/index' };
+      : { title: '这桌怎么玩', path: '/community/pages/table/index' };
   },
 });

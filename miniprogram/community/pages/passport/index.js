@@ -6,7 +6,7 @@ const poster = require('../../utils/poster');
 Page({
   data: {
     labels: domain.SLOT_LABELS,
-    hints: ['你最欣赏哪张牌的设计', '哪张牌最能代表你的打法', '你最常带上的妙妙单卡'],
+    hints: ['你最欣赏哪张牌的设计', '哪张牌最能代表你的打法', '你套牌里的常客'],
     nickname: '',
     slots: [null, null, null],
     reasons: ['', '', ''],
@@ -37,7 +37,7 @@ Page({
     if (options.id)
       ui.run(this, async () => {
         const friend = await api.call('getShare', { id: options.id });
-        if (friend.kind !== 'passport') throw new Error('这不是玩家名片');
+        if (friend.kind !== 'passport') throw new Error('这个分享不是三张牌名片');
         if (!this.disposed) {
           this.setData({ friend });
           this.compare();
@@ -142,6 +142,8 @@ Page({
   publish() {
     return ui.run(this, async () => {
       const content = this.content();
+      if (content.slots.some((slot) => !slot))
+        throw new Error('还差几张牌，选齐就能生成名片');
       domain.passport(content);
       // Persist the draft ID before publication so a lost response can be retried.
       if (!this.saveDraft(false)) return;
@@ -190,7 +192,7 @@ Page({
   noop() {},
   imageFailed() {
     this.setData({
-      error: '该版本卡图暂时无法加载，可重选版本；牌名与短评仍已保留',
+      error: '卡图没加载出来，试试换个版本',
     });
   },
   mode(event) {
@@ -199,6 +201,8 @@ Page({
   generatePoster() {
     return ui.run(this, async () => {
       const content = this.content();
+      if (content.slots.some((slot) => !slot))
+        throw new Error('还差几张牌，选齐就能生成名片');
       domain.passport(content);
       const path = await poster.render(this, content, this.data.artOnly);
       if (!this.disposed) this.setData({ posterPath: path });

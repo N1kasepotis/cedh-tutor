@@ -4,13 +4,11 @@ const domain = require('./contracts');
 const { poll } = require('./catalog');
 const hash = (...parts) =>
   crypto.createHash('sha256').update(parts.join('\0')).digest('hex');
-const safeId = (value) =>
-  typeof value === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(value);
+const safeId = (value) => typeof value === 'string' && /^[a-zA-Z0-9-]{1,80}$/.test(value);
 function createService({ repository, moderate, resolveCard, now = Date.now }) {
   return async (event, identity) => {
     if (!identity || !identity.openid) domain.fail('FORBIDDEN');
-    if (!event || typeof event.action !== 'string')
-      domain.fail('INVALID_INPUT');
+    if (!event || typeof event.action !== 'string') domain.fail('INVALID_INPUT');
     const owner = hash(identity.openid);
     const stamp = now();
     // Trusted identity, bounded one-minute bucket. No user identifiers in public responses.
@@ -55,22 +53,19 @@ function createService({ repository, moderate, resolveCard, now = Date.now }) {
       if (!safeId(event.draftId) || !['passport', 'table'].includes(event.kind))
         domain.fail('INVALID_INPUT');
       const expected = event.version === undefined ? 0 : event.version;
-      if (!Number.isInteger(expected) || expected < 0)
-        domain.fail('INVALID_INPUT');
+      if (!Number.isInteger(expected) || expected < 0) domain.fail('INVALID_INPUT');
       let content;
       if (event.kind === 'passport') {
         const validated = domain.passport(event.content);
         // No unmoderated public text; network calls stay outside retryable transactions.
-        if (
-          !(await moderate(
-            [
-              validated.nickname,
-              validated.deckName,
-              ...validated.slots.map((slot) => slot.reason),
-            ].join('\n'),
-            identity.openid,
-          ))
-        )
+        const writtenText = [
+          validated.nickname,
+          validated.deckName,
+          ...validated.slots.map((slot) => slot.reason),
+        ]
+          .join('\n')
+          .trim();
+        if (writtenText && !(await moderate(writtenText, identity.openid)))
           domain.fail('MODERATION');
         const slots = [];
         const resolved = new Map();
@@ -137,10 +132,7 @@ function createService({ repository, moderate, resolveCard, now = Date.now }) {
           let count = (tally && tally.count) || 0;
           let agreed = Boolean(own && own.agreed);
           if (event.action === 'agree') {
-            if (
-              event.version !== entry.version ||
-              typeof event.agreed !== 'boolean'
-            )
+            if (event.version !== entry.version || typeof event.agreed !== 'boolean')
               domain.fail('CONFLICT');
             count += Number(event.agreed) - Number(agreed);
             agreed = event.agreed;

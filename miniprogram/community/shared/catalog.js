@@ -84,8 +84,8 @@ const hands = [
       'Daze',
       'Snuff Out',
     ],
-    keep: '两张地加低费生物能展开，Daze 和 Snuff Out 能应对部分威胁，留牌后要安排好下生物与留互动的时机',
-    mull: '如果前位主将偏竞速，而这手互动挡不住关键回合，可以用免费调度找更合适的起手',
+    keep: '两地加低费生物能展开，手里还有 Daze 和 Snuff Out，考虑好什么时候下生物、什么时候留互动',
+    mull: '前位如果是竞速套牌，这两张互动未必拦得住，可以免费调度找更合适的起手',
   },
   {
     id: 'kinnan-no-mana-v1',
@@ -101,12 +101,12 @@ const hands = [
       'Mystical Tutor',
       'Finale of Devastation',
     ],
-    keep: '这手只能等后续抓到法术力才能展开，留牌需承担连续空过的风险',
-    mull: '零地也没有能启动的加速，倾向用免费调度找能正常展开的起手',
+    keep: '留下就得等后面抓到法术力来源，可能连续几回合都出不了牌',
+    mull: '没地，也没有能用的加速，我会用免费调度换一手',
   },
   {
     id: 'winota-engine-v1',
-    title: '展开齐，缺保护',
+    title: '能展开，没保护',
     commander: 'Winota, Joiner of Forces',
     context:
       '四人高强度局，4 号位，首次七张\n还有一次免费调度，对手有蓝色套牌，其余信息未知',
@@ -119,8 +119,8 @@ const hands = [
       'Legion Warboss',
       'Blade Historian',
     ],
-    keep: '地、加速和非人类进攻者齐全，可以围绕主将展开，仍需考虑主将被解后的后续',
-    mull: '若想找保护或干扰，可以免费调度，但会放弃这手已经齐备的法术力与进攻者',
+    keep: '地、加速和非人类生物都有，可以围绕 Winota 展开，不过主将被解后会比较难受',
+    mull: '想找保护或干扰，可以免费调度，但下一手不一定还有这么齐的地、加速和生物',
   },
 ];
 function poll(id) {

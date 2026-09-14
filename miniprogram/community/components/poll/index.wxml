@@ -13,7 +13,10 @@
       {{item.label}}
     </button>
   </view>
-  <view class="row wrap">
+  <button hover-class="pressable-active" class="link" bindtap="toggleDetails">
+    {{details ? '收起补充信息' : '补充投票信息（选填）'}}
+  </button>
+  <view wx:if="{{details}}" class="row wrap">
     <picker
       range="{{perspectives}}"
       value="{{perspective}}"
@@ -28,11 +31,8 @@
       bindchange="reason"
       disabled="{{busy}}"
     >
-      <view class="notice">考虑：{{reasons[reason]}} ▾</view>
+      <view class="notice">理由：{{reasons[reason]}} ▾</view>
     </picker>
-  </view>
-  <view wx:if="{{localChoice && remembered}}" class="muted">
-    当前选择已存本机，提交后计票
   </view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view class="actions">
@@ -43,7 +43,7 @@
       disabled="{{busy || !localChoice || !online}}"
       loading="{{busy}}"
     >
-      {{mine ? '更新投票' : '提交投票'}}
+      {{mine ? '改票' : '投票'}}
     </button>
     <button
       hover-class="pressable-active"
@@ -51,7 +51,7 @@
       bindtap="retract"
       disabled="{{busy}}"
     >
-      撤回投票
+      撤票
     </button>
   </view>
   <view wx:if="{{!online}}" class="notice">当前无法连接投票服务，可先保存选择</view>
@@ -75,10 +75,7 @@
         <view class="bar-fill" style="width:{{item.percent}}%" />
       </view>
     </view>
-    <view class="credit">
-      <view>比例按已表态的票数计算</view>
-      <view>结果仅代表参与投票的牌手</view>
-    </view>
+    <view class="credit">比例不计入未表态票</view>
   </view>
   <button
     hover-class="pressable-active"

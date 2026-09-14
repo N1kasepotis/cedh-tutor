@@ -8,7 +8,10 @@ const { createService } = require('../cloudfunctions/community/service');
 const banImages = require('../miniprogram/community/shared/ban-cards');
 
 test('every banned card has a complete image entry from a matching print', () => {
-  assert.deepEqual(Object.keys(banImages).sort(), banlist.cards.map(card => card.id).sort());
+  assert.deepEqual(
+    Object.keys(banImages).sort(),
+    banlist.cards.map((card) => card.id).sort(),
+  );
   for (const card of banlist.cards) {
     const entry = banImages[card.id];
     assert.ok(entry.name.split(' // ').includes(card.name));
@@ -24,7 +27,10 @@ test('every banned card has a complete image entry from a matching print', () =>
 
 test('retired report action cannot create any public or report record', async () => {
   const { service } = fixture();
-  await assert.rejects(service({ action: 'report', id: 'a'.repeat(64), reason: 'other' }, owner), { code: 'INVALID_INPUT' });
+  await assert.rejects(
+    service({ action: 'report', id: 'a'.repeat(64), reason: 'other' }, owner),
+    { code: 'INVALID_INPUT' },
+  );
 });
 const {
   serializeTrackerData,
@@ -138,10 +144,7 @@ test('client and deployed backend share identical reviewed contracts', () => {
         path.join(__dirname, '../miniprogram/community/shared', file),
         'utf8',
       ),
-      fs.readFileSync(
-        path.join(__dirname, '../cloudfunctions/community', file),
-        'utf8',
-      ),
+      fs.readFileSync(path.join(__dirname, '../cloudfunctions/community', file), 'utf8'),
     );
 });
 test('all community imports resolve inside the mini program or its own subpackage', () => {
@@ -174,17 +177,12 @@ test('ban snapshot preserves companion-only restriction and distinguishes catego
     '仅禁作行侣',
   );
   assert.equal(banlist.cards.length, 43);
-  assert.equal(
-    new Set(banlist.cards.map((card) => card.id)).size,
-    banlist.cards.length,
-  );
+  assert.equal(new Set(banlist.cards.map((card) => card.id)).size, banlist.cards.length);
   assert.equal(banlist.restrictions.length, 3);
 });
 test('public passport rejects missing slots, forged image URLs and oversized user text', () => {
   assert.throws(() => domain.passport({ nickname: 'a', slots: [] }));
-  assert.throws(() =>
-    domain.passport({ ...passport, nickname: '你'.repeat(21) }),
-  );
+  assert.throws(() => domain.passport({ ...passport, nickname: '你'.repeat(21) }));
   assert.throws(() =>
     domain.passport({
       ...passport,
@@ -203,11 +201,67 @@ test('public passport rejects missing slots, forged image URLs and oversized use
     undefined,
   );
 });
+
+test('three selected prints can be shared without a nickname or written reasons', async () => {
+  let moderationCalls = 0;
+  const { service } = fixture({
+    moderate: async () => {
+      moderationCalls++;
+      return true;
+    },
+  });
+  const content = { slots: [0, 1, 2].map(() => ({ printId: PRINT })) };
+  const result = await service(
+    { action: 'publish', kind: 'passport', draftId: 'no-text', content },
+    owner,
+  );
+  const shared = await service({ action: 'getShare', id: result.id }, friend);
+  assert.equal(shared.content.nickname, '');
+  assert.equal(shared.content.slots.length, 3);
+  assert.equal(moderationCalls, 0);
+  await service(
+    {
+      action: 'publish',
+      kind: 'passport',
+      draftId: 'with-text',
+      content: { ...content, nickname: '牌友' },
+    },
+    owner,
+  );
+  assert.equal(moderationCalls, 1);
+});
+
+test('optional voting context counts as unspecified and migrates old tallies on change', async () => {
+  const { service } = fixture();
+  const result = await service(
+    { action: 'vote', pollId, vote: { choice: 'keep' } },
+    owner,
+  );
+  assert.equal(result.counts.all.keep, 1);
+  assert.equal(result.counts.unspecified.keep, 1);
+  assert.equal(result.counts.both.keep, 0);
+  const changed = await service(vote('unban', 'competitive'), owner);
+  assert.equal(changed.counts.unspecified.keep, 0);
+  assert.equal(changed.counts.competitive.unban, 1);
+  const legacy = {
+    all: { keep: 1 },
+    casual: { keep: 0 },
+    competitive: { keep: 0 },
+    both: { keep: 1 },
+  };
+  const next = domain.replaceBallot(
+    legacy,
+    { choice: 'keep', perspective: 'both' },
+    { choice: 'keep', perspective: 'unspecified' },
+    ['keep'],
+  );
+  assert.equal(next.all.keep, 1);
+  assert.equal(next.both.keep, 0);
+  assert.equal(next.unspecified.keep, 1);
+});
 test('concurrent duplicate ballots, opinion changes, perspective changes and repeated retractions count once', async () => {
   const { service } = fixture();
-  await Promise.all(
-    Array.from({ length: 12 }, () => service(vote('keep'), owner)),
-  );
+  await Promise.all(Array.from({ length: 12 }, () => service(vote('keep'), owner)));
   let summary = await service({ action: 'poll', pollId }, friend);
   assert.equal(summary.counts.all.keep, 1);
   assert.equal(summary.mine, null);
@@ -227,19 +281,13 @@ test('concurrent duplicate ballots, opinion changes, perspective changes and rep
 test('unknown polls, forged identity, invalid votes and corrupt tallies fail closed', async () => {
   const { service } = fixture();
   await assert.rejects(service(vote('keep'), {}), { code: 'FORBIDDEN' });
-  await assert.rejects(
-    service({ ...vote('keep'), pollId: 'arbitrary' }, owner),
-    { code: 'INVALID_VOTE' },
-  );
+  await assert.rejects(service({ ...vote('keep'), pollId: 'arbitrary' }, owner), {
+    code: 'INVALID_VOTE',
+  });
   await assert.rejects(service(vote('buy'), owner), { code: 'INVALID_VOTE' });
   assert.throws(
     () =>
-      domain.replaceBallot(
-        null,
-        { choice: 'keep', perspective: 'both' },
-        null,
-        ['keep'],
-      ),
+      domain.replaceBallot(null, { choice: 'keep', perspective: 'both' }, null, ['keep']),
     { code: 'CORRUPT_TALLY' },
   );
 });
@@ -262,10 +310,7 @@ test('moderation review/risky/error cannot create publicly retrievable content',
         owner,
       ),
     );
-    assert.equal(
-      [...records.keys()].filter((key) => key.startsWith('share-')).length,
-      0,
-    );
+    assert.equal([...records.keys()].filter((key) => key.startsWith('share-')).length, 0);
   }
 });
 test('public snapshots resolve genuine prints; revisions and deletion enforce ownership', async () => {
@@ -290,15 +335,13 @@ test('public snapshots resolve genuine prints; revisions and deletion enforce ow
     ),
     { code: 'CONFLICT' },
   );
-  await assert.rejects(
-    service({ action: 'revoke', id: published.id }, friend),
-    { code: 'FORBIDDEN' },
-  );
+  await assert.rejects(service({ action: 'revoke', id: published.id }, friend), {
+    code: 'FORBIDDEN',
+  });
   await service({ action: 'revoke', id: published.id }, owner);
-  await assert.rejects(
-    service({ action: 'getShare', id: published.id }, owner),
-    { code: 'NOT_FOUND' },
-  );
+  await assert.rejects(service({ action: 'getShare', id: published.id }, owner), {
+    code: 'NOT_FOUND',
+  });
 });
 test('table confirmation is idempotent and never carries into an updated agreement', async () => {
   const { service } = fixture();
@@ -314,10 +357,7 @@ test('table confirmation is idempotent and never carries into an updated agreeme
   await service(agree, friend);
   const twice = await service(agree, friend);
   assert.equal(twice.agreement.count, 1);
-  await service(
-    { ...request, version: 1, content: { ...content, combo: 2 } },
-    owner,
-  );
+  await service({ ...request, version: 1, content: { ...content, combo: 2 } }, owner);
   await assert.rejects(service(agree, friend), { code: 'CONFLICT' });
   const next = await service({ action: 'getShare', id: published.id }, friend);
   assert.equal(next.agreement.count, 0);
@@ -325,8 +365,7 @@ test('table confirmation is idempotent and never carries into an updated agreeme
 });
 test('per-user rate limits reset without affecting another player', async () => {
   const { service, advance } = fixture();
-  for (let i = 0; i < 90; i += 1)
-    await service({ action: 'poll', pollId }, owner);
+  for (let i = 0; i < 90; i += 1) await service({ action: 'poll', pollId }, owner);
   await assert.rejects(service({ action: 'poll', pollId }, owner), {
     code: 'RATE_LIMIT',
   });
@@ -347,13 +386,9 @@ test('postgame reviews survive tracker load, save and export without changing le
     seat: 'seat2',
   };
   const raw = {
-    decks: [
-      { id: 'deck', matches: [legacy, { ...legacy, id: 'new', review }] },
-    ],
+    decks: [{ id: 'deck', matches: [legacy, { ...legacy, id: 'new', review }] }],
   };
-  const saved = serializeTrackerData(
-    normalizeTrackerData(raw, [], trackerConfig),
-  );
+  const saved = serializeTrackerData(normalizeTrackerData(raw, [], trackerConfig));
   assert.deepEqual(
     saved.decks[0].matches.find((match) => match.id === 'old'),
     legacy,

@@ -2,7 +2,7 @@
   <view class="page-heading">
     <text class="eyebrow">EDH 牌桌</text>
     <text class="title">禁牌表</text>
-    <view class="subtitle">查禁牌 看卡图 聊解禁</view>
+    <view class="subtitle">Commander 禁牌与解禁投票</view>
   </view>
   <view wx:if="{{selected}}">
     <button hover-class="pressable-active" class="link" bindtap="close">
@@ -33,17 +33,17 @@
         仅禁止用作行侣，仍可放入主牌或担任指挥官
       </view>
       <button hover-class="pressable-active" class="link" bindtap="source">
-        复制官方出处链接 →
+        复制公告链接
       </button>
     </view>
     <view class="section">
-      <community-poll poll-id="{{pollId}}" choices="{{choices}}" />
+      <community-poll id="ban-vote" poll-id="{{pollId}}" choices="{{choices}}" />
     </view>
   </view>
   <block wx:else>
     <view class="list-toolbar">
       <text>{{cards.length}} 张牌</text>
-      <text class="muted">核对日期 {{banlist.checkedAt}}</text>
+      <text class="muted">更新于 {{banlist.checkedAt}}</text>
     </view>
     <input
       class="ban-search"
@@ -88,20 +88,19 @@
     </view>
     <view wx:if="{{!cards.length}}" class="empty">
       <view>未找到这张牌</view>
-      <view>赛制合法性请查完整官方列表</view>
+      <view>试试英文牌名</view>
     </view>
     <view class="section">
-      <view class="section-title">另有类别限制</view>
+      <view class="section-title">其他禁用类别</view>
       <view wx:for="{{banlist.restrictions}}" wx:key="*this" class="list-item subtitle">
         {{item}}
       </view>
       <button hover-class="pressable-active" class="link" bindtap="source">
-        复制官方禁牌表链接 →
+        复制官方禁牌表链接
       </button>
     </view>
     <view class="credit">
       <view>适用 Commander 赛制</view>
-      <view>投票只收集玩家意见，不改变禁限规定</view>
       <view>卡图 Scryfall　版权 Wizards of the Coast 与画师</view>
     </view>
   </block>

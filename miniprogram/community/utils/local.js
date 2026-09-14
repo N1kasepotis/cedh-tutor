@@ -45,7 +45,7 @@ function valid(value) {
           Array.isArray(entry.baselineIds) &&
           validCard(entry.inCard) &&
           validCard(entry.outCard) &&
-          [3, 5, 10].includes(entry.target) &&
+          [0, 3, 5, 10].includes(entry.target) &&
           ['testing', 'kept', 'reverted'].includes(entry.status),
       )
     );

@@ -50,9 +50,9 @@ async function render(page, passport, artOnly) {
   ctx.fillText('THREE CARDS / 三张牌认识你', 44, 60);
   ctx.fillStyle = '#fffefa';
   ctx.font = 'bold 42px sans-serif';
-  wrap(ctx, passport.nickname, 44, 124, 650, 46, 2);
+  wrap(ctx, passport.nickname || '我的三张牌', 44, 124, 650, 46, 2);
   ctx.font = '22px sans-serif';
-  wrap(ctx, passport.deckName || '我的玩家名片', 44, 218, 650, 28, 2);
+  wrap(ctx, passport.deckName || '', 44, 218, 650, 28, 2);
   for (let index = 0; index < 3; index += 1) {
     const slot = passport.slots[index];
     const y = 290 + index * 272;
@@ -69,7 +69,7 @@ async function render(page, passport, artOnly) {
     );
     ctx.fillStyle = '#e6d8ad';
     ctx.font = '22px sans-serif';
-    ctx.fillText(['最佳设计', '打法代表', '常用妙妙牌'][index], 246, y + 26);
+    ctx.fillText(['最喜欢的设计', '代表打法的牌', '常用妙妙牌'][index], 246, y + 26);
     ctx.fillStyle = '#fffefa';
     ctx.font = 'bold 27px sans-serif';
     wrap(ctx, slot.displayName || slot.name, 246, y + 68, 452, 34, 2);

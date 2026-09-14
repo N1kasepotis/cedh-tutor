@@ -2,7 +2,6 @@
   <view class="page-heading">
     <text class="eyebrow">EDH / COMMANDER</text>
     <text class="title">EDH 牌桌</text>
-    <view class="subtitle">选牌 组牌 开局</view>
   </view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <button
@@ -34,7 +33,6 @@
   </button>
   <view class="section-heading">
     <text>牌桌工具</text>
-    <text class="muted">开局前与收牌后</text>
   </view>
   <view class="tool-grid">
     <button
@@ -61,8 +59,4 @@
     <text class="entry-arrow">→</text>
   </button>
   <view wx:if="{{pending}}" class="notice">{{pending}} 条调牌记录待复盘</view>
-  <view class="credit">
-    <view>草稿与战绩保存在本机</view>
-    <view>投票和分享需手动提交</view>
-  </view>
 </view>

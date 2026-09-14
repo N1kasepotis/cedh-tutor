@@ -13,7 +13,8 @@ Page({
     picker: false,
     busy: false,
     error: '',
-    targets: [3, 5, 10],
+    targets: [0, 3, 5, 10],
+    targetLabels: ['随时复盘', '打 3 场后提醒', '打 5 场后提醒', '打 10 场后提醒'],
     targetIndex: 0,
   },
   onLoad(options) {
@@ -24,7 +25,7 @@ Page({
   },
   reload() {
     try {
-      const decks = ui.decks();
+      const decks = [{ id: '', name: '不关联套牌', matches: [] }, ...ui.decks()];
       const index = this.initialDeck
         ? Math.max(
             0,
@@ -42,7 +43,7 @@ Page({
           ...entry,
           deckName: deck ? deck.name : '原套牌已删除',
           played,
-          ready: played >= entry.target,
+          ready: entry.target > 0 && played >= entry.target,
         };
       });
       this.setData({ decks, deckIndex: index, swaps });
@@ -75,30 +76,28 @@ Page({
   save() {
     try {
       const deck = this.data.decks[this.data.deckIndex];
-      if (!deck || !this.data.inCard || !this.data.outCard || !this.data.goal.trim())
-        throw new Error('请选择套牌、换入换出的牌，并写下目标');
-      if (this.data.inCard.oracleId === this.data.outCard.oracleId)
-        throw new Error('换牌记录需要两张不同的牌；更换卡画可在名片中操作');
+      if (!deck || !this.data.inCard || !this.data.outCard)
+        throw new Error('选好换入和换出的牌就能保存');
+      if (this.data.inCard.printId === this.data.outCard.printId)
+        throw new Error('换入和换出选了同一个版本');
       const entry = {
         id: local.id(),
         deckId: deck.id,
         inCard: this.data.inCard,
         outCard: this.data.outCard,
         goal: this.data.goal.trim(),
-        target: this.data.targets[this.data.targetIndex],
+        target: deck.id ? this.data.targets[this.data.targetIndex] : 0,
         baselineIds: deck.matches.map((match) => match.id),
         createdAt: Date.now(),
         status: 'testing',
         review: '',
       };
       local.update((state) => {
-        if (state.swaps.length >= 100)
-          throw new Error('已保存 100 条换牌记录，请先删除不再需要的记录');
         state.swaps.unshift(entry);
       });
       this.setData({ inCard: null, outCard: null, goal: '' });
       this.reload();
-      wx.showToast({ title: '开始观察', icon: 'success' });
+      wx.showToast({ title: '已记录', icon: 'success' });
     } catch (error) {
       ui.error(this, error);
     }
@@ -128,7 +127,7 @@ Page({
   remove(event) {
     const id = event.currentTarget.dataset.id;
     wx.showModal({
-      title: '删除换牌记录',
+      title: '删除调牌记录',
       content: '删除这条调牌记录，保留战绩',
       success: (result) => {
         if (!result.confirm) return;

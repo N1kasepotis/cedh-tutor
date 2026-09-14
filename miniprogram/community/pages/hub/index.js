@@ -20,19 +20,19 @@ Page({
       {
         id: 'table',
         title: '对局约定',
-        description: '强度 代牌 无限组合技',
+        description: '聊好这桌怎么玩',
         tag: '开局',
       },
       {
         id: 'swaps',
         title: '调牌记录',
-        description: '换入换出 实战复盘',
+        description: '记下换牌与实战感受',
         tag: '调整',
       },
       {
         id: 'hands',
         title: '这手留不留',
-        description: '起手七张 留牌还是调度',
+        description: '一起聊聊起手选择',
         tag: '练习',
       },
     ],

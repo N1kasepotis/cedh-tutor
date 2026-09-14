@@ -1,30 +1,30 @@
 'use strict';
 
 // Portable domain contract. scripts/sync-community.js copies this to the cloud function.
-const SLOT_LABELS = ['最佳设计', '打法代表', '常用妙妙牌'];
+const SLOT_LABELS = ['最喜欢的设计', '代表打法的牌', '常用妙妙牌'];
 const UUID = /^[a-f0-9]{8}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{4}-[a-f0-9]{12}$/i;
-const VIEWS = ['casual', 'competitive', 'both'];
+const VIEWS = ['casual', 'competitive', 'both', 'unspecified'];
 const REASONS = ['balance', 'diversity', 'experience', 'identity', 'unsure'];
 const TABLE_FIELDS = [
   {
     key: 'level',
     label: '对局强度',
-    options: ['轻松主题局', '优化休闲局', '高强度对局', 'cEDH'],
+    options: ['休闲主题', '优化休闲', '高强度', 'cEDH'],
   },
   {
     key: 'proxy',
     label: '代牌',
-    options: ['接受清晰代牌', '先说明再决定', '本桌不用代牌'],
+    options: ['可以用', '聊完再定', '不用'],
   },
   {
     key: 'combo',
     label: '无限组合技',
-    options: ['可以使用', '开局前说明', '本桌避免'],
+    options: ['可以用', '提前说一声', '不使用'],
   },
   {
     key: 'turns',
     label: '额外回合',
-    options: ['可以使用', '避免连续加回合', '本桌避免'],
+    options: ['可以用', '不连续加回合', '不使用'],
   },
   {
     key: 'time',
@@ -50,7 +50,7 @@ function passport(input) {
   if (!input || !Array.isArray(input.slots) || input.slots.length !== 3)
     fail('INVALID_INPUT');
   return {
-    nickname: text(input.nickname, 20, true),
+    nickname: text(input.nickname, 20),
     deckName: text(input.deckName, 50),
     slots: input.slots.map((slot) => {
       if (!slot || !UUID.test(slot.printId)) fail('INVALID_CARD');
@@ -73,12 +73,13 @@ function table(input) {
   return result;
 }
 function ballot(input, allowed) {
-  if (!input || !allowed.includes(input.choice) || !VIEWS.includes(input.perspective))
+  const perspective = (input && input.perspective) || 'unspecified';
+  if (!input || !allowed.includes(input.choice) || !VIEWS.includes(perspective))
     fail('INVALID_VOTE');
   if (input.reason && !REASONS.includes(input.reason)) fail('INVALID_VOTE');
   return {
     choice: input.choice,
-    perspective: input.perspective,
+    perspective,
     reason: input.reason || 'unsure',
   };
 }
@@ -159,11 +160,11 @@ function compare(left, right) {
       right: b || null,
       match:
         !a || !b
-          ? '尚未选牌'
+          ? '还没选'
           : a.printId === b.printId
             ? '同牌同版本'
             : a.oracleId === b.oracleId
-              ? '同一张牌，不同版本'
+              ? '同牌不同版本'
               : '不同选择',
     };
   });
