@@ -12,8 +12,31 @@ function wrap(ctx, text, x, y, width, lineHeight, maxLines = 4) {
   }
   ctx.fillText(line, x, y + row * lineHeight);
 }
-function image(canvas, url) {
+function boundedTask(milliseconds, message, start) {
   return new Promise((resolve, reject) => {
+    let settled = false;
+    const finish = (callback, value) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      callback(value);
+    };
+    const timer = setTimeout(
+      () => finish(reject, new Error(message)),
+      milliseconds,
+    );
+    try {
+      start(
+        (value) => finish(resolve, value),
+        (error) => finish(reject, error),
+      );
+    } catch (error) {
+      finish(reject, error);
+    }
+  });
+}
+function image(canvas, url) {
+  return boundedTask(20000, '卡图下载超时，请重试', (resolve, reject) => {
     wx.getImageInfo({
       src: url,
       success(info) {
@@ -22,23 +45,35 @@ function image(canvas, url) {
         img.onerror = () => reject(new Error('卡图加载失败，请重试'));
         img.src = info.path;
       },
-      fail() {
-        reject(new Error('卡图下载失败，请检查网络后重试'));
+      fail(error) {
+        const blocked = /domain list|合法域名/i.test(
+          (error && error.errMsg) || '',
+        );
+        reject(
+          new Error(
+            blocked
+              ? '微信下载域名配置异常，暂时无法生成图片'
+              : '卡图下载失败，请检查网络后重试',
+          ),
+        );
       },
     });
   });
 }
 async function render(page, passport, artOnly) {
-  const canvas = await new Promise((resolve, reject) =>
-    page
-      .createSelectorQuery()
-      .select('#passport-poster')
-      .fields({ node: true })
-      .exec((items) =>
-        items[0] && items[0].node
-          ? resolve(items[0].node)
-          : reject(new Error('画布尚未就绪，请重试')),
-      ),
+  const canvas = await boundedTask(
+    5000,
+    '图片画布未响应，请重新打开页面',
+    (resolve, reject) =>
+      page
+        .createSelectorQuery()
+        .select('#passport-poster')
+        .fields({ node: true })
+        .exec((items) =>
+          items[0] && items[0].node
+            ? resolve(items[0].node)
+            : reject(new Error('画布尚未就绪，请重试')),
+        ),
   );
   canvas.width = 750;
   canvas.height = 1200;
@@ -69,7 +104,11 @@ async function render(page, passport, artOnly) {
     );
     ctx.fillStyle = '#e6d8ad';
     ctx.font = '22px sans-serif';
-    ctx.fillText(['最喜欢的设计', '代表打法的牌', '常用妙妙牌'][index], 246, y + 26);
+    ctx.fillText(
+      ['最喜欢的设计', '代表打法的牌', '常用妙妙牌'][index],
+      246,
+      y + 26,
+    );
     ctx.fillStyle = '#fffefa';
     ctx.font = 'bold 27px sans-serif';
     wrap(ctx, slot.displayName || slot.name, 246, y + 68, 452, 34, 2);
@@ -89,8 +128,12 @@ async function render(page, passport, artOnly) {
   }
   ctx.fillStyle = '#a7a69a';
   ctx.font = '18px sans-serif';
-  ctx.fillText('cEDH 导师　卡图 Scryfall　© Wizards of the Coast / 画师', 44, 1164);
-  return new Promise((resolve, reject) =>
+  ctx.fillText(
+    'cEDH 导师　卡图 Scryfall　© Wizards of the Coast / 画师',
+    44,
+    1164,
+  );
+  return boundedTask(10000, '图片导出超时，请重试', (resolve, reject) =>
     wx.canvasToTempFilePath(
       {
         canvas,

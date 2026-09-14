@@ -7,6 +7,110 @@ const { banlist } = require('../miniprogram/community/shared/catalog');
 const { createService } = require('../cloudfunctions/community/service');
 const banImages = require('../miniprogram/community/shared/ban-cards');
 
+const vm = require('node:vm');
+const { createRequire } = require('node:module');
+
+test('unavailable tracker data does not prevent initializing and saving a player passport', () => {
+  const filename = path.resolve(
+    __dirname,
+    '../miniprogram/community/pages/passport/index.js',
+  );
+  const previous = global.wx;
+  const saved = new Map();
+  let definition;
+  try {
+    global.wx = {
+      getStorageSync: (key) =>
+        key === trackerConfig.storageKey
+          ? { broken: true }
+          : saved.get(key) || '',
+      setStorageSync: (key, value) => saved.set(key, value),
+      showToast: () => {},
+    };
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Page: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+    });
+    const page = {
+      ...definition,
+      data: structuredClone(definition.data),
+      setData(value) {
+        Object.assign(this.data, value);
+      },
+    };
+    page.onLoad({});
+    assert.equal(page.key, 'player');
+    assert.equal(typeof page.draftId, 'string');
+    assert.match(page.data.error, /战绩读取失败/);
+    page.save();
+    assert.equal(page.data.error, '');
+    assert.equal(
+      saved.get('playerStudio').data.passports.player.id,
+      page.draftId,
+    );
+    assert.match(page.data.feedback, /已保存到本机/);
+  } finally {
+    global.wx = previous;
+  }
+});
+
+test('poster identifies blocked download domains and releases a stalled image request', async () => {
+  const filename = path.resolve(
+    __dirname,
+    '../miniprogram/community/utils/poster.js',
+  );
+  const ctx = {
+    fillRect() {},
+    fillText() {},
+    measureText: () => ({ width: 1 }),
+  };
+  const canvas = { getContext: () => ctx };
+  const page = {
+    createSelectorQuery() {
+      return {
+        select() {
+          return this;
+        },
+        fields() {
+          return this;
+        },
+        exec(callback) {
+          callback([{ node: canvas }]);
+        },
+      };
+    },
+  };
+  for (const [getImageInfo, expected] of [
+    [
+      (options) => options.fail({ errMsg: 'url not in domain list' }),
+      /微信下载域名配置异常/,
+    ],
+    [() => {}, /卡图下载超时/],
+  ]) {
+    const sandbox = {
+      module: { exports: {} },
+      wx: { getImageInfo },
+      setTimeout: (callback) => setImmediate(callback),
+      clearTimeout: clearImmediate,
+    };
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), sandbox);
+    await assert.rejects(
+      sandbox.module.exports.render(
+        page,
+        {
+          nickname: '',
+          slots: [{ image: 'https://cards.scryfall.io/test.jpg' }],
+        },
+        false,
+      ),
+      expected,
+    );
+  }
+});
+
 test('every banned card has a complete image entry from a matching print', () => {
   assert.deepEqual(
     Object.keys(banImages).sort(),

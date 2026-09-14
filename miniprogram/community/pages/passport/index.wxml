@@ -1,7 +1,6 @@
 <view class="studio">
   <text class="eyebrow">EDH 牌桌</text>
   <text class="title">三张牌认识你</text>
-  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
   <view wx:if="{{friend}}" class="section">
     <view class="section-title">{{friend.content.nickname ? friend.content.nickname + ' 的三张牌' : '牌友的三张牌'}}</view>
     <view class="muted">{{friend.content.deckName}}</view>
@@ -127,6 +126,8 @@
       disabled="{{busy}}"
     />
   </view>
+  <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
+  <view wx:if="{{feedback}}" class="notice" role="status">{{feedback}}</view>
   <view class="actions">
     <button hover-class="pressable-active" bindtap="save" disabled="{{busy}}">
       保存到本机
@@ -136,7 +137,7 @@
       class="primary"
       bindtap="publish"
       loading="{{busy}}"
-      disabled="{{busy || !slots[0] || !slots[1] || !slots[2]}}"
+      disabled="{{busy}}"
     >
       生成分享名片
     </button>
@@ -161,8 +162,8 @@
       <text class="muted">只展示卡画</text>
       <switch checked="{{artOnly}}" bindchange="mode" color="#cdb774" />
     </view>
-    <button hover-class="pressable-active" bindtap="generatePoster" disabled="{{busy}}">
-      生成名片图片
+    <button hover-class="pressable-active" bindtap="generatePoster" disabled="{{busy}}" loading="{{busy}}">
+      {{busy ? '正在处理' : '生成名片图片'}}
     </button>
   </view>
   <view wx:if="{{posterPath}}">

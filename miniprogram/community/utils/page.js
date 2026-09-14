@@ -2,12 +2,15 @@ const local = require('./local');
 const { readStorage } = require('../../utils/storage');
 const { trackerConfig } = require('../../config/tracker');
 function error(page, value) {
-  if (!page.disposed)
-    page.setData({ error: value.message || String(value), busy: false });
+  if (!page.disposed) {
+    const message = value.message || String(value);
+    page.setData({ error: message, busy: false, feedback: '' });
+    wx.showToast({ title: message, icon: 'none', duration: 3500 });
+  }
 }
 async function run(page, work) {
   if (page.data.busy) return;
-  page.setData({ busy: true, error: '' });
+  page.setData({ busy: true, error: '', feedback: '' });
   try {
     await work();
   } catch (reason) {

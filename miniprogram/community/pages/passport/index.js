@@ -15,6 +15,7 @@ Page({
     picker: false,
     busy: false,
     error: '',
+    feedback: '',
     remote: null,
     shareReady: false,
     friend: null,
@@ -26,18 +27,25 @@ Page({
   },
   onLoad(options) {
     this.disposed = false;
+    this.key = 'player';
+    this.draftId = local.id();
+    try {
+      this.loadDraft('player');
+    } catch (error) {
+      ui.error(this, error);
+    }
     try {
       this.setData({
         deckOptions: [{ id: 'player', name: '玩家名片' }, ...ui.decks()],
       });
-      this.loadDraft('player');
     } catch (error) {
       ui.error(this, error);
     }
     if (options.id)
       ui.run(this, async () => {
         const friend = await api.call('getShare', { id: options.id });
-        if (friend.kind !== 'passport') throw new Error('这个分享不是三张牌名片');
+        if (friend.kind !== 'passport')
+          throw new Error('这个分享不是三张牌名片');
         if (!this.disposed) {
           this.setData({ friend });
           this.compare();
@@ -64,6 +72,7 @@ Page({
       shareReady: Boolean(draft.remote && draft.remote.active && !draft.dirty),
       posterPath: '',
       error: '',
+      feedback: '',
     });
     this.compare();
   },
@@ -80,6 +89,7 @@ Page({
   nickname(event) {
     this.setData({
       nickname: event.detail.value,
+      feedback: '',
       shareReady: false,
       posterPath: '',
     });
@@ -88,6 +98,7 @@ Page({
     const index = Number(event.currentTarget.dataset.index);
     this.setData({
       [`reasons[${index}]`]: event.detail.value,
+      feedback: '',
       shareReady: false,
       posterPath: '',
     });
@@ -102,6 +113,7 @@ Page({
   selected(event) {
     this.setData({
       [`slots[${this.slotIndex}]`]: event.detail,
+      feedback: '',
       shareReady: false,
       posterPath: '',
     });
@@ -129,7 +141,13 @@ Page({
           dirty: !this.data.shareReady,
         };
       });
-      if (toast) wx.showToast({ title: '名片已保存', icon: 'success' });
+      if (toast) {
+        this.setData({
+          error: '',
+          feedback: '已保存到本机，下次打开会保留这些选择',
+        });
+        wx.showToast({ title: '名片已保存', icon: 'success' });
+      }
       return true;
     } catch (error) {
       ui.error(this, error);
@@ -157,8 +175,10 @@ Page({
       this.setData({
         remote: { id: result.id, version: result.version, active: true },
         shareReady: true,
+        feedback: '名片已生成，可以分享给牌友',
       });
-      if (this.saveDraft(false)) wx.showToast({ title: '可分享给朋友', icon: 'success' });
+      if (this.saveDraft(false))
+        wx.showToast({ title: '可分享给朋友', icon: 'success' });
     });
   },
   revoke() {
@@ -205,7 +225,11 @@ Page({
         throw new Error('还差几张牌，选齐就能生成名片');
       domain.passport(content);
       const path = await poster.render(this, content, this.data.artOnly);
-      if (!this.disposed) this.setData({ posterPath: path });
+      if (!this.disposed)
+        this.setData({
+          posterPath: path,
+          feedback: '图片已生成，可以预览或存入相册',
+        });
     });
   },
   previewPoster() {
@@ -234,10 +258,12 @@ Page({
       wx.saveImageToPhotosAlbum({
         filePath: this.data.posterPath,
         success: resolve,
-        fail: () => reject(new Error('未能保存，可在右上角设置中允许相册权限后重试')),
+        fail: () =>
+          reject(new Error('未能保存，可在右上角设置中允许相册权限后重试')),
       }),
     );
     wx.showToast({ title: '已存入相册', icon: 'success' });
+    if (!this.disposed) this.setData({ feedback: '已存入手机相册' });
   },
   agreePrivacy() {
     this.setData({ privacy: false });
