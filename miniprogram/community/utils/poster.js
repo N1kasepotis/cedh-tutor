@@ -1,5 +1,19 @@
 const { SLOT_LABELS } = require('../shared/contracts');
 
+// 深暗极简：冷黑底、银白与冷灰的文字层级，钴蓝只出现一次（标题下的短线）。
+// 不画三色色条、右上角大号编号和每段序号；层级只靠字号、间距和留白区分。
+const MARGIN = 64;
+const COLORS = {
+  field: '#050507',
+  plate: '#0C0E12',
+  edge: '#1B1F25',
+  display: '#F1F2F5',
+  body: '#B3B8C2',
+  meta: '#888E97',
+  faint: '#575E6A',
+  signal: '#2454FF',
+};
+
 function textLines(ctx, text, width) {
   const lines = [];
   let line = '';
@@ -28,6 +42,23 @@ function wrap(ctx, text, x, y, width, lineHeight, maxLines = 4) {
     .forEach((line, index) => {
       ctx.fillText(line, x, y + index * lineHeight);
     });
+}
+// 微信的 Canvas 2D 不保证支持 letterSpacing，小号标签逐字绘制出字距
+function tracked(ctx, text, x, y, spacing) {
+  let cursor = x;
+  for (const character of Array.from(String(text || ''))) {
+    ctx.fillText(character, cursor, y);
+    cursor += ctx.measureText(character).width + spacing;
+  }
+}
+function roundedRect(ctx, x, y, width, height, radius) {
+  ctx.beginPath();
+  ctx.moveTo(x + radius, y);
+  ctx.arcTo(x + width, y, x + width, y + height, radius);
+  ctx.arcTo(x + width, y + height, x, y + height, radius);
+  ctx.arcTo(x, y + height, x, y, radius);
+  ctx.arcTo(x, y, x + width, y, radius);
+  ctx.closePath();
 }
 function boundedTask(milliseconds, message, start) {
   return new Promise((resolve, reject) => {
@@ -93,27 +124,75 @@ function cover(ctx, img, x, y, width, height) {
     height,
   );
 }
-function fitText(
-  ctx,
-  text,
-  x,
-  y,
-  width,
-  initialSize,
-  lines,
-  maxHeight = Infinity,
-) {
+// Measure at export resolution so long names retain their full text.
+function fitText(ctx, text, x, y, width, initialSize, lines, maxHeight = Infinity) {
   const value = String(text || '');
   let size = initialSize;
-  // Measure at export resolution so long names retain their full text.
+  let count = 1;
   while (size > 14) {
-    ctx.font = `bold ${size}px sans-serif`;
-    const count = textLines(ctx, value, width).length;
+    ctx.font = `${size}px sans-serif`;
+    count = textLines(ctx, value, width).length;
     if (count <= lines && count * size * 1.18 <= maxHeight) break;
     size -= 1;
   }
-  ctx.font = `bold ${size}px sans-serif`;
+  ctx.font = `${size}px sans-serif`;
+  count = Math.min(textLines(ctx, value, width).length, lines);
   wrap(ctx, value, x, y, width, size * 1.18, lines);
+  return y + (Math.max(count, 1) - 1) * size * 1.18;
+}
+function drawPlate(ctx, slot, img, index, top, artOnly) {
+  const x = MARGIN;
+  const width = 900 - MARGIN * 2;
+  const height = 320;
+  ctx.fillStyle = COLORS.plate;
+  roundedRect(ctx, x, top, width, height, 20);
+  ctx.fill();
+  ctx.strokeStyle = COLORS.edge;
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  ctx.save();
+  if (artOnly) {
+    // 卡画模式：左侧一条有边界的画带，贴齐面板圆角裁切
+    roundedRect(ctx, x, top, width, height, 20);
+    ctx.clip();
+    ctx.beginPath();
+    ctx.rect(x, top, 256, height);
+    ctx.clip();
+    cover(ctx, img, x, top, 256, height);
+  } else {
+    // 全卡模式：完整牌面等比放进左侧，没有投影
+    const scale = Math.min(196 / img.width, 274 / img.height);
+    const w = img.width * scale;
+    const h = img.height * scale;
+    const left = x + 24 + (196 - w) / 2;
+    const y = top + 23 + (274 - h) / 2;
+    roundedRect(ctx, left, y, w, h, 10);
+    ctx.clip();
+    ctx.drawImage(img, left, y, w, h);
+  }
+  ctx.restore();
+  const textX = x + 288;
+  const textWidth = width - 288 - 32;
+  ctx.fillStyle = COLORS.meta;
+  ctx.font = '17px sans-serif';
+  tracked(ctx, SLOT_LABELS[index], textX, top + 54, 2);
+  ctx.fillStyle = COLORS.display;
+  const nameBottom = fitText(ctx, slot.displayName || slot.name, textX, top + 102, textWidth, 34, 2, 82);
+  if (slot.reason) {
+    // 短评紧跟牌名，一行和两行的牌名都保持同样的间距
+    ctx.fillStyle = COLORS.body;
+    ctx.font = '23px sans-serif';
+    wrap(ctx, slot.reason, textX, nameBottom + 52, textWidth, 34, 3);
+  }
+  ctx.fillStyle = COLORS.faint;
+  ctx.font = '14px monospace';
+  tracked(
+    ctx,
+    `${slot.lang.toUpperCase()} / ${slot.set.toUpperCase()} #${slot.number}`,
+    textX,
+    top + 292,
+    1,
+  );
 }
 async function render(page, passport, artOnly) {
   const canvas = await boundedTask(
@@ -141,99 +220,48 @@ async function render(page, passport, artOnly) {
   canvas.width = 900;
   canvas.height = 1440;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#10120f';
-  ctx.fillRect(0, 0, 900, 1440);
-  const accents = ['#e6ce8b', '#a9c8bd', '#d7afa1'];
-  // The three spine marks match the three choices below.
-  accents.forEach((color, index) => {
-    ctx.fillStyle = color;
-    ctx.fillRect(0, index * 480, 10, 480);
-  });
-  ctx.fillStyle = '#e6ce8b';
-  ctx.font = 'bold 20px sans-serif';
-  ctx.fillText('EDH  /  PLAYER PROFILE', 40, 48);
-  ctx.textAlign = 'right';
-  ctx.fillStyle = '#363a30';
-  ctx.font = 'bold 156px serif';
-  ctx.fillText('03', 865, 188);
   ctx.textAlign = 'left';
-  ctx.fillStyle = '#fff8e8';
-  fitText(ctx, passport.nickname || '我的三张牌', 40, 116, 700, 60, 2);
-  ctx.fillStyle = '#b9b9a7';
-  ctx.font = '24px sans-serif';
-  ctx.fillText('三张牌认识我', 42, 218);
-  for (let index = 0; index < 3; index += 1) {
-    const slot = passport.slots[index];
-    const img = pictures[index];
-    const y = 250 + index * 356;
-    const accent = accents[index];
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(30, y, 840, 334);
-    ctx.clip();
-    cover(ctx, img, 30, y, 840, 334);
-    const shade = ctx.createLinearGradient(30, y, 870, y);
-    shade.addColorStop(
-      0,
-      artOnly ? 'rgba(12,16,13,0.04)' : 'rgba(12,16,13,0.70)',
-    );
-    shade.addColorStop(0.36, 'rgba(12,16,13,0.78)');
-    shade.addColorStop(0.62, 'rgba(12,16,13,0.96)');
-    shade.addColorStop(1, '#111710');
-    ctx.fillStyle = shade;
-    ctx.fillRect(30, y, 840, 334);
-    if (!artOnly) {
-      ctx.shadowColor = 'rgba(0,0,0,0.65)';
-      ctx.shadowBlur = 18;
-      ctx.shadowOffsetY = 6;
-      const scale = Math.min(212 / img.width, 298 / img.height);
-      ctx.drawImage(
-        img,
-        50 + (212 - img.width * scale) / 2,
-        y + 18 + (298 - img.height * scale) / 2,
-        img.width * scale,
-        img.height * scale,
-      );
-      ctx.shadowBlur = 0;
-      ctx.shadowOffsetY = 0;
-    }
-    ctx.fillStyle = accent;
-    ctx.fillRect(30, y, 840, 2);
-    ctx.font = 'bold 21px sans-serif';
-    ctx.fillText(SLOT_LABELS[index], 302, y + 39);
-    ctx.fillStyle = '#fffaf0';
-    fitText(ctx, slot.displayName || slot.name, 300, y + 92, 514, 39, 3, 82);
-    if (slot.reason) {
-      ctx.fillStyle = accent;
-      ctx.fillRect(302, y + 168, 24, 3);
-      ctx.fillStyle = '#e1e0d4';
-      ctx.font = '25px sans-serif';
-      wrap(ctx, slot.reason, 302, y + 204, 510, 33, 3);
-    }
-    ctx.fillStyle = '#b9bdac';
-    ctx.font = '18px sans-serif';
-    wrap(
-      ctx,
-      `${slot.lang.toUpperCase()} / ${slot.set.toUpperCase()} #${slot.number}`,
-      302,
-      y + 300,
-      500,
-      21,
-      1,
-    );
-    ctx.textAlign = 'right';
-    ctx.fillStyle = accent;
-    ctx.font = 'bold 22px serif';
-    ctx.fillText(`0${index + 1}`, 848, y + 39);
-    ctx.textAlign = 'left';
-    ctx.restore();
+  ctx.fillStyle = COLORS.field;
+  ctx.fillRect(0, 0, 900, 1440);
+
+  ctx.fillStyle = COLORS.meta;
+  ctx.font = '15px sans-serif';
+  tracked(ctx, 'EDH / PLAYER PROFILE', MARGIN, 92, 3);
+  ctx.fillStyle = COLORS.display;
+  const titleBottom = fitText(
+    ctx,
+    passport.nickname || '我的三张牌',
+    MARGIN,
+    168,
+    900 - MARGIN * 2,
+    64,
+    2,
+    104,
+  );
+  // 没署名时标题已是“我的三张牌”，不再重复一行说明
+  let headerBottom = titleBottom;
+  if (passport.nickname) {
+    headerBottom = titleBottom + 46;
+    ctx.fillStyle = COLORS.meta;
+    ctx.font = '22px sans-serif';
+    ctx.fillText('三张牌认识我', MARGIN, headerBottom);
   }
-  ctx.fillStyle = '#d0c397';
-  ctx.font = 'bold 20px sans-serif';
-  ctx.fillText('cEDH Tutor', 40, 1354);
-  ctx.fillStyle = '#b9bdac';
+  // 唯一的钴蓝：贴着标题块的一条短线
+  ctx.fillStyle = COLORS.signal;
+  ctx.fillRect(MARGIN, headerBottom + 40, 40, 2);
+
+  for (let index = 0; index < 3; index += 1) {
+    drawPlate(ctx, passport.slots[index], pictures[index], index, 324 + index * 344, artOnly);
+  }
+
+  ctx.fillStyle = COLORS.meta;
   ctx.font = '17px sans-serif';
-  ctx.fillText('卡图 Scryfall  /  © Wizards of the Coast', 40, 1385);
+  ctx.fillText('cEDH Tutor', MARGIN, 1376);
+  ctx.fillStyle = COLORS.faint;
+  ctx.font = '15px sans-serif';
+  ctx.textAlign = 'right';
+  ctx.fillText('卡图 Scryfall  /  © Wizards of the Coast', 900 - MARGIN, 1376);
+  ctx.textAlign = 'left';
   // Artist credit is separate from the card panels so a long name cannot overlap a note.
   fitText(
     ctx,
@@ -241,10 +269,10 @@ async function render(page, passport, artOnly) {
       .map((slot) => slot.artist)
       .filter(Boolean)
       .join(' / '),
-    40,
-    1411,
-    820,
-    16,
+    MARGIN,
+    1404,
+    900 - MARGIN * 2,
+    15,
     2,
   );
   return boundedTask(10000, '图片导出超时，请重试', (resolve, reject) =>

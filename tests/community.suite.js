@@ -753,3 +753,130 @@ test('compact poll votes in one tap and goes quiet when the server does not know
     global.wx = previous;
   }
 });
+
+// 名片海报按用户要求改成深暗极简：去掉三段色条、右上角大号“03”和每段序号；冷黑底、冷灰银白文字层级，
+// 钴蓝只出现一次。全卡模式把整张牌等比放进左侧，卡画模式在左侧裁成画带；没署名时不重复“三张牌认识我”。
+test('passport poster draws a quiet dark layout without colour spines or index numerals', async () => {
+  const filename = path.resolve(__dirname, '../miniprogram/community/utils/poster.js');
+  const source = fs.readFileSync(filename, 'utf8');
+  const draw = async (artOnly, nickname) => {
+    const log = [];
+    let fill = '';
+    let align = 'left';
+    const ctx = {
+      set fillStyle(value) {
+        fill = value;
+      },
+      get fillStyle() {
+        return fill;
+      },
+      set textAlign(value) {
+        align = value;
+      },
+      get textAlign() {
+        return align;
+      },
+      strokeStyle: '',
+      lineWidth: 1,
+      font: '10px sans-serif',
+      measureText: (value) => ({ width: Array.from(String(value)).length * 12 }),
+      fillText: (text, x, y) => log.push({ op: 'text', text: String(text), x, y, fill, align }),
+      fillRect: (x, y, w, h) => log.push({ op: 'rect', x, y, w, h, fill }),
+      drawImage: (...args) => log.push({ op: 'image', count: args.length }),
+      fill: () => log.push({ op: 'fill', fill }),
+      beginPath() {},
+      moveTo() {},
+      arcTo() {},
+      closePath() {},
+      rect() {},
+      clip() {},
+      stroke() {},
+      save() {},
+      restore() {},
+    };
+    const canvas = {
+      getContext: () => ctx,
+      createImage: () => {
+        const img = { width: 488, height: 680 };
+        Object.defineProperty(img, 'src', {
+          set() {
+            setImmediate(() => img.onload());
+          },
+        });
+        return img;
+      },
+    };
+    const page = {
+      createSelectorQuery() {
+        return {
+          select() {
+            return this;
+          },
+          fields() {
+            return this;
+          },
+          exec(callback) {
+            callback([{ node: canvas }]);
+          },
+        };
+      },
+    };
+    const sandbox = {
+      module: { exports: {} },
+      require: createRequire(filename),
+      wx: {
+        getImageInfo: ({ src, success }) => success({ path: src }),
+        canvasToTempFilePath: ({ success }) => success({ tempFilePath: 'poster.png' }),
+      },
+      setTimeout,
+      clearTimeout,
+    };
+    vm.runInNewContext(source, sandbox);
+    const slot = (name) => ({
+      name,
+      displayName: name,
+      reason: '每局都想在第一回合放下',
+      lang: 'en',
+      set: 'msc',
+      number: '211',
+      artist: 'Myles Wohl',
+      image: 'https://cards.scryfall.io/normal/front/a.jpg',
+      art: 'https://cards.scryfall.io/art_crop/front/a.jpg',
+    });
+    const result = await sandbox.module.exports.render(
+      page,
+      { nickname, slots: [slot('Swords to Plowshares'), slot("Uro, Titan of Nature's Wrath"), slot('Sol Ring')] },
+      artOnly,
+    );
+    return { result, log };
+  };
+
+  for (const [artOnly, nickname] of [[false, '周末指挥官'], [true, '']]) {
+    const { result, log } = await draw(artOnly, nickname);
+    assert.equal(result, 'poster.png');
+    const texts = log.filter((entry) => entry.op === 'text');
+    assert.ok(!texts.some((entry) => /^0[1-3]$/.test(entry.text)), '不再画 01 到 03 的编号');
+    assert.ok(
+      !log.some((entry) => entry.op === 'rect' && entry.x === 0 && entry.w <= 12 && entry.h >= 400),
+      '不再画左侧色条',
+    );
+    const neutrals = ['#F1F2F5', '#B3B8C2', '#888E97', '#575E6A'];
+    assert.deepEqual(
+      texts.filter((entry) => !neutrals.includes(entry.fill)).map((entry) => entry.text),
+      [],
+      '文字只用银白与冷灰层级',
+    );
+    assert.equal(log.filter((entry) => entry.fill === '#2454FF').length, 1, '钴蓝只出现一次');
+    for (const entry of texts) assert.ok(entry.x >= 64 && entry.x <= 836, `${entry.text} 超出左右边距`);
+    const images = log.filter((entry) => entry.op === 'image');
+    assert.equal(images.length, 3);
+    assert.ok(
+      images.every((entry) => entry.count === (artOnly ? 9 : 5)),
+      artOnly ? '卡画模式裁成左侧画带' : '全卡模式整张等比放入',
+    );
+    const joined = texts.map((entry) => entry.text).join('');
+    for (const label of ['最喜欢的设计', '代表打法的牌', '常用妙妙牌']) assert.ok(joined.includes(label));
+    assert.equal(joined.includes('三张牌认识我'), Boolean(nickname), '没署名时不重复“三张牌认识我”');
+    assert.ok(joined.includes('Wizards of the Coast') && joined.includes('Myles Wohl'), '卡图与画师署名保留');
+  }
+});
