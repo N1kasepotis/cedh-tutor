@@ -25,30 +25,10 @@
           <text class="muted">{{item}}</text>
         </button>
       </view>
-      <view wx:for="{{comparison}}" wx:key="label" class="panel surface">
-        <view class="row between">
-          <text>{{item.label}}</text>
-          <text class="badge">{{item.match}}</text>
-        </view>
-        <view class="row comparison-row">
-          <view class="grow">
-            <view class="muted">我的选择</view>
-            <view class="card-name">{{item.left.displayName || '还没选'}}</view>
-          </view>
-          <view class="grow">
-            <view class="muted">对方的选择</view>
-            <button
-              hover-class="pressable-active"
-              class="link"
-              data-index="{{index}}"
-              data-friend="true"
-              bindtap="viewCard"
-            >
-              {{item.right.displayName}}
-            </button>
-          </view>
-        </view>
-        <view class="muted">{{item.right.reason}}</view>
+      <view wx:for="{{labels}}" wx:key="*this" class="list-item">
+        <view class="muted">{{item}}</view>
+        <view class="card-name">{{friend.content.slots[index].displayName}}</view>
+        <view wx:if="{{friend.content.slots[index].reason}}" class="subtitle">{{friend.content.slots[index].reason}}</view>
       </view>
       <view class="rule" />
     </view>

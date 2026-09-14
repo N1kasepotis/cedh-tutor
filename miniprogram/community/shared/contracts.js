@@ -150,25 +150,6 @@ function card(raw) {
     ),
   };
 }
-function compare(left, right) {
-  return SLOT_LABELS.map((label, index) => {
-    const a = left && left.slots && left.slots[index];
-    const b = right && right.slots && right.slots[index];
-    return {
-      label,
-      left: a || null,
-      right: b || null,
-      match:
-        !a || !b
-          ? '还没选'
-          : a.printId === b.printId
-            ? '同牌同版本'
-            : a.oracleId === b.oracleId
-              ? '同牌不同版本'
-              : '不同选择',
-    };
-  });
-}
 module.exports = {
   SLOT_LABELS,
   UUID,
@@ -183,5 +164,4 @@ module.exports = {
   emptyCounts,
   replaceBallot,
   card,
-  compare,
 };

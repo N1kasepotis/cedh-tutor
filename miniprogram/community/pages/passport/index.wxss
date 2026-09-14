@@ -36,10 +36,6 @@
 .portrait-slot .section-title {
   margin: 0;
 }
-.comparison-row {
-  align-items: flex-start;
-  margin-top: 18rpx;
-}
 .poster-canvas {
   position: fixed;
   left: -2000px;

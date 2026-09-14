@@ -10,7 +10,7 @@
 
 | 层 | 文件 / 内容 | 契约 |
 |---|---|---|
-| 领域 | `miniprogram/community/shared/contracts.js` | 字段验证、印刷版本归一化、投票替换、名片对照 |
+| 领域 | `miniprogram/community/shared/contracts.js` | 字段验证、印刷版本归一化、投票替换 |
 | 内容 | `miniprogram/community/shared/catalog.js` | 有日期的禁牌快照与附来源的开手题；改变禁牌轮次或开手题 ID 才开启新的投票池 |
 | 本机 | `community/utils/local.js` | 通过既有 storage envelope 读写，损坏或未来版本停止写入 |
 | 社区 | `community/utils/api.js` | 显式云环境、统一错误、只通过云函数访问数据库 |

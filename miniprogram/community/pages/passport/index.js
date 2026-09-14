@@ -17,7 +17,6 @@ Page({
     remote: null,
     shareReady: false,
     friend: null,
-    comparison: [],
     detail: null,
     privacy: false,
     posterPath: '',
@@ -36,10 +35,7 @@ Page({
         const friend = await api.call('getShare', { id: options.id });
         if (friend.kind !== 'passport')
           throw new Error('这个分享不是三张牌名片');
-        if (!this.disposed) {
-          this.setData({ friend });
-          this.compare();
-        }
+        if (!this.disposed) this.setData({ friend });
       });
   },
   onUnload() {
@@ -63,7 +59,6 @@ Page({
       error: '',
       feedback: '',
     });
-    this.compare();
   },
   nickname(event) {
     this.setData({
@@ -96,7 +91,6 @@ Page({
       shareReady: false,
       posterPath: '',
     });
-    this.compare();
   },
   content() {
     return {
@@ -166,14 +160,6 @@ Page({
         shareReady: false,
       });
       this.saveDraft(false);
-    });
-  },
-  compare() {
-    this.setData({
-      comparison: domain.compare(
-        this.content(),
-        this.data.friend && this.data.friend.content,
-      ),
     });
   },
   viewCard(event) {

@@ -880,3 +880,14 @@ test('passport poster draws a quiet dark layout without colour spines or index n
     assert.ok(joined.includes('Wizards of the Coast') && joined.includes('Myles Wohl'), '卡图与画师署名保留');
   }
 });
+
+// 牌友打开分享名片时只看对方的三张牌和短评，不再和自己的选择逐项对照：万智牌太多，很难选到同一张
+test('shared passport shows the friend picks without a card-by-card comparison', () => {
+  const dir = path.join(__dirname, '../miniprogram/community/pages/passport');
+  const wxml = fs.readFileSync(path.join(dir, 'index.wxml'), 'utf8');
+  const js = fs.readFileSync(path.join(dir, 'index.js'), 'utf8');
+  assert.doesNotMatch(wxml + js, /comparison|compare|我的选择|对方的选择/);
+  assert.match(wxml, /friend\.content\.slots\[index\]\.displayName/);
+  assert.match(wxml, /friend\.content\.slots\[index\]\.reason/);
+  assert.equal(domain.compare, undefined, '只供对照用的 compare 已删除');
+});
