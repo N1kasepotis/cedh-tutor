@@ -523,6 +523,46 @@ test('home uses licensed embedded display and pixel fonts with device-safe fallb
   assert.match(generator, /miniprogram\/assets\/FUSION_PIXEL_OFL\.txt/);
 });
 
+// 首页入口副标题改过字，子集没跟着补，缺的字悄悄退回了系统字体。首页 WXML 里的静态文字必须全部落在点阵子集里
+test('home pixel font subset covers every static text glyph on the home page', () => {
+  const font = fs.readFileSync(path.join(root, 'tools/fonts/fusion-pixel-10px-monospaced-zh_hans-home-subset.ttf'));
+  const u16 = (offset) => font.readUInt16BE(offset);
+  const u32 = (offset) => font.readUInt32BE(offset);
+  let cmap = -1;
+  for (let i = 0; i < u16(4); i += 1) {
+    if (font.toString('latin1', 12 + i * 16, 16 + i * 16) === 'cmap') cmap = u32(20 + i * 16);
+  }
+  assert.ok(cmap > 0, '子集应有 cmap 表');
+  const mapped = new Set();
+  for (let i = 0; i < u16(cmap + 2); i += 1) {
+    const table = cmap + u32(cmap + 8 + i * 8);
+    if (u16(table) !== 4) continue;
+    const segments = u16(table + 6) / 2;
+    const ends = table + 14;
+    const starts = ends + segments * 2 + 2;
+    const deltas = starts + segments * 2;
+    const ranges = deltas + segments * 2;
+    for (let s = 0; s < segments; s += 1) {
+      const start = u16(starts + s * 2);
+      const delta = u16(deltas + s * 2);
+      const range = u16(ranges + s * 2);
+      for (let code = start; code <= u16(ends + s * 2) && code !== 0xffff; code += 1) {
+        let glyph = range ? u16(ranges + s * 2 + range + (code - start) * 2) : code;
+        if (glyph) glyph = (glyph + delta) & 0xffff;
+        if (glyph) mapped.add(code);
+      }
+    }
+  }
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
+  const text = wxml
+    .replace(/<!--[\s\S]*?-->/g, ' ')
+    .replace(/\{\{[\s\S]*?\}\}/g, ' ')
+    .replace(/<[^>]*>/g, ' ');
+  assert.match(text, /名片 \/ 禁牌 \/ 条约 \/ 练习 →/, '入口副标题应在扫描范围内');
+  const missing = [...new Set([...text].filter((ch) => /\S/.test(ch) && !mapped.has(ch.codePointAt(0))))];
+  assert.deepEqual(missing, [], `首页点阵子集缺字：${missing.join('')}`);
+});
+
 test('bracket page lists exhaustive reasons without a secondary evidence drawer', () => {
   const js = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.js'), 'utf8');
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/bracket/bracket.wxml'), 'utf8');
