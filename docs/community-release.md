@@ -101,6 +101,8 @@
 
 2026-09-14 第三版改为“暗色收藏档案 × 玩家批注”：署名是最大的字，下接“三张牌认识我”；三张牌之间只用细线分隔，完整卡面按原比例加投影，短评比牌名更大更亮，版本、编号和语言写在卡图下方；强调色取自第一张卡画；小程序码、邀请语、版权与画师署名移到底部参与区。画布高度按内容计算，导出按画布尺寸输出。设计取舍见 `docs/community-design-review.md`；标签的撤回见下文。
 
+同日又按用户要求去掉标题下的强调色短线和“cEDH Tutor / PLAYER PROFILE”抬头，海报直接从署名开始；取色逻辑随之删除，海报不再读取卡图像素。
+
 ## 数据来源与规则快照
 
 Commander 禁表核对于 2026-09-09，包含 42 张全面禁用牌及 Lutri 的行侣限制，并另列类别限制；不以“未在列表中”推断合法性，不杜撰禁用理由。[官方列表](https://magic.wizards.com/en/banned-restricted-list)、[Lutri 限定说明](https://magic.wizards.com/en/news/announcements/commander-banned-and-restricted-february-9-2026)

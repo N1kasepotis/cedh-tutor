@@ -765,8 +765,8 @@ test('compact poll votes in one tap and goes quiet when the server does not know
 
 // 名片海报：暗色收藏档案 × 玩家批注。先认识玩家（署名字最大），再读三张牌（整张卡等比加投影、
 // 短评比牌名更大更亮、版本编号退到卡图下），最后在底部参与区接力（邀请语、小程序码、版权与画师）。
-// 不画色条、编号、标签和类别记号；文字只用暖灰层级，强调色只画标题下的短线。
-async function drawPassportPoster(passport, { artOnly = false, pixels = null } = {}) {
+// 顶部没有英文抬头和强调色短线，也不画色条、编号、标签和类别记号；文字只用暖灰层级。
+async function drawPassportPoster(passport, { artOnly = false } = {}) {
   const filename = path.resolve(__dirname, '../miniprogram/community/utils/poster.js');
   const log = [];
   let fill = '';
@@ -815,10 +815,6 @@ async function drawPassportPoster(passport, { artOnly = false, pixels = null } =
         h: rest[3],
       }),
     fill: () => log.push({ op: 'fill', fill }),
-    getImageData: () => {
-      if (!pixels) throw new Error('tainted');
-      return { data: pixels };
-    },
     createRadialGradient: () => ({ addColorStop() {} }),
     stroke() {},
     beginPath() {},
@@ -925,6 +921,23 @@ test('passport poster reads as a player archive with the QR relay at the bottom'
       !log.some((entry) => entry.op === 'rect' && entry.x === 0 && entry.w <= 12 && entry.h >= 400),
       '不画左侧色条',
     );
+    assert.ok(!joined.includes('PLAYER PROFILE') && !joined.includes('cEDH Tutor'), '顶部不放英文抬头');
+    // 色块只剩整幅底色与暗角、整宽 1px 灰线和颗粒；填充只剩卡牌投影底板与小程序码白底
+    const plainRect = (entry) =>
+      (entry.w === 900 && (entry.fill === '#110F0C' || typeof entry.fill !== 'string')) ||
+      (entry.fill === '#2C2822' && entry.w === 772 && entry.h === 1) ||
+      (typeof entry.fill === 'string' && entry.fill.startsWith('rgba(') && entry.w <= 2 && entry.h === 1);
+    assert.deepEqual(
+      log.filter((entry) => entry.op === 'rect' && !plainRect(entry)),
+      [],
+      '标题下不画强调色短线，也没有其他色块',
+    );
+    assert.ok(
+      log
+        .filter((entry) => entry.op === 'fill')
+        .every((entry) => ['#110F0C', '#FFFFFF'].includes(entry.fill)),
+      '填充只有卡牌投影底板和小程序码白底',
+    );
     assert.deepEqual(
       texts.filter((entry) => !neutrals.includes(entry.fill)).map((entry) => entry.text),
       [],
@@ -938,6 +951,7 @@ test('passport poster reads as a player archive with the QR relay at the bottom'
     // 身份层：署名（没署名时是“我的三张牌”）是全图最大的字；“三张牌认识我”只在有署名时出现
     const title = texts.find((entry) => entry.text === (nickname || '我的三张牌'));
     assert.ok(title && texts.every((entry) => entry.size <= title.size), '署名字最大');
+    assert.ok(texts.every((entry) => entry.y >= title.y), '署名上方不再有任何文字');
     assert.equal(joined.includes('三张牌认识我'), Boolean(nickname));
 
     // 三张牌：整张卡等比画入并带投影；短评比牌名更大、更亮；中文印刷版本附小号英文原名
@@ -1025,43 +1039,6 @@ test('poster reasons keep punctuation off line starts and never end on a lone ch
       '己的主将',
     ],
   );
-});
-
-// 强调色取自“最喜欢的设计”那张卡画：色相跟着卡画走，饱和度压低；读不到像素或卡画是灰阶时退回暖灰
-test('poster accent is a muted hue taken from the favourite design art', async () => {
-  const { accentFrom } = require('../miniprogram/community/utils/poster');
-  const paint = (red, green, blue) =>
-    Uint8ClampedArray.from({ length: 4000 }, (_, index) => [red, green, blue, 255][index % 4]);
-  const channels = (hex) => [1, 3, 5].map((index) => parseInt(hex.slice(index, index + 2), 16));
-  const saturation = (hex) => {
-    const [red, green, blue] = channels(hex).map((value) => value / 255);
-    const max = Math.max(red, green, blue);
-    const min = Math.min(red, green, blue);
-    return max === min ? 0 : (max - min) / (1 - Math.abs(max + min - 1));
-  };
-  const red = channels(accentFrom(paint(220, 40, 40)));
-  assert.ok(red[0] > red[1] + 20 && Math.abs(red[1] - red[2]) <= 2, '红色卡画取出偏红的强调色');
-  const blue = channels(accentFrom(paint(40, 60, 200)));
-  assert.ok(blue[2] > blue[0] + 20 && blue[2] > blue[1] + 20, '蓝色卡画取出偏蓝的强调色');
-  for (const hex of [accentFrom(paint(220, 40, 40)), accentFrom(paint(40, 60, 200))]) {
-    assert.ok(saturation(hex) <= 0.35, `${hex} 饱和度压低`);
-    assert.ok(channels(hex).reduce((sum, value) => sum + value, 0) / 3 > 120, `${hex} 在墨黑底上够亮`);
-  }
-  const fallback = accentFrom(paint(128, 128, 128));
-  assert.equal(accentFrom(paint(30, 30, 30)), fallback, '灰阶卡画退回同一个暖灰');
-  assert.ok(saturation(fallback) <= 0.35);
-
-  const slots = [0, 1, 2].map(() => posterSlot('Sol Ring'));
-  const pixels = paint(40, 60, 200);
-  for (const [options, accent] of [
-    [{ pixels }, accentFrom(pixels)],
-    [{}, fallback],
-  ]) {
-    const { log } = await drawPassportPoster({ nickname: '牌友', slots }, options);
-    const uses = log.filter((entry) => entry.fill === accent);
-    assert.equal(uses.length, 1, '强调色只画标题下的短线，三类选牌前不再画记号');
-    assert.ok(uses.every((entry) => entry.op !== 'text'));
-  }
 });
 
 // 用户要求去掉名片标签：契约不再收标签，编辑页、牌友分享页和海报里都没有标签

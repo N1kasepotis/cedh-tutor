@@ -1,9 +1,8 @@
 const { SLOT_LABELS } = require('../shared/contracts');
 
 // 暗色收藏档案 × 玩家批注。阅读顺序是认识玩家 → 读三张牌 → 在底部接力分享：
-// 署名是全图最大的字；每段里短评比牌名更大、更亮，版本、编号和语言退成卡图下的收藏注释。
-// 微暖墨黑底上撒一层固定种子的印刷颗粒，三段之间只用细线分隔；不画圆角面板、色条、编号、标签和类别记号。
-// 强调色取自“最喜欢的设计”那张卡画并压低饱和度，只画标题下的一截短线。
+// 顶部直接从署名开始，全图最大的字，不放英文抬头和色条；每段里短评比牌名更大、更亮，版本、编号和语言退成卡图下的收藏注释。
+// 微暖墨黑底上撒一层固定种子的印刷颗粒，各段之间只用灰色细线分隔；不画圆角面板、编号、标签和类别记号。
 const WIDTH = 900;
 const MARGIN = 64;
 const MINI_PROGRAM_CODE = '/assets/cT_logo_v.2.jpg';
@@ -24,7 +23,6 @@ const COLORS = {
   meta: '#8C8478',
   faint: '#6F675C',
 };
-const FALLBACK_ACCENT = '#AD9C7E';
 const NO_LINE_START = /^[，。、：；！？）】」』》…,.;:!?)\]]$/u;
 
 function font(size, weight = 'normal', family = 'sans-serif') {
@@ -191,76 +189,6 @@ function paintLines(ctx, block, x, y, color) {
     ctx.fillText(line, x, y + index * block.leading);
   });
 }
-function hex(hue, saturation, light) {
-  const chroma = (1 - Math.abs(2 * light - 1)) * saturation;
-  const second = chroma * (1 - Math.abs(((hue / 60) % 2) - 1));
-  const offset = light - chroma / 2;
-  const channels = [
-    [chroma, second, 0],
-    [second, chroma, 0],
-    [0, chroma, second],
-    [0, second, chroma],
-    [second, 0, chroma],
-    [chroma, 0, second],
-  ][Math.floor(hue / 60) % 6];
-  return `#${channels
-    .map((value) => Math.round((value + offset) * 255).toString(16).padStart(2, '0'))
-    .join('')
-    .toUpperCase()}`;
-}
-// 色相分 24 格累计权重（越饱和、明度越居中的像素权重越大），取最重的一格连同两侧邻格的平均色相，
-// 压成低饱和、在墨黑底上够亮的颜色；灰阶或几乎没有颜色的卡画退回暖灰
-function accentFrom(data) {
-  const bins = Array.from({ length: 24 }, () => ({ weight: 0, x: 0, y: 0 }));
-  let sampled = 0;
-  let total = 0;
-  for (let index = 0; index + 2 < data.length; index += 16) {
-    sampled += 1;
-    const red = data[index] / 255;
-    const green = data[index + 1] / 255;
-    const blue = data[index + 2] / 255;
-    const max = Math.max(red, green, blue);
-    const min = Math.min(red, green, blue);
-    const delta = max - min;
-    const light = (max + min) / 2;
-    if (delta < 0.06 || light < 0.1 || light > 0.92) continue;
-    let hue;
-    if (max === red) hue = ((green - blue) / delta + 6) % 6;
-    else if (max === green) hue = (blue - red) / delta + 2;
-    else hue = (red - green) / delta + 4;
-    hue *= 60;
-    const weight = (delta / (1 - Math.abs(2 * light - 1))) * (1 - Math.abs(light - 0.5));
-    const bin = bins[Math.floor(hue / 15) % 24];
-    bin.weight += weight;
-    bin.x += Math.cos((hue * Math.PI) / 180) * weight;
-    bin.y += Math.sin((hue * Math.PI) / 180) * weight;
-    total += weight;
-  }
-  if (!sampled || total / sampled < 0.03) return FALLBACK_ACCENT;
-  const best = bins.reduce((top, bin, index) => (bin.weight > bins[top].weight ? index : top), 0);
-  const near = [23, 0, 1].map((step) => bins[(best + step) % 24]);
-  const x = near.reduce((sum, bin) => sum + bin.x, 0);
-  const y = near.reduce((sum, bin) => sum + bin.y, 0);
-  return hex(((Math.atan2(y, x) * 180) / Math.PI + 360) % 360, 0.3, 0.66);
-}
-function sampleAccent(ctx, plan, artOnly) {
-  // 全卡只取画框里的插画，避开边框和文字栏；卡画模式取整幅
-  const [left, top, right, bottom] = artOnly
-    ? [0.06, 0.06, 0.94, 0.94]
-    : [0.12, 0.13, 0.88, 0.5];
-  try {
-    const { data } = ctx.getImageData(
-      Math.round(MARGIN + CARD_WIDTH * left),
-      Math.round(plan.top + plan.cardHeight * top),
-      Math.round(CARD_WIDTH * (right - left)),
-      Math.round(plan.cardHeight * (bottom - top)),
-    );
-    return accentFrom(data);
-  } catch (_) {
-    // 读不到像素时用暖灰，不耽误导出
-    return FALLBACK_ACCENT;
-  }
-}
 // 固定种子的印刷颗粒：同一张名片每次导出都一样
 function grain(ctx, height) {
   let seed = 20260914;
@@ -294,7 +222,8 @@ function planHeader(ctx, passport) {
     floor: 48,
     leading: 1.16,
   });
-  const titleY = 184;
+  // 署名就是第一行字：基线定在 140，字顶到画布上沿的留白与左右边距相当
+  const titleY = 140;
   let bottom = lastBaseline(title, titleY) + 18;
   let subtitleY = 0;
   // 没署名时标题已是“我的三张牌”，不再重复“三张牌认识我”
@@ -375,10 +304,7 @@ function paintCard(ctx, plan, img, artOnly) {
   ctx.drawImage(img, MARGIN, plan.top, CARD_WIDTH, plan.cardHeight);
   ctx.restore();
 }
-function paintHeader(ctx, header, accent) {
-  ctx.fillStyle = COLORS.meta;
-  ctx.font = font(15);
-  tracked(ctx, 'cEDH Tutor / PLAYER PROFILE', MARGIN, 96, 3);
+function paintHeader(ctx, header) {
   paintLines(ctx, header.title, MARGIN, header.titleY, COLORS.display);
   if (header.subtitleY) {
     ctx.fillStyle = COLORS.body;
@@ -386,8 +312,6 @@ function paintHeader(ctx, header, accent) {
     ctx.fillText('三张牌认识我', MARGIN, header.subtitleY);
   }
   hairline(ctx, header.ruleY);
-  ctx.fillStyle = accent;
-  ctx.fillRect(MARGIN, header.ruleY - 1, 44, 3);
 }
 function paintSlot(ctx, slot, plan, index) {
   ctx.fillStyle = COLORS.meta;
@@ -487,11 +411,10 @@ async function render(page, passport, artOnly) {
   ctx.fillStyle = shade;
   ctx.fillRect(0, 0, WIDTH, height);
 
-  modules.forEach((plan, index) => paintCard(ctx, plan, pictures[index], artOnly));
-  const accent = sampleAccent(ctx, modules[0], artOnly);
-  paintHeader(ctx, header, accent);
+  paintHeader(ctx, header);
   modules.forEach((plan, index) => {
     if (index) hairline(ctx, plan.top - MODULE_GAP / 2);
+    paintCard(ctx, plan, pictures[index], artOnly);
     paintSlot(ctx, passport.slots[index], plan, index);
   });
   paintFooter(ctx, footer, code);
@@ -514,4 +437,4 @@ async function render(page, passport, artOnly) {
     ),
   );
 }
-module.exports = { render, wrap, accentFrom };
+module.exports = { render, wrap };
