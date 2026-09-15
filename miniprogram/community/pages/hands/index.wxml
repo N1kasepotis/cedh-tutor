@@ -21,6 +21,7 @@
           wx:for="{{cards}}"
           wx:key="name"
           class="card-tile hand-card"
+          hover-class="pressable-active"
           aria-role="button"
           aria-label="查看 {{item.name}}"
           data-index="{{index}}"

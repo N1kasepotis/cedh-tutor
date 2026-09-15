@@ -90,6 +90,7 @@
           <textarea
             maxlength="240"
             placeholder="这张牌在哪些对局有用，是否值得保留"
+            aria-label="复盘这次调牌"
             value="{{review}}"
             bindinput="review"
           />

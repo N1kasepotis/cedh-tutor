@@ -2,6 +2,7 @@
   "navigationBarTitleText": "EDH hub",
   "navigationBarBackgroundColor": "#070707",
   "navigationBarTextStyle": "white",
+  "backgroundColor": "#070707",
   "usingComponents": {
     "particle-background": "/components/particle-background/particle-background"
   }

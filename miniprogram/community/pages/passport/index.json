@@ -2,6 +2,7 @@
   "navigationBarTitleText": "三张牌认识你",
   "navigationBarBackgroundColor": "#070707",
   "navigationBarTextStyle": "white",
+  "backgroundColor": "#070707",
   "usingComponents": {
     "card-picker": "../../components/card-picker/index",
     "particle-background": "/components/particle-background/particle-background"

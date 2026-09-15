@@ -20,7 +20,7 @@
 .entry-cards {
   height: 280rpx;
   position: relative;
-  margin: 22rpx 0 28rpx;
+  margin: 22rpx 0 8rpx;
 }
 .entry-card {
   position: absolute;
@@ -40,11 +40,6 @@
 }
 .entry-card-2 {
   transform: translateX(124rpx) rotate(12deg);
-}
-.feature-title {
-  font-size: 42rpx;
-  line-height: 1.3;
-  font-weight: 700;
 }
 .tool-grid {
   display: grid;

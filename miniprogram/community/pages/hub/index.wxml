@@ -11,10 +11,11 @@
       class="portrait-entry"
       data-id="passport"
       bindtap="open"
+      aria-label="我的三张牌"
     >
       <view class="portrait-entry-head">
         <text class="badge">我的三张牌</text>
-        <text class="entry-arrow">↗</text>
+        <text class="entry-arrow" aria-hidden="true">↗</text>
       </view>
       <view class="entry-cards" aria-hidden="true">
         <image
@@ -26,7 +27,6 @@
           class="entry-card entry-card-{{index}}"
         />
       </view>
-      <view class="feature-title">三张牌认识你</view>
     </button>
     <view class="section-heading">
       <text>牌桌工具</text>
@@ -42,7 +42,7 @@
       >
         <view class="tool-top">
           <text class="tool-label">{{item.tag}}</text>
-          <text class="entry-arrow">↗</text>
+          <text class="entry-arrow" aria-hidden="true">↗</text>
         </view>
         <view class="entry-title">{{item.title}}</view>
         <view class="muted">{{item.description}}</view>

@@ -50,6 +50,7 @@
       <input
         class="ban-search"
         placeholder="搜索牌名，例如 Mana Crypt"
+        aria-label="搜索禁牌"
         value="{{query}}"
         bindinput="search"
         maxlength="80"
@@ -82,7 +83,7 @@
           <view class="ban-name">{{item.name}}</view>
           <view class="ban-caption">
             <text wx:if="{{item.status !== '禁用'}}" class="limited-status">{{item.status}}</text>
-            <text class="ban-arrow">→</text>
+            <text class="ban-arrow" aria-hidden="true">→</text>
           </view>
         </button>
       </view>

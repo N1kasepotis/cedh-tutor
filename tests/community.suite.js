@@ -1029,6 +1029,46 @@ test('withdrawing a shared link says what it does, sits apart from sharing and a
   }
 });
 
+// 发布前按 design skills 扫查 EDH hub：六页的回弹底色跟页面一样深，不再露出默认白底；入口页去掉“三张牌认识你”这行字；
+// 装饰箭头不念给读屏，没有标签的输入框补读屏名称；名片图片的两个文字选项和起手卡图瓦片有按压反馈；卡图缺失时的牌名不小于 10px
+test('EDH hub release sweep: dark bounce background, lean entry, labelled inputs and press feedback', () => {
+  const root = path.join(__dirname, '../miniprogram/community');
+  const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+  for (const name of ['hub', 'passport', 'banlist', 'table', 'swaps', 'hands']) {
+    const config = JSON.parse(read(`pages/${name}/index.json`));
+    assert.deepEqual(
+      [config.navigationBarBackgroundColor, config.navigationBarTextStyle, config.backgroundColor],
+      ['#070707', 'white', '#070707'],
+      `${name} 的导航栏与回弹底色应与页面一样深`,
+    );
+  }
+  const hub = read('pages/hub/index.wxml');
+  assert.doesNotMatch(hub, /三张牌认识你|feature-title/);
+  assert.doesNotMatch(read('pages/hub/index.wxss'), /feature-title/);
+  assert.match(hub, /class="portrait-entry"[^>]*aria-label="我的三张牌"/);
+  assert.equal((hub.match(/<text class="entry-arrow" aria-hidden="true">↗<\/text>/g) || []).length, 2);
+  assert.match(read('pages/banlist/index.wxml'), /<text class="ban-arrow" aria-hidden="true">→<\/text>/);
+  for (const [file, pattern] of [
+    ['pages/passport/index.wxml', /placeholder="\{\{reasonHints\[index\]\}\}"\s+aria-label="\{\{item\}\}的短评"/],
+    ['pages/banlist/index.wxml', /placeholder="搜索牌名，例如 Mana Crypt"\s+aria-label="搜索禁牌"/],
+    ['components/card-picker/index.wxml', /placeholder="中英文牌名"\s+aria-label="搜索单卡"/],
+    ['pages/swaps/index.wxml', /placeholder="这张牌在哪些对局有用，是否值得保留"\s+aria-label="复盘这次调牌"/],
+  ]) {
+    assert.match(read(file), pattern, `${file} 的输入框缺读屏名称`);
+  }
+  const passport = read('pages/passport/index.wxml');
+  assert.equal(
+    (passport.match(/<view\s+class="mode-option[^>]*hover-class="pressable-active"/g) || []).length,
+    2,
+    '两个文字选项有按压反馈',
+  );
+  assert.doesNotMatch(passport, /<text\s+class="mode-option/);
+  assert.match(passport, /aria-label="\{\{artOnly \? '名片图片改用完整卡牌' : '名片图片用完整卡牌，已选'\}\}"/);
+  assert.match(read('pages/hands/index.wxml'), /class="card-tile hand-card"\s+hover-class="pressable-active"/);
+  const fallback = read('pages/hands/index.wxss').match(/\.hand-card \.card-name\s*\{[^}]*\}/)[0];
+  assert.match(fallback, /font-size:\s*10px/, '卡图缺失时的牌名不小于 10px');
+});
+
 // 名片海报：暗色收藏档案 × 玩家批注。先认识玩家（署名字最大），再读三张牌（整张卡等比加投影、
 // 短评比牌名更大更亮、版本编号退到卡图下），最后在底部参与区接力（邀请语、小程序码、版权与画师）。
 // 顶部没有英文抬头和强调色短线，也不画色条、编号、标签和类别记号；文字只用暖灰层级。

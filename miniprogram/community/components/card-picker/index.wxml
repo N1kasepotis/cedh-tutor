@@ -10,6 +10,7 @@
       <input
         class="grow"
         placeholder="中英文牌名"
+        aria-label="搜索单卡"
         value="{{query}}"
         bindinput="input"
         bindconfirm="search"

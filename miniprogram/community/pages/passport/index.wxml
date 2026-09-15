@@ -89,6 +89,7 @@
       </view>
       <input
         placeholder="{{reasonHints[index]}}"
+        aria-label="{{item}}的短评"
         maxlength="40"
         value="{{reasons[index]}}"
         data-index="{{index}}"
@@ -117,20 +118,22 @@
       <view class="row between">
         <text class="section-title poster-title">名片图片</text>
         <view class="mode-toggle">
-          <text
+          <view
             class="mode-option {{artOnly ? '' : 'mode-on'}}"
+            hover-class="pressable-active"
             aria-role="button"
-            aria-label="名片图片用完整卡牌"
+            aria-label="{{artOnly ? '名片图片改用完整卡牌' : '名片图片用完整卡牌，已选'}}"
             data-art="{{false}}"
             bindtap="mode"
-          >完整卡牌</text>
-          <text
+          >完整卡牌</view>
+          <view
             class="mode-option {{artOnly ? 'mode-on' : ''}}"
+            hover-class="pressable-active"
             aria-role="button"
-            aria-label="名片图片只看卡画"
+            aria-label="{{artOnly ? '名片图片只看卡画，已选' : '名片图片改为只看卡画'}}"
             data-art="{{true}}"
             bindtap="mode"
-          >只看卡画</text>
+          >只看卡画</view>
         </view>
       </view>
       <image
