@@ -55,7 +55,7 @@ Page({
     });
     this.persist();
   },
-  persist() {
+  persist(replaced = '') {
     try {
       table(this.data.values);
       const item = {
@@ -66,10 +66,8 @@ Page({
         date: new Date().toLocaleDateString(),
       };
       const state = local.update((state) => {
-        state.tables = [item, ...state.tables.filter((old) => old.id !== item.id)].slice(
-          0,
-          20,
-        );
+        const kept = state.tables.filter((old) => old.id !== item.id && old.id !== replaced);
+        state.tables = [item, ...kept].slice(0, 20);
       });
       this.setData({ history: state.tables });
       return true;
@@ -106,7 +104,13 @@ Page({
   },
   publish() {
     return ui.run(this, async () => {
-      if (!this.persist()) return;
+      // 撤回过的约定再分享时换一个草稿身份：生成新链接，牌友手里的旧链接一直打不开；本机记录替换掉旧的那条
+      const replaced = this.data.remote && this.data.remote.revoked ? this.draftId : '';
+      if (replaced) {
+        this.draftId = local.id();
+        this.setData({ remote: null });
+      }
+      if (!this.persist(replaced)) return;
       const result = await api.call('publish', {
         kind: 'table',
         draftId: this.draftId,

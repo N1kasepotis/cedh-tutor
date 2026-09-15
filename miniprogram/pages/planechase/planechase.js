@@ -7,7 +7,7 @@ const { readStorage, writeStorage, backupStorage } = require('../../utils/storag
 const STORAGE_KEY = 'planechaseState';
 const PHASE_LABELS = { ready: '暂无待结算事项', resolve: '能力待结算', exit: '异象待换出', reveal: '处理展示牌', notes: '牌桌待确认' };
 const REVEAL_LABELS = { merge: '同时换入两张时空', append: '追加时空', echo: '展示牌置底并引发混沌', leave: '全部换出并置底' };
-const FACE_LABELS = { blank: '空白', chaos: '混沌', planeswalk: '换境' };
+const FACE_LABELS = { blank: '空白', chaos: '混沌符号', planeswalk: '鹏洛客符号' };
 
 Page({
   data: {
@@ -147,10 +147,10 @@ Page({
         const isWalk = source.kind === 'walk';
         const isEntry = source.kind === 'entryChaos';
         return { ...source, name: isWalk ? '时空骰' : card.name,
-          label: isWalk ? '换境' : isEntry ? '进场触发' : source.kind === 'chaos' ? '混沌' : '遭遇触发',
-          lines: isWalk ? ['此触发结算后换境。']
+          label: isWalk ? '时空换境' : isEntry ? '进场触发' : source.kind === 'chaos' ? '混沌' : '遭遇触发',
+          lines: isWalk ? ['此触发结算后时空换境。']
             : isEntry ? card.staticLines : source.kind === 'chaos' ? card.chaosLines : card.staticLines,
-          actionLabel: isWalk ? '结算换境' : isEntry ? '结算并引发混沌'
+          actionLabel: isWalk ? '结算时空换境' : isEntry ? '结算并引发混沌'
             : kind === 'append' ? '展示下一时空' : kind === 'echo' ? '展示下一时空'
               : kind === 'merge' ? '展示两张时空' : '已结算' };
       }),

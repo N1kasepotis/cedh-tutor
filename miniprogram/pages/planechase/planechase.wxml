@@ -22,12 +22,6 @@
         <button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="restart" disabled="{{saving || saveError}}">重新洗牌</button>
         <view class="body-copy muted-copy">MOC 简中套牌 50 张，双人局随机移出 1 张异象。开局翻牌不触发异能。</view>
         <view class="body-copy muted-copy">普通掷骰：自己的行动阶段，堆叠为空且有优先权时可付费掷骰。</view>
-        <view class="setup-divider"></view><view class="panel-heading">牌张效应</view><view class="body-copy muted-copy">仅按牌张效应使用，效应掷骰不增加普通掷骰费用。</view>
-        <view class="action-row">
-          <button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="effectRoll" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">效应掷骰</button>
-          <button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="manualPlaneswalk" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">效应换境</button>
-          <button class="pc-button" hover-class="pressable-active" hover-stay-time="120" bindtap="causeChaos" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">引发混沌</button>
-        </view>
       </view>
       <view class="turn-console surface">
         <view class="turn-row">
@@ -89,6 +83,15 @@
       </view>
     </block>
     <view class="card-art-credit">卡图来自 Scryfall，版权归 Wizards of the Coast 及画师所有</view>
+    <view wx:if="{{hasSession}}" class="effect-footer">
+      <view class="section-kicker">牌张效应</view>
+      <view class="body-copy muted-copy">仅按牌张效应使用，效应掷骰不增加普通掷骰费用。</view>
+      <view class="effect-actions">
+        <button class="pc-button effect-link" hover-class="pressable-active" hover-stay-time="120" bindtap="effectRoll" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">效应掷骰</button>
+        <button class="pc-button effect-link" hover-class="pressable-active" hover-stay-time="120" bindtap="manualPlaneswalk" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">效应时空换境</button>
+        <button class="pc-button effect-link" hover-class="pressable-active" hover-stay-time="120" bindtap="causeChaos" disabled="{{phase === 'reveal' || phase === 'exit' || saving || saveError}}">引发混沌</button>
+      </view>
+    </view>
   </view>
   <view wx:if="{{hasSession}}" class="action-dock" aria-hidden="{{inspect ? true : false}}">
     <view class="dock-summary"><text>{{saveError ? '请先处理保存问题' : lastAction}}</text></view>

@@ -518,3 +518,41 @@ test('page：旧卡图失败回调不污染新时空；完整卡文不依赖卡�
   harness.flags.prefetch.fail();
   assert.equal(page.prefetchedId, '');
 });
+
+// 叫法对齐完整规则 901 与官方简中牌文：planeswalk 写“时空换境”，骰面写“鹏洛客符号”“混沌符号”；
+// 牌张效应只在牌面要求时才用，放在页面最下方，不藏在对局设置里
+test('page：用官方叫法，牌张效应按钮放在页面最下方', () => {
+  const root = path.join(__dirname, '../miniprogram');
+  const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+  const wxml = read('pages/planechase/planechase.wxml');
+  const pageJs = read('pages/planechase/planechase.js');
+  const sessionJs = read('utils/planechase-session.js');
+  for (const [file, source] of [
+    ['planechase.wxml', wxml],
+    ['pages/planechase.js', pageJs],
+    ['planechase-session.js', sessionJs],
+    ['utils/planechase.js', read('utils/planechase.js')],
+  ]) {
+    assert.doesNotMatch(source, /(?<!时空)换境/, `${file} 应写“时空换境”`);
+  }
+  for (const source of [pageJs, sessionJs]) {
+    assert.match(source, /\{ blank: '空白', chaos: '混沌符号', planeswalk: '鹏洛客符号' \}/);
+  }
+  const rolled = S.transition(arranged(), { type: 'roll' }, () => 0);
+  assert.equal(rolled.game.lastRoll.face, 'planeswalk');
+  assert.equal(rolled.lastAction, '免费掷出鹏洛客符号');
+
+  const setup = wxml.slice(wxml.indexOf('setup-panel'), wxml.indexOf('turn-console'));
+  assert.ok(setup.includes('changePlayerCount'), '对局设置仍有人数');
+  assert.doesNotMatch(setup, /effectRoll|manualPlaneswalk|causeChaos|牌张效应/, '牌张效应不再藏在对局设置里');
+  const footerAt = wxml.indexOf('class="effect-footer"');
+  assert.ok(footerAt > wxml.indexOf('card-art-credit'), '牌张效应在卡图版权说明之后');
+  const footer = wxml.slice(footerAt, wxml.indexOf('class="action-dock"'));
+  assert.match(footer, /牌张效应/);
+  for (const handler of ['effectRoll', 'manualPlaneswalk', 'causeChaos']) {
+    assert.match(footer, new RegExp(`class="pc-button effect-link"[^>]*bindtap="${handler}"`));
+    assert.equal((wxml.match(new RegExp(`bindtap="${handler}"`, 'g')) || []).length, 1, `${handler} 只出现一处`);
+  }
+  assert.match(footer, />效应时空换境</);
+  assert.match(read('pages/planechase/planechase.wxss'), /\.effect-footer \{[^}]*align-items: center/);
+});

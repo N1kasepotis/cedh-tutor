@@ -190,7 +190,7 @@ function transition(session, action, rng = Math.random) {
       if (result.face === 'planeswalk') addTrigger(next, 'walk');
       if (result.face === 'chaos') addChaos(next, next.game.activePlanes);
       next.lastAction = (action.effect ? '效应掷骰：' : result.cost ? '支付 ' + result.cost + ' 法术力，掷出' : '免费掷出')
-        + { blank: '空白', chaos: '混沌', planeswalk: '换境' }[result.face];
+        + { blank: '空白', chaos: '混沌符号', planeswalk: '鹏洛客符号' }[result.face];
       next.tableNotes = next.tableNotes.concat(next.game.activePlanes.flatMap((index) => P.cardAt(index).staticLines.filter((line) => /每当你掷时空骰/.test(line))));
       break;
     }
@@ -271,7 +271,7 @@ function transition(session, action, rng = Math.random) {
       }
       removeTrigger(next, reveal.sourceId);
       next.reveal = null;
-      next.lastAction = reveal.kind === 'echo' ? '展示牌已置底，待结算混沌' : '展示与换境已完成';
+      next.lastAction = reveal.kind === 'echo' ? '展示牌已置底，待结算混沌' : '展示与时空换境已完成';
       noteTransition(next, before);
       break;
     }

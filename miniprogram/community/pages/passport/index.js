@@ -131,6 +131,11 @@ Page({
       if (content.slots.some((slot) => !slot))
         throw new Error('还差几张牌，选齐就能生成名片');
       domain.passport(content);
+      // 撤回过的名片再分享时换一个草稿身份：生成新链接，牌友手里的旧链接一直打不开
+      if (this.data.remote && !this.data.remote.active) {
+        this.draftId = local.id();
+        this.setData({ remote: null });
+      }
       // Persist the draft ID before publication so a lost response can be retried.
       if (!this.saveDraft()) return;
       this.unsaved = false;

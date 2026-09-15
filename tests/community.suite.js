@@ -1030,6 +1030,84 @@ test('withdrawing a shared link says what it does, sits apart from sharing and a
   }
 });
 
+// 分享链接的地址由作者和草稿身份算出：撤回过的名片或约定再分享时要换草稿身份，生成新链接，牌友手里的旧链接一直打不开
+test('sharing again after withdrawing makes a new link and keeps one saved table', async () => {
+  const root = path.join(__dirname, '../miniprogram/community');
+  const previous = global.wx;
+  const load = (page) => {
+    const filename = path.join(root, `pages/${page}/index.js`);
+    let definition;
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Page: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+    });
+    return {
+      ...definition,
+      data: structuredClone(definition.data),
+      setData(value) {
+        for (const [key, next] of Object.entries(value)) {
+          const field = /^values\.(\w+)$/.exec(key);
+          if (field) this.data.values[field[1]] = next;
+          else this.data[key] = next;
+        }
+      },
+    };
+  };
+  try {
+    const saved = new Map();
+    const calls = [];
+    global.wx = {
+      getStorageSync: (key) => saved.get(key) || '',
+      setStorageSync: (key, value) => saved.set(key, value),
+      showToast: () => {},
+      cloud: {
+        init() {},
+        callFunction: async ({ data }) => {
+          calls.push(data);
+          return { result: { ok: true, data: { id: 'b'.repeat(64), version: 1, content: data.content } } };
+        },
+      },
+    };
+    const passport = load('passport');
+    passport.onLoad({});
+    const slot = {
+      printId: '00000000-0000-0000-0000-000000000001',
+      name: 'Sol Ring',
+      displayName: 'Sol Ring',
+      lang: 'en',
+      set: 'msc',
+      number: '211',
+    };
+    passport.setData({ slots: [slot, slot, slot], remote: { id: 'a'.repeat(64), version: 3, active: false } });
+    const oldPassport = passport.draftId;
+    await passport.publish();
+    const passportShare = calls.find((call) => call.kind === 'passport');
+    assert.ok(passportShare, '应发出名片分享请求');
+    assert.notEqual(passportShare.draftId, oldPassport, '撤回过的名片再分享换草稿身份');
+    assert.equal(passportShare.version, 0, '新链接从版本 0 开始');
+
+    const table = load('table');
+    table.onLoad({});
+    table.change({ currentTarget: { dataset: { key: 'level' } }, detail: { value: '2' } });
+    const oldTable = table.draftId;
+    table.setData({ remote: { id: 'c'.repeat(64), version: 2, revoked: true }, dirty: true });
+    table.persist();
+    await table.publish();
+    const tableShare = calls.find((call) => call.kind === 'table');
+    assert.ok(tableShare, '应发出约定分享请求');
+    assert.notEqual(tableShare.draftId, oldTable, '撤回过的约定再分享换草稿身份');
+    assert.equal(tableShare.version, 0);
+    const tables = saved.get('playerStudio').data.tables;
+    assert.equal(tables.length, 1, '本机只留一条约定，不因换身份多出一条');
+    assert.equal(tables[0].id, table.draftId);
+  } finally {
+    global.wx = previous;
+  }
+});
+
 // 少用的功能按用户要求挪到所在页面或区块最下方并居中：撤回分享链接、撤票、两个复制官方链接、调牌记录的删除和复制来源链接。
 // 统一放进 quiet-footer：外层 flex 居中，按钮只占文字宽度，13px 常规字重的次要文字色
 test('marginal actions sit centered at the bottom of their page or block', () => {
