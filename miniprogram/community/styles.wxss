@@ -334,3 +334,18 @@ page {
 .studio button.link.quiet-link:not([size='mini']) {
   color: var(--cedh-text-soft);
 }
+/* 少用的功能统一放在页面或区块最下方并居中：外层 flex 居中，按钮只占文字宽度，滑到底时不容易误触 */
+.quiet-footer {
+  display: flex;
+  justify-content: center;
+  margin-top: 40rpx;
+}
+.studio .quiet-footer button.link:not([size='mini']) {
+  padding-left: 24rpx;
+  padding-right: 24rpx;
+  font-size: 13px;
+  font-weight: 400;
+}
+.panel .quiet-footer {
+  margin-top: 8rpx;
+}

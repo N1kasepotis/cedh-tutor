@@ -159,18 +159,19 @@
         </button>
       </view>
     </view>
-    <button
-      hover-class="pressable-active"
-      wx:if="{{remote.active}}"
-      class="link quiet-link"
-      bindtap="revoke"
-      disabled="{{busy}}"
-    >
-      撤回分享链接
-    </button>
     <canvas id="passport-poster" type="2d" class="poster-canvas" />
     <view class="credit">
       <view>卡图来自 Scryfall，版权归 Wizards of the Coast 与画师所有</view>
+    </view>
+    <view wx:if="{{remote.active}}" class="quiet-footer">
+      <button
+        hover-class="pressable-active"
+        class="link quiet-link"
+        bindtap="revoke"
+        disabled="{{busy}}"
+      >
+        撤回分享链接
+      </button>
     </view>
     <card-picker
       id="passport-picker"

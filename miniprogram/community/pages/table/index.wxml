@@ -64,15 +64,6 @@
         另存一桌
       </button>
     </view>
-    <button
-      hover-class="pressable-active"
-      wx:if="{{remote && !incoming && !remote.revoked}}"
-      class="link quiet-link"
-      bindtap="revoke"
-      disabled="{{busy}}"
-    >
-      撤回分享链接
-    </button>
     <view wx:if="{{!incoming && history.length}}" class="section">
       <view class="section-title">已存约定</view>
       <button
@@ -86,6 +77,16 @@
       >
         <text>{{fields[0].options[item.values.level]}}</text>
         <text class="muted">{{item.date}}</text>
+      </button>
+    </view>
+    <view wx:if="{{remote && !incoming && !remote.revoked}}" class="quiet-footer">
+      <button
+        hover-class="pressable-active"
+        class="link quiet-link"
+        bindtap="revoke"
+        disabled="{{busy}}"
+      >
+        撤回分享链接
       </button>
     </view>
   </view>

@@ -54,13 +54,15 @@
       <view wx:for="{{hand.reasons}}" wx:key="*this" class="subtitle hand-reason">{{item}}</view>
       <view class="muted hand-source">{{source.name}}{{source.published ? '，' + source.published : ''}}</view>
       <view class="muted">{{source.title}}</view>
-      <button hover-class="pressable-active" class="link" bindtap="copySource">
-        复制来源链接
-      </button>
     </view>
     <view class="actions">
       <button hover-class="pressable-active" open-type="share">发给牌友</button>
     </view>
     <view class="credit">卡图 Scryfall　版权 Wizards of the Coast 与画师</view>
+    <view wx:if="{{revealed}}" class="quiet-footer">
+      <button hover-class="pressable-active" class="link quiet-link" bindtap="copySource">
+        复制来源链接
+      </button>
+    </view>
   </view>
 </view>

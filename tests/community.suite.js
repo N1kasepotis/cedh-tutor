@@ -1030,6 +1030,40 @@ test('withdrawing a shared link says what it does, sits apart from sharing and a
   }
 });
 
+// 少用的功能按用户要求挪到所在页面或区块最下方并居中：撤回分享链接、撤票、两个复制官方链接、调牌记录的删除和复制来源链接。
+// 统一放进 quiet-footer：外层 flex 居中，按钮只占文字宽度，13px 常规字重的次要文字色
+test('marginal actions sit centered at the bottom of their page or block', () => {
+  const root = path.join(__dirname, '../miniprogram/community');
+  const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+  const styles = read('styles.wxss');
+  assert.match(styles, /\.quiet-footer\s*\{\s*display:\s*flex;\s*justify-content:\s*center;/);
+  assert.match(
+    styles,
+    /\.studio \.quiet-footer button\.link:not\(\[size='mini'\]\)\s*\{[^}]*font-size:\s*13px;\s*font-weight:\s*400;/,
+  );
+  const cases = [
+    ['pages/passport/index.wxml', 'revoke', '撤回分享链接', 'class="credit"'],
+    ['pages/table/index.wxml', 'revoke', '撤回分享链接', '已存约定'],
+    ['components/poll/index.wxml', 'retract', '撤票', '比例不计入未表态票'],
+    ['pages/banlist/index.wxml', 'source', '复制公告链接', '<community-poll'],
+    ['pages/banlist/index.wxml', 'source', '复制官方禁牌表链接', '适用 Commander 赛制'],
+    ['pages/swaps/index.wxml', 'remove', '删除', 'bindtap="edit"'],
+    ['pages/hands/index.wxml', 'copySource', '复制来源链接', 'class="credit"'],
+  ];
+  for (const [file, handler, label, anchor] of cases) {
+    const markup = read(file);
+    assert.equal(markup.split(label).length - 1, 1, `${file} 只应有一处“${label}”`);
+    const footer = [...markup.matchAll(/<view[^>]*class="quiet-footer">\s*<button([^>]*)>\s*([^<]*?)\s*<\/button>\s*<\/view>/g)]
+      .find((match) => match[2] === label);
+    assert.ok(footer, `${file} 的“${label}”应放进居中的 quiet-footer`);
+    assert.match(footer[1], /class="link quiet-link"/);
+    assert.match(footer[1], new RegExp(`bindtap="${handler}"`));
+    assert.ok(markup.indexOf(anchor) >= 0, `${file} 找不到 ${anchor}`);
+    assert.ok(footer.index > markup.indexOf(anchor), `${file} 的“${label}”应在 ${anchor} 之后`);
+  }
+  assert.match(read('pages/hands/index.wxml'), /wx:if="\{\{revealed\}\}" class="quiet-footer"/, '看过来源判断才出现复制来源链接');
+});
+
 // 发布前按 design skills 扫查 EDH hub：六页的回弹底色跟页面一样深，不再露出默认白底；入口页去掉“三张牌认识你”这行字；
 // 装饰箭头不念给读屏，没有标签的输入框补读屏名称；名片图片的两个文字选项和起手卡图瓦片有按压反馈；卡图缺失时的牌名不小于 10px
 test('EDH hub release sweep: dark bounce background, lean entry, labelled inputs and press feedback', () => {
@@ -1091,7 +1125,10 @@ test('table agreement autosaves, keeps one share slot and refreshes confirmation
   }
   const pollWxml = read('components/poll/index.wxml');
   assert.doesNotMatch(pollWxml, /bindtap="submit"|刷新票数/);
-  assert.match(pollWxml, /wx:if="\{\{!compact && mine && !closed\}\}"\s+class="link quiet-link"\s+bindtap="retract"/);
+  assert.match(
+    pollWxml,
+    /wx:if="\{\{!compact && mine && !closed\}\}" class="quiet-footer">\s*<button\s+hover-class="pressable-active"\s+class="link quiet-link"\s+bindtap="retract"/,
+  );
 
   const filename = path.join(root, 'pages/table/index.js');
   const saved = new Map();

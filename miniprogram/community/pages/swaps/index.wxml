@@ -106,14 +106,23 @@
             </button>
           </view>
         </block>
-        <view wx:else class="actions">
-          <button hover-class="pressable-active" data-id="{{item.id}}" bindtap="edit">
-            复盘
-          </button>
-          <button hover-class="pressable-active" data-id="{{item.id}}" bindtap="remove">
-            删除
-          </button>
-        </view>
+        <block wx:else>
+          <view class="actions">
+            <button hover-class="pressable-active" data-id="{{item.id}}" bindtap="edit">
+              复盘
+            </button>
+          </view>
+          <view class="quiet-footer">
+            <button
+              hover-class="pressable-active"
+              class="link quiet-link"
+              data-id="{{item.id}}"
+              bindtap="remove"
+            >
+              删除
+            </button>
+          </view>
+        </block>
       </view>
     </view>
     <view wx:if="{{decks[deckIndex].id}}" class="credit">关联套牌后，自动统计调牌后的场数</view>

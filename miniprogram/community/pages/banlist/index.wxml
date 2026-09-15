@@ -34,12 +34,14 @@
         <view wx:if="{{selected.status !== '禁用'}}" class="notice">
           仅禁止用作行侣，仍可放入主牌或担任指挥官
         </view>
-        <button hover-class="pressable-active" class="link" bindtap="source">
-          复制公告链接
-        </button>
       </view>
       <view class="section">
         <community-poll id="ban-vote" poll-id="{{pollId}}" choices="{{choices}}" />
+      </view>
+      <view class="quiet-footer">
+        <button hover-class="pressable-active" class="link quiet-link" bindtap="source">
+          复制公告链接
+        </button>
       </view>
     </view>
     <block wx:else>
@@ -96,13 +98,15 @@
         <view wx:for="{{banlist.restrictions}}" wx:key="*this" class="list-item subtitle">
           {{item}}
         </view>
-        <button hover-class="pressable-active" class="link" bindtap="source">
-          复制官方禁牌表链接
-        </button>
       </view>
       <view class="credit">
         <view>适用 Commander 赛制</view>
         <view>卡图 Scryfall　版权 Wizards of the Coast 与画师</view>
+      </view>
+      <view class="quiet-footer">
+        <button hover-class="pressable-active" class="link quiet-link" bindtap="source">
+          复制官方禁牌表链接
+        </button>
       </view>
     </block>
   </view>
