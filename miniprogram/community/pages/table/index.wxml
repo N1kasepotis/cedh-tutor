@@ -21,46 +21,41 @@
         </picker>
       </view>
     </view>
-    <view wx:if="{{!incoming}}" class="actions">
-      <button hover-class="pressable-active" bindtap="save" disabled="{{busy}}">
-        保存本桌
-      </button>
+    <view class="actions">
       <button
         hover-class="pressable-active"
+        wx:if="{{!incoming && (!remote || dirty || remote.revoked)}}"
         class="primary"
         bindtap="publish"
         disabled="{{busy}}"
         loading="{{busy}}"
       >
-        {{remote ? '更新分享' : '生成分享'}}
+        {{remote && !remote.revoked ? '更新分享' : '生成分享'}}
+      </button>
+      <button
+        hover-class="pressable-active"
+        wx:else
+        class="{{incoming ? '' : 'primary'}}"
+        open-type="share"
+      >
+        发给牌友
       </button>
     </view>
-    <view wx:if="{{remote && !dirty}}" class="panel surface">
+    <view wx:if="{{remote && !dirty && !remote.revoked}}" class="panel surface">
       <view class="section-title">牌友确认</view>
-      <view class="muted">
-        {{agreement ? agreement.count + ' 位玩家已确认' : '刷新查看确认人数'}}
-      </view>
+      <view wx:if="{{agreement}}" class="muted">{{agreement.count}} 位玩家已确认</view>
       <view class="actions">
         <button
           hover-class="pressable-active"
-          class="primary"
+          class="{{incoming ? 'primary' : ''}}"
           bindtap="agree"
           disabled="{{busy}}"
         >
           {{agreement.agreed ? '取消确认' : '没问题'}}
         </button>
-        <button hover-class="pressable-active" open-type="share">发给牌友</button>
       </view>
-      <button
-        hover-class="pressable-active"
-        class="link"
-        bindtap="refresh"
-        disabled="{{busy}}"
-      >
-        刷新确认状态
-      </button>
     </view>
-    <view wx:if="{{dirty && remote}}" class="notice">
+    <view wx:if="{{dirty && remote && !remote.revoked}}" class="notice">
       分享还没更新，更新后会重新统计确认人数
     </view>
     <view class="actions">

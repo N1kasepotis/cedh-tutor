@@ -83,7 +83,7 @@
           <view class="ban-name">{{item.name}}</view>
           <view class="ban-caption">
             <text wx:if="{{item.status !== '禁用'}}" class="limited-status">{{item.status}}</text>
-            <text class="ban-arrow" aria-hidden="true">→</text>
+            <text class="ban-arrow" aria-hidden="true">›</text>
           </view>
         </button>
       </view>

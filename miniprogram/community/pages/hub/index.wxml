@@ -2,7 +2,6 @@
   <particle-background palette="tracker"></particle-background>
   <view class="content-layer">
     <view class="page-heading">
-      <text class="eyebrow">EDH / COMMANDER</text>
       <text class="title">EDH hub</text>
     </view>
     <view wx:if="{{error}}" class="error">{{error}}</view>
@@ -15,7 +14,7 @@
     >
       <view class="portrait-entry-head">
         <text class="badge">我的三张牌</text>
-        <text class="entry-arrow" aria-hidden="true">↗</text>
+        <text class="entry-arrow" aria-hidden="true">›</text>
       </view>
       <view class="entry-cards" aria-hidden="true">
         <image
@@ -42,7 +41,7 @@
       >
         <view class="tool-top">
           <text class="tool-label">{{item.tag}}</text>
-          <text class="entry-arrow" aria-hidden="true">↗</text>
+          <text class="entry-arrow" aria-hidden="true">›</text>
         </view>
         <view class="entry-title">{{item.title}}</view>
         <view class="muted">{{item.description}}</view>

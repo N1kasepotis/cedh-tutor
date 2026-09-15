@@ -5,7 +5,7 @@ Component({
   properties: {
     pollId: String,
     choices: Array,
-    // 练习题用：点选项即投票；不显示改票撤票与刷新，投过票才显示比例
+    // 练习题用：投过票才显示比例，不显示未表态人数和撤票
     compact: { type: Boolean, value: false },
   },
   data: {
@@ -69,13 +69,14 @@ Component({
         return false;
       }
     },
+    // 点选项即投票；已经投的就是这一项时不重复提交，连不上服务或本轮未开放时只存本机
     choose(event) {
       const choice = event.currentTarget.dataset.choice;
       this.setData({ localChoice: choice, error: '' });
       this.remember();
       this.triggerEvent('answer', { choice });
       const { online, closed, mine } = this.data;
-      if (this.properties.compact && online && !closed && !(mine && mine.choice === choice))
+      if (online && !closed && !(mine && mine.choice === choice))
         this.request('vote', { vote: this.voteValue() });
     },
     // 票数只看全部参与者，不再按牌手类别分开统计
@@ -120,18 +121,13 @@ Component({
         // 投票整块收起，不把“选项已变化”这类用户做不了任何事的提示摆出来
         if (error.code === 'INVALID_VOTE')
           this.setData({ closed: true, stats: null, mine: null, busy: false });
-        // 练习题进页时读票失败不打扰作答；投票这类用户主动的操作失败仍要说清楚
-        else if (this.properties.compact && action === 'poll') this.setData({ busy: false });
+        // 进页时读票失败不打扰作答；投票这类用户主动的操作失败仍要说清楚
+        else if (action === 'poll') this.setData({ busy: false });
         else this.setData({ error: error.message, busy: false });
       }
     },
     refresh() {
       return this.request('poll');
-    },
-    submit() {
-      if (!this.data.localChoice) return;
-      this.remember();
-      return this.request('vote', { vote: this.voteValue() });
     },
     retract() {
       return this.request('vote', { retract: true });

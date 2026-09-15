@@ -38,20 +38,24 @@ Page({
       });
     }
   },
+  // 回到页面时静默刷新确认人数，不再单独放“刷新确认状态”；第一次进入已在 onLoad 读过
+  onShow() {
+    if (this.shown) this.refresh();
+    this.shown = true;
+  },
   onUnload() {
     this.disposed = true;
   },
+  // 约定自动存本机：每改一个选项就写入，不再单独放“保存本桌”
   change(event) {
     this.setData({
       [`values.${event.currentTarget.dataset.key}`]: Number(event.detail.value),
       dirty: true,
       agreement: null,
     });
+    this.persist();
   },
-  save() {
-    return this.persist(true);
-  },
-  persist(notify) {
+  persist() {
     try {
       table(this.data.values);
       const item = {
@@ -68,7 +72,6 @@ Page({
         );
       });
       this.setData({ history: state.tables });
-      if (notify) wx.showToast({ title: '约定已保存', icon: 'success' });
       return true;
     } catch (error) {
       ui.error(this, error);
@@ -87,6 +90,7 @@ Page({
       incoming: false,
       agreement: null,
     });
+    this.refresh();
   },
   newTable() {
     this.draftId = local.id();
@@ -98,10 +102,11 @@ Page({
       agreement: null,
       error: '',
     });
+    this.persist();
   },
   publish() {
     return ui.run(this, async () => {
-      if (!this.persist(false)) return;
+      if (!this.persist()) return;
       const result = await api.call('publish', {
         kind: 'table',
         draftId: this.draftId,
@@ -113,19 +118,25 @@ Page({
         dirty: false,
         agreement: null,
       });
-      if (this.persist(false)) wx.showToast({ title: '可分享给牌友', icon: 'success' });
+      if (this.persist()) wx.showToast({ title: '可以发给牌友', icon: 'success' });
     });
   },
+  // 静默读取最新确认人数：没分享、有没更新的改动、已撤回或正忙时不读；读不到就保持原样
   refresh() {
-    return ui.run(this, async () => {
-      const result = await api.call('getShare', { id: this.data.remote.id });
-      this.setData({
-        agreement: result.agreement,
-        remote: result,
-        values: result.content,
-        dirty: false,
-      });
-    });
+    const { remote, dirty, busy } = this.data;
+    if (!remote || dirty || remote.revoked || busy) return undefined;
+    return api
+      .call('getShare', { id: remote.id })
+      .then((result) => {
+        if (this.disposed) return;
+        this.setData({
+          agreement: result.agreement,
+          remote: result,
+          values: result.content,
+          dirty: false,
+        });
+      })
+      .catch(() => {});
   },
   agree() {
     return ui.run(this, async () => {
@@ -155,7 +166,7 @@ Page({
         remote: { ...this.data.remote, version: result.version, revoked: true },
         dirty: true,
       });
-      if (this.persist(false)) wx.showToast({ title: '已撤回', icon: 'success' });
+      if (this.persist()) wx.showToast({ title: '已撤回', icon: 'success' });
     });
   },
   copy() {

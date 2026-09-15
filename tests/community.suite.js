@@ -641,7 +641,7 @@ test('EDH hub keeps its new name, a lean passport entry and no tracker shortcut'
   assert.match(wxml, /<text class="title">EDH hub<\/text>/);
   assert.match(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'), /"navigationBarTitleText": "EDH hub"/);
   const mini = path.join(__dirname, '../miniprogram');
-  assert.match(fs.readFileSync(path.join(mini, 'pages/index/index.wxml'), 'utf8'), /<text>EDH hub<\/text>/);
+  assert.match(fs.readFileSync(path.join(mini, 'pages/index/index.wxml'), 'utf8'), /<text>EDH hub<\/text><text>名片 \/ 禁牌 \/ 条约 \/ 练习 →<\/text>/);
   const stale = [];
   const walk = (folder) =>
     fs.readdirSync(folder, { withFileTypes: true }).forEach((entry) => {
@@ -682,7 +682,7 @@ test('hands page stays lean: equal card boxes and a one-tap poll without extra c
   assert.match(js, /`\$\{index \+ 1\} \/ \$\{hands\.length\}　\$\{hand\.short\}`/);
 
   const pollWxml = read('miniprogram/community/components/poll/index.wxml');
-  assert.match(pollWxml, /<view wx:if="\{\{!compact && !closed\}\}" class="actions">[\s\S]*?bindtap="submit"/);
+  assert.doesNotMatch(pollWxml, /bindtap="submit"|刷新票数/);
   assert.match(pollWxml, /wx:if="\{\{stats && \(!compact \|\| localChoice\)\}\}"/, '练习题投过票才显示比例');
   assert.doesNotMatch(read('miniprogram/community/utils/api.js'), /投票选项已变化/);
 });
@@ -857,7 +857,8 @@ test('ban vote asks only for a stance and counts every player together', async (
     poll.choose({ currentTarget: { dataset: { choice: 'unban' } } });
     assert.equal(poll.data.error, '', '只存立场的本机表态能通过校验');
     assert.equal(poll.data.remembered, true);
-    await poll.submit();
+    await settle();
+    poll.choose({ currentTarget: { dataset: { choice: 'unban' } } });
     await settle();
     const votes = calls.filter((call) => call.action === 'vote');
     assert.equal(votes.length, 1);
@@ -878,7 +879,7 @@ test('ban vote asks only for a stance and counts every player together', async (
   }
 });
 
-// 三张牌认识你底部按用户要求精简：草稿自动存本机，去掉“保存到本机”；“生成分享名片”成功后原位变成“分享给牌友”，
+// 三张牌认识你底部按用户要求精简：草稿自动存本机，去掉“保存到本机”；“生成分享名片”成功后原位变成“发给牌友”，
 // “生成名片图片”生成后原位变成“保存到相册”；完整卡牌、只看卡画是标题行里的两个文字选项，不再单独占一行开关
 test('passport bottom keeps one share button, one image button and an inline image style choice', () => {
   const dir = path.join(__dirname, '../miniprogram/community/pages/passport');
@@ -887,7 +888,7 @@ test('passport bottom keeps one share button, one image button and an inline ima
   assert.doesNotMatch(wxml, /保存到本机|bindtap="save"|<switch|只展示卡画|feedback/);
   assert.match(
     wxml,
-    /wx:if="\{\{!shareReady\}\}"[^>]*bindtap="publish"[\s\S]*?生成分享名片[\s\S]*?wx:else[^>]*open-type="share"[\s\S]*?分享给牌友/,
+    /wx:if="\{\{!shareReady\}\}"[^>]*bindtap="publish"[\s\S]*?生成分享名片[\s\S]*?wx:else[^>]*open-type="share"[\s\S]*?发给牌友/,
   );
   assert.match(
     wxml,
@@ -962,7 +963,7 @@ test('passport bottom keeps one share button, one image button and an inline ima
 });
 
 // 用户反馈“停止分享”会让人诧异，像是有什么一直在进行。名片和对局约定都改叫“撤回分享链接”，颜色降到次要文字；
-// 名片页挪到页面最下面，不再紧挨“分享给牌友”；点了先弹窗说清旧链接会打不开，确认了才撤回
+// 名片页挪到页面最下面，不再紧挨“发给牌友”；点了先弹窗说清旧链接会打不开，确认了才撤回
 test('withdrawing a shared link says what it does, sits apart from sharing and asks first', () => {
   const root = path.join(__dirname, '../miniprogram/community');
   const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
@@ -1046,8 +1047,9 @@ test('EDH hub release sweep: dark bounce background, lean entry, labelled inputs
   assert.doesNotMatch(hub, /三张牌认识你|feature-title/);
   assert.doesNotMatch(read('pages/hub/index.wxss'), /feature-title/);
   assert.match(hub, /class="portrait-entry"[^>]*aria-label="我的三张牌"/);
-  assert.equal((hub.match(/<text class="entry-arrow" aria-hidden="true">↗<\/text>/g) || []).length, 2);
-  assert.match(read('pages/banlist/index.wxml'), /<text class="ban-arrow" aria-hidden="true">→<\/text>/);
+  assert.equal((hub.match(/<text class="entry-arrow" aria-hidden="true">›<\/text>/g) || []).length, 2);
+  assert.doesNotMatch(hub, /EDH \/ COMMANDER|↗/);
+  assert.match(read('pages/banlist/index.wxml'), /<text class="ban-arrow" aria-hidden="true">›<\/text>/);
   for (const [file, pattern] of [
     ['pages/passport/index.wxml', /placeholder="\{\{reasonHints\[index\]\}\}"\s+aria-label="\{\{item\}\}的短评"/],
     ['pages/banlist/index.wxml', /placeholder="搜索牌名，例如 Mana Crypt"\s+aria-label="搜索禁牌"/],
@@ -1067,6 +1069,99 @@ test('EDH hub release sweep: dark bounce background, lean entry, labelled inputs
   assert.match(read('pages/hands/index.wxml'), /class="card-tile hand-card"\s+hover-class="pressable-active"/);
   const fallback = read('pages/hands/index.wxss').match(/\.hand-card \.card-name\s*\{[^}]*\}/)[0];
   assert.match(fallback, /font-size:\s*10px/, '卡图缺失时的牌名不小于 10px');
+});
+
+// 用户选择按名片页的思路精简对局约定：改选项就自动存本机，去掉“保存本桌”；“生成分享 / 更新分享”与“发给牌友”共用一个位置；
+// 回到页面时静默刷新确认人数，去掉“刷新确认状态”。三个功能页的分享按钮统一叫“发给牌友”；禁牌投票点选项即投票，不再有投票和刷新按钮
+test('table agreement autosaves, keeps one share slot and refreshes confirmations quietly', async () => {
+  const root = path.join(__dirname, '../miniprogram/community');
+  const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+  const wxml = read('pages/table/index.wxml');
+  assert.doesNotMatch(wxml, /保存本桌|刷新确认状态|bindtap="save"|bindtap="refresh"/);
+  assert.match(
+    wxml,
+    /wx:if="\{\{!incoming && \(!remote \|\| dirty \|\| remote\.revoked\)\}\}"[^>]*bindtap="publish"[\s\S]*?wx:else[^>]*open-type="share"[^>]*>\s*发给牌友\s*</,
+  );
+  for (const page of ['passport', 'table', 'hands']) {
+    const markup = read(`pages/${page}/index.wxml`);
+    assert.doesNotMatch(markup, /分享给牌友/);
+    const shares = [...markup.matchAll(/<button[^>]*open-type="share"[^>]*>[\s\S]*?<\/button>/g)];
+    assert.ok(shares.length >= 1, `${page} 应有分享按钮`);
+    for (const [button] of shares) assert.match(button, />\s*发给牌友\s*</, `${page} 的分享按钮统一叫发给牌友`);
+  }
+  const pollWxml = read('components/poll/index.wxml');
+  assert.doesNotMatch(pollWxml, /bindtap="submit"|刷新票数/);
+  assert.match(pollWxml, /wx:if="\{\{!compact && mine && !closed\}\}"\s+class="link quiet-link"\s+bindtap="retract"/);
+
+  const filename = path.join(root, 'pages/table/index.js');
+  const saved = new Map();
+  const calls = [];
+  const previous = global.wx;
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  try {
+    global.wx = {
+      getStorageSync: (key) => saved.get(key) || '',
+      setStorageSync: (key, value) => saved.set(key, value),
+      showToast: () => {},
+      cloud: {
+        init() {},
+        callFunction: async ({ data }) => {
+          calls.push(data);
+          return {
+            result: {
+              ok: true,
+              data: {
+                kind: 'table',
+                id: data.id,
+                version: 2,
+                content: { level: 3, proxy: 0, combo: 0, turns: 0, time: 1 },
+                agreement: { count: 2, agreed: false },
+              },
+            },
+          };
+        },
+      },
+    };
+    let definition;
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Page: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+    });
+    const page = {
+      ...definition,
+      data: structuredClone(definition.data),
+      setData(value) {
+        for (const [key, next] of Object.entries(value)) {
+          const field = /^values\.(\w+)$/.exec(key);
+          if (field) this.data.values[field[1]] = next;
+          else this.data[key] = next;
+        }
+      },
+    };
+    const tables = () => (saved.get('playerStudio') ? saved.get('playerStudio').data.tables : []);
+    page.onLoad({});
+    page.onShow();
+    assert.equal(page.save, undefined, '不再有手动保存');
+    page.change({ currentTarget: { dataset: { key: 'level' } }, detail: { value: '3' } });
+    assert.equal(tables().length, 1, '改选项就存本机');
+    assert.equal(tables()[0].values.level, 3);
+    page.onShow();
+    await settle();
+    page.setData({ remote: { id: 'a'.repeat(64), version: 1, active: true }, dirty: true });
+    page.onShow();
+    await settle();
+    assert.equal(calls.length, 0, '没分享或有没更新的改动时不去读确认人数');
+    page.setData({ dirty: false });
+    page.onShow();
+    await settle();
+    assert.equal(calls.filter((call) => call.action === 'getShare').length, 1, '回到页面时读一次确认人数');
+    assert.equal(page.data.agreement.count, 2);
+  } finally {
+    global.wx = previous;
+  }
 });
 
 // 名片海报：暗色收藏档案 × 玩家批注。先认识玩家（署名字最大），再读三张牌（整张卡等比加投影、

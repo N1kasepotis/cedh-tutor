@@ -145,7 +145,7 @@ Page({
         remote: { id: result.id, version: result.version, active: true },
         shareReady: true,
       });
-      if (this.saveDraft()) wx.showToast({ title: '可分享给朋友', icon: 'success' });
+      if (this.saveDraft()) wx.showToast({ title: '可以发给牌友', icon: 'success' });
     });
   },
   // 撤回会让牌友手里的旧链接打不开：先说清后果，确认了才动手

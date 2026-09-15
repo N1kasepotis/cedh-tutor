@@ -111,7 +111,7 @@
         生成分享名片
       </button>
       <button hover-class="pressable-active" wx:else class="primary" open-type="share">
-        分享给牌友
+        发给牌友
       </button>
     </view>
     <view class="section">
