@@ -961,6 +961,74 @@ test('passport bottom keeps one share button, one image button and an inline ima
   }
 });
 
+// 用户反馈“停止分享”会让人诧异，像是有什么一直在进行。名片和对局约定都改叫“撤回分享链接”，颜色降到次要文字；
+// 名片页挪到页面最下面，不再紧挨“分享给牌友”；点了先弹窗说清旧链接会打不开，确认了才撤回
+test('withdrawing a shared link says what it does, sits apart from sharing and asks first', () => {
+  const root = path.join(__dirname, '../miniprogram/community');
+  const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+  const passportWxml = read('pages/passport/index.wxml');
+  const tableWxml = read('pages/table/index.wxml');
+  for (const markup of [passportWxml, tableWxml]) {
+    assert.doesNotMatch(markup, /停止分享/);
+    assert.match(markup, /class="link quiet-link"\s+bindtap="revoke"[^>]*>\s*撤回分享链接\s*</);
+  }
+  assert.ok(
+    passportWxml.indexOf('撤回分享链接') > passportWxml.indexOf('保存到相册'),
+    '名片页的撤回放在图片按钮之后，不紧挨分享按钮',
+  );
+  assert.match(
+    read('styles.wxss'),
+    /\.studio button\.link\.quiet-link:not\(\[size='mini'\]\)\s*\{\s*color: var\(--cedh-text-soft\);/,
+  );
+
+  const previous = global.wx;
+  try {
+    for (const page of ['passport', 'table']) {
+      const filename = path.join(root, `pages/${page}/index.js`);
+      const modals = [];
+      let answer = false;
+      global.wx = {
+        getStorageSync: () => '',
+        setStorageSync: () => {},
+        showToast: () => {},
+        showModal: (options) => {
+          modals.push(options);
+          options.success({ confirm: answer, cancel: !answer });
+        },
+      };
+      let definition;
+      vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+        Page: (value) => {
+          definition = value;
+        },
+        require: createRequire(filename),
+        wx: global.wx,
+      });
+      let withdrawn = 0;
+      const instance = {
+        ...definition,
+        data: structuredClone(definition.data),
+        setData(value) {
+          Object.assign(this.data, value);
+        },
+        withdraw() {
+          withdrawn += 1;
+        },
+      };
+      instance.revoke();
+      assert.equal(withdrawn, 0, `${page} 取消时不撤回`);
+      answer = true;
+      instance.revoke();
+      assert.equal(withdrawn, 1, `${page} 确认后才撤回`);
+      assert.equal(modals[0].title, '撤回分享链接');
+      assert.match(modals[0].content, /之前收到的链接会看不到/);
+      assert.equal(modals[0].confirmText, '撤回');
+    }
+  } finally {
+    global.wx = previous;
+  }
+});
+
 // 名片海报：暗色收藏档案 × 玩家批注。先认识玩家（署名字最大），再读三张牌（整张卡等比加投影、
 // 短评比牌名更大更亮、版本编号退到卡图下），最后在底部参与区接力（邀请语、小程序码、版权与画师）。
 // 顶部没有英文抬头和强调色短线，也不画色条、编号、标签和类别记号；文字只用暖灰层级。

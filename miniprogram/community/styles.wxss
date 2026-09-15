@@ -330,3 +330,7 @@ page {
   font-family: var(--cedh-font-mono);
   font-variant-numeric: tabular-nums;
 }
+/* 撤回分享链接这类少用、会让旧链接失效的操作：仍是文字链接，颜色降到次要文字，不和主操作抢眼 */
+.studio button.link.quiet-link:not([size='mini']) {
+  color: var(--cedh-text-soft);
+}

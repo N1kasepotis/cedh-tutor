@@ -148,14 +148,25 @@ Page({
       if (this.saveDraft()) wx.showToast({ title: '可分享给朋友', icon: 'success' });
     });
   },
+  // 撤回会让牌友手里的旧链接打不开：先说清后果，确认了才动手
   revoke() {
+    wx.showModal({
+      title: '撤回分享链接',
+      content: '牌友再打开之前收到的链接会看不到这张名片，本机草稿不受影响',
+      confirmText: '撤回',
+      success: (result) => {
+        if (result.confirm) this.withdraw();
+      },
+    });
+  },
+  withdraw() {
     return ui.run(this, async () => {
       const result = await api.call('revoke', { id: this.data.remote.id });
       this.setData({
         remote: { ...this.data.remote, version: result.version, active: false },
         shareReady: false,
       });
-      this.saveDraft();
+      if (this.saveDraft()) wx.showToast({ title: '已撤回', icon: 'success' });
     });
   },
   viewCard(event) {

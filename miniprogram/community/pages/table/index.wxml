@@ -72,11 +72,11 @@
     <button
       hover-class="pressable-active"
       wx:if="{{remote && !incoming && !remote.revoked}}"
-      class="link"
+      class="link quiet-link"
       bindtap="revoke"
       disabled="{{busy}}"
     >
-      停止分享
+      撤回分享链接
     </button>
     <view wx:if="{{!incoming && history.length}}" class="section">
       <view class="section-title">已存约定</view>
