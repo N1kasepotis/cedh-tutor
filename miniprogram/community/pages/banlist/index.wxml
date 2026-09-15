@@ -2,7 +2,7 @@
   <particle-background palette="tracker"></particle-background>
   <view class="content-layer">
     <view class="page-heading">
-      <text class="eyebrow">EDH 牌桌</text>
+      <text class="eyebrow">EDH hub</text>
       <text class="title">禁牌表</text>
       <view class="subtitle">Commander 禁牌与解禁投票</view>
     </view>

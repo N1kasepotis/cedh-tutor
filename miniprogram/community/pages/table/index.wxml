@@ -1,7 +1,7 @@
 <view class="studio">
   <particle-background palette="tracker"></particle-background>
   <view class="content-layer">
-    <text class="eyebrow">EDH 牌桌</text>
+    <text class="eyebrow">EDH hub</text>
     <text class="title">对局约定</text>
     <view class="subtitle">这桌怎么玩</view>
     <view wx:if="{{error}}" class="error">{{error}}</view>

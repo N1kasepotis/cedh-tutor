@@ -14,8 +14,8 @@ Page({
     reasons: ['', '', ''],
     picker: false,
     busy: false,
+    task: '',
     error: '',
-    feedback: '',
     remote: null,
     shareReady: false,
     friend: null,
@@ -26,6 +26,7 @@ Page({
   },
   onLoad(options) {
     this.disposed = false;
+    this.unsaved = false;
     this.draftId = local.id();
     try {
       this.loadDraft();
@@ -40,7 +41,12 @@ Page({
         if (!this.disposed) this.setData({ friend });
       });
   },
+  // 草稿自动存本机：选好牌、离开输入框和离开页面时写入，不再单独放保存按钮
+  onHide() {
+    this.persist();
+  },
   onUnload() {
+    this.persist();
     this.disposed = true;
   },
   loadDraft() {
@@ -59,25 +65,21 @@ Page({
       shareReady: Boolean(draft.remote && draft.remote.active && !draft.dirty),
       posterPath: '',
       error: '',
-      feedback: '',
     });
   },
+  edit(patch) {
+    this.unsaved = true;
+    this.setData({ ...patch, shareReady: false, posterPath: '' });
+  },
   nickname(event) {
-    this.setData({
-      nickname: event.detail.value,
-      feedback: '',
-      shareReady: false,
-      posterPath: '',
-    });
+    this.edit({ nickname: event.detail.value });
   },
   reason(event) {
     const index = Number(event.currentTarget.dataset.index);
-    this.setData({
-      [`reasons[${index}]`]: event.detail.value,
-      feedback: '',
-      shareReady: false,
-      posterPath: '',
-    });
+    this.edit({ [`reasons[${index}]`]: event.detail.value });
+  },
+  persist() {
+    if (this.unsaved && this.saveDraft()) this.unsaved = false;
   },
   choose(event) {
     this.slotIndex = Number(event.currentTarget.dataset.index);
@@ -88,12 +90,8 @@ Page({
     this.setData({ picker: false });
   },
   selected(event) {
-    this.setData({
-      [`slots[${this.slotIndex}]`]: event.detail,
-      feedback: '',
-      shareReady: false,
-      posterPath: '',
-    });
+    this.edit({ [`slots[${this.slotIndex}]`]: event.detail });
+    this.persist();
   },
   content() {
     return {
@@ -104,7 +102,7 @@ Page({
       ),
     };
   },
-  saveDraft(toast = true) {
+  saveDraft() {
     try {
       const content = this.content();
       local.update((state) => {
@@ -115,30 +113,27 @@ Page({
           dirty: !this.data.shareReady,
         };
       });
-      if (toast) {
-        this.setData({
-          error: '',
-          feedback: '已保存到本机，下次打开会保留这些选择',
-        });
-        wx.showToast({ title: '名片已保存', icon: 'success' });
-      }
       return true;
     } catch (error) {
       ui.error(this, error);
       return false;
     }
   },
-  save() {
-    this.saveDraft();
+  // 分享和生成图片各有自己的按钮：记下正在做哪件事，只让对应的按钮转圈
+  start(task, work) {
+    if (this.data.busy) return undefined;
+    this.setData({ task });
+    return ui.run(this, work);
   },
   publish() {
-    return ui.run(this, async () => {
+    return this.start('share', async () => {
       const content = this.content();
       if (content.slots.some((slot) => !slot))
         throw new Error('还差几张牌，选齐就能生成名片');
       domain.passport(content);
       // Persist the draft ID before publication so a lost response can be retried.
-      if (!this.saveDraft(false)) return;
+      if (!this.saveDraft()) return;
+      this.unsaved = false;
       const result = await api.call('publish', {
         kind: 'passport',
         draftId: this.draftId,
@@ -149,10 +144,8 @@ Page({
       this.setData({
         remote: { id: result.id, version: result.version, active: true },
         shareReady: true,
-        feedback: '名片已生成，可以分享给牌友',
       });
-      if (this.saveDraft(false))
-        wx.showToast({ title: '可分享给朋友', icon: 'success' });
+      if (this.saveDraft()) wx.showToast({ title: '可分享给朋友', icon: 'success' });
     });
   },
   revoke() {
@@ -162,7 +155,7 @@ Page({
         remote: { ...this.data.remote, version: result.version, active: false },
         shareReady: false,
       });
-      this.saveDraft(false);
+      this.saveDraft();
     });
   },
   viewCard(event) {
@@ -182,20 +175,17 @@ Page({
     });
   },
   mode(event) {
-    this.setData({ artOnly: event.detail.value, posterPath: '' });
+    const artOnly = Boolean(event.currentTarget.dataset.art);
+    if (artOnly !== this.data.artOnly) this.setData({ artOnly, posterPath: '' });
   },
   generatePoster() {
-    return ui.run(this, async () => {
+    return this.start('poster', async () => {
       const content = this.content();
       if (content.slots.some((slot) => !slot))
         throw new Error('还差几张牌，选齐就能生成名片');
       domain.passport(content);
       const path = await poster.render(this, content, this.data.artOnly);
-      if (!this.disposed)
-        this.setData({
-          posterPath: path,
-          feedback: '图片已生成，可以预览或存入相册',
-        });
+      if (!this.disposed) this.setData({ posterPath: path });
     });
   },
   previewPoster() {
@@ -229,7 +219,6 @@ Page({
       }),
     );
     wx.showToast({ title: '已存入相册', icon: 'success' });
-    if (!this.disposed) this.setData({ feedback: '已存入手机相册' });
   },
   agreePrivacy() {
     this.setData({ privacy: false });

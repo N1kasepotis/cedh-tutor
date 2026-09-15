@@ -90,7 +90,7 @@
   --cedh-line-strong: rgba(var(--module-accent-rgb), 0.38);
 }
 
-/* 玻璃面板：继承 tracker .deck-card 的顶部高光效果；EDH 牌桌分包（.studio / .picker-shell）共用同一条 */
+/* 玻璃面板：继承 tracker .deck-card 的顶部高光效果；EDH hub 分包（.studio / .picker-shell）共用同一条 */
 .studio .surface,
 .picker-shell .surface,
 .tracker .surface,
@@ -168,7 +168,7 @@
   --cedh-btn-secondary-shadow: 0 12rpx 30rpx rgba(0, 0, 0, 0.12), inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
 }
 
-/* EDH 牌桌沿用战绩页的金色强调，与共同暗色台面保持一致 */
+/* EDH hub 沿用战绩页的金色强调，与共同暗色台面保持一致 */
 .studio,
 .picker-shell {
   --cedh-accent: #cdb774;

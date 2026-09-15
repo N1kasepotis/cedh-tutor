@@ -5,19 +5,12 @@ Component({
   properties: {
     pollId: String,
     choices: Array,
-    // 练习题用：点选项即投票；不显示赛制、理由、改票撤票与刷新，投过票才显示比例
+    // 练习题用：点选项即投票；不显示改票撤票与刷新，投过票才显示比例
     compact: { type: Boolean, value: false },
   },
   data: {
     localChoice: '',
     remembered: false,
-    perspective: 0,
-    perspectives: ['不填写', '休闲 EDH', 'cEDH', '两者都玩'],
-    view: 0,
-    views: ['全部参与者', '休闲 EDH', 'cEDH', '两者都玩', '未填写'],
-    reason: 4,
-    reasons: ['强度', '套牌多样性', '对局体验', '玩法特色', '不填写'],
-    details: false,
     stats: null,
     rows: [],
     sample: 0,
@@ -48,14 +41,6 @@ Component({
         this.setData({
           localChoice: (stance && stance.choice) || '',
           remembered: Boolean(stance),
-          perspective: stance
-            ? ['unspecified', 'casual', 'competitive', 'both'].indexOf(stance.perspective)
-            : 0,
-          reason: stance
-            ? ['balance', 'diversity', 'experience', 'identity', 'unsure'].indexOf(
-                stance.reason,
-              )
-            : 4,
           stats: null,
           mine: null,
           rows: [],
@@ -68,16 +53,9 @@ Component({
       }
       if (api.available()) this.refresh();
     },
+    // 只交立场，牌手类别和补充说明都不再收集；服务端把缺省的类别记作未填写
     voteValue() {
-      return {
-        choice: this.data.localChoice,
-        perspective: ['unspecified', 'casual', 'competitive', 'both'][
-          this.data.perspective
-        ],
-        reason: ['balance', 'diversity', 'experience', 'identity', 'unsure'][
-          this.data.reason
-        ],
-      };
+      return { choice: this.data.localChoice };
     },
     remember() {
       try {
@@ -100,28 +78,9 @@ Component({
       if (this.properties.compact && online && !closed && !(mine && mine.choice === choice))
         this.request('vote', { vote: this.voteValue() });
     },
-    toggleDetails() {
-      this.setData({ details: !this.data.details });
-    },
-    perspective(event) {
-      this.setData({ perspective: Number(event.detail.value) });
-      if (this.data.localChoice) this.remember();
-    },
-    reason(event) {
-      this.setData({ reason: Number(event.detail.value) });
-      if (this.data.localChoice) this.remember();
-    },
-    filter(event) {
-      this.setData({ view: Number(event.detail.value) });
-      this.decorate();
-    },
+    // 票数只看全部参与者，不再按牌手类别分开统计
     decorate() {
-      const counts =
-        this.data.stats &&
-        (this.data.stats[
-          ['all', 'casual', 'competitive', 'both', 'unspecified'][this.data.view]
-        ] ||
-          {});
+      const counts = this.data.stats && (this.data.stats.all || {});
       if (!counts) return;
       const sample = Object.values(counts).reduce((sum, value) => sum + value, 0);
       const known = sample - (counts.unknown || 0);

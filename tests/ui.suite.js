@@ -613,7 +613,7 @@ test('home removes particles while other interfaces retain theme-matched particl
     );
     assert.ok(particleConfig.palettes && particleConfig.palettes[palette], `${palette} palette 应在 config/particle.js 收录`);
   });
-  // 竞逐时空与 EDH 牌桌是后来接回粒子的页面。画布是 position: fixed + z-index: 0，
+  // 竞逐时空与 EDH hub 是后来接回粒子的页面。画布是 position: fixed + z-index: 0，
   // 正文若不包进 content-layer，非定位内容会画在画布下面，点击也会落到画布上
   paletteMounts
     .filter(([file]) => /planechase|community/.test(file))

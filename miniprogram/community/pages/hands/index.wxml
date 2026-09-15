@@ -1,7 +1,7 @@
 <view class="studio">
   <particle-background palette="tracker"></particle-background>
   <view class="content-layer">
-    <text class="eyebrow">EDH 牌桌</text>
+    <text class="eyebrow">EDH hub</text>
     <text class="title">这手留不留</text>
     <picker range="{{labels}}" value="{{index}}" bindchange="select">
       <view class="panel surface row between">

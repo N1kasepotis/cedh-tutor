@@ -1,7 +1,7 @@
 <view class="studio">
   <particle-background palette="tracker"></particle-background>
   <view class="content-layer">
-    <text class="eyebrow">EDH 牌桌</text>
+    <text class="eyebrow">EDH hub</text>
     <text class="title">三张牌认识你</text>
     <view wx:if="{{friend}}" class="section">
       <view class="section-title">{{friend.content.nickname ? friend.content.nickname + ' 的三张牌' : '牌友的三张牌'}}</view>
@@ -38,6 +38,7 @@
       placeholder="牌桌上大家怎么叫你，不填也行"
       value="{{nickname}}"
       bindinput="nickname"
+      bindblur="persist"
       maxlength="20"
       disabled="{{busy}}"
     />
@@ -92,27 +93,23 @@
         value="{{reasons[index]}}"
         data-index="{{index}}"
         bindinput="reason"
+        bindblur="persist"
         disabled="{{busy}}"
       />
     </view>
     <view wx:if="{{error}}" class="error" role="alert">{{error}}</view>
-    <view wx:if="{{feedback}}" class="notice" role="status">{{feedback}}</view>
     <view class="actions">
-      <button hover-class="pressable-active" bindtap="save" disabled="{{busy}}">
-        保存到本机
-      </button>
       <button
         hover-class="pressable-active"
+        wx:if="{{!shareReady}}"
         class="primary"
         bindtap="publish"
-        loading="{{busy}}"
+        loading="{{busy && task === 'share'}}"
         disabled="{{busy}}"
       >
         生成分享名片
       </button>
-    </view>
-    <view wx:if="{{shareReady}}" class="actions">
-      <button hover-class="pressable-active" class="primary" open-type="share">
+      <button hover-class="pressable-active" wx:else class="primary" open-type="share">
         分享给牌友
       </button>
     </view>
@@ -126,26 +123,47 @@
       停止分享
     </button>
     <view class="section">
-      <view class="section-title">名片海报</view>
       <view class="row between">
-        <text class="muted">只展示卡画</text>
-        <switch checked="{{artOnly}}" bindchange="mode" color="#cdb774" />
+        <text class="section-title poster-title">名片图片</text>
+        <view class="mode-toggle">
+          <text
+            class="mode-option {{artOnly ? '' : 'mode-on'}}"
+            aria-role="button"
+            aria-label="名片图片用完整卡牌"
+            data-art="{{false}}"
+            bindtap="mode"
+          >完整卡牌</text>
+          <text
+            class="mode-option {{artOnly ? 'mode-on' : ''}}"
+            aria-role="button"
+            aria-label="名片图片只看卡画"
+            data-art="{{true}}"
+            bindtap="mode"
+          >只看卡画</text>
+        </view>
       </view>
-      <button hover-class="pressable-active" bindtap="generatePoster" disabled="{{busy}}" loading="{{busy}}">
-        {{busy ? '正在处理' : '生成名片图片'}}
-      </button>
-    </view>
-    <view wx:if="{{posterPath}}">
       <image
         lazy-load
+        wx:if="{{posterPath}}"
         class="poster-preview"
         src="{{posterPath}}"
         mode="widthFix"
         bindtap="previewPoster"
       />
-      <button hover-class="pressable-active" bindtap="saveImage" disabled="{{busy}}">
-        保存到相册
-      </button>
+      <view class="actions">
+        <button
+          hover-class="pressable-active"
+          wx:if="{{!posterPath}}"
+          bindtap="generatePoster"
+          loading="{{busy && task === 'poster'}}"
+          disabled="{{busy}}"
+        >
+          生成名片图片
+        </button>
+        <button hover-class="pressable-active" wx:else bindtap="saveImage" disabled="{{busy}}">
+          保存到相册
+        </button>
+      </view>
     </view>
     <canvas id="passport-poster" type="2d" class="poster-canvas" />
     <view class="credit">

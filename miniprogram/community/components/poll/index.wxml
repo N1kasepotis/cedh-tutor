@@ -13,29 +13,6 @@
       {{item.label}}
     </button>
   </view>
-  <block wx:if="{{!compact && !closed}}">
-    <button hover-class="pressable-active" class="link" bindtap="toggleDetails">
-      {{details ? '收起补充信息' : '补充投票信息（选填）'}}
-    </button>
-    <view wx:if="{{details}}" class="row wrap">
-      <picker
-        range="{{perspectives}}"
-        value="{{perspective}}"
-        bindchange="perspective"
-        disabled="{{busy}}"
-      >
-        <view class="notice">平时玩：{{perspectives[perspective]}} ▾</view>
-      </picker>
-      <picker
-        range="{{reasons}}"
-        value="{{reason}}"
-        bindchange="reason"
-        disabled="{{busy}}"
-      >
-        <view class="notice">理由：{{reasons[reason]}} ▾</view>
-      </picker>
-    </view>
-  </block>
   <view wx:if="{{error}}" class="error">{{error}}</view>
   <view wx:if="{{!compact && !closed}}" class="actions">
     <button
@@ -59,12 +36,7 @@
   <view wx:if="{{!compact && !online}}" class="notice">当前无法连接投票服务，可先保存选择</view>
   <view wx:if="{{!compact && online && closed}}" class="notice">这一轮投票暂未开放，可先保存选择</view>
   <view wx:if="{{stats && (!compact || localChoice)}}" class="section">
-    <view class="row between">
-      <text class="section-title">牌手投票</text>
-      <picker wx:if="{{!compact}}" range="{{views}}" value="{{view}}" bindchange="filter">
-        <view class="notice">{{views[view]}} ▾</view>
-      </picker>
-    </view>
+    <view class="section-title">牌手投票</view>
     <view class="metadata muted">
       <text>{{sample}} 人参与</text>
       <text wx:if="{{!compact}}">{{unknown}} 人未表态</text>

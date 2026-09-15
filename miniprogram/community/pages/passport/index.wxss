@@ -109,3 +109,24 @@
 .slot-hint {
   font-size: 13px;
 }
+
+/* 名片图片的两种样式挂在标题同一行，做成两个文字选项，不再单独占一行开关 */
+.poster-title {
+  margin-bottom: 0;
+}
+.mode-toggle {
+  display: flex;
+  flex-shrink: 0;
+}
+.mode-option {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  padding: 0 14rpx;
+  font-size: 14px;
+  color: var(--cedh-text-soft);
+}
+.mode-option.mode-on {
+  color: var(--cedh-accent-ink);
+  font-weight: 600;
+}

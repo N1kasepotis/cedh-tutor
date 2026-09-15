@@ -28,11 +28,12 @@ function valid(value) {
           entry.slots.length === 3 &&
           entry.slots.every((slot) => slot === null || validCard(slot)),
       ) &&
+      // 新表态只存立场，不再带牌手类别；旧表态里填过的类别仍然合法
       Object.values(value.stances).every(
         (vote) =>
           vote &&
           ['keep', 'unban', 'mull', 'unknown'].includes(vote.choice) &&
-          VIEWS.includes(vote.perspective),
+          (vote.perspective === undefined || VIEWS.includes(vote.perspective)),
       ) &&
       value.tables.every(
         (entry) => entry && typeof entry.id === 'string' && Boolean(table(entry.values)),

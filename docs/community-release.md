@@ -1,4 +1,4 @@
-# EDH 牌桌：实现与交付契约
+# EDH hub：实现与交付契约
 
 ## 产品边界
 
@@ -128,3 +128,7 @@ Commander 禁表核对于 2026-09-09，包含 42 张全面禁用牌及 Lutri 的
 ## 2026-09-14 名片标签撤回
 
 上一版契约加过玩家自选标签 `tags`，一直没有部署。用户随后要求去掉标签：`miniprogram/community/shared/contracts.js` 与 `cloudfunctions/community/contracts.js` 恢复到加标签之前的名片字段，与线上 `5410fdd` 的 `passport()` 一致，不需要为此重新部署 `community`。
+
+## 2026-09-15 投票字段与名片草稿
+
+禁牌表与练习题的投票客户端只提交立场，不再发送牌手类别和理由。`contracts.js` 的 `ballot()` 对缺省类别记作 unspecified、缺省理由记作 unsure，线上 `5410fdd` 已经支持，不需要重新部署；本机表态校验放宽为类别可以缺省。名片草稿改为自动保存，写入的仍是原来“保存到本机”的同一份玩家名片草稿。

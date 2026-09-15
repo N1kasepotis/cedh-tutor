@@ -3,7 +3,7 @@
   <view class="content-layer">
     <view class="page-heading">
       <text class="eyebrow">EDH / COMMANDER</text>
-      <text class="title">EDH 牌桌</text>
+      <text class="title">EDH hub</text>
     </view>
     <view wx:if="{{error}}" class="error">{{error}}</view>
     <button

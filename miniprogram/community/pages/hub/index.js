@@ -59,7 +59,7 @@ Page({
   },
   onShareAppMessage() {
     return {
-      title: 'EDH 牌桌：分享你的三张牌',
+      title: 'EDH hub：分享你的三张牌',
       path: '/community/pages/hub/index',
     };
   },

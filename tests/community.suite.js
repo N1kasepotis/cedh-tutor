@@ -57,13 +57,14 @@ test('unavailable tracker data does not prevent initializing and saving a player
     assert.equal(page.data.deckOptions, undefined);
     assert.equal(typeof page.draftId, 'string');
     assert.equal(page.data.error, '');
-    page.save();
+    page.nickname({ detail: { value: '牌友' } });
+    page.persist();
     assert.equal(page.data.error, '');
     assert.equal(
       saved.get('playerStudio').data.passports.player.id,
       page.draftId,
     );
-    assert.match(page.data.feedback, /已保存到本机/);
+    assert.equal(saved.get('playerStudio').data.passports.player.nickname, '牌友');
   } finally {
     global.wx = previous;
   }
@@ -532,7 +533,7 @@ test('postgame reviews survive tracker load, save and export without changing le
 // 六页的文字面板和输入框沿用功能页的玻璃层：面板挂 .surface，吃 dark-table 那条顶部高光
 // 与柔和投影；输入框用 input-glass + hairline + radius token。赛后一分钟的输入框在 tracker
 // 页里，同样换成玻璃底，不再是一块不透明的深色。
-test('EDH 牌桌 panels and text fields reuse the shared glass surface', () => {
+test('EDH hub panels and text fields reuse the shared glass surface', () => {
   const read = (file) => fs.readFileSync(path.join(__dirname, '..', file), 'utf8');
   const glass = read('miniprogram/styles/themes/dark-table.wxss').match(
     /([^{}]*)\{\s*box-shadow: var\(--cedh-shadow-soft\), inset 0 1rpx 0 rgba\(255, 255, 255, 0\.72\);\s*\}/,
@@ -627,8 +628,8 @@ test('hands page shows seat, stage and the cited verdict with a copyable source 
 });
 
 // 入口页按用户要求精简：三张牌入口不写三类选牌说明、不留“编辑我的名片 →”一行，
-// 对局约定的标签叫“条约”，也不再从这里跳去战绩页复盘
-test('EDH 牌桌 hub keeps the passport entry lean and has no tracker shortcut', () => {
+// 对局约定的标签叫“条约”，也不再从这里跳去战绩页复盘；分区名按用户要求从“EDH 牌桌”改为“EDH hub”
+test('EDH hub keeps its new name, a lean passport entry and no tracker shortcut', () => {
   const dir = path.join(__dirname, '../miniprogram/community/pages/hub');
   const wxml = fs.readFileSync(path.join(dir, 'index.wxml'), 'utf8');
   const js = fs.readFileSync(path.join(dir, 'index.js'), 'utf8');
@@ -637,6 +638,20 @@ test('EDH 牌桌 hub keeps the passport entry lean and has no tracker shortcut',
   assert.doesNotMatch(js, /pages\/tracker\/tracker/);
   assert.match(js, /id: 'table',[\s\S]*?tag: '条约'/);
   assert.doesNotMatch(js, /'开局'/);
+  assert.match(wxml, /<text class="title">EDH hub<\/text>/);
+  assert.match(fs.readFileSync(path.join(dir, 'index.json'), 'utf8'), /"navigationBarTitleText": "EDH hub"/);
+  const mini = path.join(__dirname, '../miniprogram');
+  assert.match(fs.readFileSync(path.join(mini, 'pages/index/index.wxml'), 'utf8'), /<text>EDH hub<\/text>/);
+  const stale = [];
+  const walk = (folder) =>
+    fs.readdirSync(folder, { withFileTypes: true }).forEach((entry) => {
+      const full = path.join(folder, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else if (/\.(wxml|wxss|js|json)$/.test(entry.name) && fs.readFileSync(full, 'utf8').includes('EDH 牌桌'))
+        stale.push(path.relative(mini, full));
+    });
+  walk(mini);
+  assert.deepEqual(stale, [], '这些文件还在用旧名');
 });
 
 // 这手留不留按用户要求精简：七张牌格同宽同高；投票只有一步，不显示赛制、理由、改票撤票与刷新，
@@ -667,7 +682,6 @@ test('hands page stays lean: equal card boxes and a one-tap poll without extra c
   assert.match(js, /`\$\{index \+ 1\} \/ \$\{hands\.length\}　\$\{hand\.short\}`/);
 
   const pollWxml = read('miniprogram/community/components/poll/index.wxml');
-  assert.match(pollWxml, /<block wx:if="\{\{!compact && !closed\}\}">[\s\S]*?bindtap="toggleDetails"/);
   assert.match(pollWxml, /<view wx:if="\{\{!compact && !closed\}\}" class="actions">[\s\S]*?bindtap="submit"/);
   assert.match(pollWxml, /wx:if="\{\{stats && \(!compact \|\| localChoice\)\}\}"/, '练习题投过票才显示比例');
   assert.doesNotMatch(read('miniprogram/community/utils/api.js'), /投票选项已变化/);
@@ -758,6 +772,190 @@ test('compact poll votes in one tap and goes quiet when the server does not know
     tap('mull');
     await settle();
     assert.equal(votes().length, 1, '重复点同一个选项不重复投票');
+  } finally {
+    global.wx = previous;
+  }
+});
+
+// 禁牌表投票不再区分休闲、竞技这类牌手类别，也不收补充说明：只交立场，票数只看全部参与者；
+// 本机旧表态里填过的类别照样能读
+test('ban vote asks only for a stance and counts every player together', async () => {
+  const filename = path.resolve(__dirname, '../miniprogram/community/components/poll/index.js');
+  const markup = fs.readFileSync(
+    path.join(__dirname, '../miniprogram/community/components/poll/index.wxml'),
+    'utf8',
+  );
+  assert.doesNotMatch(
+    markup + fs.readFileSync(filename, 'utf8'),
+    /perspective|views|<picker|toggleDetails|补充投票信息|休闲 EDH|两者都玩|理由/,
+  );
+  const previous = global.wx;
+  const stored = new Map();
+  const calls = [];
+  let definition;
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  try {
+    global.wx = {
+      getStorageSync: (key) => (stored.has(key) ? stored.get(key) : ''),
+      setStorageSync: (key, value) => stored.set(key, value),
+      cloud: {
+        init() {},
+        callFunction: async ({ data }) => {
+          calls.push(data);
+          return {
+            result: {
+              ok: true,
+              data: {
+                counts: {
+                  all: { keep: 2, unban: 1, unknown: 1 },
+                  casual: { keep: 2, unban: 0, unknown: 0 },
+                  competitive: { keep: 0, unban: 1, unknown: 0 },
+                },
+                mine: data.vote || null,
+                updatedAt: 1,
+              },
+            },
+          };
+        },
+      },
+    };
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Component: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+    });
+    const poll = {
+      ...definition.methods,
+      properties: {
+        pollId: 'ban:test-card',
+        choices: [
+          { id: 'keep', label: '维持禁用' },
+          { id: 'unban', label: '解禁' },
+          { id: 'unknown', label: '不了解' },
+        ],
+        compact: false,
+      },
+      data: structuredClone(definition.data),
+      setData(value) {
+        Object.assign(this.data, value);
+      },
+      triggerEvent() {},
+    };
+    poll.loadPoll();
+    await settle();
+    assert.equal(poll.data.sample, 4);
+    assert.deepEqual(
+      Array.from(poll.data.rows, (row) => [row.id, row.count, row.percent]),
+      [
+        ['keep', 2, 67],
+        ['unban', 1, 33],
+      ],
+      '票数只看全部参与者',
+    );
+    poll.choose({ currentTarget: { dataset: { choice: 'unban' } } });
+    assert.equal(poll.data.error, '', '只存立场的本机表态能通过校验');
+    assert.equal(poll.data.remembered, true);
+    await poll.submit();
+    await settle();
+    const votes = calls.filter((call) => call.action === 'vote');
+    assert.equal(votes.length, 1);
+    assert.deepEqual({ ...votes[0].vote }, { choice: 'unban' }, '投票只交立场');
+
+    // 旧版本存下的表态带着牌手类别和补充说明，照样能读回来
+    stored.get('playerStudio').data.stances['ban:test-card'] = {
+      choice: 'keep',
+      perspective: 'competitive',
+      reason: 'balance',
+    };
+    poll.loadPoll();
+    await settle();
+    assert.equal(poll.data.localChoice, 'keep');
+    assert.equal(poll.data.error, '');
+  } finally {
+    global.wx = previous;
+  }
+});
+
+// 三张牌认识你底部按用户要求精简：草稿自动存本机，去掉“保存到本机”；“生成分享名片”成功后原位变成“分享给牌友”，
+// “生成名片图片”生成后原位变成“保存到相册”；完整卡牌、只看卡画是标题行里的两个文字选项，不再单独占一行开关
+test('passport bottom keeps one share button, one image button and an inline image style choice', () => {
+  const dir = path.join(__dirname, '../miniprogram/community/pages/passport');
+  const wxml = fs.readFileSync(path.join(dir, 'index.wxml'), 'utf8');
+  const wxss = fs.readFileSync(path.join(dir, 'index.wxss'), 'utf8');
+  assert.doesNotMatch(wxml, /保存到本机|bindtap="save"|<switch|只展示卡画|feedback/);
+  assert.match(
+    wxml,
+    /wx:if="\{\{!shareReady\}\}"[^>]*bindtap="publish"[\s\S]*?生成分享名片[\s\S]*?wx:else[^>]*open-type="share"[\s\S]*?分享给牌友/,
+  );
+  assert.match(
+    wxml,
+    /wx:if="\{\{!posterPath\}\}"[^>]*bindtap="generatePoster"[\s\S]*?生成名片图片[\s\S]*?wx:else[^>]*bindtap="saveImage"[\s\S]*?保存到相册/,
+  );
+  assert.match(wxml, /loading="\{\{busy && task === 'share'\}\}"/);
+  assert.match(wxml, /loading="\{\{busy && task === 'poster'\}\}"/);
+  assert.match(wxml, /class="mode-option \{\{artOnly \? '' : 'mode-on'\}\}"[^>]*bindtap="mode"[^>]*>完整卡牌</);
+  assert.match(wxml, /class="mode-option \{\{artOnly \? 'mode-on' : ''\}\}"[^>]*bindtap="mode"[^>]*>只看卡画</);
+  assert.match(wxss, /\.mode-option\s*\{[^}]*min-height:\s*44px/, '文字选项保留 44px 热区');
+  assert.equal((wxml.match(/bindblur="persist"/g) || []).length, 2, '署名和短评离开输入框时存本机');
+
+  const filename = path.join(dir, 'index.js');
+  const saved = new Map();
+  const previous = global.wx;
+  try {
+    global.wx = {
+      getStorageSync: (key) => saved.get(key) || '',
+      setStorageSync: (key, value) => saved.set(key, value),
+      showToast: () => {},
+    };
+    let definition;
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Page: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+    });
+    const page = {
+      ...definition,
+      data: structuredClone(definition.data),
+      setData(value) {
+        for (const [key, next] of Object.entries(value)) {
+          const item = /^(\w+)\[(\d+)\]$/.exec(key);
+          if (item) this.data[item[1]][Number(item[2])] = next;
+          else this.data[key] = next;
+        }
+      },
+    };
+    const draft = () =>
+      saved.get('playerStudio') ? saved.get('playerStudio').data.passports.player : null;
+    page.onLoad({});
+    assert.equal(page.save, undefined, '不再有手动保存');
+    page.slotIndex = 0;
+    page.selected({
+      detail: {
+        printId: '00000000-0000-0000-0000-000000000001',
+        name: 'Sol Ring',
+        displayName: 'Sol Ring',
+        lang: 'en',
+        set: 'msc',
+        number: '211',
+      },
+    });
+    assert.equal(draft().slots[0].name, 'Sol Ring', '选好牌立刻存本机');
+    page.reason({ currentTarget: { dataset: { index: '0' } }, detail: { value: '每局都想第一回合放下' } });
+    assert.equal(draft().slots[0].reason, '', '打字时不反复写存储');
+    page.persist();
+    assert.equal(draft().slots[0].reason, '每局都想第一回合放下', '离开输入框时存本机');
+    page.nickname({ detail: { value: '周末指挥官' } });
+    page.onHide();
+    assert.equal(draft().nickname, '周末指挥官', '离开页面时存本机');
+    page.setData({ posterPath: 'poster.png' });
+    page.mode({ currentTarget: { dataset: { art: false } } });
+    assert.equal(page.data.posterPath, 'poster.png', '点当前样式不丢掉已生成的图片');
+    page.mode({ currentTarget: { dataset: { art: true } } });
+    assert.deepEqual([page.data.artOnly, page.data.posterPath], [true, ''], '换样式后重新生成');
   } finally {
     global.wx = previous;
   }
