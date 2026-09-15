@@ -1,10 +1,9 @@
-const { SLOT_LABELS, tagLabels } = require('../shared/contracts');
+const { SLOT_LABELS } = require('../shared/contracts');
 
 // 暗色收藏档案 × 玩家批注。阅读顺序是认识玩家 → 读三张牌 → 在底部接力分享：
 // 署名是全图最大的字；每段里短评比牌名更大、更亮，版本、编号和语言退成卡图下的收藏注释。
-// 微暖墨黑底上撒一层固定种子的印刷颗粒，三段之间只用细线分隔，不画圆角面板、色条和编号。
-// 强调色取自“最喜欢的设计”那张卡画并压低饱和度，只画标题下的短线和三类选牌前的小记号。
-// 标签只画玩家自己选的，不根据所选卡牌替玩家下判断。
+// 微暖墨黑底上撒一层固定种子的印刷颗粒，三段之间只用细线分隔；不画圆角面板、色条、编号、标签和类别记号。
+// 强调色取自“最喜欢的设计”那张卡画并压低饱和度，只画标题下的一截短线。
 const WIDTH = 900;
 const MARGIN = 64;
 const MINI_PROGRAM_CODE = '/assets/cT_logo_v.2.jpg';
@@ -18,7 +17,6 @@ const INVITATION = '这是我看待万智牌的方式，你呢？';
 const COLORS = {
   field: '#110F0C',
   line: '#2C2822',
-  chip: '#4A443B',
   display: '#F4EEE4',
   reason: '#ECE5D9',
   name: '#CEC6B9',
@@ -290,27 +288,6 @@ function hairline(ctx, y) {
   ctx.fillStyle = COLORS.line;
   ctx.fillRect(MARGIN, y, WIDTH - MARGIN * 2, 1);
 }
-// 三类选牌共用同一套骨架，只换标签前的小记号：设计是圆点，打法是菱形，妙妙牌是四角星
-function mark(ctx, index, x, y, color) {
-  ctx.fillStyle = color;
-  ctx.beginPath();
-  if (index === 0) {
-    ctx.arc(x, y, 5, 0, Math.PI * 2);
-  } else if (index === 1) {
-    ctx.moveTo(x, y - 7);
-    ctx.lineTo(x + 7, y);
-    ctx.lineTo(x, y + 7);
-    ctx.lineTo(x - 7, y);
-  } else {
-    ctx.moveTo(x, y - 8);
-    ctx.quadraticCurveTo(x, y, x + 8, y);
-    ctx.quadraticCurveTo(x, y, x, y + 8);
-    ctx.quadraticCurveTo(x, y, x - 8, y);
-    ctx.quadraticCurveTo(x, y, x, y - 8);
-  }
-  ctx.closePath();
-  ctx.fill();
-}
 function planHeader(ctx, passport) {
   const title = fit(ctx, passport.nickname || '我的三张牌', WIDTH - MARGIN * 2, 76, 2, {
     weight: '600',
@@ -325,24 +302,7 @@ function planHeader(ctx, passport) {
     subtitleY = bottom + 44;
     bottom = subtitleY + 8;
   }
-  const chips = [];
-  const labels = tagLabels(passport.tags);
-  if (labels.length) {
-    ctx.font = font(20);
-    let x = MARGIN;
-    let y = bottom + 30;
-    labels.forEach((label) => {
-      const width = Math.ceil(ctx.measureText(label).width) + 32;
-      if (x > MARGIN && x + width > WIDTH - MARGIN) {
-        x = MARGIN;
-        y += 54;
-      }
-      chips.push({ label, x, y, width });
-      x += width + 12;
-    });
-    bottom = y + 42;
-  }
-  return { title, titleY, subtitleY, chips, ruleY: bottom + 40 };
+  return { title, titleY, subtitleY, ruleY: bottom + 40 };
 }
 function planSlot(ctx, slot, img, top) {
   const cardHeight = Math.round((img.height / img.width) * CARD_WIDTH);
@@ -425,33 +385,23 @@ function paintHeader(ctx, header, accent) {
     ctx.font = font(28);
     ctx.fillText('三张牌认识我', MARGIN, header.subtitleY);
   }
-  header.chips.forEach((chip) => {
-    ctx.strokeStyle = COLORS.chip;
-    ctx.lineWidth = 1;
-    roundedRect(ctx, chip.x + 0.5, chip.y + 0.5, chip.width - 1, 41, 4);
-    ctx.stroke();
-    ctx.fillStyle = COLORS.body;
-    ctx.font = font(20);
-    ctx.fillText(chip.label, chip.x + 16, chip.y + 28);
-  });
   hairline(ctx, header.ruleY);
   ctx.fillStyle = accent;
   ctx.fillRect(MARGIN, header.ruleY - 1, 44, 3);
 }
-function paintSlot(ctx, slot, plan, index, accent) {
-  mark(ctx, index, TEXT_X + 7, plan.labelY - 7, accent);
+function paintSlot(ctx, slot, plan, index) {
   ctx.fillStyle = COLORS.meta;
   ctx.font = font(20);
-  tracked(ctx, SLOT_LABELS[index], TEXT_X + 26, plan.labelY, 2);
+  tracked(ctx, SLOT_LABELS[index], TEXT_X, plan.labelY, 2);
   paintLines(ctx, plan.name, TEXT_X, plan.nameY, COLORS.name);
   if (plan.english) paintLines(ctx, plan.english, TEXT_X, plan.englishY, COLORS.meta);
   if (plan.reason) paintLines(ctx, plan.reason, TEXT_X, plan.reasonY, COLORS.reason);
-  // 收藏注释：版本、编号和语言用等宽小字写在卡图下方
+  // 收藏注释：版本、编号和语言用等宽小字写在卡图下方，语言前用斜线隔开
   ctx.fillStyle = COLORS.faint;
   ctx.font = font(16, 'normal', 'monospace');
   tracked(
     ctx,
-    `${String(slot.set || '').toUpperCase()} #${slot.number || ''} · ${String(slot.lang || '').toUpperCase()}`,
+    `${String(slot.set || '').toUpperCase()} #${slot.number || ''} / ${String(slot.lang || '').toUpperCase()}`,
     MARGIN,
     plan.noteY,
     1,
@@ -542,7 +492,7 @@ async function render(page, passport, artOnly) {
   paintHeader(ctx, header, accent);
   modules.forEach((plan, index) => {
     if (index) hairline(ctx, plan.top - MODULE_GAP / 2);
-    paintSlot(ctx, passport.slots[index], plan, index, accent);
+    paintSlot(ctx, passport.slots[index], plan, index);
   });
   paintFooter(ctx, footer, code);
   return boundedTask(10000, '图片导出超时，请重试', (resolve, reject) =>

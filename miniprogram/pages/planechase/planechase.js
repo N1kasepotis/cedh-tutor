@@ -136,7 +136,7 @@ Page({
       rollCost: P.rollCost(game), dieFace: roll ? roll.face : 'idle',
       dieLabel: roll ? FACE_LABELS[roll.face] : '尚未掷骰', dieModified: Boolean(roll && roll.modified),
       // 旧存档也移除装饰分隔点；只调整显示，不重写对局。
-      lastAction: session.lastAction.replace(/ · /g, '，'), canUndo: Boolean(session.undo),
+      lastAction: session.lastAction.replace(/ \u00b7 /g, '，'), canUndo: Boolean(session.undo),
       modifierOn: game.dieModifier === 'blankIsChaos',
       tableNotes: session.tableNotes,
       trimmedText: game.trimmed.length ? `本局移出：${game.trimmed.join('、')}` : '',

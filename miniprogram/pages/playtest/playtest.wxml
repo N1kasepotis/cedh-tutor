@@ -169,7 +169,7 @@
     <view class="zone-panel-mask" wx:if="{{panelZone}}" aria-role="button" aria-label="关闭面板" bindtap="closeZone"></view>
     <view class="zone-panel {{panelZone === 'library' ? 'zone-panel-centered' : ''}}" wx:if="{{panelZone}}">
       <view class="zone-panel-head">
-        <view class="zone-panel-title">{{panelTitle}} · {{panelCards.length}}</view>
+        <view class="zone-panel-title">{{panelTitle}}　{{panelCards.length}}</view>
         <view class="zone-panel-actions">
           <view wx:if="{{panelZone === 'library'}}" class="text-button {{revealTop ? 'reveal-toggle-on' : ''}}" aria-role="button" bindtap="toggleRevealTop">{{revealTop ? '隐藏库顶' : '展示库顶'}}</view>
           <view wx:if="{{panelZone === 'library'}}" class="text-button" aria-role="button" bindtap="shuffleLibrary">洗牌</view>
@@ -203,7 +203,7 @@
           hover-class="pressable-active"
           hover-stay-time="120"
           bindtap="loadMorePanelCards"
-        >加载更多 · {{panelCards.length}} / {{panelTotal}}</view>
+        >加载更多　{{panelCards.length}} / {{panelTotal}}</view>
       </scroll-view>
     </view>
 

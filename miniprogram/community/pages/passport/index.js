@@ -3,28 +3,11 @@ const api = require('../../utils/api');
 const ui = require('../../utils/page');
 const domain = require('../../shared/contracts');
 const poster = require('../../utils/poster');
-// 标签由玩家自己挑，每一项都可以不填；本机草稿里的标签坏了就当没选，不挡住名片打开
-function tagIndexes(tags) {
-  let clean = {};
-  try {
-    clean = domain.passportTags(tags);
-  } catch (_) {
-    clean = {};
-  }
-  return domain.PASSPORT_TAGS.map(({ key }) => (key in clean ? clean[key] + 1 : 0));
-}
 Page({
   data: {
     labels: domain.SLOT_LABELS,
     hints: ['看一眼就心动的那张', '牌友一看就知道你怎么玩的那张', '每次打出来都让全桌愣一下的那张'],
     reasonHints: ['原画、规则设计还是实战体验？', '用它说说你喜欢怎么玩', '它在你的牌组里妙在哪？'],
-    tagFields: domain.PASSPORT_TAGS.map(({ key, label, options }) => ({
-      key,
-      label,
-      range: ['不填', ...options],
-    })),
-    tagIndexes: [0, 0, 0],
-    friendTags: [],
     slotIndex: 0,
     nickname: '',
     slots: [null, null, null],
@@ -54,8 +37,7 @@ Page({
         const friend = await api.call('getShare', { id: options.id });
         if (friend.kind !== 'passport')
           throw new Error('这个分享不是三张牌名片');
-        if (!this.disposed)
-          this.setData({ friend, friendTags: domain.tagLabels(friend.content.tags) });
+        if (!this.disposed) this.setData({ friend });
       });
   },
   onUnload() {
@@ -71,7 +53,6 @@ Page({
     this.draftId = draft.id;
     this.setData({
       nickname: draft.nickname,
-      tagIndexes: tagIndexes(draft.tags),
       slots: draft.slots,
       reasons: draft.slots.map((slot) => (slot && slot.reason) || ''),
       remote: draft.remote || null,
@@ -84,15 +65,6 @@ Page({
   nickname(event) {
     this.setData({
       nickname: event.detail.value,
-      feedback: '',
-      shareReady: false,
-      posterPath: '',
-    });
-  },
-  tag(event) {
-    const index = Number(event.currentTarget.dataset.index);
-    this.setData({
-      [`tagIndexes[${index}]`]: Number(event.detail.value),
       feedback: '',
       shareReady: false,
       posterPath: '',
@@ -124,15 +96,9 @@ Page({
     });
   },
   content() {
-    const tags = {};
-    domain.PASSPORT_TAGS.forEach(({ key }, index) => {
-      const choice = Number(this.data.tagIndexes[index]) || 0;
-      if (choice > 0) tags[key] = choice - 1;
-    });
     return {
       nickname: this.data.nickname,
       deckName: '',
-      tags,
       slots: this.data.slots.map((slot, index) =>
         slot ? { ...slot, reason: this.data.reasons[index] } : null,
       ),

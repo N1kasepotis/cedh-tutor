@@ -97,7 +97,7 @@
     <view class="random-panel surface tool-entry tool-entry-planechase" aria-role="button" aria-label="竞逐时空：共享时空套牌与时空骰" hover-class="pressable-active" hover-stay-time="120" bindtap="goPlanechase">
       <view class="tool-entry-text">
         <view class="tool-entry-title">竞逐时空</view>
-        <view class="tool-entry-sub">共享时空套牌 · 时空骰</view>
+        <view class="tool-entry-sub">共享时空套牌与时空骰</view>
       </view>
       <view class="tool-entry-arrow">›</view>
     </view>

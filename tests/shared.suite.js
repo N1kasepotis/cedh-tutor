@@ -684,3 +684,34 @@ test('README 的基线数字与真值一致', () => {
   const pageCount = appJson.pages.length + (appJson.subPackages || []).reduce((sum, item) => sum + item.pages.length, 0);
   assert.equal(stated('页面数', /## 当前模块（(\d+) 页）/), pageCount);
 });
+
+// 全局去掉点号（用户 2026-09-14）：产品文案不用中点、圆点做分隔或项目符号，标题与数量之间改用全角空格或斜线。
+// 官方中文牌名里的间隔号（诺曼·奥斯本）是牌名原文，前后都是汉字，保留原样；注释不是产品文案，先剥掉再查。
+test('产品文案不用点号分隔，官方中文牌名里的间隔号保留', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const mini = path.join(__dirname, '..', 'miniprogram');
+  const files = [];
+  const walk = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory() && entry.name !== 'node_modules') walk(full);
+      else if (/\.(wxml|wxss|js)$/.test(entry.name)) files.push(full);
+    });
+  };
+  walk(mini);
+  const offenders = [];
+  files.forEach((file) => {
+    const source = fs
+      .readFileSync(file, 'utf8')
+      .replace(/<!--[\s\S]*?-->/g, '')
+      .replace(/\/\*[\s\S]*?\*\//g, '')
+      .replace(/(^|[^:\\])\/\/.*$/gm, '$1');
+    for (const match of source.matchAll(/[·•・]/g)) {
+      if (/^\p{Script=Han}.\p{Script=Han}$/u.test(source.slice(match.index - 1, match.index + 2))) continue;
+      const context = source.slice(Math.max(0, match.index - 16), match.index + 16).replace(/\s+/g, ' ');
+      offenders.push(path.relative(mini, file).split(path.sep).join('/') + '：' + context);
+    }
+  });
+  assert.deepEqual(offenders, [], '这些地方还在用点号：\n' + offenders.join('\n'));
+});

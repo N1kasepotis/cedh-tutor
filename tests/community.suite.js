@@ -763,9 +763,9 @@ test('compact poll votes in one tap and goes quiet when the server does not know
   }
 });
 
-// 名片海报：暗色收藏档案 × 玩家批注。先认识玩家（署名字最大、只画玩家自选的标签），再读三张牌（整张卡等比加投影、
+// 名片海报：暗色收藏档案 × 玩家批注。先认识玩家（署名字最大），再读三张牌（整张卡等比加投影、
 // 短评比牌名更大更亮、版本编号退到卡图下），最后在底部参与区接力（邀请语、小程序码、版权与画师）。
-// 不画色条和编号；文字只用暖灰层级，强调色只给标题短线和三类记号。
+// 不画色条、编号、标签和类别记号；文字只用暖灰层级，强调色只画标题下的短线。
 async function drawPassportPoster(passport, { artOnly = false, pixels = null } = {}) {
   const filename = path.resolve(__dirname, '../miniprogram/community/utils/poster.js');
   const log = [];
@@ -898,18 +898,17 @@ function posterSlot(name, extra = {}) {
 
 test('passport poster reads as a player archive with the QR relay at the bottom', async () => {
   const neutrals = ['#F4EEE4', '#ECE5D9', '#CEC6B9', '#B2AA9D', '#8C8478', '#6F675C'];
-  const tagWords = domain.PASSPORT_TAGS.flatMap((field) => field.options);
   const slots = [
     posterSlot('Swords to Plowshares', { displayName: '化剑为犁', lang: 'zhs' }),
     posterSlot("Uro, Titan of Nature's Wrath"),
     posterSlot('Deflecting Swat', { artist: 'Izzy' }),
   ];
-  for (const [artOnly, nickname, tags] of [
-    [false, '周末指挥官', { level: 3, speed: 1, interaction: 2 }],
-    [true, '', {}],
+  for (const [artOnly, nickname] of [
+    [false, '周末指挥官'],
+    [true, ''],
   ]) {
     const { result, log, canvas, exported } = await drawPassportPoster(
-      { nickname, tags, slots },
+      { nickname, slots },
       { artOnly },
     );
     assert.equal(result, 'poster.png');
@@ -940,11 +939,6 @@ test('passport poster reads as a player archive with the QR relay at the bottom'
     const title = texts.find((entry) => entry.text === (nickname || '我的三张牌'));
     assert.ok(title && texts.every((entry) => entry.size <= title.size), '署名字最大');
     assert.equal(joined.includes('三张牌认识我'), Boolean(nickname));
-    // 标签只画玩家选过的，顺序是对局强度、套牌速度、干扰对手；没选就一个也不画
-    assert.deepEqual(
-      texts.filter((entry) => tagWords.includes(entry.text)).map((entry) => entry.text),
-      nickname ? ['cEDH', '中速', '康完你的康他的'] : [],
-    );
 
     // 三张牌：整张卡等比画入并带投影；短评比牌名更大、更亮；中文印刷版本附小号英文原名
     const images = log.filter((entry) => entry.op === 'image');
@@ -984,7 +978,7 @@ test('passport poster reads as a player archive with the QR relay at the bottom'
     );
     for (const label of domain.SLOT_LABELS) assert.ok(joined.includes(label));
     // 收藏注释：版本、编号和语言用小字贴在每张卡图下方
-    assert.ok(joined.includes('MSC #211 · ZHS') && joined.includes('MSC #211 · EN'));
+    assert.ok(joined.includes('MSC #211 / ZHS') && joined.includes('MSC #211 / EN'));
     const notes = texts.filter((entry) => entry.text === 'M' && entry.x === 64);
     assert.equal(notes.length, 3, '三张牌各有一行收藏注释');
     notes.forEach((note, index) => {
@@ -1065,96 +1059,44 @@ test('poster accent is a muted hue taken from the favourite design art', async (
   ]) {
     const { log } = await drawPassportPoster({ nickname: '牌友', slots }, options);
     const uses = log.filter((entry) => entry.fill === accent);
-    assert.equal(uses.length, 4, '强调色只画标题短线和三类记号');
+    assert.equal(uses.length, 1, '强调色只画标题下的短线，三类选牌前不再画记号');
     assert.ok(uses.every((entry) => entry.op !== 'text'));
   }
 });
 
-// 名片标签由玩家自己挑：词汇沿用对局约定的强度分级和问卷里的速度、干扰选项，不根据所选卡牌推断；
-// 本机草稿和分享都带上，坏数据不显示也不挡住名片
-test('passport tags are picked by the player from existing vocabulary and kept in drafts and shares', () => {
-  const { questions } = require('../miniprogram/config/questionnaire');
-  const question = (id) => questions.find((item) => item.id === id);
-  const [level, speed, interaction] = domain.PASSPORT_TAGS;
-  assert.deepEqual(
-    [level.label, level.options],
-    [domain.TABLE_FIELDS[0].label, domain.TABLE_FIELDS[0].options],
+// 用户要求去掉名片标签：契约不再收标签，编辑页、牌友分享页和海报里都没有标签
+test('passport has no player tags in the contract, editor, share view or poster', async () => {
+  assert.equal(domain.PASSPORT_TAGS, undefined);
+  assert.equal(
+    domain.passport({ ...passport, tags: { level: 3 } }).tags,
+    undefined,
+    '提交上来的标签被丢弃',
   );
-  for (const [field, id] of [
-    [speed, 'speed'],
-    [interaction, 'interaction'],
-  ]) {
-    assert.equal(field.label, question(id).title);
-    assert.deepEqual(field.options, question(id).options.map((option) => option.text));
-  }
-  assert.deepEqual(
-    domain.passport({ ...passport, tags: { level: 3, interaction: 0 } }).tags,
-    { level: 3, interaction: 0 },
-  );
-  assert.deepEqual(domain.passport(passport).tags, {}, '不选标签也能分享');
-  for (const tags of [{ level: 4 }, { speed: -1 }, { speed: 1.5 }, { interaction: '2' }, [1], 'cEDH']) {
-    assert.throws(() => domain.passport({ ...passport, tags }), { code: 'INVALID_INPUT' });
-  }
-  assert.deepEqual(domain.tagLabels({ interaction: 2, level: 3 }), ['cEDH', '康完你的康他的']);
-  assert.deepEqual(domain.tagLabels({ level: 9 }), [], '坏数据不显示');
-
   const dir = path.join(__dirname, '../miniprogram/community/pages/passport');
-  const wxml = fs.readFileSync(path.join(dir, 'index.wxml'), 'utf8');
-  assert.match(wxml, /<picker\s+wx:for="\{\{tagFields\}\}"[^>]*bindchange="tag"/);
-  assert.match(wxml, /wx:for="\{\{friendTags\}\}"/);
-  assert.match(fs.readFileSync(path.join(dir, 'index.js'), 'utf8'), /friendTags: domain\.tagLabels\(friend\.content\.tags\)/);
-
-  const filename = path.join(dir, 'index.js');
-  const saved = new Map();
-  const previous = global.wx;
-  try {
-    global.wx = {
-      getStorageSync: (key) => saved.get(key) || '',
-      setStorageSync: (key, value) => saved.set(key, value),
-      showToast: () => {},
-    };
-    let definition;
-    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
-      Page: (value) => {
-        definition = value;
-      },
-      require: createRequire(filename),
-      wx: global.wx,
-    });
-    const open = () => {
-      const page = {
-        ...definition,
-        data: structuredClone(definition.data),
-        setData(value) {
-          for (const [key, next] of Object.entries(value)) {
-            const item = /^(\w+)\[(\d+)\]$/.exec(key);
-            if (item) this.data[item[1]][Number(item[2])] = next;
-            else this.data[key] = next;
-          }
-        },
-      };
-      page.onLoad({});
-      return page;
-    };
-    const pick = (page, index, value) =>
-      page.tag({
-        currentTarget: { dataset: { index: String(index) } },
-        detail: { value: String(value) },
-      });
-    const page = open();
-    assert.deepEqual(Array.from(page.data.tagFields[1].range), ['不填', 'Turbo', '中速', '控制']);
-    assert.deepEqual({ ...page.content().tags }, {}, '默认不替玩家选');
-    pick(page, 0, 4);
-    pick(page, 2, 3);
-    assert.deepEqual({ ...page.content().tags }, { level: 3, interaction: 2 });
-    page.save();
-    const reopened = open();
-    assert.deepEqual(Array.from(reopened.data.tagIndexes), [4, 0, 3], '本机草稿保留标签');
-    pick(reopened, 0, 0);
-    assert.deepEqual({ ...reopened.content().tags }, { interaction: 2 }, '改回不填就去掉这一项');
-  } finally {
-    global.wx = previous;
-  }
+  const page = ['index.js', 'index.wxml', 'index.wxss']
+    .map((name) => fs.readFileSync(path.join(dir, name), 'utf8'))
+    .join('\n');
+  assert.doesNotMatch(page, /tagFields|tagIndexes|friendTags|tag-field|标签/);
+  const { log } = await drawPassportPoster({
+    nickname: '牌友',
+    tags: { level: 3, speed: 0, interaction: 2 },
+    slots: [0, 1, 2].map(() => posterSlot('Sol Ring')),
+  });
+  const words = [
+    ...domain.TABLE_FIELDS[0].options,
+    'Turbo',
+    '中速',
+    '控制',
+    'Stax 锁场',
+    '适度互动',
+    '康完你的康他的',
+    '各扫门前雪',
+  ];
+  assert.deepEqual(
+    log.filter((entry) => entry.op === 'text' && words.includes(entry.text)).map((entry) => entry.text),
+    [],
+    '海报不画标签',
+  );
 });
 
 // 三张牌名片：填写提示改成让人想分享的问法；选牌弹层记住为哪个问题打开，换了问题就从头搜索，
