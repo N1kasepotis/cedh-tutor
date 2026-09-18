@@ -2,8 +2,9 @@ const { TABLE_FIELDS, table } = require('../../shared/contracts');
 const local = require('../../utils/local');
 const api = require('../../utils/api');
 const ui = require('../../utils/page');
+// 新桌默认允许代牌、无限组合技和额外回合；预览牌和鸡飞牌默认聊完再定
 function defaults() {
-  return { level: 1, proxy: 0, combo: 0, turns: 0, time: 1 };
+  return { level: 1, proxy: 0, preview: 1, unCards: 1, combo: 0, turns: 0, time: 1 };
 }
 Page({
   data: {
@@ -31,7 +32,7 @@ Page({
         const result = await api.call('getShare', { id: options.id });
         if (result.kind !== 'table') throw new Error('这个分享不是对局约定');
         this.setData({
-          values: result.content,
+          values: table(result.content),
           remote: result,
           agreement: result.agreement,
         });
@@ -82,7 +83,7 @@ Page({
     );
     this.draftId = item.id;
     this.setData({
-      values: item.values,
+      values: table(item.values),
       remote: item.remote,
       dirty: Boolean(item.dirty),
       incoming: false,
@@ -136,7 +137,7 @@ Page({
         this.setData({
           agreement: result.agreement,
           remote: result,
-          values: result.content,
+          values: table(result.content),
           dirty: false,
         });
       })

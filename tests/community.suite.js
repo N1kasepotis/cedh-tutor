@@ -493,6 +493,40 @@ test('table confirmation is idempotent and never carries into an updated agreeme
   assert.equal(next.agreement.count, 0);
   assert.equal(next.agreement.agreed, false);
 });
+// 用户要求对局约定加“新系列预览牌”“鸡飞牌”（玩家对 Un 系列搞笑牌的叫法）。后加的两项有默认值：旧约定、旧链接和旧版小程序
+// 发来的约定没有它们，一律记作聊完再定，不替牌桌做决定；云函数用同一份契约，老客户端照样能发布
+test('table agreement adds preview cards and 鸡飞牌 with a 聊完再定 fallback for older agreements', async () => {
+  assert.deepEqual(
+    domain.TABLE_FIELDS.map((field) => field.label),
+    ['对局强度', '代牌', '新系列预览牌', '鸡飞牌', '无限组合技', '额外回合', '预计时长'],
+  );
+  const preview = domain.TABLE_FIELDS.find((field) => field.key === 'preview');
+  const unCards = domain.TABLE_FIELDS.find((field) => field.key === 'unCards');
+  assert.deepEqual(Array.from(preview.options), ['可以用', '聊完再定', '不用']);
+  assert.deepEqual(Array.from(unCards.options), ['不太强的可以', '聊完再定', '不用']);
+  const legacy = { level: 1, proxy: 0, combo: 1, turns: 1, time: 1 };
+  assert.deepEqual(domain.table(legacy), { ...legacy, preview: 1, unCards: 1 });
+  assert.deepEqual(domain.table({ ...legacy, preview: 2, unCards: 0 }), { ...legacy, preview: 2, unCards: 0 });
+  assert.throws(() => domain.table({ ...legacy, preview: 3 }), { code: 'INVALID_INPUT' });
+  assert.throws(() => domain.table({ ...legacy, unCards: -1 }), { code: 'INVALID_INPUT' });
+  assert.throws(() => domain.table({ level: 1, proxy: 0, combo: 1, turns: 1 }), { code: 'INVALID_INPUT' }, '原有五项仍然必填');
+
+  const { service } = fixture();
+  const old = await service({ action: 'publish', kind: 'table', draftId: 'legacy', content: legacy }, owner);
+  assert.deepEqual(old.content, { ...legacy, preview: 1, unCards: 1 }, '旧版小程序发来的约定补上默认值');
+  const fresh = await service(
+    { action: 'publish', kind: 'table', draftId: 'fresh', content: { ...legacy, preview: 0, unCards: 2 } },
+    owner,
+  );
+  const read = await service({ action: 'getShare', id: fresh.id }, friend);
+  assert.equal(read.content.preview, 0);
+  assert.equal(read.content.unCards, 2);
+
+  const page = fs.readFileSync(path.join(__dirname, '../miniprogram/community/pages/table/index.js'), 'utf8');
+  assert.match(page, /preview: 1, unCards: 1/, '新桌默认聊完再定');
+  assert.match(page, /values: table\(item\.values\)/, '读本机旧约定时补默认值');
+  assert.equal((page.match(/values: table\(result\.content\)/g) || []).length, 2, '读分享的约定时补默认值');
+});
 test('per-user rate limits reset without affecting another player', async () => {
   const { service, advance } = fixture();
   for (let i = 0; i < 90; i += 1) await service({ action: 'poll', pollId }, owner);

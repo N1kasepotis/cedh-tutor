@@ -16,6 +16,19 @@ const TABLE_FIELDS = [
     label: '代牌',
     options: ['可以用', '聊完再定', '不用'],
   },
+  // Fields added later carry a fallback: older agreements and older clients omit them.
+  {
+    key: 'preview',
+    label: '新系列预览牌',
+    options: ['可以用', '聊完再定', '不用'],
+    fallback: 1,
+  },
+  {
+    key: 'unCards',
+    label: '鸡飞牌',
+    options: ['不太强的可以', '聊完再定', '不用'],
+    fallback: 1,
+  },
   {
     key: 'combo',
     label: '无限组合技',
@@ -64,8 +77,8 @@ function passport(input) {
 function table(input) {
   if (!input) fail('INVALID_INPUT');
   const result = {};
-  TABLE_FIELDS.forEach(({ key, options }) => {
-    const value = input[key];
+  TABLE_FIELDS.forEach(({ key, options, fallback }) => {
+    const value = input[key] === undefined && fallback !== undefined ? fallback : input[key];
     if (!Number.isInteger(value) || value < 0 || value >= options.length)
       fail('INVALID_INPUT');
     result[key] = value;
