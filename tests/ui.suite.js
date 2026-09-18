@@ -1213,3 +1213,51 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   assert.doesNotMatch(wxml, /home-field-node/);
   assert.doesNotMatch(js, /HOME_VORONOI_NODES|fieldNodes/);
 });
+
+// 2026-09-18 第二次全页视觉审查：用户拍板三件（战情室少用操作、官方简中牌名、两页粘贴区统一），另修三处明显毛病
+test('second visual sweep: quiet tracker actions, official card names, one paste bar and small fixes', () => {
+  const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
+  // 混沌工具页标题与首页入口、竞逐时空里的“返回混沌工具”同名
+  assert.equal(JSON.parse(read('miniprogram/pages/random/random.json')).navigationBarTitleText, '混沌工具');
+  // 牌名按 Scryfall 官方简中印刷写中文、英文原名放小字；没有简中印刷的照旧写英文
+  const cabbageConfig = read('miniprogram/config/cabbage.js');
+  assert.match(cabbageConfig, /name: 'Jaheira, Friend of the Forest', zhName: '树林之友贾希拉'/);
+  assert.match(cabbageConfig, /name: 'Academy Manufactor', zhName: '大学院制造工人'/);
+  assert.match(cabbageConfig, /name: 'Peregrin Took', zhName: '佩里格林·图克'/);
+  assert.match(cabbageConfig, /\{ key: 'cabbage', name: 'The Cabbage Merchant' \}/);
+  assert.match(cabbageConfig, /name: '食品'[\s\S]*name: '线索'[\s\S]*name: '珍宝'/);
+  const cabbage = read('miniprogram/pages/cabbage/cabbage.wxml');
+  assert.doesNotMatch(cabbage, />[^<]*\b(?:Food|Clue|Treasure)\b/, '界面文字不再写英文衍生物名');
+  assert.match(cabbage, /\{\{item\.zhName \|\| item\.name\}\}[\s\S]*class="cabbage-engine-en"/);
+  assert.match(read('miniprogram/config/izzet-storm.js'), /zhName: '风雨法师拉尔'/);
+  const izzet = read('miniprogram/pages/izzet/izzet.wxml');
+  const izzetText = izzet.replace(/\{\{[^}]*\}\}/g, '').replace(/<[^>]*>/g, ' ');
+  assert.doesNotMatch(izzetText, /storm|Ral 自伤|抛币/i, '界面文字不再写英文 storm 与“抛币”');
+  assert.doesNotMatch(izzet, /aria-label="[^"]*storm/, '读屏名称也用“风暴”');
+  assert.match(izzet, /总风暴[\s\S]*拉尔自伤[\s\S]*拉尔掷硬币/);
+  assert.match(izzet, /\{\{item\.zhName \|\| item\.name\}\}[\s\S]*class="izzet-engine-en"/);
+  assert.match(read('miniprogram/pages/random/random.wxml'), /风雨法师拉尔 <text class="tool-entry-en">Ral, Monsoon Mage<\/text>/);
+  const hands = read('miniprogram/community/pages/hands/index.js');
+  assert.match(hands, /'Kinnan, Bonder Prodigy': '持绊逸才季宁'/);
+  assert.match(hands, /'Tymna the Weaver': '织命使堤谟娜'/);
+  assert.match(
+    read('miniprogram/community/pages/hands/index.wxml'),
+    /\{\{hand\.commanderZh\}\}<\/view>\s*<view class="commander-en">\{\{hand\.commander\}\}/,
+  );
+  // 战情室：清空数据挪到页面最下方，“＋”写明添加套牌
+  const tracker = read('miniprogram/pages/tracker/tracker.wxml');
+  assert.match(tracker, /bindtap="addDeck">＋ 添加套牌<\/button>/);
+  const clearAt = tracker.indexOf('bindtap="clearData"');
+  assert.ok(clearAt > tracker.indexOf('card-art-credit'), '清空数据在版权说明之后');
+  assert.ok(clearAt > tracker.indexOf('bindtap="exportData"'), '清空数据不再和复制战绩文本并排');
+  assert.match(tracker, /<view class="tracker-footer">\s*<view class="text-button clear-data-button"/);
+  // 调牌记录：虚线框看着能点，就真的能点
+  const swaps = read('miniprogram/community/pages/swaps/index.wxml');
+  assert.equal((swaps.match(/class="swap-art-empty"[^>]*bindtap="choose"/g) || []).length, 2);
+  assert.match(swaps, /aria-label="选择换出的单卡"[^>]*data-target="outCard"/);
+  assert.match(swaps, /aria-label="选择换入的单卡"[^>]*data-target="inCard"/);
+  // 强度分级与套牌试玩的说明文字不小于 10px
+  for (const file of ['miniprogram/pages/bracket/bracket.wxss', 'miniprogram/pages/playtest/playtest.wxss']) {
+    assert.match(read(file), /\.import-secondary\s*\{[^}]*font-size:\s*max\(19rpx, 10px\)/, `${file} 说明文字不小于 10px`);
+  }
+});

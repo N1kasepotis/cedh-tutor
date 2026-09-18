@@ -9,7 +9,8 @@
         <text>▾</text>
       </view>
     </picker>
-    <view class="section-title section">{{hand.commander}}</view>
+    <view class="section-title section">{{hand.commanderZh}}</view>
+    <view class="commander-en">{{hand.commander}}</view>
     <view class="subtitle hand-context">
       <view>4 人 cEDH，{{hand.seat}} 号位</view>
       <view>{{hand.stage}}</view>

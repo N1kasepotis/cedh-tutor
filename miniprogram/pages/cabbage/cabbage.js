@@ -62,6 +62,7 @@ Page({
       cabbageEngineList: cabbageConfig.engines.map((engine) => ({
         key: engine.key,
         name: engine.name,
+        zhName: engine.zhName || '',
         on: Boolean(engines[engine.key]),
       })),
       cabbageTokens: cabbageConfig.tokens.map((token) => ({

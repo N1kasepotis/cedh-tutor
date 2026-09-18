@@ -49,7 +49,6 @@ page {
   align-items: center;
   justify-content: space-between;
   gap: var(--cedh-space-4);
-  padding-right: 96rpx;
 }
 
 .commander-avatars {
@@ -109,13 +108,27 @@ page {
   letter-spacing: 0.08em;
 }
 
-.deck-delete-button {
-  position: absolute;
-  top: var(--cedh-space-4);
-  right: var(--cedh-space-4);
-  z-index: 2;
-  color: var(--cedh-danger);
-  line-height: 1.3;
+/* 删除套牌与清空数据是少用的操作：分别放在套牌卡片底部和页面最下方，居中的次要文字，点了仍先弹窗确认 */
+.deck-footer,
+.tracker-footer {
+  display: flex;
+  justify-content: center;
+}
+
+.deck-footer {
+  margin-top: var(--cedh-space-4);
+}
+
+.deck-delete-button,
+.clear-data-button {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--cedh-space-4);
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
+  font-weight: 400;
+  letter-spacing: 0;
 }
 
 .selector-block {
@@ -577,8 +590,8 @@ page {
 
 .add-deck-button {
   min-height: 84rpx;
-  font-size: var(--cedh-text-24);
-  font-weight: 460;
+  font-size: var(--cedh-text-14);
+  font-weight: 560;
 }
 
 .debug-actions {

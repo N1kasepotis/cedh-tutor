@@ -2,7 +2,7 @@
   "usingComponents": {
     "particle-background": "/components/particle-background/particle-background"
   },
-  "navigationBarTitleText": "小工具",
+  "navigationBarTitleText": "混沌工具",
   "navigationBarBackgroundColor": "#050505",
   "navigationBarTextStyle": "white",
   "backgroundColor": "#050505"

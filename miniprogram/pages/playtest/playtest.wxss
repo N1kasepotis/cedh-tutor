@@ -8,6 +8,12 @@
   color: var(--cedh-text);
 }
 
+/* 导入态锁定一屏高：输入框像强度分级一样用可压缩的 flex 填满剩余高度，下面的按钮和版权说明不会被裁掉 */
+.playtest.is-input {
+  box-sizing: border-box;
+  height: 100vh;
+}
+
 /* ===== 导入态 ===== */
 .playtest-shell {
   display: flex;
@@ -18,33 +24,83 @@
   padding-top: var(--cedh-space-5);
 }
 
+/* 导入说明与强度分级同一张说明卡：TXT 标记、两行说明、右上角“粘贴” */
+.import-bar {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: var(--cedh-space-3);
+  min-height: 72rpx;
+}
+
+.import-mark {
+  display: flex;
+  flex: 0 0 58rpx;
+  align-items: center;
+  justify-content: center;
+  width: 58rpx;
+  height: 58rpx;
+  color: rgba(var(--module-accent-rgb), 0.78);
+  background: linear-gradient(180deg, rgba(var(--module-accent-rgb), 0.12), rgba(3, 8, 6, 0.72));
+  border: 1rpx solid rgba(var(--module-accent-rgb), 0.28);
+  border-radius: 12rpx;
+  font-size: 17rpx;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+}
+
 .import-hint {
-  color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-12);
-  line-height: 1.6;
+  flex: 1 1 auto;
+  min-width: 0;
+  line-height: 1.45;
+}
+
+.import-primary {
+  color: rgba(255, 254, 250, 0.76);
+  font-size: max(22rpx, 11px);
+}
+
+.import-secondary {
+  margin-top: 4rpx;
+  color: rgba(255, 254, 250, 0.58);
+  font-size: max(19rpx, 10px);
+}
+
+.clear-link {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  min-width: 76rpx;
+  min-height: 76rpx;
+  color: rgba(var(--module-accent-rgb), 0.88);
+  font-size: max(20rpx, 12px);
+}
+
+.input-stage {
+  position: relative;
+  display: flex;
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.55);
+  border: var(--cedh-hairline);
+  border-radius: var(--cedh-radius-2);
 }
 
 .deck-input {
   box-sizing: border-box;
-  flex: 1 1 auto;
+  flex: 1 1 0;
   width: 100%;
-  height: calc(100vh - 480rpx);
-  min-height: 600rpx;
+  height: 100%;
+  min-height: 0;
   padding: var(--cedh-space-4);
   color: var(--cedh-text);
-  background: rgba(0, 0, 0, 0.55);
-  border: var(--cedh-hairline);
-  border-radius: var(--cedh-radius-2);
+  background: transparent;
+  border: 0;
   font-family: var(--cedh-font-mono);
   font-size: var(--cedh-text-12);
   line-height: 1.6;
-}
-
-@media (max-height: 620px) {
-  .deck-input {
-    height: calc(100vh - 440rpx);
-    min-height: 520rpx;
-  }
 }
 
 .import-warning {
@@ -57,19 +113,20 @@
   margin-top: var(--cedh-space-2);
 }
 
-/* 两个次级动作并排占一行：.deck-input 的高度按「下方固定两行」预留（calc(100vh - 480rpx)），
-   再往下堆一行按钮就会被 .playtest 的 overflow:hidden 裁掉 */
-.import-actions {
+/* “清除现套牌”是少用的操作：放在导入页底部，居中的次要文字，点了仍先确认 */
+.import-footer {
   display: flex;
-  gap: var(--cedh-space-3);
+  flex: 0 0 auto;
+  justify-content: center;
 }
 
-.import-actions .import-button {
-  flex: 1 1 0;
-  min-width: 0;
-  overflow: hidden;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+.clear-deck-link {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 var(--cedh-space-4);
+  color: var(--cedh-text-soft);
+  font-size: var(--cedh-text-12);
 }
 
 /* ===== 对局态 ===== */

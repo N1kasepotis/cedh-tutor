@@ -26,6 +26,11 @@
 }
 
 .cabbage-engine {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 108rpx;
   padding: 20rpx var(--cedh-space-4);
   color: var(--cedh-text-soft);
   background: var(--cedh-surface-muted);
@@ -40,6 +45,13 @@
   color: var(--cedh-accent-ink);
   background: var(--cedh-accent-soft);
   border-color: var(--cedh-accent-line);
+}
+
+/* 中文官方译名在前，英文原名放小字；没有简中印刷的牌只写英文，按钮一样高 */
+.cabbage-engine-en {
+  margin-top: 4rpx;
+  color: var(--cedh-text-soft);
+  font-size: max(22rpx, 10px);
 }
 
 .cabbage-cast-button {

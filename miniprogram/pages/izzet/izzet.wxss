@@ -45,6 +45,20 @@
   border-color: var(--cedh-accent-line);
 }
 
+/* 中文官方译名在前，英文原名放小字 */
+.izzet-engine-names {
+  display: flex;
+  flex-direction: column;
+  gap: 2rpx;
+  min-width: 0;
+}
+
+.izzet-engine-en {
+  color: var(--cedh-text-soft);
+  font-size: max(22rpx, 10px);
+  line-height: 1.4;
+}
+
 .izzet-engine-state {
   color: var(--cedh-text-soft);
   font-size: var(--cedh-text-12);

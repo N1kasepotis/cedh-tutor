@@ -2,6 +2,13 @@
 .hand-context {
   display: block;
 }
+/* 主将写官方简中名，英文原名放在下面一行小字 */
+.commander-en {
+  margin: -12rpx 0 12rpx;
+  color: var(--cedh-text-soft);
+  font-size: 12px;
+  line-height: 1.5;
+}
 /* 起手七张沿用套牌试玩的手牌区：暗色横条里放 66×92 的卡图瓦片，七张同样大小，放不下时横向滑动 */
 .hand {
   display: flex;

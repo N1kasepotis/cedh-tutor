@@ -325,31 +325,29 @@ test('playtest 页面注册齐全且对局按钮有统一短按反馈', () => {
   assert.doesNotMatch(wxml, /换牌组|confirmReimport/);
   assert.match(wxss, /\.board-action\s*{[\s\S]*border:\s*var\(--cedh-hairline\)/);
 
-  // 导入态：无标题、说明块列举三种来源、有清除按钮
+  // 导入态：无标题；顶部与强度分级同一张说明卡（TXT 标记、两行说明、右上角“粘贴”）
   assert.doesNotMatch(wxml, /playtest-title|套牌试玩<\/view>/);
-  assert.match(wxml, /支持 MTGO \/ Moxfield \/ MTGso 纯文本牌表/);
-  assert.match(wxml, /每行「数量 卡名」；主将以 Commander 标题或空行与主牌分隔/);
+  assert.match(wxml, /<view class="import-bar">\s*<view class="import-mark mono" aria-hidden="true">TXT<\/view>/);
+  assert.match(wxml, /<view class="import-primary">支持 MTGO \/ Moxfield \/ MTGso 纯文本牌表<\/view>/);
+  assert.match(wxml, /<view class="import-secondary">每行「数量 卡名」；主将以 Commander 标题或空行与主牌分隔<\/view>/);
+  assert.match(wxml, /class="clear-link"[^>]*aria-label="从剪贴板导入牌表"[^>]*bindtap="importFromClipboard">粘贴</);
   assert.match(wxss, /\.playtest-shell\s*{[\s\S]*flex:\s*1/);
-  assert.match(wxss, /\.deck-input\s*{[\s\S]*height:\s*calc\(100vh - 480rpx\)/);
-  assert.match(wxss, /\.deck-input\s*{[\s\S]*min-height:\s*600rpx/);
+  // 导入态锁定一屏高，输入框像强度分级一样用可压缩的 flex 填满剩余高度，下面的按钮和版权说明不会被裁掉
+  assert.match(wxml, /class="page playtest \{\{imported \? '' : 'is-input'\}\}"/);
+  assert.match(wxss, /\.playtest\.is-input\s*\{[^}]*height:\s*100vh/);
+  assert.match(wxml, /<view class="input-stage">\s*<textarea\s+class="deck-input"/);
+  assert.match(wxss, /\.input-stage\s*\{[^}]*flex:\s*1 1 0;[^}]*min-height:\s*0/);
+  assert.match(wxss, /\.deck-input\s*\{[^}]*height:\s*100%/);
+  assert.doesNotMatch(wxss, /calc\(100vh - 480rpx\)/);
   assert.match(wxml, /maxlength="50000"/);
   // 对局沙盘不再堆砌互动规则说明（已按需求删除 battlefield-empty 引导）
   assert.doesNotMatch(wxml, /battlefield-empty|点手牌打出|长按手牌看大图/);
-  assert.match(wxml, /bindtap="confirmClearDeckText"[\s\S]{0,80}>清除现套牌/);
-  // 导入 / 剪贴板粘贴 / 清除三颗按钮同款（半透明 primary-button import-button），且都有短按反馈
-  assert.equal((wxml.match(/class="primary-button import-button"/g) || []).length, 3);
-  assert.match(wxml, /bindtap="importFromClipboard">从剪贴板粘贴/);
-  // 但只能占两行：deck-input 高度按「下方固定两行」预留，再堆一行会被 overflow:hidden 裁出屏幕
-  const importActions = wxml.slice(
-    wxml.indexOf('<view class="import-actions">'),
-    wxml.indexOf('</view>\n  </view>'),
-  );
-  assert.match(importActions, /bindtap="importFromClipboard"/);
-  assert.match(importActions, /bindtap="confirmClearDeckText"/);
-  assert.doesNotMatch(importActions, /bindtap="importDeck"/);
-  assert.match(wxss, /\.import-actions\s*{[\s\S]*display:\s*flex/);
-  assert.match(wxss, /\.import-actions \.import-button\s*{[\s\S]*flex:\s*1 1 0[\s\S]*min-width:\s*0/);
-  assert.match(wxml, /class="primary-button import-button"[\s\S]{0,90}bindtap="confirmClearDeckText"/);
+  // 只剩“导入并开始”一个主按钮；“清除现套牌”是少用操作，放在底部居中的次要文字
+  assert.equal((wxml.match(/class="primary-button import-button"/g) || []).length, 1);
+  assert.doesNotMatch(wxml, /import-actions|从剪贴板粘贴/);
+  assert.match(wxml, /<view class="import-footer">\s*<view class="clear-deck-link"[^>]*bindtap="confirmClearDeckText">清除现套牌<\/view>/);
+  assert.ok(wxml.indexOf('class="import-footer"') > wxml.indexOf('bindtap="importDeck"'), '清除现套牌在导入按钮之后');
+  assert.match(wxss, /\.import-footer\s*\{[^}]*justify-content:\s*center/);
   assert.ok((wxml.match(/hover-class="pressable-active"/g) || []).length >= 2);
   assert.match(js, /content:\s*'会清空输入框和已保存的牌表文本'/);
   assert.doesNotMatch(js, /content:\s*'会清空输入框和已保存的牌表文本。'/);

@@ -54,6 +54,7 @@ Page({
       izzetEngineList: izzetStormConfig.engines.map((engine) => ({
         key: engine.key,
         name: engine.name,
+        zhName: engine.zhName || '',
         on: Boolean(engines[engine.key]),
       })),
       storm: this.stormState,

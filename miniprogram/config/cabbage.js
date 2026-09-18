@@ -3,9 +3,9 @@
 const cabbageConfig = {
   engines: [
     { key: 'cabbage', name: 'The Cabbage Merchant' },
-    { key: 'jaheira', name: 'Jaheira, Friend of the Forest' },
-    { key: 'manufactor', name: 'Academy Manufactor' },
-    { key: 'peregrin', name: 'Peregrin Took' },
+    { key: 'jaheira', name: 'Jaheira, Friend of the Forest', zhName: '树林之友贾希拉' },
+    { key: 'manufactor', name: 'Academy Manufactor', zhName: '大学院制造工人' },
+    { key: 'peregrin', name: 'Peregrin Took', zhName: '佩里格林·图克' },
   ],
   // 引擎默认全关，进入页面后按场随手开
   defaultEngines: {
@@ -15,9 +15,9 @@ const cabbageConfig = {
     peregrin: false,
   },
   tokens: [
-    { key: 'food', name: 'Food' },
-    { key: 'clue', name: 'Clue' },
-    { key: 'treasure', name: 'Treasure' },
+    { key: 'food', name: '食品' },
+    { key: 'clue', name: '线索' },
+    { key: 'treasure', name: '珍宝' },
   ],
 };
 

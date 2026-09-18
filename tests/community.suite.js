@@ -658,7 +658,7 @@ test('hands page shows seat, stage and the cited verdict with a copyable source 
   assert.match(wxml, /hand\.verdict === 'keep' \? '留' : '调度'/);
   assert.match(wxml, /bindtap="copySource"/);
   assert.match(js, /wx\.setClipboardData\(\{ data: this\.data\.source\.url \}\)/);
-  assert.match(js, /title: `这手留不留：\$\{hand\.short\}，\$\{hand\.seat\} 号位`/);
+  assert.match(js, /title: `这手留不留：\$\{shortName\(hand\)\}，\$\{hand\.seat\} 号位`/);
 });
 
 // 入口页按用户要求精简：三张牌入口不写三类选牌说明、不留“编辑我的名片 →”一行，
@@ -713,7 +713,7 @@ test('hands page stays lean: equal card boxes and a one-tap poll without extra c
   assert.doesNotMatch(wxml, /用我的套牌练习|bindtap="practice"|先投票/);
   const js = read('miniprogram/community/pages/hands/index.js');
   assert.doesNotMatch(js, /playtest/);
-  assert.match(js, /`\$\{index \+ 1\} \/ \$\{hands\.length\}　\$\{hand\.short\}`/);
+  assert.match(js, /`\$\{index \+ 1\} \/ \$\{hands\.length\}　\$\{shortName\(hand\)\}`/);
 
   const pollWxml = read('miniprogram/community/components/poll/index.wxml');
   assert.doesNotMatch(pollWxml, /bindtap="submit"|刷新票数/);

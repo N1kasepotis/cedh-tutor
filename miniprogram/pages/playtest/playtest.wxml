@@ -1,22 +1,28 @@
-<view class="page playtest">
+<view class="page playtest {{imported ? '' : 'is-input'}}">
   <view class="content-layer playtest-shell" wx:if="{{!imported}}">
     <particle-background palette="playtest"></particle-background>
-    <view class="import-hint">
-      <view>支持 MTGO / Moxfield / MTGso 纯文本牌表</view>
-      <view>每行「数量 卡名」；主将以 Commander 标题或空行与主牌分隔</view>
+    <view class="import-bar">
+      <view class="import-mark mono" aria-hidden="true">TXT</view>
+      <view class="import-hint">
+        <view class="import-primary">支持 MTGO / Moxfield / MTGso 纯文本牌表</view>
+        <view class="import-secondary">每行「数量 卡名」；主将以 Commander 标题或空行与主牌分隔</view>
+      </view>
+      <view class="clear-link" aria-role="button" aria-label="从剪贴板导入牌表" hover-class="pressable-active" hover-stay-time="120" bindtap="importFromClipboard">粘贴</view>
     </view>
-    <textarea
-      class="deck-input"
-      value="{{deckText}}"
-      maxlength="50000"
-      placeholder="粘贴你想测试的套牌或组合技链条"
-      bindinput="handleDeckInput"
-    ></textarea>
+    <view class="input-stage">
+      <textarea
+        class="deck-input"
+        value="{{deckText}}"
+        maxlength="50000"
+        disable-default-padding="{{true}}"
+        placeholder="粘贴你想测试的套牌或组合技链条"
+        bindinput="handleDeckInput"
+      ></textarea>
+    </view>
     <view class="import-warning" wx:if="{{importWarning}}">{{importWarning}}</view>
     <button class="primary-button import-button" hover-class="pressable-active" hover-stay-time="120" bindtap="importDeck">导入并开始</button>
-    <view class="import-actions">
-      <button class="primary-button import-button" aria-label="从剪贴板导入牌表" hover-class="pressable-active" hover-stay-time="120" bindtap="importFromClipboard">从剪贴板粘贴</button>
-      <button class="primary-button import-button" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmClearDeckText">清除现套牌</button>
+    <view class="import-footer">
+      <view class="clear-deck-link" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="confirmClearDeckText">清除现套牌</view>
     </view>
   </view>
 

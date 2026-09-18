@@ -20,7 +20,6 @@
           <view class="deck-name {{item.commanderNameClass}}">
             <text wx:for="{{item.displayLines}}" wx:for-item="line" wx:key="*this" class="deck-name-line">{{line}}</text>
           </view>
-          <view class="text-button deck-delete-button" aria-role="button" aria-label="删除套牌" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="deleteDeck">删除</view>
         </view>
 
         <view class="selector-block" wx:if="{{!item.commander}}">
@@ -153,15 +152,20 @@
             </view>
           </view>
         </view>
+        <view class="deck-footer">
+          <view class="text-button deck-delete-button" aria-role="button" aria-label="删除套牌" data-id="{{item.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="deleteDeck">删除套牌</view>
+        </view>
       </view>
     </view>
 
-    <button class="secondary-button add-deck-button" aria-label="添加套牌" disabled="{{!canAddDeck}}" hover-class="pressable-active" hover-stay-time="120" bindtap="addDeck">+</button>
+    <button class="secondary-button add-deck-button" aria-label="添加套牌" disabled="{{!canAddDeck}}" hover-class="pressable-active" hover-stay-time="120" bindtap="addDeck">＋ 添加套牌</button>
 
     <view class="debug-actions">
       <view class="secondary-button debug-action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="exportData">复制战绩文本</view>
-      <view class="secondary-button debug-action-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="clearData">清空数据</view>
+    </view>
+    <view class="card-art-credit">卡面图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师所有</view>
+    <view class="tracker-footer">
+      <view class="text-button clear-data-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="clearData">清空数据</view>
     </view>
   </view>
-  <view class="card-art-credit">卡面图像来自 Scryfall，美术版权归 Wizards of the Coast 及画师所有</view>
 </view>

@@ -12,7 +12,7 @@
         hover-class="pressable-active"
         hover-stay-time="120"
         bindtap="toggleCabbageEngine"
-      >{{item.name}}</view>
+      ><text>{{item.zhName || item.name}}</text><text wx:if="{{item.zhName}}" class="cabbage-engine-en">{{item.name}}</text></view>
     </view>
 
     <button class="primary-button cabbage-cast-button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageCast">对手施放非生物咒语</button>
@@ -23,7 +23,7 @@
         <text class="cabbage-green mono">{{cabbageMana.green}}</text>
         <text class="cabbage-green-unit">绿</text>
       </view>
-      <view class="cabbage-hint" wx:if="{{cabbageMana.treasure}}">Treasure 另可产 <text class="cabbage-green mono">+{{cabbageMana.treasure}}</text> 绿（横置或牺牲未横置）</view>
+      <view class="cabbage-hint" wx:if="{{cabbageMana.treasure}}">珍宝另可产 <text class="cabbage-green mono">+{{cabbageMana.treasure}}</text> 绿（横置或牺牲未横置）</view>
     </view>
 
     <view class="cabbage-tokens">
@@ -45,11 +45,11 @@
       </view>
     </view>
 
-    <view class="cabbage-activate {{cabbageAvail ? '' : 'disabled'}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageActivate">横置 2 Food → +1 绿（{{cabbageAvail}}）</view>
+    <view class="cabbage-activate {{cabbageAvail ? '' : 'disabled'}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageActivate">横置 2 个食品 → +1 绿（{{cabbageAvail}}）</view>
 
     <view class="cabbage-footer">
       <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageUntapAll">全部重置</view>
-      <view class="text-button cabbage-footer-center" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageUntapOneFood">重置 1 Food</view>
+      <view class="text-button cabbage-footer-center" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageUntapOneFood">重置 1 个食品</view>
       <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageReset">清空</view>
     </view>
   </view>

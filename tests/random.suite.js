@@ -39,7 +39,7 @@ test('random tool page is registered and exposes roll controls', () => {
   const randomJson = JSON.parse(fs.readFileSync(path.join(pageRoot, 'random.json'), 'utf8'));
   const { randomConfig } = require('../miniprogram/config/random');
 
-  assert.equal(randomJson.navigationBarTitleText, '\u5c0f\u5de5\u5177');
+  assert.equal(randomJson.navigationBarTitleText, '混沌工具');
   assert.equal(randomJson.navigationBarBackgroundColor, '#050505');
   assert.equal(randomJson.navigationBarTextStyle, 'white');
   assert.equal(randomJson.backgroundColor, '#050505');

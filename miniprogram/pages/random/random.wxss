@@ -339,6 +339,12 @@
   line-height: 1.45;
 }
 
+/* 中文官方译名在前，英文原名放小字 */
+.tool-entry-en {
+  margin-left: 8rpx;
+  font-size: max(22rpx, 10px);
+}
+
 .tool-entry-arrow {
   flex-shrink: 0;
   color: var(--cedh-text-faint);

@@ -155,9 +155,9 @@ test('卷心菜对账是独立全屏页，绿/白文本分色、常亮、切出�
   assert.match(wxml, /bindtap="cabbageCast"/);
   assert.match(wxml, /bindtap="cabbageActivate"/);
   assert.match(wxml, /bindtap="cabbageTapToken"/);
-  // 底部：全部重置（untapAll）+ 重置 1 Food（Clock of Omens 解 1 个横置 Food）+ 清空
+  // 底部：全部重置（untapAll）+ 重置 1 个食品（Clock of Omens 解 1 个横置的食品）+ 清空；衍生物用官方简中名
   assert.match(wxml, /bindtap="cabbageUntapAll"[^>]*>全部重置/);
-  assert.match(wxml, /bindtap="cabbageUntapOneFood"[^>]*>重置 1 Food/);
+  assert.match(wxml, /bindtap="cabbageUntapOneFood"[^>]*>重置 1 个食品/);
   assert.match(wxml, /wx:for="\{\{cabbageEngineList\}\}"/);
   assert.doesNotMatch(wxml, /征募抵泛用|产出三倍|每 token → 绿/);
   // 绿法术力 = 绿色 accent 文本；泛用 = 白；页根将 accent 覆盖为绿

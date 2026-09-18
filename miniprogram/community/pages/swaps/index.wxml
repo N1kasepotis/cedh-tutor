@@ -19,7 +19,15 @@
             src="{{outCard.image}}"
             mode="aspectFit"
           />
-          <view wx:else class="swap-art-empty">＋</view>
+          <view
+            wx:else
+            class="swap-art-empty"
+            aria-role="button"
+            aria-label="选择换出的单卡"
+            hover-class="pressable-active"
+            data-target="outCard"
+            bindtap="choose"
+          >＋</view>
           <view class="card-name">{{outCard.displayName || '选择单卡'}}</view>
           <button
             hover-class="pressable-active"
@@ -39,7 +47,15 @@
             src="{{inCard.image}}"
             mode="aspectFit"
           />
-          <view wx:else class="swap-art-empty">＋</view>
+          <view
+            wx:else
+            class="swap-art-empty"
+            aria-role="button"
+            aria-label="选择换入的单卡"
+            hover-class="pressable-active"
+            data-target="inCard"
+            bindtap="choose"
+          >＋</view>
           <view class="card-name">{{inCard.displayName || '选择单卡'}}</view>
           <button
             hover-class="pressable-active"

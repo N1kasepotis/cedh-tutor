@@ -132,10 +132,14 @@ test('tracker page is registered and exposes commander record controls', () => {
   assert.match(wxss, /\.deck-name\.partner\s*{[\s\S]*?font-size:\s*28rpx/);
   assert.match(wxss, /\.deck-name\.name-tight\s*{[\s\S]*?font-size:\s*24rpx/);
   assert.doesNotMatch(wxss, /botanical|flower-|sprig-|\.chart-section::before|\.chart-section::after/);
-  assert.match(wxss, /\.deck-delete-button\s*{[\s\S]*position:\s*absolute/);
-  assert.match(wxss, /\.deck-delete-button\s*{[\s\S]*right:\s*var\(--cedh-space-4\)/);
-  assert.match(wxss, /\.deck-delete-button\s*{[\s\S]*top:\s*var\(--cedh-space-4\)/);
-  assert.match(wxss, /\.deck-delete-button\s*{[\s\S]*color:\s*var\(--cedh-danger\)/);
+  // 删除套牌是少用的操作：放在套牌卡片底部、对局记录之后，居中的次要文字，不再是右上角的红字
+  const deckHead = wxml.slice(wxml.indexOf('<view class="deck-card-head">'), wxml.indexOf('<view class="selector-block"'));
+  assert.doesNotMatch(deckHead, /deleteDeck/);
+  assert.match(wxml, /<view class="deck-footer">\s*<view class="text-button deck-delete-button"[^>]*bindtap="deleteDeck">删除套牌<\/view>/);
+  assert.ok(wxml.indexOf('class="deck-footer"') > wxml.indexOf('class="match-list"'), '删除套牌在对局记录之后');
+  assert.doesNotMatch(wxss, /deck-delete-button[^{]*\{[^}]*position:\s*absolute/);
+  assert.match(wxss, /\.deck-delete-button,\s*\.clear-data-button\s*\{[^}]*min-height:\s*44px;[^}]*color:\s*var\(--cedh-text-soft\)/);
+  assert.match(wxss, /\.deck-footer,\s*\.tracker-footer\s*\{\s*display:\s*flex;\s*justify-content:\s*center;/);
 });
 
 test('tracker record pickers stay inside the mobile grid', () => {
