@@ -25,7 +25,7 @@ function clampRate(value) {
 }
 
 function getWinRateViewport(values) {
-  const rates = (values || []).map(clampRate);
+  const rates = (values || []).filter((value) => value != null && Number.isFinite(Number(value))).map(clampRate);
   if (!rates.length) {
     return { min: 0, max: 1 };
   }
@@ -63,7 +63,7 @@ function paintChart(ctx, width, height, series, type) {
     return;
   }
 
-  const paddingX = 18;
+  const paddingX = 34;
   const paddingTop = 18;
   const paddingBottom = type === 'winrate' ? 34 : 18;
   const chartWidth = Math.max(1, width - paddingX * 2);
@@ -81,7 +81,7 @@ function paintChart(ctx, width, height, series, type) {
   ctx.lineTo(width - paddingX, height - paddingBottom);
   ctx.stroke();
 
-  if (!series || !series.length) {
+  if (!series || !series.length || (type === 'winrate' && series.every((point) => point.rate == null))) {
     ctx.fillStyle = CHART_COLORS.mutedText;
     ctx.font = '12px sans-serif';
     ctx.textAlign = 'center';
@@ -100,24 +100,42 @@ function paintChart(ctx, width, height, series, type) {
 
   const lineColor = type === 'winrate' ? CHART_COLORS.winrateInk : CHART_COLORS.accent;
 
+  if (type === 'winrate') {
+    ctx.fillStyle = CHART_COLORS.mutedText;
+    ctx.font = '9px sans-serif';
+    ctx.textAlign = 'right';
+    ctx.textBaseline = 'middle';
+    [0, 0.5, 1].forEach((fraction) => {
+      const rate = viewport.min + fraction * valueRange;
+      ctx.fillText(`${Math.round(rate * 100)}%`, paddingX - 5, height - paddingBottom - fraction * chartHeight);
+    });
+    ctx.textAlign = 'left';
+    ctx.textBaseline = 'alphabetic';
+  }
+
   ctx.strokeStyle = lineColor;
   ctx.lineWidth = 2;
   ctx.lineJoin = 'round';
   ctx.lineCap = 'round';
   ctx.beginPath();
 
+  let continuing = false;
   values.forEach((value, index) => {
+    // A draw-only day is a gap, not a measured zero win rate.
+    if (value == null) { continuing = false; return; }
     const x = paddingX + (series.length === 1 ? chartWidth / 2 : (chartWidth * index) / (series.length - 1));
     const normalized = Math.max(0, Math.min(1, (Number(value || 0) - viewport.min) / valueRange));
     const y = height - paddingBottom - normalized * chartHeight;
-    if (index === 0) ctx.moveTo(x, y);
+    if (!continuing) ctx.moveTo(x, y);
     else ctx.lineTo(x, y);
+    continuing = true;
   });
 
   ctx.stroke();
 
   ctx.fillStyle = lineColor;
   values.forEach((value, index) => {
+    if (value == null) return;
     const x = paddingX + (series.length === 1 ? chartWidth / 2 : (chartWidth * index) / (series.length - 1));
     const normalized = Math.max(0, Math.min(1, (Number(value || 0) - viewport.min) / valueRange));
     const y = height - paddingBottom - normalized * chartHeight;
@@ -174,11 +192,13 @@ function paintSeatWinrateChart(ctx, width, height, series) {
     ctx.fillStyle = CHART_COLORS.text;
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(item.rateLabel || '0.0%', x + barWidth / 2, Math.max(12, y - 6));
+    ctx.fillText(item.rateLabel || '—', x + barWidth / 2, Math.max(12, y - 6));
 
     ctx.fillStyle = CHART_COLORS.mutedText;
     ctx.font = '10px sans-serif';
     ctx.fillText(item.label || `Seat ${index + 1}`, x + barWidth / 2, height - 12);
+    ctx.font = '9px sans-serif';
+    ctx.fillText(`n=${item.sampleSize || 0}`, x + barWidth / 2, 12);
   });
 
   ctx.textAlign = 'left';

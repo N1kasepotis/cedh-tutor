@@ -21,9 +21,9 @@ const CLIPBOARD_DECK_MIN_LINES = 8;
 const SLOW_ANALYSIS_MS = 6000;
 
 const CONFIDENCE_LABELS = Object.freeze({
-  high: '高',
-  medium: '中',
-  low: '低',
+  high: '充分',
+  medium: '有限',
+  low: '不足',
 });
 
 function formatUsd(value) {
@@ -33,12 +33,12 @@ function formatUsd(value) {
 
 // 每条依据在判定链条中的角色：下限 / 强度区间 / 辅助上调 / 特殊升降档 / 参考
 function reasonRoleLabel(item) {
-  if (item.code === 'CONFIDENCE_PROFILE') return '置信度';
+  if (item.code === 'CONFIDENCE_PROFILE') return '评估依据';
   if (item.code === 'BAND_POSITION') return '区间定位';
   if (item.kind === 'context') return '参考';
   if (item.code === 'COMPETITIVE_SIGNAL_DENSITY') return '竞技特征';
   if (item.code === 'EXPENSIVE_POOL_PROMOTION') return '主将池升 B5';
-  if (item.kind === 'rule') return `下限 B${item.minimumBracket}`;
+  if (item.kind === 'rule') return `内容基线 B${item.minimumBracket}`;
   if (item.code === 'MANA_CURVE_SUPPORT'
     || item.code === 'CONSTRUCTION_EFFICIENCY_SUPPORT'
     || item.code === 'THEME_COHESION_SUPPORT'
@@ -56,7 +56,7 @@ function buildVerdictSteps(result) {
     code: `B${bracket}`,
     changed: Boolean(changed),
   });
-  pushStep('规则下限', result.floorBracket, false);
+  pushStep('内容基线', result.floorBracket, false);
   pushStep('结构强度', result.assignedWithoutMetrics, result.assignedWithoutMetrics > result.floorBracket);
   pushStep('数据辅助', result.assignedBeforePromotion,
     result.assignedBeforePromotion > result.assignedWithoutMetrics);

@@ -55,7 +55,7 @@
             <text class="stat-hero-value mono">{{item.stats.winRateLabel}}</text>
             <view class="stat-hero-meta">
               <text class="stat-micro-label">WIN RATE</text>
-              <text class="stat-micro-sub">胜率</text>
+              <text class="stat-micro-sub">胜率，平局不计</text>
             </view>
           </view>
           <view class="stat-secondary">
@@ -81,7 +81,7 @@
           <canvas id="winrateChart-{{item.id}}" type="2d" class="chart-canvas"></canvas>
         </view>
         <view class="chart-section">
-          <view class="chart-title">轮次胜率</view>
+          <view class="chart-title">座次胜率</view>
           <canvas id="seatWinrateChart-{{item.id}}" type="2d" class="chart-canvas"></canvas>
         </view>
 
@@ -134,7 +134,7 @@
             >
               <view class="match-identity">
                 <text class="match-sequence mono">#{{match.sequence}}</text>
-                <text class="match-date mono">{{match.date}}</text>
+                <text class="match-date mono">{{match.date || '日期未知'}}</text>
                 <view wx:if="{{match.hasReview}}" class="match-review-toggle {{match.reviewOpen ? 'is-open' : ''}}" aria-role="button" aria-expanded="{{match.reviewOpen}}" aria-label="{{match.reviewOpen ? '收起这局的赛后一分钟' : '查看这局的赛后一分钟'}}" data-deck-id="{{item.id}}" data-match-id="{{match.id}}" hover-class="pressable-active" hover-stay-time="120" bindtap="toggleMatchReview">复盘</view>
               </view>
               <view class="match-seat {{match.seatClass}}">{{match.seatLabel}}</view>

@@ -272,7 +272,7 @@ test('combat damage preference strongly rewards true burn-pressure commanders', 
     },
     deckElements: ['control_posture'],
     edhtop16Url: 'https://edhtop16.com/commander/Generic%20Dimir%20Control',
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
   };
 
   assert.ok(profile.damagePressure >= 4);
@@ -640,14 +640,14 @@ test('selected colors penalize commanders with no color overlap', () => {
       colorIdentity: 'W',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/White%20Candidate',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
     {
       name: 'Blue Candidate',
       colorIdentity: 'U',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Blue%20Candidate',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
   ];
 
@@ -688,21 +688,21 @@ test('recommendations rank matching colors above extra unselected colors when fi
       colorIdentity: 'WUBRG',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Five%20Color%20Candidate',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
     {
       name: 'Azorius Candidate',
       colorIdentity: 'WU',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Azorius%20Candidate',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
     {
       name: 'White Candidate',
       colorIdentity: 'W',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/White%20Candidate',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
   ];
 
@@ -727,14 +727,14 @@ test('commander dependency criterion ranks decks by desired commander reliance',
       colorIdentity: 'UB',
       matchTags: { commanderIndependent: 5 },
       edhtop16Url: 'https://edhtop16.com/commander/Commander%20Independent',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
     {
       name: 'Commander Dependent',
       colorIdentity: 'UB',
       matchTags: { commanderDependent: 5 },
       edhtop16Url: 'https://edhtop16.com/commander/Commander%20Dependent',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
   ];
 
@@ -758,7 +758,7 @@ test('partner preference criterion adjusts partner shell ranking', () => {
       matchTags: { partnerFriendly: 4 },
       deckElements: ['partner_shell'],
       edhtop16Url: 'https://edhtop16.com/commander/Partner%20Shell',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
     {
       name: 'Solo Shell',
@@ -766,7 +766,7 @@ test('partner preference criterion adjusts partner shell ranking', () => {
       matchTags: { partnerAverse: 4 },
       deckElements: ['solo_commander'],
       edhtop16Url: 'https://edhtop16.com/commander/Solo%20Shell',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
   ];
 
@@ -812,16 +812,16 @@ test('cost tier is derived from color count and never shows RMB amount', () => {
 
 test('stats multiplier lowers decks with weak conversion or play rate', () => {
   const strongDeck = {
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
   };
   const lowConversionDeck = {
-    sourceStats: { winRate: 0.08, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.08, entries: 120, metaShare: 0.006 },
   };
   const lowPlayDeck = {
-    sourceStats: { winRate: 0.2, entries: 20, metaShare: 0.0006 },
+    sourceStats: { conversionRate: 0.2, entries: 20, metaShare: 0.0006 },
   };
   const bothWeakDeck = {
-    sourceStats: { winRate: 0.08, entries: 20, metaShare: 0.0006 },
+    sourceStats: { conversionRate: 0.08, entries: 20, metaShare: 0.0006 },
   };
 
   assert.equal(calculateStatsMultiplier(strongDeck, statsWeightConfig), 1);
@@ -835,17 +835,17 @@ test('stats multiplier lowers decks with weak conversion or play rate', () => {
 test('low-play partner shells receive an extra configurable weight reduction', () => {
   const coldSoloDeck = {
     name: 'Cold Solo',
-    sourceStats: { winRate: 0.2, entries: 20, metaShare: 0.0006 },
+    sourceStats: { conversionRate: 0.2, entries: 20, metaShare: 0.0006 },
     deckElements: ['solo_commander'],
   };
   const coldPartnerDeck = {
     name: 'Cold Partner A / Cold Partner B',
-    sourceStats: { winRate: 0.2, entries: 20, metaShare: 0.0006 },
+    sourceStats: { conversionRate: 0.2, entries: 20, metaShare: 0.0006 },
     deckElements: ['partner_shell'],
   };
   const establishedPartnerDeck = {
     name: 'Established Partner A / Established Partner B',
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     deckElements: ['partner_shell'],
   };
 
@@ -858,7 +858,7 @@ test('low-play partner shells receive an extra configurable weight reduction', (
 test('irrelevant and outdated meta tags trigger the same recommendation penalties as legacy fields', () => {
   const currentDeck = {
     name: 'Current Tagged Baseline',
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     metaTags: [],
   };
   const irrelevantDeck = {
@@ -905,17 +905,17 @@ test('bottom-half partner shells receive a configurable 0.7 weight reduction', (
   };
   const bottomPartnerDeck = {
     name: 'Bottom Partner A / Bottom Partner B',
-    sourceStats: { winRate: 0.2, entries: 50, metaShare: 0.0015 },
+    sourceStats: { conversionRate: 0.2, entries: 50, metaShare: 0.0015 },
     deckElements: ['partner_shell'],
   };
   const upperPartnerDeck = {
     name: 'Upper Partner A / Upper Partner B',
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     deckElements: ['partner_shell'],
   };
   const bottomSoloDeck = {
     name: 'Bottom Solo',
-    sourceStats: { winRate: 0.2, entries: 50, metaShare: 0.0015 },
+    sourceStats: { conversionRate: 0.2, entries: 50, metaShare: 0.0015 },
     deckElements: ['solo_commander'],
   };
 
@@ -929,12 +929,12 @@ test('bottom-half partner shells receive a configurable 0.7 weight reduction', (
 test('outdated commanders receive a configurable recommendation penalty', () => {
   const currentDeck = {
     name: 'Current Baseline',
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     deckElements: ['current_meta'],
   };
   const outdatedDeck = {
     name: 'Outdated Baseline',
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     deckElements: ['outdated_meta'],
   };
   const profile = { combo: 10 };
@@ -970,13 +970,13 @@ test('outdated and irrelevant partner shells receive separate meta penalties', (
   const outdatedPartner = {
     name: 'Outdated Partner Test / Tymna the Weaver',
     colorIdentity: 'WB',
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     deckElements: ['partner_shell', 'outdated_meta'],
   };
   const irrelevantPartner = {
     name: 'Irrelevant Partner Test / Tymna the Weaver',
     colorIdentity: 'WB',
-    sourceStats: { winRate: 0.08, entries: 12, metaShare: 0.0004 },
+    sourceStats: { conversionRate: 0.08, entries: 12, metaShare: 0.0004 },
     deckElements: ['partner_shell', 'irrelevant_meta'],
   };
 
@@ -1091,7 +1091,7 @@ test('Xyris is pruned instead of remaining as a near-perfect recommendation risk
   assert.notEqual(recommendations[0].name, 'Xyris, the Writhing Storm');
 });
 
-test('low-play partner shells can be auto-classified as irrelevant without tagging solo decks', () => {
+test('few observed entries do not classify partner shells as irrelevant', () => {
   const config = {
     ...statsWeightConfig,
     conversionRate: { lowBelow: 0, lowMultiplier: 1 },
@@ -1108,30 +1108,31 @@ test('low-play partner shells can be auto-classified as irrelevant without taggi
     },
     lowPlayPartner: { ...statsWeightConfig.lowPlayPartner, enabled: false },
     irrelevant: { ...statsWeightConfig.irrelevant, enabled: true },
+    bottomHalfPartner: { ...statsWeightConfig.bottomHalfPartner, enabled: false },
   };
   const coldPartnerDeck = {
     name: 'Auto Fringe Partner A / Auto Fringe Partner B',
-    sourceStats: { winRate: 0.2, entries: 20, metaShare: 0.0006 },
+    sourceStats: { conversionRate: 0.2, entries: 20, metaShare: 0.0006 },
     deckElements: ['partner_shell'],
   };
   const coldSoloDeck = {
     name: 'Auto Fringe Solo',
-    sourceStats: { winRate: 0.2, entries: 20, metaShare: 0.0006 },
+    sourceStats: { conversionRate: 0.2, entries: 20, metaShare: 0.0006 },
     deckElements: ['solo_commander'],
   };
 
-  assert.ok(calculateStatsMultiplier(coldPartnerDeck, config) < calculateStatsMultiplier(coldSoloDeck, config));
+  assert.equal(calculateStatsMultiplier(coldPartnerDeck, config), calculateStatsMultiplier(coldSoloDeck, config));
 });
 
 test('stats multiplier boosts decks with higher play count', () => {
   const normalPlayDeck = {
-    sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+    sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
   };
   const highPlayDeck = {
-    sourceStats: { winRate: 0.2, entries: 800, metaShare: 0.03 },
+    sourceStats: { conversionRate: 0.2, entries: 800, metaShare: 0.03 },
   };
   const topPlayDeck = {
-    sourceStats: { winRate: 0.2, entries: 1800, metaShare: 0.06 },
+    sourceStats: { conversionRate: 0.2, entries: 1800, metaShare: 0.06 },
   };
 
   assert.ok(calculateStatsMultiplier(highPlayDeck, statsWeightConfig) > calculateStatsMultiplier(normalPlayDeck, statsWeightConfig));
@@ -1148,21 +1149,21 @@ test('recommendations rank low conversion or low play decks below equally matche
       colorIdentity: 'UB',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Low%20Conversion',
-      sourceStats: { winRate: 0.08, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.08, entries: 120, metaShare: 0.006 },
     },
     {
       name: 'Low Play',
       colorIdentity: 'UB',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Low%20Play',
-      sourceStats: { winRate: 0.2, entries: 20, metaShare: 0.0006 },
+      sourceStats: { conversionRate: 0.2, entries: 20, metaShare: 0.0006 },
     },
     {
       name: 'Strong Baseline',
       colorIdentity: 'UB',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Strong%20Baseline',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
   ];
 
@@ -1181,14 +1182,14 @@ test('recommendations rank high play decks above equally matched normal play dec
       colorIdentity: 'UB',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Normal%20Play',
-      sourceStats: { winRate: 0.2, entries: 120, metaShare: 0.006 },
+      sourceStats: { conversionRate: 0.2, entries: 120, metaShare: 0.006 },
     },
     {
       name: 'High Play',
       colorIdentity: 'UB',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/High%20Play',
-      sourceStats: { winRate: 0.2, entries: 800, metaShare: 0.03 },
+      sourceStats: { conversionRate: 0.2, entries: 800, metaShare: 0.03 },
     },
   ];
 
@@ -1208,21 +1209,21 @@ test('competitive priority strongly favors decks with both top play rate and top
       colorIdentity: 'UB',
       matchTags: { competitive: 10, consistency: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Top%20Play%20And%20Top%20Win',
-      sourceStats: { winRate: 0.22, entries: 650, metaShare: 0.02 },
+      sourceStats: { conversionRate: 0.22, entries: 650, metaShare: 0.02 },
     },
     {
       name: 'Top Play Only',
       colorIdentity: 'UB',
       matchTags: { competitive: 10, consistency: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Top%20Play%20Only',
-      sourceStats: { winRate: 0.18, entries: 1800, metaShare: 0.06 },
+      sourceStats: { conversionRate: 0.18, entries: 1800, metaShare: 0.06 },
     },
     {
       name: 'Top Win Only',
       colorIdentity: 'UB',
       matchTags: { competitive: 10, consistency: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Top%20Win%20Only',
-      sourceStats: { winRate: 0.24, entries: 80, metaShare: 0.002 },
+      sourceStats: { conversionRate: 0.24, entries: 80, metaShare: 0.002 },
     },
   ];
 
@@ -1241,14 +1242,14 @@ test('play rate cannot outrank a clearly better questionnaire fit', () => {
       colorIdentity: 'UB',
       matchTags: { combo: 10 },
       edhtop16Url: 'https://edhtop16.com/commander/Better%20Fit%20Low%20Play',
-      sourceStats: { winRate: 0.2, entries: 20, metaShare: 0.0006 },
+      sourceStats: { conversionRate: 0.2, entries: 20, metaShare: 0.0006 },
     },
     {
       name: 'Worse Fit Top Play',
       colorIdentity: 'UB',
       matchTags: { combo: 9.5 },
       edhtop16Url: 'https://edhtop16.com/commander/Worse%20Fit%20Top%20Play',
-      sourceStats: { winRate: 0.2, entries: 1800, metaShare: 0.06 },
+      sourceStats: { conversionRate: 0.2, entries: 1800, metaShare: 0.06 },
     },
   ];
 
@@ -1272,7 +1273,7 @@ test('recommendations reserve a tail slot for high-fit low-play diversity', () =
     colorIdentity: 'UB',
     matchTags: { combo },
     edhtop16Url: `https://edhtop16.com/commander/${encodeURIComponent(name)}`,
-    sourceStats: { winRate: 0.2, entries, metaShare },
+    sourceStats: { conversionRate: 0.2, entries, metaShare },
   }));
 
   const recommendations = recommendCommanders(profile, candidates, 5, dimensionLabels, costTierConfig, statsWeightConfig);
@@ -1298,7 +1299,7 @@ test('low-play diversity tail prioritizes cold solo decks over cold partner shel
     matchTags: { combo },
     deckElements,
     edhtop16Url: `https://edhtop16.com/commander/${encodeURIComponent(name)}`,
-    sourceStats: { winRate: 0.2, entries, metaShare },
+    sourceStats: { conversionRate: 0.2, entries, metaShare },
   }));
 
   const recommendations = recommendCommanders(profile, candidates, 5, dimensionLabels, costTierConfig, statsWeightConfig);

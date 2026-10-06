@@ -112,7 +112,7 @@ const hands = [
     verdict: 'keep',
     reasons: [
       '第 1 回合：Polluted Delta 拿地，Chrome Mox 放逐 Copy Artifact 或一张双面牌，凑出绿蓝两色施放 Kinnan',
-      '第 2 回合：施放 Talisman of Curiosity；Kinnan 让 Chrome Mox 和 Talisman 各多产 1 点，付完还剩 3 点，可以留着 Sink into Stupor，或者施放 Copy Artifact',
+      '第 2 回合不补第二张地，也能施放 Talisman of Curiosity；Kinnan 让 Chrome Mox 和 Talisman 各多产 1 点，付完还能产 3 点，保留蓝色来源可留着 Sink into Stupor，或施放 Copy Artifact',
       'Sink into Stupor 和 Bridgeworks Battle 背面都是地，缺地时可以当地打出；它们也是这套牌里少数能对付 Magda 的互动',
       '第 1 回合就有主将，第 2 回合还能留着互动，打法完整，用不着免费调度',
     ],
@@ -235,7 +235,7 @@ const hands = [
     verdict: 'keep',
     reasons: [
       '第 1 回合用 Command Tower 施放 Esper Sentinel：对手每回合施放第一个非生物咒语时，不付 1 点你就抓一张',
-      '三位对手都在拼速度，只想比别人先赢，没人会为你停下来付费；这张牌几乎每轮都能抓两三张',
+      '三位对手都在拼速度，来源预计 Esper Sentinel 能抓到不少牌；实际张数取决于对手是否施放非生物咒语及支付费用',
       'Dark Ritual 和 Diabolic Intent 负责加速或找关键牌；缺点是没有能拦住这三套牌的互动，来源仍然选择留',
     ],
     source: 'play-to-win',
@@ -284,7 +284,7 @@ const hands = [
     reasons: [
       '1 号位是先手牌手，Gemstone Caverns 不能在开局直接放进战场，之后当地打出也只产无色；有色法术力只能靠 Marsh Flats 找地',
       '即使之后抓到地，最早也要第 3 回合才凑出 3 点法术力施放 Tymna',
-      '其余几张大多是反击和保护，只能拦别人，自己推进不了；拦下一位对手，另外两位里总有人会赢',
+      '其余几张大多是反击和保护，自己的展开不足；拦下一位对手后，还要应对另外两位的取胜尝试',
       '来源的原则：不留只能拦别人的起手；在 1 号位，这手牌更难成形',
     ],
     source: 'play-to-win',
@@ -308,7 +308,7 @@ const hands = [
     verdict: 'keep',
     reasons: [
       '只有一张地，Mox Diamond 进场还要弃一张地，看起来像陷阱',
-      '抓到地：打出一张地，Mox Diamond 弃掉另一张，第 1 回合就能施放 Sol Ring 和 Mystic Remora；来源估计这种开局的机会接近三分之一',
+      '抓到能立刻产费的地：打出一张，Mox Diamond 弃掉另一张，第 1 回合就能施放 Sol Ring 和 Mystic Remora；来源按当时牌表估计接近三分之一，不适用于所有牌表',
       '没抓到地也照样弃掉唯一的地放 Mox Diamond：Kinnan 在场时，横置非地永久物产法术力会多产 1 点，神器法术力比地更值钱',
       'Sol Ring 和 Mystic Remora 能把大多数手牌拉到可以留；Void Winnower、Hullbreaker Horror 是后期打法，帮不了开局，要不是前几张够好，这手就该调度',
     ],

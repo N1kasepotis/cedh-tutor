@@ -7,11 +7,11 @@ const WIDTH = 900;
 const MARGIN = 64;
 const MINI_PROGRAM_CODE = '/assets/cT_logo_v.2.jpg';
 const CODE_BOX = 156;
-const CARD_WIDTH = 168;
-const TEXT_X = MARGIN + CARD_WIDTH + 44;
+const CARD_WIDTH = 224;
+const TEXT_X = MARGIN + CARD_WIDTH + 40;
 const TEXT_WIDTH = WIDTH - MARGIN - TEXT_X;
 const FOOTER_WIDTH = WIDTH - MARGIN * 2 - CODE_BOX - 40;
-const MODULE_GAP = 72;
+const MODULE_GAP = 60;
 const INVITATION = '这是我看待万智牌的方式，你呢？';
 const COLORS = {
   field: '#110F0C',
@@ -176,7 +176,8 @@ function fit(ctx, text, width, size, maxLines, { weight = 'normal', floor = 14, 
     size: current,
     weight,
     leading: Math.round(current * leading),
-    lines: lines.slice(0, maxLines),
+    // At the minimum size, grow the measured layout instead of dropping text.
+    lines,
   };
 }
 function lastBaseline(block, y) {
@@ -253,7 +254,7 @@ function planSlot(ctx, slot, img, top) {
   let reason = null;
   let reasonY = 0;
   if (slot.reason) {
-    reason = fit(ctx, slot.reason, TEXT_WIDTH, 30, 3, { floor: 20, leading: 1.45 });
+    reason = fit(ctx, slot.reason, TEXT_WIDTH, 32, 3, { floor: 20, leading: 1.45 });
     reasonY = bottom + 58;
     bottom = lastBaseline(reason, reasonY);
   }
@@ -315,7 +316,7 @@ function paintHeader(ctx, header) {
 }
 function paintSlot(ctx, slot, plan, index) {
   ctx.fillStyle = COLORS.meta;
-  ctx.font = font(20);
+  ctx.font = font(22);
   tracked(ctx, SLOT_LABELS[index], TEXT_X, plan.labelY, 2);
   paintLines(ctx, plan.name, TEXT_X, plan.nameY, COLORS.name);
   if (plan.english) paintLines(ctx, plan.english, TEXT_X, plan.englishY, COLORS.meta);

@@ -53,7 +53,7 @@ test('EDHTI config mirrors the downloaded repository content', () => {
     oddsSum += odds;
   });
   assert.ok(Math.abs(oddsSum - 100) < 0.5, `概率总和应约 100，实为 ${oddsSum}`);
-  assert.equal(edhtiPersonaOdds.FTXO, 15.58);
+  assert.equal(edhtiPersonaOdds.FTXO, 22.33);
   assert.equal(edhtiQuestions[0].id, 'q01');
   assert.equal(edhtiQuestions[0].prompt, '坐下前大家说这局是B桌强度，你心里最先确认什么？');
   assert.ok(edhtiQuestions.every((question) => question.answers.length >= 4));
@@ -188,8 +188,8 @@ test('EDHTI page is registered and exposes quiz result export flow', () => {
   // 右上角赛博霓虹出现率贴纸
   assert.match(js, /function drawOddsSticker/);
   assert.match(js, /drawOddsSticker\(ctx,\s*result\.odds\)/);
-  assert.match(js, /odds\.toFixed\(2\)/);
-  assert.match(js, /人格稀有度/);
+  assert.match(js, /odds\.toFixed\(1\)/);
+  assert.match(js, /随机作答占比/);
   assert.match(js, /odds:\s*edhtiPersonaOdds\[rawResult\.code\]/);
   assert.match(wxml, /{{currentQuestion\.prompt}}/);
   // 选项列表由共享组件渲染

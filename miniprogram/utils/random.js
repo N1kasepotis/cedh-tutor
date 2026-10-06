@@ -1,7 +1,9 @@
 function toInteger(value, fallback) {
+  if (value === null || value === undefined || String(value).trim() === '') return fallback;
   const number = Number(value);
-  if (!Number.isFinite(number)) return fallback;
-  return Math.trunc(number);
+  const integer = Math.trunc(number);
+  if (!Number.isSafeInteger(integer)) throw new RangeError('请输入安全整数范围内的数');
+  return integer;
 }
 
 function sanitizeRange(minInput, maxInput) {
@@ -9,6 +11,7 @@ function sanitizeRange(minInput, maxInput) {
   const rawMax = toInteger(maxInput, 100);
   const min = Math.min(rawMin, rawMax);
   const max = Math.max(rawMin, rawMax);
+  if (!Number.isSafeInteger(max - min + 1)) throw new RangeError('随机范围太大，请缩小上下限之差');
 
   return { min, max };
 }
@@ -16,9 +19,9 @@ function sanitizeRange(minInput, maxInput) {
 function rollInteger(minInput, maxInput, randomFn = Math.random) {
   const { min, max } = sanitizeRange(minInput, maxInput);
   const randomValue = Number(randomFn());
-  const safeRandom = Math.max(0, Math.min(0.999999999999, Number.isFinite(randomValue) ? randomValue : 0));
+  const safeRandom = Math.max(0, Math.min(1 - Number.EPSILON / 2, Number.isFinite(randomValue) ? randomValue : 0));
 
-  return Math.floor(safeRandom * (max - min + 1)) + min;
+  return Math.min(max, Math.floor(safeRandom * (max - min + 1)) + min);
 }
 
 function createSequenceRandom(values) {

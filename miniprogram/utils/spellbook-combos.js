@@ -3,9 +3,7 @@
 // 数据在 config/spellbook-combos.js（构建期生成，纯数据），逻辑在这里（手写，不重新生成）。
 // 分开是因为「生成代码的代码」是转义地狱，而且数据要跟着上游更新、逻辑不该跟着变。
 //
-// 为什么需要这一层：手工维护的 KNOWN_COMBOS 只有 42 条，牌表里绝大多数两卡组合技
-// 根本认不出来。Spellbook 是社区维护的组合技库（EDHREC 的组合技页也用它），
-// 全量两卡组合技约 4000 条，且**现有 39 条手工两卡条目它一条不落地全都有**。
+// 配对匹配说明牌张命中，仍需原配方所要求的资源与状态。
 
 const {
   SPELLBOOK_CARD_NAMES,
@@ -99,9 +97,7 @@ function matchSpellbookCombos(deckKeys, canonicalize) {
   return matches;
 }
 
-// 查某一对牌在 Spellbook 眼里是几档；它不认识就返回 0。
-// 手工库的两卡条目也走这条：它自己那套「早期→4，否则→2」的启发式实测
-// 39 条里有 21 条与 Spellbook 不符，12 条把四级桌组合技判成了 3。
+// 查配对的定性标签映射；未收录时返回 0。
 function spellbookBracketFor(cards, canonicalize) {
   if (!Array.isArray(cards) || cards.length !== 2) return 0;
   if (typeof canonicalize !== 'function') return 0;

@@ -17,26 +17,26 @@
           <text>{{item.zhName || item.name}}</text>
           <text wx:if="{{item.zhName}}" class="izzet-engine-en">{{item.name}}</text>
         </view>
-        <text class="izzet-engine-state">{{item.on ? '正面在场' : '不在场 / 已转化'}}</text>
+        <text class="izzet-engine-state">{{item.on ? '我的回合，正面在场' : '不在场 / 已转化'}}</text>
       </view>
     </view>
 
     <view class="izzet-cast-group">
-      <button class="primary-button izzet-cast-button" hover-class="pressable-active" hover-stay-time="120" bindtap="stormCastSpell">施放瞬间/法术</button>
+      <button class="primary-button izzet-cast-button" hover-class="pressable-active" hover-stay-time="120" bindtap="stormCastSpell">我施放瞬间/法术</button>
       <button class="secondary-button izzet-cast-other" hover-class="pressable-active" hover-stay-time="120" bindtap="stormCastOther">施放其他咒语</button>
     </view>
 
     <view class="izzet-stats">
       <view class="izzet-stat">
-        <text class="izzet-stat-label">总风暴</text>
+        <text class="izzet-stat-label">本回合咒语</text>
         <text class="izzet-stat-value mono">{{storm.storm}}</text>
         <view class="izzet-stat-ctrls">
           <view class="izzet-ctrl" aria-role="button" aria-label="风暴减一" data-field="storm" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
-          <view class="izzet-ctrl" aria-role="button" aria-label="风暴加一" data-field="storm" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
+          <view class="izzet-ctrl" aria-role="button" aria-label="补记其他玩家施放的咒语" data-field="storm" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
         </view>
       </view>
       <view class="izzet-stat">
-        <text class="izzet-stat-label">瞬间/法术</text>
+        <text class="izzet-stat-label">我的瞬间/法术</text>
         <text class="izzet-stat-value mono">{{storm.spells}}</text>
         <view class="izzet-stat-ctrls">
           <view class="izzet-ctrl" aria-role="button" aria-label="瞬间法术减一" data-field="spells" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>

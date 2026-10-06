@@ -134,8 +134,8 @@
         </view>
 
         <view class="result-meta-line">
-          <text>下限 {{result.floorCode}}</text>
-          <text class="result-confidence">置信度：{{result.confidenceLabel}}</text>
+          <text>内容基线 {{result.floorCode}}</text>
+          <text class="result-confidence">依据：{{result.confidenceLabel}}</text>
         </view>
         </view>
       </view>

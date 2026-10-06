@@ -2,8 +2,9 @@ const lifeTrackerConfig = {
   storageKey: 'fourPlayerLifeTracker',
   schemaVersion: 1,
   initialLife: 40,
-  // 两人对决按 1v1 惯例 20 点起始；未列出的人数回退 initialLife
-  initialLifeByPlayerCount: { 2: 20 },
+  // 标准 Commander 在两人局也从 40 点开始（CR 903.7）。
+  // Duel Commander 是另一个赛制，不能仅凭玩家人数自动切换。
+  initialLifeByPlayerCount: {},
   minLife: -999,
   maxLife: 999,
   playerCount: 4,

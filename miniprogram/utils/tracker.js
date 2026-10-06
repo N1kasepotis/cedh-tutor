@@ -25,8 +25,10 @@ function todayString(date = new Date()) {
 }
 
 function normalizeDate(value) {
-  if (/^\d{4}-\d{2}-\d{2}$/.test(String(value || ''))) return String(value);
-  return todayString();
+  if (typeof value !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(value)) return '';
+  const parsed = new Date(`${value}T00:00:00Z`);
+  if (!Number.isFinite(parsed.getTime()) || parsed.toISOString().slice(0, 10) !== value) return '';
+  return value;
 }
 
 function createId(prefix) {
@@ -119,7 +121,7 @@ function normalizeTrackerData(raw, commanderLibrary, config) {
       commander,
       matches: sortMatches(deck.matches),
       query: commander ? commander.name : '',
-      pendingDate: normalizeDate(deck.pendingDate),
+      pendingDate: normalizeDate(deck.pendingDate) || todayString(),
       pendingResult: normalizeResult(deck.pendingResult),
       pendingSeat: normalizeSeat(deck.pendingSeat) || 'seat1',
     };
@@ -184,7 +186,7 @@ function buildTrackerExportText(data, config) {
 
     lines.push('对局记录：');
     matches.forEach((match) => {
-      lines.push(`${match.date} ｜ ${RESULT_LABELS[match.result]} ｜ ${match.seatLabel || '座位未知'}`);
+      lines.push(`${match.date || '日期未知'} ｜ ${RESULT_LABELS[match.result]} ｜ ${match.seatLabel || '座位未知'}`);
       if (match.review) {
         [['turningPoint', '转折'], ['keyCard', '关键单卡'], ['nextChange', '下次调整']].forEach(([key, label]) => {
           if (match.review[key]) lines.push(`${label}：${match.review[key]}`);
@@ -238,6 +240,7 @@ function filterCommanders(commanders, query, limit = 8) {
 }
 
 function formatRate(value) {
+  if (value == null) return '—';
   return `${(Number(value || 0) * 100).toFixed(1)}%`;
 }
 
@@ -247,7 +250,7 @@ function calculateDeckStats(deck, config) {
   const losses = matches.filter((match) => match.result === 'loss').length;
   const draws = matches.filter((match) => match.result === 'draw').length;
   const denominator = wins + losses + ((config && config.drawsCountForWinRate) ? draws : 0);
-  const winRate = denominator > 0 ? wins / denominator : 0;
+  const winRate = denominator > 0 ? wins / denominator : null;
 
   return {
     total: matches.length,
@@ -255,6 +258,7 @@ function calculateDeckStats(deck, config) {
     losses,
     draws,
     winRate,
+    sampleSize: denominator,
     winRateLabel: formatRate(winRate),
   };
 }
@@ -262,6 +266,7 @@ function calculateDeckStats(deck, config) {
 function buildWinRateSeries(matches, config) {
   const daily = new Map();
   sortMatches(matches).forEach((match) => {
+    if (!match.date) return; // Keep the result, but do not invent a day for a damaged date.
     const entry = daily.get(match.date) || { wins: 0, losses: 0, draws: 0 };
     if (match.result === 'win') entry.wins += 1;
     if (match.result === 'loss') entry.losses += 1;
@@ -272,7 +277,7 @@ function buildWinRateSeries(matches, config) {
   return Array.from(daily.entries()).map(([date, entry], index) => {
     const denominator = entry.wins + entry.losses
       + ((config && config.drawsCountForWinRate) ? entry.draws : 0);
-    const rate = denominator > 0 ? entry.wins / denominator : 0;
+    const rate = denominator > 0 ? entry.wins / denominator : null;
     return {
       index: index + 1,
       date,
@@ -285,13 +290,14 @@ function buildWinRateSeries(matches, config) {
 }
 
 function getWeekLabel(dateString) {
-  const date = new Date(`${dateString}T00:00:00`);
-  const day = date.getDay() || 7;
+  // ISO weeks use calendar days; local elapsed time can include a DST transition.
+  const date = new Date(`${dateString}T00:00:00Z`);
+  const day = date.getUTCDay() || 7;
   const thursday = new Date(date);
-  thursday.setDate(date.getDate() + 4 - day);
-  const yearStart = new Date(thursday.getFullYear(), 0, 1);
+  thursday.setUTCDate(date.getUTCDate() + 4 - day);
+  const yearStart = new Date(Date.UTC(thursday.getUTCFullYear(), 0, 1));
   const week = Math.ceil((((thursday - yearStart) / 86400000) + 1) / 7);
-  return `${thursday.getFullYear()}-W${pad2(week)}`;
+  return `${thursday.getUTCFullYear()}-W${pad2(week)}`;
 }
 
 function getBucketLabel(dateString, bucket) {
@@ -304,6 +310,7 @@ function buildFrequencySeries(matches, config) {
   const counts = new Map();
 
   sortMatches(matches).forEach((match) => {
+    if (!match.date) return;
     const label = getBucketLabel(match.date, bucket);
     counts.set(label, (counts.get(label) || 0) + 1);
   });
@@ -335,7 +342,7 @@ function buildSeatWinRateSeries(matches, config) {
   return SEAT_OPTIONS.map((seat) => {
     const stats = seatStats.get(seat.id);
     const denominator = stats.wins + stats.losses + ((config && config.drawsCountForWinRate) ? stats.draws : 0);
-    const rate = denominator > 0 ? stats.wins / denominator : 0;
+    const rate = denominator > 0 ? stats.wins / denominator : null;
 
     return {
       ...stats,

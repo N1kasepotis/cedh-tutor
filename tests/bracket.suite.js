@@ -224,7 +224,7 @@ test('Efficient win conditions are distinct from resource engines without duplic
       '98 Forest',
     ]);
     assert.equal(isolated.floorBracket, 1, `${card} alone has no hard floor`);
-    assert.equal(isolated.assignedBracket, 1, `${card} alone does not raise the recommendation`);
+    assert.equal(isolated.assignedBracket, 2, `${card} alone does not raise the recommendation`);
   });
 
   const winConditionPair = analyze([
@@ -597,78 +597,29 @@ test('Variable-component combo patterns are recognized conservatively without in
   assert.ok(!dargoOutsideCommandZone.detectedComboFamilies.some((family) => family.familyId === 'dargo-loop'));
 });
 
-test('Combo assembly mana value grades speed objectively and feeds the early-combo B5 condition', () => {
-  const {
-    comboSpeedTier,
-    isEarlyCombo,
-  } = require('../miniprogram/utils/bracket');
-  const objectiveDeck = [
-    'Commander',
-    '1 Test Commander',
-    'Deck',
-    '1 Isochron Scepter',
-    '1 Dramatic Reversal',
-    '1 Chrome Mox',
-    '1 Mox Diamond',
-    '1 Mana Vault',
-    '1 Demonic Tutor',
-    '1 Vampiric Tutor',
-    '1 Mystical Tutor',
-    '1 Force of Will',
-    '1 Fierce Guardianship',
-    '89 Forest',
-  ];
-
-  const slow = analyze(objectiveDeck, {
-    metadataResult: makeMetadata([
-      { name: 'Isochron Scepter', cmc: 2, typeLine: 'Artifact' },
-      { name: 'Dramatic Reversal', cmc: 3, typeLine: 'Instant' },
-    ]),
-  });
-  const slowFamily = slow.detectedComboFamilies.find((family) => family.familyId === 'scepter-reversal');
-  assert.ok(slowFamily, 'Scepter + Reversal 家族应被识别');
-  assert.notEqual(slowFamily.speed, 'early', '该家族无人工 early 标注，速度只能来自客观装配成本');
-  assert.equal(slowFamily.assemblyManaValue, 5);
-  assert.equal(slowFamily.assemblySpeed, 3);
-  assert.ok(slow.assignedBracket < 5, '合计 5 费（速度 3）不构成早期组合技，不应触发 B5');
-  assert.ok(slow.evidence.some((item) => item.code === 'COMBO_FAMILY_SCEPTER_REVERSAL'
-    && item.detail.startsWith('检测到完整')
-    && item.detail.includes('有条件的无限法术力')
-    && item.detail.includes('启动法术力 2+3')
-    && !item.detail.includes('前期即可启动')
-    && !item.detail.includes('全套法术力值合计')));
-
-  const fast = analyze(objectiveDeck, {
-    metadataResult: makeMetadata([
-      { name: 'Isochron Scepter', cmc: 2, typeLine: 'Artifact' },
-      { name: 'Dramatic Reversal', cmc: 2, typeLine: 'Instant' },
-    ]),
-  });
-  const fastFamily = fast.detectedComboFamilies.find((family) => family.familyId === 'scepter-reversal');
-  assert.equal(fastFamily.assemblyManaValue, 4);
-  assert.equal(fastFamily.assemblySpeed, 4);
-  assert.equal(fast.competitivePromoted, true, '合计 ≤4 费的客观早期组合技联动竞技特征触发升档');
-  assert.equal(fast.assignedBracket, 4.5, '刚达竞技阈值且零余量的牌表归 B4.5，不再直接进入 B5');
-  assert.ok(fast.evidence.some((item) => item.code === 'COMPETITIVE_SIGNAL_DENSITY'));
-  assert.ok(fast.evidence.some((item) => item.code === 'COMBO_FAMILY_SCEPTER_REVERSAL'
-    && item.detail.includes('启动法术力 2+2')
-    && !item.detail.includes('前期即可启动')));
-
-  const offline = analyze(objectiveDeck);
-  const offlineFamily = offline.detectedComboFamilies.find((family) => family.familyId === 'scepter-reversal');
-  assert.equal(offlineFamily.assemblyManaValue, undefined, '无元数据时不产生装配字段');
-  assert.ok(offline.evidence.every((item) => !item.detail.includes('启动法术力')), '离线路径无元数据，不显示启动法术力');
-  assert.ok(offline.assignedBracket < 5, '离线时该家族不因客观速度进入 B5');
-
-  assert.equal(comboSpeedTier(0), 5);
-  assert.equal(comboSpeedTier(4), 4);
-  assert.equal(comboSpeedTier(6), 3);
-  assert.equal(comboSpeedTier(8), 2);
-  assert.equal(comboSpeedTier(9), 1);
-  assert.equal(comboSpeedTier(-1), null);
-  assert.equal(isEarlyCombo({ speed: 'early' }), true, '人工标注仍是离线兜底');
-  assert.equal(isEarlyCombo({ speed: 'setup', assemblySpeed: 4 }), true);
-  assert.equal(isEarlyCombo({ speed: 'setup', assemblySpeed: 3 }), false);
+test('Combo mana value is a footprint and never predicts activation timing', () => {
+  const { isEarlyCombo } = require('../miniprogram/utils/bracket');
+  const deck = ['Commander', '1 Test Commander', 'Deck', '1 Isochron Scepter', '1 Dramatic Reversal',
+    '1 Chrome Mox', '1 Mox Diamond', '1 Mana Vault', '1 Demonic Tutor', '1 Vampiric Tutor', '1 Mystical Tutor',
+    '1 Force of Will', '1 Fierce Guardianship', '89 Forest'];
+  const online = analyze(deck, { metadataResult: makeMetadata([
+    { name: 'Isochron Scepter', cmc: 2, typeLine: 'Artifact' },
+    { name: 'Dramatic Reversal', cmc: 2, typeLine: 'Instant' },
+  ]) });
+  const offline = analyze(deck);
+  const family = online.detectedComboFamilies.find(item => item.familyId === 'scepter-reversal');
+  assert.equal(family.assemblyManaValue, 4);
+  assert.deepEqual(family.assemblyBreakdown, [2, 2]);
+  assert.equal(family.assemblySpeed, undefined);
+  assert.equal(isEarlyCombo(family), false, 'Scepter requires imprint, activation and sufficient nonland mana sources');
+  assert.equal(online.assignedBracket, offline.assignedBracket, 'MV data alone cannot upgrade this combo');
+  assert.equal(online.competitivePromoted, offline.competitivePromoted);
+  assert.equal(online.bandFourApproachScore, offline.bandFourApproachScore);
+  assert.equal(online.competitiveSurplusScore, offline.competitiveSurplusScore);
+  assert.ok(online.evidence.some(item => item.code === 'COMBO_FAMILY_SCEPTER_REVERSAL'
+    && item.detail.includes('牌张法术力值 2+2') && item.detail.includes('启动另需满足牌张条件')));
+  assert.equal(isEarlyCombo({ speed: 'setup', assemblyManaValue: 0 }), false);
+  assert.equal(isEarlyCombo({ speed: 'early' }), true);
 });
 
 test('Pattern combo assembly cost is the minimal recipe, not the sum of every redundant option', () => {
@@ -683,9 +634,9 @@ test('Pattern combo assembly cost is the minimal recipe, not the sum of every re
   ];
   const parsed = parseBracketDeck(lines.join('\n'));
   const manaValues = {
-    'magda, brazen outlaw': 3, 'clock of omens': 4, 'universal automaton': 1,
+    'magda, brazen outlaw': 2, 'clock of omens': 4, 'universal automaton': 1,
     'metallic mimic': 2, 'adaptive automaton': 3, 'roaming throne': 4,
-    'barkform harvester': 4, 'three tree mascot': 2, 'mirror of the forebears': 3,
+    'barkform harvester': 3, 'three tree mascot': 2, 'mirror of the forebears': 2,
   };
   const metadataResult = makeMetadata(Array.from(new Set(parsed.cards.map((card) => card.name)))
     .map((name) => ({
@@ -697,24 +648,24 @@ test('Pattern combo assembly cost is the minimal recipe, not the sum of every re
   const magda = evaluateBracket(parsed, { metadataResult });
   const family = magda.detectedComboFamilies.find((item) => item.familyId === 'magda-clock');
   assert.ok(family, 'Magda + Clock 家族应被识别');
-  // Magda 3 + Clock 4 + 最便宜的神器矮人 Universal Automaton 1 = 8，绝非 3+4+全部矮人 = 23
-  assert.equal(family.assemblyManaValue, 8, '装配成本取最小成套（固定件 + 每个可选组最便宜一张）');
+  // Magda 2 + Clock 4 + Universal Automaton 1 = 7，只统计最小配方的印刷 MV。
+  assert.equal(family.assemblyManaValue, 7, '配方 MV 取固定件与每个可选组最便宜一张');
   assert.ok(family.assemblyManaValue < 23, '不再把所有冗余可选件加进合计');
   const evidence = magda.evidence.find((item) => item.code === 'COMBO_FAMILY_MAGDA_CLOCK');
-  // 启动法术力明细：Magda 3 + Clock 4 + 最便宜矮人 1，只 3 件成套，不含冗余 → 「3+4+1」而非 23
-  assert.ok(evidence.detail.startsWith('检测到完整'));
+  // 配方 MV 不包含起动费用或战场状态。
+  assert.ok(evidence.detail.startsWith('命中组合技配方'));
   assert.ok(evidence.detail.includes('无限珍宝'));
-  assert.ok(evidence.detail.includes('启动法术力 3+4+1'));
+  assert.ok(evidence.detail.includes('牌张法术力值 2+4+1'));
   assert.ok(!evidence.detail.includes('23'));
   assert.ok(!evidence.detail.includes('前期即可启动'));
 
-  // 换掉 Universal Automaton（1 费）后，剩下最便宜的可选件是 Three Tree Mascot（2 费）→ 3+4+2 = 9
+  // 去掉 1 MV 选项后，最小可选件为 2 MV。
   const lines2 = lines.filter((line) => line !== '1 Universal Automaton');
   const parsed2 = parseBracketDeck(lines2.join('\n'));
   const magda2 = evaluateBracket(parsed2, { metadataResult });
   const family2 = magda2.detectedComboFamilies.find((item) => item.familyId === 'magda-clock');
-  assert.equal(family2.assemblyManaValue, 9, '可选组取当前命中里最便宜的一张，随牌表变化');
-  assert.deepEqual(family2.assemblyBreakdown, [3, 4, 2], '启动法术力明细随最便宜可选件变化');
+  assert.equal(family2.assemblyManaValue, 8, '可选组取当前命中里最便宜的一张，随牌表变化');
+  assert.deepEqual(family2.assemblyBreakdown, [2, 4, 2], '牌张法术力值明细随最便宜可选件变化');
 });
 
 test('Price never subdivides the competitive verdict once the 500 dollar budget line is removed', () => {
@@ -801,7 +752,7 @@ test('Band position splits every bracket into balanced 偏弱/中等/偏强 with
   };
 
   // B1：向 B3 门槛推进（全部非 Game Changers、不成组合技）
-  const b1Tiers = runLadder('B1', 1, [
+  const b1Tiers = runLadder('B2', 2, [
     [],
     ['Mystic Remora'],
     ['Mystic Remora', 'Sylvan Library'],
@@ -871,7 +822,7 @@ test('Band position splits every bracket into balanced 偏弱/中等/偏强 with
   assert.equal(b2High.assignedBracket, 2);
   assert.equal(b2High.bandPosition.tier, 'high');
 
-  // 规则下限锁定的 B4（炸地）结构远未达标 → 偏弱；只描述区间内位置，不论述与下一档的接近度
+  // 内容基线锁定的 B4（炸地）结构远未达标 → 偏弱；只描述区间内位置，不论述与下一档的接近度
   const denialFloor = analyze(['Deck', '1 Armageddon']);
   assert.equal(denialFloor.assignedBracket, 4);
   assert.equal(denialFloor.bandPosition.tier, 'low');
@@ -918,7 +869,7 @@ test('bracket report page shows verdict chain, signal overview and per-reason ro
 
   // 判定链条：下限 → 结构 → 数据辅助 → 竞技特征（B4.5 准竞技 / B5 竞技），复合推导可视化
   assert.match(pageJs, /function buildVerdictSteps\(result\)/);
-  assert.match(pageJs, /pushStep\('规则下限', result\.floorBracket, false\)/);
+  assert.match(pageJs, /pushStep\('内容基线', result\.floorBracket, false\)/);
   assert.match(pageJs, /pushStep\('结构强度', result\.assignedWithoutMetrics/);
   assert.match(pageJs, /pushStep\('数据辅助', result\.assignedBeforePromotion/);
   assert.match(pageJs, /if \(result\.competitivePromoted\) pushStep\('竞技特征', result\.competitiveBracket, true\)/);
@@ -937,7 +888,7 @@ test('bracket report page shows verdict chain, signal overview and per-reason ro
   // 每条依据的作用标签：下限 / 强度区间 / 辅助上调 / 特殊升降档 / 参考
   assert.match(pageJs, /function reasonRoleLabel\(item\)/);
   assert.match(pageJs, /return '竞技特征'/);
-  assert.match(pageJs, /return `下限 B\$\{item\.minimumBracket\}`/);
+  assert.match(pageJs, /return `内容基线 B\$\{item\.minimumBracket\}`/);
   assert.match(pageJs, /return '辅助上调'/);
   assert.match(pageJs, /强度区间 B/);
   assert.doesNotMatch(pageJs, /强度带|B5→B4\.5|BUDGET_COMPETITIVE/);
@@ -999,8 +950,8 @@ test('Extra-turn density affects the recommendation without inventing a hard cha
 test('B1 and B5 are inferred conservatively without a declared environment', () => {
   const lowSignalDeck = ['Commander', '1 Bear Cub', 'Deck', '99 Forest'];
   const lowSignal = analyze(lowSignalDeck);
-  assert.equal(lowSignal.assignedBracket, 1);
-  assert.ok(lowSignal.evidence.some((item) => item.code === 'AUTO_LOW_SIGNAL_BASELINE'));
+  assert.equal(lowSignal.assignedBracket, 2);
+  assert.ok(lowSignal.evidence.some((item) => item.code === 'AUTO_CORE_BASELINE'));
 
   const incomplete = analyze(['Commander', '1 Bear Cub', 'Deck', '98 Forest']);
   assert.equal(incomplete.assignedBracket, 2);
@@ -1086,7 +1037,7 @@ test('B1 and B5 are inferred conservatively without a declared environment', () 
 
   const assignments = ['exhibition', 'general', 'cedh']
     .map((intent) => analyze(lowSignalDeck, { intent }).assignedBracket);
-  assert.deepEqual(assignments, [1, 1, 1], 'legacy intent input must not change automatic assignment');
+  assert.deepEqual(assignments, [2, 2, 2], 'legacy intent input must not change automatic assignment');
 });
 
 test('Competitive gate recognizes non-blue and command-engine cEDH, not just the blue-black turbo shape', () => {
@@ -1188,7 +1139,7 @@ test('Commander pool membership alone does not change the bracket without the ex
   assert.equal(kinnanFloor.expensivePoolPromoted, false);
 });
 
-test('Expensive fast-mana deck with a pool commander promotes B4/B4.5 to B5', () => {
+test('printing price and curated commander pool cannot turn a B4 deck into B5', () => {
   const fastMana = ['Sol Ring', 'Mana Vault', 'Chrome Mox', 'Mox Opal', 'Mox Amber'];
   const gameChangers = ['Ancient Tomb', 'The One Ring', 'Cyclonic Rift'];
   const filler = Array.from({ length: 55 }, (_, i) => `Filler ${i + 1}`);
@@ -1219,12 +1170,11 @@ test('Expensive fast-mana deck with a pool commander promotes B4/B4.5 to B5', ()
   assert.equal(promoted.competitiveBracket, 4, '结构与竞技判定先落在 B4');
   assert.ok(promoted.expensivePoolFastMana > 3, '快速法术力需超过 3 张');
   assert.ok(promoted.deckMetrics.priceReliable && promoted.deckMetrics.estimatedTotalUsd > 1500);
-  assert.equal(promoted.expensivePoolPromoted, true);
-  assert.equal(promoted.assignedBracket, 5);
+  assert.equal(promoted.expensivePoolPromoted, false);
+  assert.equal(promoted.assignedBracket, 4);
   const evidence = promoted.evidence.find((item) => item.code === 'EXPENSIVE_POOL_PROMOTION');
-  assert.ok(evidence && evidence.detail.includes('cEDH 数据库排名前 100')
-    && evidence.detail.includes('$1500') && evidence.detail.includes('升为 B5'));
-  assert.match(buildBracketSummary(promoted), /cEDH 数据库排名前 100[\s\S]*升到B5强度/);
+  assert.equal(evidence, undefined);
+  assert.doesNotMatch(buildBracketSummary(promoted), /造价.*升|排名前 100/);
 
   // 护栏一：池外主将（Bear Cub）→ 不升档
   const outParsed = parseBracketDeck(buildLines('Bear Cub'));
@@ -1294,7 +1244,7 @@ test('Mana curve is a reliable one-step support signal and never changes the rul
   assert.equal(lowSignal.curveStrengthBracket, 4);
   assert.equal(lowSignal.assignedBracket, 2, 'curve alone may only move B1 to B2');
   assert.equal(lowSignal.floorBracket, 1);
-  assert.equal(lowSignal.curveInfluenced, true);
+  assert.equal(lowSignal.curveInfluenced, false);
 
   const lowCoverage = analyze([
     'Commander',
@@ -1304,7 +1254,7 @@ test('Mana curve is a reliable one-step support signal and never changes the rul
   ], {
     metadataResult: makeMetadata([{ name: 'Bear Cub', cmc: 1, usd: 1 }]),
   });
-  assert.equal(lowCoverage.assignedBracket, 1);
+  assert.equal(lowCoverage.assignedBracket, 2);
   assert.equal(lowCoverage.deckMetrics.curveReliable, false);
   assert.equal(lowCoverage.curveInfluenced, false);
 
@@ -1325,7 +1275,7 @@ test('Mana curve is a reliable one-step support signal and never changes the rul
   assert.equal(landHeavyPartial.deckMetrics.metadataCoverage, 0.8);
   assert.equal(landHeavyPartial.deckMetrics.manaCoverage, 0.6667);
   assert.equal(landHeavyPartial.deckMetrics.curveReliable, false, 'covered lands cannot hide missing nonlands');
-  assert.equal(landHeavyPartial.assignedBracket, 1);
+  assert.equal(landHeavyPartial.assignedBracket, 2);
 
   const structured = analyze([
     'Commander',
@@ -1443,7 +1393,7 @@ test('Early mana, low-cost interaction, and card flow support one tier without s
   assert.equal(supported.confidence, 'medium', '档位靠软性辅助临界上调时不能声称高置信度');
   assert.ok(supported.softStepInfluenced, '构筑效率的临界上调应记为软性步进');
   assert.ok(supported.confidenceIssues.some((issue) => issue.includes('临界上调')));
-  assert.ok(supported.evidence.some((item) => item.code === 'CONFIDENCE_PROFILE' && item.title === '判定置信度：中'));
+  assert.ok(supported.evidence.some((item) => item.code === 'CONFIDENCE_PROFILE' && item.title === '评估依据：有限'));
 
   // 主将池升档规则已删除：换上池内主将后档位不变
   const poolSupported = analyze(efficientDeck.map((line) => (
@@ -1584,15 +1534,13 @@ test('theme cohesion and unlisted combo structure are conservative shared suppor
   assert.equal(supported.floorBracket, 1, 'inferred support never changes the rules floor');
   assert.equal(supported.structuralStrengthBracket, 1);
   assert.equal(supported.assignedBracket, 2, 'multiple metadata factors still share one support step');
-  assert.equal(supported.cohesionInfluenced, true);
-  assert.equal(supported.comboPotentialInfluenced, true);
+  assert.equal(supported.cohesionInfluenced, false);
+  assert.equal(supported.comboPotentialInfluenced, false);
   assert.equal(supported.detectedComboFamilies.length, 0, 'potential loops never masquerade as complete combos');
   assert.equal(supported.detectedComboPatterns.length, 0);
   assert.ok(supported.evidence.some((item) => item.code === 'THEME_COHESION_SUPPORT' && item.title === '高密度主题主线'));
   assert.ok(supported.evidence.some((item) => item.code === 'UNLISTED_COMBO_STRUCTURE'));
-  assert.match(buildBracketSummary(supported), /武具成员与支援牌形成清晰主线/);
-  assert.match(buildBracketSummary(supported), /组合技结构线索/);
-  assert.match(buildBracketSummary(supported), /辅助判断合计只上调一次/);
+  assert.doesNotMatch(buildBracketSummary(supported), /辅助判断合计只上调一次/);
 
   const structured = analyze([
     'Commander',
@@ -1616,7 +1564,7 @@ test('theme cohesion and unlisted combo structure are conservative shared suppor
   assert.equal(incomplete.comboPotentialInfluenced, false);
 });
 
-test('USD estimate is only a weak B3 support and never acts as a floor or standalone strength score', () => {
+test('USD price remains contextual even for a complete multiaxis deck', () => {
   const expensiveLowSignal = analyze([
     'Commander',
     '1 Bear Cub',
@@ -1629,7 +1577,7 @@ test('USD estimate is only a weak B3 support and never acts as a floor or standa
     ]),
   });
   assert.equal(expensiveLowSignal.deckMetrics.estimatedTotalUsd, 10000);
-  assert.equal(expensiveLowSignal.assignedBracket, 1);
+  assert.equal(expensiveLowSignal.assignedBracket, 2);
   assert.equal(expensiveLowSignal.floorBracket, 1);
   assert.equal(expensiveLowSignal.priceInfluenced, false);
 
@@ -1666,8 +1614,8 @@ test('USD estimate is only a weak B3 support and never acts as a floor or standa
   assert.equal(cheap.structuralStrengthBracket, 3);
   assert.equal(cheap.supportingSignalAxes, 2);
   assert.equal(cheap.assignedBracket, 3);
-  assert.equal(expensive.assignedBracket, 4);
-  assert.equal(expensive.priceInfluenced, true);
+  assert.equal(expensive.assignedBracket, cheap.assignedBracket);
+  assert.equal(expensive.priceInfluenced, false);
   assert.equal(expensive.floorBracket, cheap.floorBracket, 'price must never change the rules floor');
   assert.equal(partialExpensive.deckMetrics.priceReliable, false);
   assert.equal(partialExpensive.assignedBracket, 3, 'high partial sum cannot compensate for low coverage');
@@ -1679,7 +1627,7 @@ test('USD estimate is only a weak B3 support and never acts as a floor or standa
   const floorLockedMetadata = makeMetadata(Object.values(expensiveMetadata.byName)
     .concat({ name: 'Armageddon', cmc: 4, typeLine: 'Sorcery', usd: 20 }));
   const floorLocked = analyze(floorLockedDeck, { metadataResult: floorLockedMetadata });
-  assert.equal(floorLocked.priceRaisedStrength, true);
+  assert.equal(floorLocked.priceRaisedStrength, false);
   assert.equal(floorLocked.priceInfluenced, false, 'a rules floor must remain the visible cause of the final bracket');
   assert.equal(floorLocked.assignedBracket, 4);
 });
@@ -1705,7 +1653,7 @@ test('Free/alt-cost interaction alone caps at B3 and never independently reaches
     '1 Solitude', '1 Fury', '1 Grief', '1 Endurance',
     '95 Midrange Filler',
   ]);
-  assert.equal(freeControl.floorBracket, 1, '这些替费都不是 Game Changer，规则下限保持 B1');
+  assert.equal(freeControl.floorBracket, 1, '这些替费都不是 Game Changer，内容基线保持 B1');
   assert.equal(freeControl.structuralStrengthBracket, 3, '替费密度只算升级信号，封顶 B3');
   assert.equal(freeControl.assignedBracket, 3, '纯替费控制不再单独进 B4');
 
@@ -1753,7 +1701,7 @@ test('Every result carries internal version metadata, evidence, confidence bound
   assert.ok(result.evidence.length >= 1);
   assert.ok(result.evidence.every((item) => item.ruleVersion === BRACKET_MANIFEST.ruleVersion));
   assert.equal(result.versions.evaluatorVersion, BRACKET_MANIFEST.evaluatorVersion);
-  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.8.0');
+  assert.equal(BRACKET_MANIFEST.evaluatorVersion, '2.9.0');
   assert.equal(BRACKET_MANIFEST.dataVersion, 'curated-en-2026-08-28-spellbook-two-card');
   assert.equal(result.versions.supportedLanguage, 'en');
   assert.equal(result.confidence, 'low');
@@ -1830,10 +1778,9 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
     assignedBeforePromotion: 4,
     priceInfluenced: true,
   });
-  assert.match(priceSummary, /曲线、构筑效率、主题稳定性和组合技结构没有先触发升档/);
-  assert.match(priceSummary, /2 条强结构轴/);
+  assert.match(priceSummary, /造价仅供参考，不参与现版档位判断/);
   assert.doesNotMatch(priceSummary, /覆盖 91%|72 张计价牌/);
-  assert.match(priceSummary, /基本地以外的牌估算约 \$1,500[\s\S]*\$1,200 的辅助线/);
+  assert.doesNotMatch(priceSummary, /\$1,200 的辅助线/);
 
   // 竞技阈值达标但余量未越过 B5 基准：B4.5 准竞技专属叙述
   const thresholdSummary = buildBracketSummary({
@@ -1891,7 +1838,7 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
     evidence: [{ kind: 'rule', title: '大规模炸地与锁地' }],
     signals: [],
   });
-  assert.match(legalitySummary, /大规模炸地与锁地[\s\S]*规则下限是 B4/);
+  assert.match(legalitySummary, /大规模炸地与锁地[\s\S]*内容基线是 B4/);
   assert.match(legalitySummary, /暂时归于B4强度/);
   assert.doesNotMatch(legalitySummary, /禁牌|合法|修正/);
 
@@ -1903,8 +1850,8 @@ test('Bracket summaries explain every applied step in natural, branch-specific l
     structuralStrengthBracket: 1,
     signals: [],
   });
-  assert.match(b1Summary, /规则下限是 B1[\s\S]*没有发现会抬高下限的牌/);
-  assert.match(b1Summary, /因此归于B1强度/);
+  assert.match(b1Summary, /上次估档为 B1，主题展示意图尚未确认/);
+  assert.match(b1Summary, /请重新分析并与牌桌确认/);
   assert.doesNotMatch(b1Summary, /牌表结构完整/);
   const allSummaries = [
     metadataSummary,
@@ -2048,16 +1995,16 @@ test('Bracket page and two home entries are wired without creating a Meta page',
   assert.match(bracketWxss, /\.hero-art\s*\{[^}]*position:\s*absolute[^}]*pointer-events:\s*none/);
   assert.match(bracketWxss, /\.hero-art-scrim\s*\{[\s\S]*?rgba\(var\(--module-accent-rgb\)/);
   assert.match(bracketWxss, /\.hero-body\s*\{[^}]*position:\s*relative[^}]*z-index:\s*1/);
-  assert.match(bracketWxml, /class="result-confidence">置信度：\{\{result\.confidenceLabel\}\}/);
+  assert.match(bracketWxml, /class="result-confidence">依据：\{\{result\.confidenceLabel\}\}/);
   assert.doesNotMatch(bracketWxml, /result\.deckCardCount/);
   assert.match(bracketWxss, /\.result-confidence\s*\{[\s\S]*margin-left:\s*auto[\s\S]*text-align:\s*right/);
   assert.deepEqual(
     [1, 2, 3, 4].map((bracket) => BRACKET_LABELS[bracket].turn),
-    ['通常至少 9 回合取胜', '通常至少 8 回合取胜', '通常至少 6 回合取胜', '通常至少 4 回合取胜'],
+    ['牌桌预期：至少玩满 9 回合', '牌桌预期：至少玩满 8 回合', '牌桌预期：至少玩满 6 回合', '牌桌预期：至少玩满 4 回合'],
   );
   // 准竞技缺少昂贵快速法术力或足够余量，起手爆发达不到成熟 cEDH：只有 B5 能写「任意回合」
-  assert.equal(BRACKET_LABELS[4.5].turn, '通常至少 3 回合取胜');
-  assert.equal(BRACKET_LABELS[5].turn, '可能在任意回合结束');
+  assert.equal(BRACKET_LABELS[4.5].turn, '工具细分，需与牌桌确认');
+  assert.equal(BRACKET_LABELS[5].turn, '竞技牌桌，可在任意回合结束');
   assert.notEqual(BRACKET_LABELS[4.5].turn, BRACKET_LABELS[5].turn);
   assert.doesNotMatch(bracketWxml, /class="meta-item"/);
   assert.doesNotMatch(bracketWxml, /class="signal-strip"/);

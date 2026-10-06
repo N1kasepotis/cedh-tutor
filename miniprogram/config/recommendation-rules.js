@@ -18,11 +18,10 @@ const costTierConfig = {
   ]
 };
 
-// sourceStats.conversionRate 为 edhtop16 转化率；winRate 为局胜率；entries/metaShare 用作 play rate。
-// 2026-07 根据 edhtop16 / EDHREC 年度盘点校准：
-// - highAbove 奖励高转化率隐藏强将（如 Arcum Dagsson，唯一 >25% 转化的单色卡组），需 100+ 参赛样本；
-// - competitiveMetaPriority.minWinRate 0.21→0.20，让 Kinnan / RogThras / Sisay 等公认 T1 进入竞技优先加成
-//   （原门槛全库只有 Blue Farm 与 Dargo/Tymna 两套命中，过窄）。
+// sourceStats.conversionRate 为 topCuts / entries；winRate 保留源报告值，聚合算法见快照说明。
+// entries/metaShare 描述该时间窗的参赛量 / 份额，不能代表获胜概率。
+// 以下为产品启发式阈值，未经过玩家偏好或赛事预测准确率校准。
+// 转化率加成只读取 conversionRate，并要求已知且达到门槛的参赛样本。
 const statsWeightConfig = {
   "enabled": true,
   "scoreInfluence": 0.2,
@@ -50,7 +49,7 @@ const statsWeightConfig = {
     "selectedPriority": "competitive",
     "minEntries": 500,
     "minMetaShare": 0.015,
-    "minWinRate": 0.2,
+    "minConversionRate": 0.2,
     "multiplier": 1.18
   },
   "fitDisplay": {
@@ -78,9 +77,7 @@ const statsWeightConfig = {
   "irrelevant": {
     "enabled": true,
     "deckElement": "irrelevant_meta",
-    "multiplier": 0.55,
-    "autoPartnerEntriesBelow": 30,
-    "autoPartnerMetaShareBelow": 0.001
+    "multiplier": 0.55
   },
   "diversity": {
     "enabled": true,
@@ -112,11 +109,6 @@ const metaTagConfig = {
     "maxEntries": 120,
     "minWinRate": 0.12,
     "maxMetaShare": 0.004
-  },
-  "irrelevant": {
-    "maxEntries": 18,
-    "maxMetaShare": 0.001,
-    "maxWinRate": 0.14
   },
   "outdated": {
     "names": [

@@ -76,7 +76,14 @@ Page({
   },
 
   rollNumber() {
-    const { min, max } = sanitizeRange(this.data.minInput, this.data.maxInput);
+    let range;
+    try {
+      range = sanitizeRange(this.data.minInput, this.data.maxInput);
+    } catch (error) {
+      wx.showToast({ title: error.message, icon: 'none' });
+      return;
+    }
+    const { min, max } = range;
     const value = rollInteger(min, max);
 
     this.setData({

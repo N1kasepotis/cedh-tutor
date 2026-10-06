@@ -38,11 +38,11 @@ test('Peregrin Took：造 token 的事件额外多造 1 Food，空放不触发',
   state = castTokens(createCabbageState(), { cabbage: true, peregrin: true });
   assert.deepEqual([state.food.u, state.clue.u, state.treasure.u], [2, 0, 0]);
 
-  // Manufactor + Peregrin：Manufactor 造 Clue/Treasure（算作造了 token），Peregrin +1 Food
+  // 两者都是替代效应，Cabbage 不在场时没有事件可替换。
   state = castTokens(createCabbageState(), { manufactor: true, peregrin: true });
-  assert.deepEqual([state.food.u, state.clue.u, state.treasure.u], [1, 1, 1]);
+  assert.deepEqual([state.food.u, state.clue.u, state.treasure.u], [0, 0, 0]);
 
-  // 三件套：Food = Cabbage 1 + Peregrin 1 = 2；Peregrin 那个 Food 也被 Manufactor 三倍 → Clue 2、Treasure 2
+  // 三件套：先应用 Peregrin，再应用 Manufactor，Food/Clue/Treasure 各 2。
   state = castTokens(createCabbageState(), { cabbage: true, manufactor: true, peregrin: true });
   assert.deepEqual([state.food.u, state.clue.u, state.treasure.u], [2, 2, 2]);
 });

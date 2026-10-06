@@ -22,6 +22,26 @@ function features(name, fields) {
   return extractStrengthFeatures(card(name, fields));
 }
 
+test('normal Scryfall split and adventure faces use printed costs without a face cmc field', () => {
+  const pettyTheft = features('Brazen Borrower // Petty Theft', {
+    layout: 'adventure', cmc: 3, type_line: 'Creature — Faerie Rogue // Instant — Adventure',
+    oracle_text: undefined,
+    card_faces: [
+      { name: 'Brazen Borrower', mana_cost: '{1}{U}{U}', type_line: 'Creature — Faerie Rogue', oracle_text: 'Flash\nFlying' },
+      { name: 'Petty Theft', mana_cost: '{1}{U}', type_line: 'Instant — Adventure', oracle_text: "Return target nonland permanent an opponent controls to its owner's hand." },
+    ],
+  });
+  const wearTear = features('Wear // Tear', {
+    layout: 'split', cmc: 3, type_line: 'Instant // Instant', oracle_text: undefined,
+    card_faces: [
+      { name: 'Wear', mana_cost: '{1}{R}', type_line: 'Instant', oracle_text: 'Destroy target artifact.' },
+      { name: 'Tear', mana_cost: '{W}', type_line: 'Instant', oracle_text: 'Destroy target enchantment.' },
+    ],
+  });
+  assert.equal(pettyTheft.lowCostInteraction, true);
+  assert.equal(wearTear.lowCostInteraction, true);
+});
+
 test('land readiness separates unconditional, favorable, conditional, fetch, and dependent lands', () => {
   const forest = features('Forest', {
     type_line: 'Basic Land — Forest',

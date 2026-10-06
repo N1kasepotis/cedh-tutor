@@ -3,6 +3,7 @@
   metaTagConfig,
   statsWeightConfig,
 } = require('./recommendation-rules');
+const { commanderStats, commanderStatsManifest } = require('./commander-stats');
 const { applyCommanderMetaTags } = require('../utils/commander-meta');
 
 const commanders = [
@@ -33,14 +34,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Kraum%2C%20Ludevic's%20Opus%20%2F%20Tymna%20the%20Weaver",
-    "sourceStats": {
-      "rank": 1,
-      "entries": 1532,
-      "conversionRate": 0.22258485639686684,
-      "topCuts": 341,
-      "winRate": 0.2024793388429752,
-      "metaShare": 0.0873233014135887
-    },
     "deckElements": [
       "ad_naus",
       "ad_naus_access",
@@ -90,14 +83,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Kinnan%2C%20Bonder%20Prodigy",
-    "sourceStats": {
-      "rank": 2,
-      "entries": 1290,
-      "conversionRate": 0.19147286821705425,
-      "topCuts": 247,
-      "winRate": 0.19503440023930602,
-      "metaShare": 0.07352941176470588
-    },
     "deckElements": [
       "activated_ability",
       "artifact_mana",
@@ -145,14 +130,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Rograkh%2C%20Son%20of%20Rohgahh%20%2F%20Thrasios%2C%20Triton%20Hero",
-    "sourceStats": {
-      "rank": 3,
-      "entries": 1017,
-      "conversionRate": 0.20648967551622419,
-      "topCuts": 210,
-      "winRate": 0.19308247814519194,
-      "metaShare": 0.05796853625170999
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -204,14 +181,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Rograkh%2C%20Son%20of%20Rohgahh%20%2F%20Silas%20Renn%2C%20Seeker%20Adept",
-    "sourceStats": {
-      "rank": 4,
-      "entries": 809,
-      "conversionRate": 0.18294190358467244,
-      "topCuts": 148,
-      "winRate": 0.1819059107358263,
-      "metaShare": 0.04611263109895121
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -265,14 +234,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Sisay%2C%20Weatherlight%20Captain",
-    "sourceStats": {
-      "rank": 5,
-      "entries": 659,
-      "conversionRate": 0.22610015174506828,
-      "topCuts": 149,
-      "winRate": 0.20173160173160173,
-      "metaShare": 0.03756269949840401
-    },
     "deckElements": [
       "ad_naus_access",
       "activated_ability",
@@ -325,14 +286,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Thrasios%2C%20Triton%20Hero%20%2F%20Tymna%20the%20Weaver",
-    "sourceStats": {
-      "rank": 6,
-      "entries": 438,
-      "conversionRate": 0.2054794520547945,
-      "topCuts": 90,
-      "winRate": 0.18725447402880838,
-      "metaShare": 0.02496580027359781
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -381,14 +334,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Etali%2C%20Primal%20Conqueror%20%2F%2F%20Etali%2C%20Primal%20Sickness",
-    "sourceStats": {
-      "rank": 7,
-      "entries": 437,
-      "conversionRate": 0.13043478260869565,
-      "topCuts": 57,
-      "winRate": 0.15774647887323945,
-      "metaShare": 0.024908800729594165
-    },
     "deckElements": [
       "big_creature_combo",
       "card_advantage",
@@ -431,14 +376,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Dargo%2C%20the%20Shipwrecker%20%2F%20Tymna%20the%20Weaver",
-    "sourceStats": {
-      "rank": 8,
-      "entries": 385,
-      "conversionRate": 0.16623376623376623,
-      "topCuts": 64,
-      "winRate": 0.19050025265285497,
-      "metaShare": 0.02194482444140447
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -481,14 +418,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Ral%2C%20Monsoon%20Mage%20%2F%2F%20Ral%2C%20Leyline%20Prodigy",
-    "sourceStats": {
-      "rank": 9,
-      "entries": 384,
-      "conversionRate": 0.17708333333333334,
-      "topCuts": 68,
-      "winRate": 0.18653648509763618,
-      "metaShare": 0.02188782489740082
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_selection",
@@ -536,14 +465,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Ishai%2C%20Ojutai%20Dragonspeaker%20%2F%20Rograkh%2C%20Son%20of%20Rohgahh",
-    "sourceStats": {
-      "rank": 10,
-      "entries": 331,
-      "conversionRate": 0.21450151057401812,
-      "topCuts": 71,
-      "winRate": 0.19930273097036608,
-      "metaShare": 0.01886684906520748
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -585,14 +506,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Vivi%20Ornitier",
-    "sourceStats": {
-      "rank": 11,
-      "entries": 323,
-      "conversionRate": 0.15170278637770898,
-      "topCuts": 49,
-      "winRate": 0.1763590391908976,
-      "metaShare": 0.018410852713178296
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_selection",
@@ -629,14 +542,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Magda%2C%20Brazen%20Outlaw",
-    "sourceStats": {
-      "rank": 12,
-      "entries": 292,
-      "conversionRate": 0.21232876712328766,
-      "topCuts": 62,
-      "winRate": 0.20785070785070786,
-      "metaShare": 0.016643866849065207
-    },
     "deckElements": [
       "artifact_combo",
       "clock_of_omens",
@@ -672,14 +577,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Thrasios%2C%20Triton%20Hero%20%2F%20Yoshimaru%2C%20Ever%20Faithful",
-    "sourceStats": {
-      "rank": 13,
-      "entries": 270,
-      "conversionRate": 0.14444444444444443,
-      "topCuts": 39,
-      "winRate": 0.17560617193240263,
-      "metaShare": 0.015389876880984952
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -725,14 +622,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Kefka%2C%20Court%20Mage%20%2F%2F%20Kefka%2C%20Ruler%20of%20Ruin",
-    "sourceStats": {
-      "rank": 14,
-      "entries": 242,
-      "conversionRate": 0.15702479338842976,
-      "topCuts": 38,
-      "winRate": 0.16016597510373445,
-      "metaShare": 0.013793889648882809
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -779,14 +668,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Tivit%2C%20Seller%20of%20Secrets",
-    "sourceStats": {
-      "rank": 15,
-      "entries": 223,
-      "conversionRate": 0.19730941704035873,
-      "topCuts": 44,
-      "winRate": 0.19557522123893806,
-      "metaShare": 0.012710898312813497
-    },
     "deckElements": [
       "ad_naus_access",
       "artifact_combo",
@@ -829,14 +710,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Lumra%2C%20Bellow%20of%20the%20Woods",
-    "sourceStats": {
-      "rank": 16,
-      "entries": 186,
-      "conversionRate": 0.14516129032258066,
-      "topCuts": 27,
-      "winRate": 0.17502668089647813,
-      "metaShare": 0.010601915184678522
-    },
     "deckElements": [
       "card_advantage",
       "creature_tutors",
@@ -876,14 +749,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Tayam%2C%20Luminous%20Enigma",
-    "sourceStats": {
-      "rank": 17,
-      "entries": 186,
-      "conversionRate": 0.16129032258064516,
-      "topCuts": 30,
-      "winRate": 0.1888772298006296,
-      "metaShare": 0.010601915184678522
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -928,14 +793,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Ob%20Nixilis%2C%20Captive%20Kingpin",
-    "sourceStats": {
-      "rank": 18,
-      "entries": 172,
-      "conversionRate": 0.09302325581395349,
-      "topCuts": 16,
-      "winRate": 0.16184971098265896,
-      "metaShare": 0.00980392156862745
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -975,14 +832,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Malcolm%2C%20Keen-Eyed%20Navigator%20%2F%20Vial%20Smasher%20the%20Fierce",
-    "sourceStats": {
-      "rank": 19,
-      "entries": 160,
-      "conversionRate": 0.175,
-      "topCuts": 28,
-      "winRate": 0.20334928229665072,
-      "metaShare": 0.009119927040583675
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1029,14 +878,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Winota%2C%20Joiner%20of%20Forces",
-    "sourceStats": {
-      "rank": 20,
-      "entries": 137,
-      "conversionRate": 0.17518248175182483,
-      "topCuts": 24,
-      "winRate": 0.16568047337278108,
-      "metaShare": 0.007808937528499772
-    },
     "deckElements": [
       "combat_damage",
       "combat_snowball",
@@ -1076,14 +917,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Terra%2C%20Magical%20Adept%20%2F%2F%20Esper%20Terra",
-    "sourceStats": {
-      "rank": 21,
-      "entries": 131,
-      "conversionRate": 0.13740458015267176,
-      "topCuts": 18,
-      "winRate": 0.15742128935532235,
-      "metaShare": 0.007466940264477884
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1128,14 +961,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Kenrith%2C%20the%20Returned%20King",
-    "sourceStats": {
-      "rank": 22,
-      "entries": 130,
-      "conversionRate": 0.24615384615384617,
-      "topCuts": 32,
-      "winRate": 0.21159420289855072,
-      "metaShare": 0.007409940720474236
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1178,14 +1003,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/K'rrik%2C%20Son%20of%20Yawgmoth",
-    "sourceStats": {
-      "rank": 23,
-      "entries": 128,
-      "conversionRate": 0.1015625,
-      "topCuts": 13,
-      "winRate": 0.14556962025316456,
-      "metaShare": 0.00729594163246694
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1227,14 +1044,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Inalla%2C%20Archmage%20Ritualist",
-    "sourceStats": {
-      "rank": 24,
-      "entries": 127,
-      "conversionRate": 0.18110236220472442,
-      "topCuts": 23,
-      "winRate": 0.19083969465648856,
-      "metaShare": 0.007238942088463292
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1273,14 +1082,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Rowan%2C%20Scion%20of%20War",
-    "sourceStats": {
-      "rank": 25,
-      "entries": 124,
-      "conversionRate": 0.25806451612903225,
-      "topCuts": 32,
-      "winRate": 0.2115677321156773,
-      "metaShare": 0.007067943456452348
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1318,14 +1119,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Glarb%2C%20Calamity's%20Augur",
-    "sourceStats": {
-      "rank": 26,
-      "entries": 119,
-      "conversionRate": 0.19327731092436976,
-      "topCuts": 23,
-      "winRate": 0.16415410385259632,
-      "metaShare": 0.006782945736434108
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1365,14 +1158,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Arcum%20Dagsson",
-    "sourceStats": {
-      "rank": 27,
-      "entries": 117,
-      "conversionRate": 0.2564102564102564,
-      "topCuts": 30,
-      "winRate": 0.2523961661341853,
-      "metaShare": 0.0066689466484268125
-    },
     "deckElements": [
       "artifact_combo",
       "artifact_tutor",
@@ -1408,14 +1193,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Zirda%2C%20the%20Dawnwaker",
-    "sourceStats": {
-      "rank": 28,
-      "entries": 115,
-      "conversionRate": 0.2,
-      "topCuts": 23,
-      "winRate": 0.20882852292020374,
-      "metaShare": 0.0065549475604195166
-    },
     "deckElements": [
       "fast_mana",
       "high_play_count",
@@ -1450,14 +1227,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Thrasios%2C%20Triton%20Hero%20%2F%20Vial%20Smasher%20the%20Fierce",
-    "sourceStats": {
-      "rank": 29,
-      "entries": 104,
-      "conversionRate": 0.2980769230769231,
-      "topCuts": 31,
-      "winRate": 0.22956521739130434,
-      "metaShare": 0.005927952576379389
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1503,14 +1272,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Derevi%2C%20Empyrial%20Tactician",
-    "sourceStats": {
-      "rank": 30,
-      "entries": 101,
-      "conversionRate": 0.1782178217821782,
-      "topCuts": 18,
-      "winRate": 0.16895874263261296,
-      "metaShare": 0.005756953944368445
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -1553,14 +1314,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Aang%2C%20at%20the%20Crossroads%20%2F%2F%20Aang%2C%20Destined%20Savior",
-    "sourceStats": {
-      "rank": 32,
-      "entries": 98,
-      "conversionRate": 0.1326530612244898,
-      "topCuts": 13,
-      "winRate": 0.19230769230769232,
-      "metaShare": 0.005585955312357501
-    },
     "deckElements": [
       "blink_value",
       "blue_stack_interaction",
@@ -1606,14 +1359,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Rocco%2C%20Cabaretti%20Caterer",
-    "sourceStats": {
-      "rank": 33,
-      "entries": 98,
-      "conversionRate": 0.1836734693877551,
-      "topCuts": 18,
-      "winRate": 0.21875,
-      "metaShare": 0.005585955312357501
-    },
     "deckElements": [
       "card_advantage",
       "creature_combo",
@@ -1653,14 +1398,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Yuriko%2C%20the%20Tiger's%20Shadow",
-    "sourceStats": {
-      "rank": 34,
-      "entries": 97,
-      "conversionRate": 0.07216494845360824,
-      "topCuts": 7,
-      "winRate": 0.11063829787234042,
-      "metaShare": 0.005528955768353853
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1695,14 +1432,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Brigid%2C%20Clachan's%20Heart%20%2F%2F%20Brigid%2C%20Doun's%20Mind",
-    "sourceStats": {
-      "rank": 35,
-      "entries": 96,
-      "conversionRate": 0.20833333333333334,
-      "topCuts": 20,
-      "winRate": 0.22699386503067484,
-      "metaShare": 0.005471956224350205
-    },
     "deckElements": [
       "card_advantage",
       "creature_tutors",
@@ -1739,14 +1468,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Marneus%20Calgar",
-    "sourceStats": {
-      "rank": 36,
-      "entries": 93,
-      "conversionRate": 0.11827956989247312,
-      "topCuts": 11,
-      "winRate": 0.14132762312633834,
-      "metaShare": 0.005300957592339261
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1787,14 +1508,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Atraxa%2C%20Grand%20Unifier",
-    "sourceStats": {
-      "rank": 37,
-      "entries": 84,
-      "conversionRate": 0.15476190476190477,
-      "topCuts": 13,
-      "winRate": 0.19451371571072318,
-      "metaShare": 0.0047879616963064295
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1837,14 +1550,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Tevesh%20Szat%2C%20Doom%20of%20Fools%20%2F%20Thrasios%2C%20Triton%20Hero",
-    "sourceStats": {
-      "rank": 38,
-      "entries": 73,
-      "conversionRate": 0.1643835616438356,
-      "topCuts": 12,
-      "winRate": 0.17962466487935658,
-      "metaShare": 0.004160966712266302
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -1882,14 +1587,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Stella%20Lee%2C%20Wild%20Card",
-    "sourceStats": {
-      "rank": 39,
-      "entries": 70,
-      "conversionRate": 0.17142857142857143,
-      "topCuts": 12,
-      "winRate": 0.17613636363636365,
-      "metaShare": 0.003989968080255358
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_selection",
@@ -1922,14 +1619,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Urza%2C%20Lord%20High%20Artificer",
-    "sourceStats": {
-      "rank": 40,
-      "entries": 67,
-      "conversionRate": 0.11940298507462686,
-      "topCuts": 8,
-      "winRate": 0.12844036697247707,
-      "metaShare": 0.003818969448244414
-    },
     "deckElements": [
       "artifact_combo",
       "blue_stack_interaction",
@@ -1974,14 +1663,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Najeela%2C%20the%20Blade-Blossom",
-    "sourceStats": {
-      "rank": 41,
-      "entries": 65,
-      "conversionRate": 0.09230769230769231,
-      "topCuts": 6,
-      "winRate": 0.15548780487804878,
-      "metaShare": 0.003704970360237118
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2029,14 +1710,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Norman%20Osborn%20%2F%2F%20Green%20Goblin",
-    "sourceStats": {
-      "rank": 42,
-      "entries": 64,
-      "conversionRate": 0.109375,
-      "topCuts": 7,
-      "winRate": 0.11301369863013698,
-      "metaShare": 0.00364797081623347
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2073,14 +1746,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Krark%2C%20the%20Thumbless%20%2F%20Sakashima%20of%20a%20Thousand%20Faces",
-    "sourceStats": {
-      "rank": 43,
-      "entries": 59,
-      "conversionRate": 0.2033898305084746,
-      "topCuts": 12,
-      "winRate": 0.1779935275080906,
-      "metaShare": 0.0033629730962152302
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_selection",
@@ -2117,14 +1782,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/The%20Cabbage%20Merchant",
-    "sourceStats": {
-      "rank": 44,
-      "entries": 58,
-      "conversionRate": 0.27586206896551724,
-      "topCuts": 16,
-      "winRate": 0.25249169435215946,
-      "metaShare": 0.0033059735522115823
-    },
     "deckElements": [
       "card_advantage",
       "creature_tutors",
@@ -2155,14 +1812,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/The%20Gitrog%20Monster",
-    "sourceStats": {
-      "rank": 45,
-      "entries": 58,
-      "conversionRate": 0.1724137931034483,
-      "topCuts": 10,
-      "winRate": 0.17406143344709898,
-      "metaShare": 0.0033059735522115823
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2197,15 +1846,11 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Scion%20of%20the%20Ur-Dragon",
-    "sourceStats": {
-      "rank": 46,
-      "entries": 56,
-      "conversionRate": 0.2857142857142857,
-      "topCuts": 16,
-      "winRate": 0.2108843537414966,
-      "metaShare": 0.0031919744642042863
-    },
     "deckElements": [
+      "tutor_commander",
+      "graveyard_value",
+      "creature_combo",
+      "combat_combo",
       "ad_naus_access",
       "black_tutors",
       "blue_stack_interaction",
@@ -2247,14 +1892,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Bjorna%2C%20Nightfall%20Alchemist%20%2F%20Wernog%2C%20Rider's%20Chaplain",
-    "sourceStats": {
-      "rank": 47,
-      "entries": 56,
-      "conversionRate": 0.125,
-      "topCuts": 7,
-      "winRate": 0.15873015873015872,
-      "metaShare": 0.0031919744642042863
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2295,14 +1932,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Malcolm%2C%20Keen-Eyed%20Navigator%20%2F%20Tymna%20the%20Weaver",
-    "sourceStats": {
-      "rank": 48,
-      "entries": 55,
-      "conversionRate": 0.18181818181818182,
-      "topCuts": 10,
-      "winRate": 0.16906474820143885,
-      "metaShare": 0.0031349749202006384
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2344,14 +1973,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Dihada%2C%20Binder%20of%20Wills",
-    "sourceStats": {
-      "rank": 49,
-      "entries": 54,
-      "conversionRate": 0.2037037037037037,
-      "topCuts": 11,
-      "winRate": 0.183206106870229,
-      "metaShare": 0.0030779753761969904
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2386,14 +2007,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Malcolm%2C%20Keen-Eyed%20Navigator%20%2F%20Tana%2C%20the%20Bloodsower",
-    "sourceStats": {
-      "rank": 50,
-      "entries": 53,
-      "conversionRate": 0.20754716981132076,
-      "topCuts": 11,
-      "winRate": 0.19696969696969696,
-      "metaShare": 0.0030209758321933424
-    },
     "deckElements": [
       "blue_stack_interaction",
       "board_engine",
@@ -2433,14 +2046,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Gwenom%2C%20Remorseless",
-    "sourceStats": {
-      "rank": 51,
-      "entries": 52,
-      "conversionRate": 0.3076923076923077,
-      "topCuts": 16,
-      "winRate": 0.2454212454212454,
-      "metaShare": 0.0029639762881896944
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2470,14 +2075,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Kediss%2C%20Emberclaw%20Familiar%20%2F%20Malcolm%2C%20Keen-Eyed%20Navigator",
-    "sourceStats": {
-      "rank": 52,
-      "entries": 51,
-      "conversionRate": 0.19607843137254902,
-      "topCuts": 10,
-      "winRate": 0.20152091254752852,
-      "metaShare": 0.0029069767441860465
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -2518,14 +2115,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Maralen%2C%20Fae%20Ascendant",
-    "sourceStats": {
-      "rank": 53,
-      "entries": 49,
-      "conversionRate": 0.10204081632653061,
-      "topCuts": 5,
-      "winRate": 0.12396694214876033,
-      "metaShare": 0.0027929776561787505
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2565,14 +2154,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Korvold%2C%20Fae-Cursed%20King",
-    "sourceStats": {
-      "rank": 54,
-      "entries": 49,
-      "conversionRate": 0.12244897959183673,
-      "topCuts": 6,
-      "winRate": 0.13253012048192772,
-      "metaShare": 0.0027929776561787505
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2609,14 +2190,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Heliod%2C%20the%20Radiant%20Dawn%20%2F%2F%20Heliod%2C%20the%20Warped%20Eclipse",
-    "sourceStats": {
-      "rank": 55,
-      "entries": 49,
-      "conversionRate": 0.1836734693877551,
-      "topCuts": 9,
-      "winRate": 0.216,
-      "metaShare": 0.0027929776561787505
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_selection",
@@ -2656,14 +2229,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Akiri%2C%20Line-Slinger%20%2F%20Thrasios%2C%20Triton%20Hero",
-    "sourceStats": {
-      "rank": 56,
-      "entries": 47,
-      "conversionRate": 0.1276595744680851,
-      "topCuts": 6,
-      "winRate": 0.15517241379310345,
-      "metaShare": 0.0026789785681714546
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -2703,14 +2268,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Rakdos%2C%20the%20Muscle",
-    "sourceStats": {
-      "rank": 57,
-      "entries": 47,
-      "conversionRate": 0.1276595744680851,
-      "topCuts": 6,
-      "winRate": 0.1581196581196581,
-      "metaShare": 0.0026789785681714546
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2739,14 +2296,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Zhulodok%2C%20Void%20Gorger",
-    "sourceStats": {
-      "rank": 58,
-      "entries": 47,
-      "conversionRate": 0.10638297872340426,
-      "topCuts": 5,
-      "winRate": 0.1415929203539823,
-      "metaShare": 0.0026789785681714546
-    },
     "deckElements": [
       "artifact_mana",
       "card_advantage",
@@ -2777,14 +2326,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Raph%20%26%20Mikey%2C%20Troublemakers",
-    "sourceStats": {
-      "rank": 61,
-      "entries": 42,
-      "conversionRate": 0.023809523809523808,
-      "topCuts": 1,
-      "winRate": 0.14646464646464646,
-      "metaShare": 0.0023939808481532147
-    },
     "deckElements": [
       "combat_damage",
       "creature_tutors",
@@ -2817,14 +2358,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Elsha%20of%20the%20Infinite",
-    "sourceStats": {
-      "rank": 62,
-      "entries": 42,
-      "conversionRate": 0.14285714285714285,
-      "topCuts": 6,
-      "winRate": 0.20833333333333334,
-      "metaShare": 0.0023939808481532147
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -2863,14 +2396,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Leonardo%2C%20the%20Balance%20%2F%20Michelangelo%2C%20the%20Heart",
-    "sourceStats": {
-      "rank": 63,
-      "entries": 41,
-      "conversionRate": 0.2926829268292683,
-      "topCuts": 12,
-      "winRate": 0.228310502283105,
-      "metaShare": 0.0023369813041495668
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -2916,14 +2441,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Shorikai%2C%20Genesis%20Engine",
-    "sourceStats": {
-      "rank": 64,
-      "entries": 38,
-      "conversionRate": 0.07894736842105263,
-      "topCuts": 3,
-      "winRate": 0.1443850267379679,
-      "metaShare": 0.002165982672138623
-    },
     "deckElements": [
       "artifact_combo",
       "blue_stack_interaction",
@@ -2959,14 +2476,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Jhoira%2C%20Ageless%20Innovator",
-    "sourceStats": {
-      "rank": 65,
-      "entries": 38,
-      "conversionRate": 0.18421052631578946,
-      "topCuts": 7,
-      "winRate": 0.19791666666666666,
-      "metaShare": 0.002165982672138623
-    },
     "deckElements": [
       "artifact_combo",
       "blue_stack_interaction",
@@ -3002,14 +2511,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Y'shtola%2C%20Night's%20Blessed",
-    "sourceStats": {
-      "rank": 66,
-      "entries": 37,
-      "conversionRate": 0,
-      "topCuts": 0,
-      "winRate": 0.12290502793296089,
-      "metaShare": 0.002108983128134975
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3047,14 +2548,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Talion%2C%20the%20Kindly%20Lord",
-    "sourceStats": {
-      "rank": 69,
-      "entries": 35,
-      "conversionRate": 0.08571428571428572,
-      "topCuts": 3,
-      "winRate": 0.12359550561797752,
-      "metaShare": 0.001994984040127679
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3088,14 +2581,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Niv-Mizzet%2C%20Parun",
-    "sourceStats": {
-      "rank": 70,
-      "entries": 34,
-      "conversionRate": 0.29411764705882354,
-      "topCuts": 10,
-      "winRate": 0.2215909090909091,
-      "metaShare": 0.001937984496124031
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_selection",
@@ -3132,14 +2617,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Tasigur%2C%20the%20Golden%20Fang",
-    "sourceStats": {
-      "rank": 71,
-      "entries": 33,
-      "conversionRate": 0.18181818181818182,
-      "topCuts": 6,
-      "winRate": 0.1488095238095238,
-      "metaShare": 0.001880984952120383
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3178,14 +2655,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Halana%2C%20Kessig%20Ranger%20%2F%20Tymna%20the%20Weaver",
-    "sourceStats": {
-      "rank": 72,
-      "entries": 32,
-      "conversionRate": 0.1875,
-      "topCuts": 6,
-      "winRate": 0.24705882352941178,
-      "metaShare": 0.001823985408116735
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3223,14 +2692,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Gyruda%2C%20Doom%20of%20Depths",
-    "sourceStats": {
-      "rank": 73,
-      "entries": 32,
-      "conversionRate": 0.3125,
-      "topCuts": 10,
-      "winRate": 0.20625,
-      "metaShare": 0.001823985408116735
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3265,14 +2726,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Ashling%2C%20the%20Limitless",
-    "sourceStats": {
-      "rank": 74,
-      "entries": 30,
-      "conversionRate": 0.06666666666666667,
-      "topCuts": 2,
-      "winRate": 0.11188811188811189,
-      "metaShare": 0.001709986320109439
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3315,14 +2768,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Animar%2C%20Soul%20of%20Elements",
-    "sourceStats": {
-      "rank": 78,
-      "entries": 27,
-      "conversionRate": 0.2222222222222222,
-      "topCuts": 6,
-      "winRate": 0.2158273381294964,
-      "metaShare": 0.0015389876880984952
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -3355,14 +2800,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Celes%2C%20Rune%20Knight",
-    "sourceStats": {
-      "rank": 79,
-      "entries": 27,
-      "conversionRate": 0.07407407407407407,
-      "topCuts": 2,
-      "winRate": 0.15873015873015872,
-      "metaShare": 0.0015389876880984952
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3394,14 +2831,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Chatterfang%2C%20Squirrel%20General",
-    "sourceStats": {
-      "rank": 80,
-      "entries": 27,
-      "conversionRate": 0.18518518518518517,
-      "topCuts": 5,
-      "winRate": 0.1693548387096774,
-      "metaShare": 0.0015389876880984952
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3437,14 +2866,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/The%20Master%20of%20Keys",
-    "sourceStats": {
-      "rank": 81,
-      "entries": 26,
-      "conversionRate": 0.2692307692307692,
-      "topCuts": 7,
-      "winRate": 0.2028985507246377,
-      "metaShare": 0.0014819881440948472
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3480,14 +2901,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Nissa%2C%20Resurgent%20Animist",
-    "sourceStats": {
-      "rank": 82,
-      "entries": 25,
-      "conversionRate": 0.2,
-      "topCuts": 5,
-      "winRate": 0.14754098360655737,
-      "metaShare": 0.0014249886000911993
-    },
     "deckElements": [
       "card_advantage",
       "creature_combo",
@@ -3524,14 +2937,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Narset%2C%20Enlightened%20Master",
-    "sourceStats": {
-      "rank": 83,
-      "entries": 25,
-      "conversionRate": 0.28,
-      "topCuts": 7,
-      "winRate": 0.20634920634920634,
-      "metaShare": 0.0014249886000911993
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -3568,14 +2973,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Iron%20Man%2C%20Titan%20of%20Innovation",
-    "sourceStats": {
-      "rank": 84,
-      "entries": 24,
-      "conversionRate": 0.125,
-      "topCuts": 3,
-      "winRate": 0.21052631578947367,
-      "metaShare": 0.0013679890560875513
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -3613,14 +3010,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Baylen%2C%20the%20Haymaker",
-    "sourceStats": {
-      "rank": 85,
-      "entries": 24,
-      "conversionRate": 0.125,
-      "topCuts": 3,
-      "winRate": 0.13675213675213677,
-      "metaShare": 0.0013679890560875513
-    },
     "deckElements": [
       "card_advantage",
       "combat_damage",
@@ -3664,14 +3053,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Avatar%20Aang%20%2F%2F%20Aang%2C%20Master%20of%20Elements",
-    "sourceStats": {
-      "rank": 87,
-      "entries": 22,
-      "conversionRate": 0.22727272727272727,
-      "topCuts": 5,
-      "winRate": 0.21367521367521367,
-      "metaShare": 0.0012539899680802553
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3723,14 +3104,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Kaalia%20of%20the%20Vast",
-    "sourceStats": {
-      "rank": 88,
-      "entries": 22,
-      "conversionRate": 0.13636363636363635,
-      "topCuts": 3,
-      "winRate": 0.19130434782608696,
-      "metaShare": 0.0012539899680802553
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3765,14 +3138,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Yisan%2C%20the%20Wanderer%20Bard",
-    "sourceStats": {
-      "rank": 89,
-      "entries": 21,
-      "conversionRate": 0.2857142857142857,
-      "topCuts": 6,
-      "winRate": 0.23711340206185566,
-      "metaShare": 0.0011969904240766074
-    },
     "deckElements": [
       "card_advantage",
       "creature_tutors",
@@ -3803,15 +3168,10 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Hashaton%2C%20Scarab's%20Fist",
-    "sourceStats": {
-      "rank": 90,
-      "entries": 21,
-      "conversionRate": 0.14285714285714285,
-      "topCuts": 3,
-      "winRate": 0.13861386138613863,
-      "metaShare": 0.0011969904240766074
-    },
     "deckElements": [
+      "commander_engine",
+      "token_engine",
+      "graveyard_value",
       "ad_naus_access",
       "black_tutors",
       "blue_stack_interaction",
@@ -3844,14 +3204,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Selvala%2C%20Explorer%20Returned",
-    "sourceStats": {
-      "rank": 91,
-      "entries": 20,
-      "conversionRate": 0.15,
-      "topCuts": 3,
-      "winRate": 0.1414141414141414,
-      "metaShare": 0.0011399908800729594
-    },
     "deckElements": [
       "card_advantage",
       "creature_combo",
@@ -3884,14 +3236,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Lotho%2C%20Corrupt%20Shirriff",
-    "sourceStats": {
-      "rank": 94,
-      "entries": 19,
-      "conversionRate": 0.10526315789473684,
-      "topCuts": 2,
-      "winRate": 0.13541666666666666,
-      "metaShare": 0.0010829913360693114
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -3923,14 +3267,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Helga%2C%20Skittish%20Seer",
-    "sourceStats": {
-      "rank": 95,
-      "entries": 19,
-      "conversionRate": 0.05263157894736842,
-      "topCuts": 1,
-      "winRate": 0.11235955056179775,
-      "metaShare": 0.0010829913360693114
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -3963,14 +3299,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Ellivere%20of%20the%20Wild%20Court",
-    "sourceStats": {
-      "rank": 97,
-      "entries": 19,
-      "conversionRate": 0.10526315789473684,
-      "topCuts": 2,
-      "winRate": 0.13829787234042554,
-      "metaShare": 0.0010829913360693114
-    },
     "deckElements": [
       "creature_tutors",
       "enchantment_engine",
@@ -4005,12 +3333,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Kodama%20of%20the%20East%20Tree%20%2F%20Tymna%20the%20Weaver",
-    "sourceStats": {
-      "rank": 79,
-      "entries": 46,
-      "winRate": 0.21982758620689655,
-      "metaShare": 0.0014136447449293178
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -4050,12 +3372,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Selvala%2C%20Heart%20of%20the%20Wilds",
-    "sourceStats": {
-      "rank": 88,
-      "entries": 39,
-      "winRate": 0.16201117318435754,
-      "metaShare": 0.0011985248924400737
-    },
     "deckElements": [
       "creature_combo",
       "creature_tutors",
@@ -4087,12 +3403,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Flubs%2C%20the%20Fool",
-    "sourceStats": {
-      "rank": 94,
-      "entries": 37,
-      "winRate": 0.1393939393939394,
-      "metaShare": 0.0011370620774431468
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -4127,12 +3437,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Tameshi%2C%20Reality%20Architect",
-    "sourceStats": {
-      "rank": 97,
-      "entries": 33,
-      "winRate": 0.10365853658536585,
-      "metaShare": 0.0010141364474492932
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_selection",
@@ -4167,12 +3471,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Oswald%20Fiddlebender",
-    "sourceStats": {
-      "rank": 98,
-      "entries": 33,
-      "winRate": 0.26380368098159507,
-      "metaShare": 0.0010141364474492932
-    },
     "deckElements": [
       "high_conversion",
       "medium_play_count",
@@ -4202,12 +3500,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Tatyova%2C%20Benthic%20Druid",
-    "sourceStats": {
-      "rank": 105,
-      "entries": 30,
-      "winRate": 0.18115942028985507,
-      "metaShare": 0.0009219422249539029
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_advantage",
@@ -4239,12 +3531,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Ashling%2C%20Flame%20Dancer",
-    "sourceStats": {
-      "rank": 107,
-      "entries": 29,
-      "winRate": 0.2074074074074074,
-      "metaShare": 0.0008912108174554394
-    },
     "deckElements": [
       "card_advantage",
       "low_play_count",
@@ -4275,12 +3561,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Dina%2C%20Soul%20Steeper",
-    "sourceStats": {
-      "rank": 109,
-      "entries": 27,
-      "winRate": 0.2196969696969697,
-      "metaShare": 0.0008297480024585126
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -4313,12 +3593,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Sami%2C%20Wildcat%20Captain",
-    "sourceStats": {
-      "rank": 111,
-      "entries": 26,
-      "winRate": 0.2283464566929134,
-      "metaShare": 0.0007990165949600492
-    },
     "deckElements": [
       "combat_damage",
       "high_conversion",
@@ -4350,12 +3624,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Rona%2C%20Herald%20of%20Invasion%20%2F%2F%20Rona%2C%20Tolarian%20Obliterator",
-    "sourceStats": {
-      "rank": 115,
-      "entries": 24,
-      "winRate": 0.14814814814814814,
-      "metaShare": 0.0007375537799631224
-    },
     "deckElements": [
       "ad_naus_access",
       "black_tutors",
@@ -4393,12 +3661,6 @@ const commanders = [
       "commanderFlexible": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Captain%20Sisay",
-    "sourceStats": {
-      "rank": 121,
-      "entries": 22,
-      "winRate": 0.16346153846153846,
-      "metaShare": 0.0006760909649661955
-    },
     "deckElements": [
       "creature_combo",
       "creature_tutors",
@@ -4439,12 +3701,6 @@ const commanders = [
       "commanderIndependent": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Teferi%2C%20Temporal%20Archmage",
-    "sourceStats": {
-      "rank": 122,
-      "entries": 22,
-      "winRate": 0.25,
-      "metaShare": 0.0006760909649661955
-    },
     "deckElements": [
       "blue_stack_interaction",
       "card_selection",
@@ -4476,14 +3732,6 @@ const commanders = [
       "competitive": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Emry%2C%20Lurker%20of%20the%20Loch",
-    "sourceStats": {
-      "rank": 80,
-      "entries": 22,
-      "conversionRate": 0.18,
-      "topCuts": 4,
-      "winRate": 0.17,
-      "metaShare": 0.0013
-    },
     "deckElements": [
       "artifact_combo",
       "artifact_tutor",
@@ -4515,14 +3763,6 @@ const commanders = [
       "competitive": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Prossh%2C%20Skyraider%20of%20Kher",
-    "sourceStats": {
-      "rank": 81,
-      "entries": 19,
-      "conversionRate": 0.19,
-      "topCuts": 3,
-      "winRate": 0.17,
-      "metaShare": 0.00108
-    },
     "deckElements": [
       "food_chain",
       "proactive_combo",
@@ -4554,14 +3794,6 @@ const commanders = [
       "competitive": 1
     },
     "edhtop16Url": "https://edhtop16.com/commander/Kykar%2C%20Wind%27s%20Fury",
-    "sourceStats": {
-      "rank": 82,
-      "entries": 23,
-      "conversionRate": 0.18,
-      "topCuts": 4,
-      "winRate": 0.17,
-      "metaShare": 0.0013
-    },
     "deckElements": [
       "spellslinger",
       "storm_combo",
@@ -4579,5 +3811,6 @@ module.exports = {
   costTierConfig,
   metaTagConfig,
   statsWeightConfig,
-  commanders: applyCommanderMetaTags(commanders, metaTagConfig),
+  commanderStatsManifest,
+  commanders: applyCommanderMetaTags(commanders.map((commander) => ({ ...commander, sourceStats: { ...commanderStats[commander.name] } })), metaTagConfig),
 };

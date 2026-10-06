@@ -6,6 +6,7 @@ const { commanders, statsWeightConfig } = require('../miniprogram/config/command
 const { questions, matchingConfig } = require('../miniprogram/config/questionnaire');
 const {
   calculateColorMatchMultiplier,
+  buildPreferenceProfile,
 } = require('../miniprogram/utils/recommender/profile');
 const { buildEffectiveMatchTags } = require('../miniprogram/utils/recommender/tags');
 const {
@@ -16,6 +17,8 @@ const {
   applyDiversitySlots,
   calculateCompetitivePriorityMultiplier,
   calculatePreferencePenaltyMultiplier,
+  calculateStatsAdjustedScore,
+  recommendCommanders,
 } = require('../miniprogram/utils/recommender/ranking');
 
 const args = new Set(process.argv.slice(2));
@@ -131,22 +134,36 @@ function buildSingleQuestionAnswerSets() {
     });
 
     if (mode !== 'singletons') {
-      // 为每位主将生成一份按标签局部最优的画像，确保冷门但有效的推荐路径
-      // 不会因为随机样本不足而被误判为 dead。
-      commanders.forEach((commander) => {
-        const tags = buildEffectiveMatchTags(commander);
+      // 自身标签得分高，不保证相对其他主将排得高。两种定向画像都采样：
+      // 最大化自身标签，以及与当前最接近的五位竞争者分别拉开标签差异。
+      // 仍是有限覆盖集；未覆盖不能证明任意回答下都不可达。
+      const targetAnswers = (tags, rivalTags = {}) => {
         const answers = {};
         singleQuestions.forEach((question) => {
           const ranked = question.options.map((option, optionIndex) => ({
             option,
             optionIndex,
             score: Object.keys(option.weights || {}).reduce((sum, key) => (
-              key.startsWith('__') ? sum : sum + Number(option.weights[key] || 0) * Number(tags[key] || 0)
+              key.startsWith('__') ? sum : sum + Number(option.weights[key] || 0)
+                * (Number(tags[key] || 0) - Number(rivalTags[key] || 0))
             ), 0),
           })).sort((left, right) => right.score - left.score || left.optionIndex - right.optionIndex);
           answers[question.id] = ranked[0].option.id;
         });
+        return answers;
+      };
+      commanders.forEach((commander) => {
+        const tags = buildEffectiveMatchTags(commander);
+        const answers = targetAnswers(tags);
         variants.push(answers);
+        const profile = buildPreferenceProfile(questions, {
+          ...answers,
+          colors: colorIdentityToOptionSet(commander.colorIdentity),
+          resourceEngine: ['any'],
+        });
+        const rivals = recommendCommanders(profile, commanders, 6, null, null, statsWeightConfig, matchingConfig)
+          .filter((rival) => rival.name !== commander.name).slice(0, 5);
+        rivals.forEach((rival) => variants.push(targetAnswers(tags, buildEffectiveMatchTags(rival))));
       });
 
       let state = 123456789;
@@ -203,12 +220,6 @@ const commanderRuntime = commanders.map((commander) => ({
   sourceStatsMultiplier: calculateSourceStatsMultiplier(commander, statsWeightConfig),
   metaStatusMultiplier: calculateMetaStatusMultiplier(commander, statsWeightConfig),
 }));
-
-const sourceAdjustmentFactor = commanderRuntime.map((item) => {
-  const influence = Number(statsWeightConfig && statsWeightConfig.scoreInfluence);
-  const boundedInfluence = Number.isFinite(influence) ? Math.max(0, Math.min(1, influence)) : 1;
-  return 1 + (Number(item.sourceStatsMultiplier || 1) - 1) * boundedInfluence;
-});
 
 const metaStatusMultiplier = commanderRuntime.map((item) => Number(item.metaStatusMultiplier || 1));
 
@@ -315,8 +326,7 @@ function scoreByIndex(baseScore, colorMultiplier, commanderIndex, competitiveMul
   return {
     fitScore,
     score: roundScore(
-      fitScore
-    * sourceAdjustmentFactor[commanderIndex]
+      calculateStatsAdjustedScore(fitScore, commanderRuntime[commanderIndex].sourceStatsMultiplier, statsWeightConfig)
     * metaStatusMultiplier[commanderIndex]
     * competitiveMultiplier
     * preferenceMultiplier,
@@ -459,4 +469,11 @@ function printReport() {
   if (args.has('--strict') && coverage.dead.length) process.exitCode = 1;
 }
 
-printReport();
+if (require.main === module) printReport();
+
+module.exports = {
+  buildSingleComponents,
+  buildColorComponents,
+  buildResourceComponents,
+  topThreeFromComponents,
+};

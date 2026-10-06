@@ -452,7 +452,7 @@ function drawEdhtiFooter(ctx, assets) {
   ctx.restore();
 }
 
-// 右上角赛博霓虹小贴纸：显示此人格的出现概率（两位小数）。
+// 独立等概随机作答的模拟占比，不是社区玩家中的人格频率。
 function drawOddsSticker(ctx, odds) {
   if (!Number.isFinite(odds)) return;
 
@@ -487,13 +487,17 @@ function drawOddsSticker(ctx, odds) {
 
   ctx.fillStyle = 'rgba(185, 232, 255, 0.85)';
   ctx.font = `700 15px ${EXPORT_DISPLAY_FONT}`;
-  drawTrackedText(ctx, '人格稀有度', 0, -12, 2);
+  drawTrackedText(ctx, '随机作答占比', 0, -15, 1);
 
   ctx.shadowColor = 'rgba(255, 43, 214, 0.6)';
   ctx.shadowBlur = 12;
   ctx.fillStyle = EXPORT_ELECTRIC_CYAN;
   ctx.font = `900 32px ${EXPORT_DISPLAY_FONT}`;
-  ctx.fillText(`${odds.toFixed(2)}%`, 0, 24);
+  ctx.fillText(`约 ${odds.toFixed(1)}%`, 0, 18);
+  ctx.shadowBlur = 0;
+  ctx.fillStyle = 'rgba(185, 232, 255, 0.85)';
+  ctx.font = `12px ${EXPORT_DISPLAY_FONT}`;
+  ctx.fillText('每题独立，各选项等概', 0, 33);
   ctx.restore();
 }
 

@@ -1,31 +1,14 @@
 #!/usr/bin/env node
 // 把 Commander Spellbook 的两卡组合技烤进 config/spellbook-combos.js。
 //
-// 为什么要这份数据：手工维护的 KNOWN_COMBOS 只有 42 条，牌表里绝大多数两卡组合技
-// 根本没被认出来。Spellbook 是社区维护的组合技数据库（EDHREC 的组合技页就是它供的），
-// 全量两卡组合技约 4000 条——**现有 39 条手工两卡条目，它一条不落地全都有**，
-// 是严格超集。
-//
-// 为什么信它的档位判断：variant 上的 bracketTag 不是「这个组合技多强」，
-// 而是「含有它的牌组会被估到哪一档」，由后端 estimate_bracket 从速度、是否真两卡、
-// 产出是否致胜算出来（MIT 开源，规则可查）。字母到档位的映射取自它自己的模型定义：
-//   R=4  S=3  P=3  O=2  C=2  E=1  B=禁牌
-//
-// 收哪些：**产出「Infinite …」的** ∪ **档位 ≥4 的**，剔除含禁牌的。前者是因为
-// 官方 Bracket 2 的定义里明写「没有两卡无限组合技」，所以只要存在就该把下限顶到 3；
-// 后者是「四级桌组合技」本身。
-//
-// 手工库（KNOWN_COMBOS）覆盖的配对**也收**：档位以这份为准。
-// 手工库自己那套「早期→4，否则→2」的启发式实测 39 条里有 21 条与 Spellbook 不符，
-// 其中 12 条把 Food Chain、Kiki-Jiki、Splinter Twin、Worldgorger 这类明显的
-// 四级桌组合技判成了 3。手工库保留的是中文说法与家族归并，那部分它确实更好。
-//
+// 读取社区双卡配方与定性标签，供本地匹配。标签不是官方硬性分级。
+// 字母映射是本工具的简化，配方仍有额外资源与状态条件。
 // 重新生成：node scripts/build-spellbook-combos.js
-// 什么时候要重新生成：想同步 Spellbook 的新增组合技时。不跑也不会坏，只是漏新卡。
 
 const fs = require('fs');
 const path = require('path');
 const https = require('https');
+const vm = require('node:vm');
 
 const ROOT = path.join(__dirname, '..');
 const OUT_FILE = path.join(ROOT, 'miniprogram', 'config', 'spellbook-combos.js');
@@ -42,8 +25,8 @@ const TAG_TO_BRACKET = {
 // 不是「无限魔法工艺触发」这个具体英文。归成九类，每类一句中文。
 // 顺序即优先级：一个组合技同时产出无限法术力和胜利时，按胜利归类。
 const CATEGORIES = [
-  ['win', /^(Win the game|Each opponent loses the game|Infinite (damage|loss of life))/i, '直接胜利'],
-  ['lock', /^(Lock|Infinite (?:turns|combat phases))|control (?:all|some) opponents/i, '锁定或无限回合'],
+  ['win', /^(Win the game|Each opponent loses the game|Infinite (damage|loss of life))/i, '伤害或取胜'],
+  ['lock', /^(Lock|Infinite (?:turns|combat phases))|control (?:all|some) opponents/i, '控制或回合循环'],
   ['mana', /^Infinite .*mana/i, '无限法术力'],
   ['draw', /^Infinite (?:card draw|draw triggers)/i, '无限抓牌'],
   ['tokens', /^Infinite creature tokens|^Infinite .*creatures/i, '无限衍生物'],
@@ -54,18 +37,27 @@ const CATEGORIES = [
 ];
 
 function request(url, attempt = 0) {
+  const parsed = new URL(url);
+  if (parsed.protocol !== 'https:' || parsed.hostname !== 'backend.commanderspellbook.com')
+    return Promise.reject(new Error('拒绝非 Spellbook 分页地址'));
   return new Promise((resolve, reject) => {
-    https.get(url, {
+    const req = https.get(url, {
       headers: {
         'user-agent': 'cedh-tutor-build/1.0 (+https://github.com/N1kasepotis/cedh-tutor)',
         accept: 'application/json',
       },
     }, (response) => {
       let raw = '';
-      response.on('data', (chunk) => { raw += chunk; });
+      let bytes = 0;
+      response.on('data', (chunk) => {
+        bytes += chunk.length;
+        if (bytes > 16 * 1024 * 1024) { response.destroy(new Error('响应超过 16 MiB')); return; }
+        raw += chunk;
+      });
+      response.on('error', reject);
       response.on('end', () => {
         if (response.statusCode !== 200) {
-          if (attempt < 3) {
+          if (attempt < 3 && (response.statusCode === 429 || response.statusCode >= 500)) {
             setTimeout(() => request(url, attempt + 1).then(resolve, reject), 1500 * (attempt + 1));
             return;
           }
@@ -74,7 +66,9 @@ function request(url, attempt = 0) {
         }
         try { resolve(JSON.parse(raw)); } catch (error) { reject(error); }
       });
-    }).on('error', (error) => {
+    });
+    req.setTimeout(20000, () => req.destroy(new Error('Spellbook 请求超时')));
+    req.on('error', (error) => {
       if (attempt < 3) {
         setTimeout(() => request(url, attempt + 1).then(resolve, reject), 1500 * (attempt + 1));
         return;
@@ -135,18 +129,36 @@ function quote(value) {
 
 async function pullAll() {
   const collected = [];
+  const seenPages = new Set();
+  const seenIds = new Set();
+  let total = null;
   let url = `${API}?limit=${PAGE_SIZE}&q=${encodeURIComponent('cards=2')}`;
   let page = 0;
-  while (url && page < 80) {
+  while (url) {
+    if (seenPages.has(url) || page >= 80) throw new Error('分页循环或页数超限');
+    seenPages.add(url);
     /* eslint-disable no-await-in-loop */
     const payload = await request(url);
-    (payload.results || []).forEach((item) => collected.push(item));
+    // The live API may omit the total by returning count:null.
+    if (!Array.isArray(payload.results) || (payload.count !== null && (!Number.isSafeInteger(payload.count) || payload.count < 0))
+      || (payload.next !== null && typeof payload.next !== 'string')) throw new Error('分页结构改变');
+    if (payload.next && !payload.results.length) throw new Error('空页仍指向下一页');
+    if (payload.count !== null) {
+      if (total !== null && total !== payload.count) throw new Error('拉取期间条目数量改变，请重试');
+      total = payload.count;
+    }
+    payload.results.forEach((item) => {
+      if (!item || !item.id || seenIds.has(item.id)) throw new Error('组合技身份缺失或重复');
+      seenIds.add(item.id);
+      collected.push(item);
+    });
     page += 1;
     process.stdout.write(`\r  拉取第 ${page} 页，累计 ${collected.length} 条`);
     url = payload.next;
     if (url) await new Promise((resolve) => setTimeout(resolve, PAGE_GAP_MS));
   }
   process.stdout.write('\n');
+  if (!collected.length || (total !== null && collected.length !== total)) throw new Error('未取得完整快照');
   return collected;
 }
 
@@ -161,12 +173,10 @@ function render(cards, records, categories, stats) {
   lines.push('//');
   lines.push('// 收录范围：两卡组合技中「产出无限循环」∪「档位 ≥4」，剔除含禁牌的，');
   lines.push('// 手工库（config/bracket-data.js 的 KNOWN_COMBOS）覆盖的配对也在其中：');
-  lines.push('// 档位以这份为准，手工库只保留中文与家族归并——它那套「早期→4，否则→2」的');
-  lines.push('// 启发式实测 39 条里有 21 条与这里不符，其中 12 条把四级桌组合技判成了 3。');
+  lines.push('// 标签仅供参考，实际循环须满足原配方的资源及状态条件。');
   lines.push(`// 全库两卡组合技 ${stats.total} 条 → 命中范围 ${stats.inScope} 条 → 去重后收录 ${records.length} 条，涉及 ${cards.length} 张牌。`);
   lines.push('//');
-  lines.push('// 档位取自 variant 的 bracketTag。它不是「这个组合技多强」，而是「含有它的牌组会被估到哪一档」，');
-  lines.push('// 由 Spellbook 后端的 estimate_bracket 从速度、是否真两卡、产出是否致胜算出来。');
+  lines.push('// 档位映射取自社区定性 bracketTag，不是官方硬性规则。');
   lines.push('// 字母映射抄自它自己的模型定义（models/variant.py）：R=4 S=3 P=3 O=2 C=2 E=1，B 是禁牌。');
   lines.push('//');
   lines.push('// 存法：卡名去重存一份表，组合技只存 36 进制下标。三千条配对里卡名重复极多，');
@@ -219,18 +229,17 @@ async function main() {
 
   prioritizeVariants(all).forEach((variant) => {
     const bracket = TAG_TO_BRACKET[variant.bracketTag];
-    if (!bracket) return; // 含禁牌（B）或标签缺失的一律不收
+    if (variant.bracketTag === 'B') return;
+    if (!bracket) throw new Error('未知组合技标签：' + variant.bracketTag);
     const infinite = featureNames(variant).some((name) => /^Infinite/i.test(name));
     if (!infinite && bracket < 4) return;
     inScope += 1;
 
     const names = (variant.uses || []).map((use) => use.card && use.card.name).filter(Boolean);
-    if (names.length !== 2) return;
+    if (names.length !== 2 || new Set(names).size !== 2
+      || variant.uses.some((use) => use.quantity !== 1)) return;
     const pairKey = names.map(canonicalKey).sort().join('|');
-    // 手工库覆盖的配对**也要收**。原先在这里排除掉，结果是手工库那套
-    // 「早期→4，否则→2」的启发式说了算——实测 39 条里有 21 条与 Spellbook 不符，
-    // 其中 12 条偏低（Food Chain、Kiki-Jiki、Splinter Twin、Worldgorger 这些
-    // 明显的四级桌组合技全被判成 3）。档位交给它，手工库只保留中文与家族归并。
+    // 保留手工库配对；中文与家族归并仍由手工库提供。
     if (curated.has(pairKey)) skippedCurated += 1;
     if (seenPairs.has(pairKey)) return; // 同一对牌可能有多条 variant，取档位最高的那条
     seenPairs.add(pairKey);
@@ -245,7 +254,20 @@ async function main() {
   });
 
   const source = render(cards, records, CATEGORIES, { total: all.length, inScope });
-  fs.writeFileSync(OUT_FILE, source, 'utf8');
+  const context = { module: { exports: {} } };
+  vm.runInNewContext(source, context, { timeout: 1000 });
+  const result = context.module.exports;
+  if (JSON.stringify(result.SPELLBOOK_CARD_NAMES) !== JSON.stringify(cards)
+    || result.SPELLBOOK_COMBO_ROWS !== records.join(';')) throw new Error('生成物往返校验失败');
+  const missing = [...curated].filter((key) => !seenPairs.has(key));
+  if (missing.length) throw new Error('手工库配对缺失：' + missing.join(', '));
+  const temporary = OUT_FILE + '.' + process.pid + '.tmp';
+  try {
+    fs.writeFileSync(temporary, source, { encoding: 'utf8', flag: 'wx' });
+    fs.renameSync(temporary, OUT_FILE);
+  } finally {
+    if (fs.existsSync(temporary)) fs.unlinkSync(temporary);
+  }
 
   console.log('');
   console.log(`全库两卡组合技 ${all.length} 条 → 命中收录范围 ${inScope} 条`);
@@ -253,22 +275,22 @@ async function main() {
   console.log(`落表 ${records.length} 条，涉及 ${cards.length} 张牌`);
   console.log(`写入 ${path.relative(ROOT, OUT_FILE)}（${(Buffer.byteLength(source) / 1024).toFixed(1)}KB）`);
 
-  // 自检：随机抽查若干条，确认能被索引反查出来
+  // 逐条反查全部配对，不把固定前缀检查表述成随机抽查。
   delete require.cache[require.resolve(OUT_FILE)];
   const matcherPath = path.join(ROOT, 'miniprogram', 'utils', 'spellbook-combos.js');
   delete require.cache[require.resolve(matcherPath)];
   const generated = require(matcherPath);
   let checked = 0;
   let failed = 0;
-  records.slice(0, 200).forEach((row) => {
+  records.forEach((row) => {
     const parts = row.split(',');
     const pair = [cards[parseInt(parts[0], 36)], cards[parseInt(parts[1], 36)]];
     const deck = new Set(pair.map(canonicalKey));
     const hit = generated.matchSpellbookCombos(deck, canonicalKey);
     checked += 1;
-    if (!hit.length || hit[0].cards.slice().sort().join('|') !== pair.slice().sort().join('|')) failed += 1;
+    if (!hit.some((item) => item.cards.slice().sort().join('|') === pair.slice().sort().join('|'))) failed += 1;
   });
-  console.log(`自检：抽 ${checked} 条反查，未命中 ${failed} 条`);
+  console.log(`自检：全部 ${checked} 条反查，未命中 ${failed} 条`);
   if (failed) process.exit(1);
 }
 
@@ -277,4 +299,4 @@ if (require.main === module) main().catch((error) => {
   process.exit(1);
 });
 
-module.exports = { prioritizeVariants };
+module.exports = { prioritizeVariants, render, CATEGORIES };

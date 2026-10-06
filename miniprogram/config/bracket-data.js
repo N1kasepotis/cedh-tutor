@@ -9,18 +9,16 @@ const BRACKET_MANIFEST = Object.freeze({
   schemaVersion: 1,
   ruleVersion: 'commander-brackets-2026-02-09',
   dataVersion: 'curated-en-2026-08-28-spellbook-two-card',
-  // 2.8.0：接入 Commander Spellbook 的两卡组合技快照（3015 条）。
-  // 这一版**会改变判定结果**——此前只认手工维护的 42 条，牌表里绝大多数两卡组合技
-  // 一条都识别不出来，那正是「牌组里有组合技却没被认出来」的直接原因。
-  evaluatorVersion: '2.8.0',
+  // 2.9.0：牌张法术力值合计不再被当作启动成本或早期启动证据。
+  evaluatorVersion: '2.9.0',
   supportedLanguage: 'en',
 });
 
 // 区间定位：档位内部再分「偏弱 / 中等 / 偏强」（B4.5 与 B5 竞技档暂不区分，待赛事 meta 分析加入）。
-// 位置分数复用档位判定使用的同一批信号轴，不引入新的主观打分：
+// 位置分数复用信号轴，是产品启发式指标，不是实战强度的统计估计：
 // B1–B3 取向上一档判定门槛的推进度按 accumulationSpan 归一（约两个门槛宽度的总推进 = 区间顶部），
-// B4 取 B5 四项必要条件平均达成度的平方（联合满足的接近程度）。
-// 切点经确定性阶梯牌表校准：同档牌表沿区间扫描时三个标签占比大致均衡，不出现单一偏向垄断。
+// B4 取四项信号达成度均值的平方，不是联合概率，也不能代替逐项条件检查。
+// 切点只在人工构造的阶梯牌表上检查分布，未经真实牌表或对局结果校准。
 // promotion 同时是档位判定门槛：结构判定只有超过 B4 偏强（联合接近度 ≥ cuts.high）才可能离开 B4；
 // 达到竞技特征后余量 ≥ b5SurplusMin 才判 B5，否则归 B4.5 准竞技；余量落在 ±b5SurplusBand 内时置信度说明贴线。
 const BAND_POSITION_CONFIG = Object.freeze({
@@ -35,28 +33,13 @@ const BAND_POSITION_CONFIG = Object.freeze({
   promotion: Object.freeze({ b5SurplusMin: 0.6, b5SurplusBand: 0.08 }),
 });
 
-// 组合技速度分档（方法论借鉴开源的 Commander Spellbook estimate-bracket）：
-// 已确认组合技按全套牌张法术力值合计分速度档，速度 ≥ earlyMinSpeed（合计 ≤4 费）
-// 视为客观「早期组合技」；元数据缺失时退回变体上的人工 speed 标注。
-const COMBO_SPEED_CONFIG = Object.freeze({
-  tiers: Object.freeze([
-    Object.freeze({ maxManaValue: 0, speed: 5 }),
-    Object.freeze({ maxManaValue: 4, speed: 4 }),
-    Object.freeze({ maxManaValue: 6, speed: 3 }),
-    Object.freeze({ maxManaValue: 8, speed: 2 }),
-  ]),
-  fallbackSpeed: 1,
-  earlyMinSpeed: 4,
-});
-
 const BRACKET_LABELS = Object.freeze({
-  1: { name: 'Exhibition', zh: '主题展示', turn: '通常至少 9 回合取胜' },
-  2: { name: 'Core', zh: '核心', turn: '通常至少 8 回合取胜' },
-  3: { name: 'Upgraded', zh: '强化', turn: '通常至少 6 回合取胜' },
-  4: { name: 'Optimized', zh: '优化', turn: '通常至少 4 回合取胜' },
-  // 准竞技（余量未越线的入门竞技结构或预算构筑）起手爆发不到成熟 cEDH 的水平，因此不写「任意回合」
-  4.5: { name: 'Fringe cEDH', zh: '准竞技', turn: '通常至少 3 回合取胜' },
-  5: { name: 'cEDH', zh: '竞技', turn: '可能在任意回合结束' },
+  1: { name: 'Exhibition', zh: '主题展示', turn: '牌桌预期：至少玩满 9 回合' },
+  2: { name: 'Core', zh: '核心', turn: '牌桌预期：至少玩满 8 回合' },
+  3: { name: 'Upgraded', zh: '强化', turn: '牌桌预期：至少玩满 6 回合' },
+  4: { name: 'Optimized', zh: '优化', turn: '牌桌预期：至少玩满 4 回合' },
+  4.5: { name: 'Fringe cEDH', zh: '准竞技', turn: '工具细分，需与牌桌确认' },
+  5: { name: 'cEDH', zh: '竞技', turn: '竞技牌桌，可在任意回合结束' },
 });
 
 // 2025-10-21 官方完整更新，叠加 2026-02-09 新增 Farewell / Biorhythm。
@@ -392,7 +375,6 @@ module.exports = {
   BRACKET_MANIFEST,
   BRACKET_LABELS,
   BAND_POSITION_CONFIG,
-  COMBO_SPEED_CONFIG,
   GAME_CHANGERS,
   BANNED_CARDS,
   BANNED_AS_COMPANION,

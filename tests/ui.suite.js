@@ -1234,7 +1234,7 @@ test('second visual sweep: quiet tracker actions, official card names, one paste
   const izzetText = izzet.replace(/\{\{[^}]*\}\}/g, '').replace(/<[^>]*>/g, ' ');
   assert.doesNotMatch(izzetText, /storm|Ral 自伤|抛币/i, '界面文字不再写英文 storm 与“抛币”');
   assert.doesNotMatch(izzet, /aria-label="[^"]*storm/, '读屏名称也用“风暴”');
-  assert.match(izzet, /总风暴[\s\S]*拉尔自伤[\s\S]*拉尔掷硬币/);
+  assert.match(izzet, /本回合咒语[\s\S]*拉尔自伤[\s\S]*拉尔掷硬币/);
   assert.match(izzet, /\{\{item\.zhName \|\| item\.name\}\}[\s\S]*class="izzet-engine-en"/);
   assert.match(read('miniprogram/pages/random/random.wxml'), /风雨法师拉尔 <text class="tool-entry-en">Ral, Monsoon Mage<\/text>/);
   const hands = read('miniprogram/community/pages/hands/index.js');

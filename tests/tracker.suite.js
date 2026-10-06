@@ -79,7 +79,7 @@ test('tracker page is registered and exposes commander record controls', () => {
   assert.doesNotMatch(js, /frequencyChart/);
   assert.doesNotMatch(js, /buildFrequencySeries/);
   assert.match(wxml, /每日胜率/);
-  assert.match(wxml, /轮次胜率/);
+  assert.match(wxml, /座次胜率/);
   assert.doesNotMatch(wxml, /<view class="chart-title">游玩频率<\/view>/);
   assert.doesNotMatch(wxml, /<view class="chart-title">座位胜率<\/view>/);
   assert.match(wxml, /复制战绩文本/);
@@ -237,7 +237,7 @@ test('tracker commander input and debug actions stay inside mobile width', () =>
 test('tracker empty chart label is centered in the canvas', () => {
   const chartJs = fs.readFileSync(path.join(root, 'miniprogram/utils/tracker-charts.js'), 'utf8');
   const emptyStateBlock = chartJs.slice(
-    chartJs.indexOf("if (!series || !series.length)"),
+    chartJs.indexOf("if (!series || !series.length ||"),
     chartJs.indexOf('const values = type ==='),
   );
 
@@ -300,7 +300,7 @@ test('tracker stats keep draws separate and build chart series', () => {
 
   assert.deepEqual(
     buildWinRateSeries(deck.matches, trackerConfig.stats).map((point) => point.rateLabel),
-    ['0.0%', '100.0%', '0.0%', '100.0%', '0.0%', '100.0%'],
+    ['0.0%', '100.0%', '—', '100.0%', '0.0%', '100.0%'],
   );
   assert.deepEqual(
     buildWinRateSeries([
@@ -330,7 +330,7 @@ test('tracker stats keep draws separate and build chart series', () => {
     [
       { seat: 'seat1', label: 'Seat 1', rateLabel: '0.0%', sampleSize: 1 },
       { seat: 'seat2', label: 'Seat 2', rateLabel: '50.0%', sampleSize: 2 },
-      { seat: 'seat3', label: 'Seat 3', rateLabel: '0.0%', sampleSize: 0 },
+      { seat: 'seat3', label: 'Seat 3', rateLabel: '—', sampleSize: 0 },
       { seat: 'seat4', label: 'Seat 4', rateLabel: '100.0%', sampleSize: 1 },
     ],
   );

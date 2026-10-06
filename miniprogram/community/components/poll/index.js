@@ -1,5 +1,6 @@
 const api = require('../../utils/api');
 const local = require('../../utils/local');
+const { calculatePollStats } = require('../../utils/poll-stats');
 Component({
   options: { styleIsolation: 'apply-shared' },
   properties: {
@@ -83,20 +84,11 @@ Component({
     decorate() {
       const counts = this.data.stats && (this.data.stats.all || {});
       if (!counts) return;
-      const sample = Object.values(counts).reduce((sum, value) => sum + value, 0);
-      const known = sample - (counts.unknown || 0);
-      this.setData({
-        sample,
-        known,
-        unknown: counts.unknown || 0,
-        rows: this.properties.choices
-          .filter((choice) => choice.id !== 'unknown')
-          .map((choice) => ({
-            ...choice,
-            count: counts[choice.id] || 0,
-            percent: known ? Math.round(((counts[choice.id] || 0) * 100) / known) : 0,
-          })),
-      });
+      try {
+        this.setData(calculatePollStats(counts, this.properties.choices));
+      } catch (error) {
+        this.setData({ stats: null, error: '票数暂时无法读取' });
+      }
     },
     async request(action, extra = {}) {
       if (this.data.busy) return;

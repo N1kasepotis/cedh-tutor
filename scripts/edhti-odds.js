@@ -1,8 +1,17 @@
-// 重算 EDHTI 各人格出现概率（config/edhti.js 的 edhtiPersonaOdds）。
-// 随机作答（每题 4 选项等概）下的分布，用真实计分函数 tallyEdhtiAnswers 做种子化蒙特卡洛。
-// 问卷或权重改动后重跑：node scripts/edhti-odds.js  然后把输出的 JSON 贴回 config/edhti.js。
-const { edhtiQuestions, edhtiTagLabels } = require('../miniprogram/config/edhti');
-const { tallyEdhtiAnswers } = require('../miniprogram/utils/edhti');
+// Independent uniform answers simulate the questionnaire, not actual players.
+const crypto = require('node:crypto');
+const fs = require('node:fs');
+const path = require('node:path');
+const { edhtiQuestions } = require('../miniprogram/config/edhti');
+const AXES = [['competitive', 'fun'], ['social', 'solo'], ['complex', 'direct'], ['mainstream', 'offmeta']];
+const LETTERS = [['C', 'F'], ['T', 'S'], ['X', 'D'], ['M', 'O']];
+
+function questionFingerprint(questions) {
+  const scoring = questions.map((question) => ({
+    id: question.id, answers: question.answers.map((answer) => answer.scores || {}),
+  }));
+  return crypto.createHash('sha256').update(JSON.stringify(scoring)).digest('hex');
+}
 
 function mulberry32(seed) {
   let a = seed;
@@ -15,25 +24,49 @@ function mulberry32(seed) {
   };
 }
 
-const SEED = 20260705;
-const TRIALS = 2000000;
-const rng = mulberry32(SEED);
-const ids = edhtiQuestions.map((question) => question.id);
-const counts = {};
-
-for (let i = 0; i < TRIALS; i += 1) {
-  const answerMap = {};
-  for (const id of ids) answerMap[id] = Math.floor(rng() * 4);
-  const { code } = tallyEdhtiAnswers(edhtiQuestions, answerMap, edhtiTagLabels);
-  counts[code] = (counts[code] || 0) + 1;
+function estimatePersonaOdds(questions, trials = 2000000, seed = 20261006) {
+  if (!Number.isSafeInteger(trials) || trials <= 0) throw new Error('trials must be a positive safe integer');
+  if (!questions.length || questions.some((question) => !question.answers || !question.answers.length)) {
+    throw new Error('every question needs at least one answer');
+  }
+  const vectors = questions.map((question) => question.answers.map((answer) => AXES.map(([a, b]) => (
+    Number((answer.scores || {})[a] || 0) - Number((answer.scores || {})[b] || 0)
+  ))));
+  const rng = mulberry32(seed);
+  const counts = {};
+  for (let trial = 0; trial < trials; trial += 1) {
+    const totals = [0, 0, 0, 0];
+    for (const answers of vectors) {
+      const vector = answers[Math.floor(rng() * answers.length)];
+      for (let axis = 0; axis < 4; axis += 1) totals[axis] += vector[axis];
+    }
+    const code = totals.map((total, axis) => LETTERS[axis][total >= 0 ? 0 : 1]).join('');
+    counts[code] = (counts[code] || 0) + 1;
+  }
+  const odds = Object.fromEntries(Object.entries(counts)
+    .sort((a, b) => b[1] - a[1])
+    .map(([code, count]) => [code, Number((count / trials * 100).toFixed(2))]));
+  return { odds, manifest: {
+    method: 'seeded-monte-carlo', assumption: 'independent-uniform-answers',
+    trials, seed, questionCount: questions.length,
+    optionCounts: questions.map((question) => question.answers.length),
+    scoringFingerprint: questionFingerprint(questions),
+  } };
 }
 
-const odds = {};
-Object.keys(counts)
-  .sort((a, b) => counts[b] - counts[a])
-  .forEach((code) => {
-    odds[code] = Number(((counts[code] / TRIALS) * 100).toFixed(2));
-  });
-
-console.log(`seed=${SEED} trials=${TRIALS}`);
-console.log(JSON.stringify(odds, null, 2));
+if (require.main === module) {
+  const result = estimatePersonaOdds(edhtiQuestions);
+  if (process.argv.includes('--write')) {
+    const file = path.resolve(__dirname, '../miniprogram/config/edhti.js');
+    const source = fs.readFileSync(file, 'utf8');
+    const block = /const edhtiPersonaOdds = \{[\s\S]*?\n\};(?:\s*const edhtiOddsManifest = \{[\s\S]*?\n\};)?/;
+    if (!block.test(source)) throw new Error('odds block was not found');
+    const next = source.replace(
+      block,
+      `const edhtiPersonaOdds = ${JSON.stringify(result.odds, null, 2)};\n\nconst edhtiOddsManifest = ${JSON.stringify(result.manifest, null, 2)};`,
+    );
+    if (next !== source) fs.writeFileSync(file, next, 'utf8');
+  }
+  console.log(JSON.stringify(result, null, 2));
+}
+module.exports = { estimatePersonaOdds, questionFingerprint };

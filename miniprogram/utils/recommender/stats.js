@@ -1,6 +1,7 @@
 const { isPartnerShell } = require('./tags');
 
 function readNumber(value) {
+  if (value == null || value === '' || typeof value === 'boolean') return null;
   const number = Number(value);
   return Number.isFinite(number) ? number : null;
 }
@@ -94,12 +95,9 @@ function isIrrelevantCommander(commander, config) {
     return true;
   }
 
-  if (isOutdatedCommander(commander, config) || !isPartnerShell(commander)) return false;
-
-  const play = getPlayRateStats(commander);
-  const entriesLimit = readThreshold(irrelevantConfig.autoPartnerEntriesBelow, 0);
-  const metaShareLimit = readThreshold(irrelevantConfig.autoPartnerMetaShareBelow, 0);
-  return isBelowPlayThreshold(play, entriesLimit, metaShareLimit);
+  // 少量参赛记录只能说明当前样本少，不能推出构筑与环境无关。
+  // 此状态仅接受显式编辑标记；使用率的启发式权重单独处理。
+  return false;
 }
 
 function getPlayRateSortValue(commander) {
@@ -119,7 +117,8 @@ function calculateSourceStatsMultiplier(commander, config) {
   if (!config || config.enabled === false) return 1;
 
   const stats = commander && commander.sourceStats || {};
-  const conversionRate = readNumber(stats.conversionRate != null ? stats.conversionRate : stats.winRate);
+  // Tournament top-cut conversion and game win rate have different denominators.
+  const conversionRate = readNumber(stats.conversionRate);
   const entries = readNumber(stats.entries);
   const metaShare = readNumber(stats.metaShare);
   const conversionConfig = config.conversionRate || {};
@@ -130,12 +129,12 @@ function calculateSourceStatsMultiplier(commander, config) {
     multiplier *= Number(conversionConfig.lowMultiplier || 1);
   }
 
-  // 高转化率奖励：参赛量达标且转化率显著高于平均线的隐藏强将（小样本不奖励）
+  // 超过配置阈值且参赛量达标时加权；不是统计显著性检验。
   const highAbove = readThreshold(conversionConfig.highAbove, Infinity);
   const highMinEntries = readThreshold(conversionConfig.highMinEntries, 0);
   if (
     conversionRate != null && conversionRate >= highAbove
-    && (entries == null || entries >= highMinEntries)
+    && entries != null && entries >= highMinEntries
   ) {
     multiplier *= Number(conversionConfig.highMultiplier || 1);
   }

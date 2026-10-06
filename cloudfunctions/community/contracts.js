@@ -126,7 +126,8 @@ function replaceBallot(counts, oldVote, nextVote, choices) {
       fail('CORRUPT_TALLY');
     ['all', vote.perspective].forEach((view) => {
       next[view][vote.choice] += delta;
-      if (next[view][vote.choice] < 0) fail('CORRUPT_TALLY');
+      if (!Number.isSafeInteger(next[view][vote.choice]) || next[view][vote.choice] < 0)
+        fail('CORRUPT_TALLY');
     });
   });
   return next;

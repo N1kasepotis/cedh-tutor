@@ -29,7 +29,7 @@ function tokenNeedsTap(tokenKey, engines) {
 
 // 对手施放非生物咒语的产出。顺序①：先把本次要创建的 Food 全数算出，再让 Manufactor 三倍。
 // - The Cabbage Merchant 在场造 1 个 Food；
-// - Peregrin Took 在场、且本次有 token 产生（Cabbage 或 Manufactor 在场）时，再额外造 1 个 Food；
+// - Peregrin Took 只能替换已存在的造衍生物事件，不会独立因施法造食品；
 // - Academy Manufactor 在场时，对上面「每一个被创建的 Food」各补 1 Clue + 1 Treasure。
 // 于是三件套里 Peregrin 那个 Food 也被 Manufactor 三倍 → Food/Clue/Treasure 各 2 个
 //（旧写法把 Peregrin 的 Food 加在 Manufactor 之后，漏算了它对应的 1 Clue + 1 Treasure）。
@@ -37,7 +37,7 @@ function castTokens(state, engines) {
   const on = engines || {};
   const next = cloneState(state);
 
-  const created = on.cabbage || on.manufactor;
+  const created = on.cabbage;
   let food = 0;
   if (on.cabbage) food += 1;
   if (on.peregrin && created) food += 1;
@@ -98,8 +98,8 @@ function untapAll(state) {
   return next;
 }
 
-// Clock of Omens（横置两个其它神器 → 解横置目标神器）：解开 1 个已横置 Food，拿回去再凑对产费。
-// 只解 1 个；没有已横置 Food 时不变（Clock 的费用是横置别的神器，不进食物账追踪）。
+// 手动记录重置一个 Food；例如 Clock of Omens 的费用是横置两个未横置神器。
+// 支付及目标合法性由实体牌桌处理，本按钮不代表免费起动，也不要求费用中的神器是「其它」神器。
 function untapOneFood(state) {
   if (state.food.t <= 0) return state;
   const next = cloneState(state);

@@ -110,7 +110,13 @@ function createService({ repository, moderate, resolveCard, now = Date.now }) {
       return repository.transaction(async (tx) => {
         const key = `share-${event.id}`;
         const entry = await tx.get(key);
-        if (!entry || entry.revoked) domain.fail('NOT_FOUND');
+        if (!entry) domain.fail('NOT_FOUND');
+        // A lost revoke response can be retried by the owner without a second revision.
+        if (entry.revoked) {
+          if (event.action === 'revoke' && entry.owner === owner)
+            return { version: entry.version };
+          domain.fail('NOT_FOUND');
+        }
         if (event.action === 'revoke') {
           if (entry.owner !== owner) domain.fail('FORBIDDEN');
           // Erase published content while keeping revision history needed for safe retry.
@@ -129,12 +135,14 @@ function createService({ repository, moderate, resolveCard, now = Date.now }) {
           const own = await tx.get(agreementKey);
           const tallyKey = `table-${event.id}-${entry.version}`;
           const tally = await tx.get(tallyKey);
-          let count = (tally && tally.count) || 0;
+          let count = tally ? tally.count : 0;
+          if (!Number.isSafeInteger(count) || count < 0) domain.fail('CORRUPT_TALLY');
           let agreed = Boolean(own && own.agreed);
           if (event.action === 'agree') {
             if (event.version !== entry.version || typeof event.agreed !== 'boolean')
               domain.fail('CONFLICT');
             count += Number(event.agreed) - Number(agreed);
+            if (!Number.isSafeInteger(count) || count < 0) domain.fail('CORRUPT_TALLY');
             agreed = event.agreed;
             await tx.set(agreementKey, { agreed });
             await tx.set(tallyKey, { count });

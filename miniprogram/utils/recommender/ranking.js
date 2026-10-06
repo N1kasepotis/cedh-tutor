@@ -32,12 +32,12 @@ function hasTopPlayRate(commander, priorityConfig) {
     || (metaShare != null && metaShare >= minMetaShare);
 }
 
-function hasTopWinRate(commander, priorityConfig) {
+function hasTopConversionRate(commander, priorityConfig) {
   const stats = commander && commander.sourceStats || {};
-  const winRate = readNumber(stats.conversionRate != null ? stats.conversionRate : stats.winRate);
-  const minWinRate = readThreshold(priorityConfig.minWinRate, Infinity);
+  const conversionRate = readNumber(stats.conversionRate);
+  const minConversionRate = readThreshold(priorityConfig.minConversionRate, Infinity);
 
-  return winRate != null && winRate >= minWinRate;
+  return conversionRate != null && conversionRate >= minConversionRate;
 }
 
 function calculateCompetitivePriorityMultiplier(profile, commander, config) {
@@ -47,7 +47,7 @@ function calculateCompetitivePriorityMultiplier(profile, commander, config) {
   const selectedPriority = priorityConfig.selectedPriority || 'competitive';
   if (!profile || profile.__selectedPriority !== selectedPriority) return 1;
 
-  return hasTopPlayRate(commander, priorityConfig) && hasTopWinRate(commander, priorityConfig)
+  return hasTopPlayRate(commander, priorityConfig) && hasTopConversionRate(commander, priorityConfig)
     ? Number(priorityConfig.multiplier || 1)
     : 1;
 }

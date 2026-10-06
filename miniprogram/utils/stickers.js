@@ -1,4 +1,5 @@
 const VOWELS = new Set(['a', 'e', 'i', 'o', 'u', 'y']);
+const { rollInteger } = require('./random');
 
 function createId(prefix = 'sheet') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
@@ -64,14 +65,13 @@ function decorateStickerSheet(sheet, sheetIndex = 0) {
 
 function drawStickerSheets(pool, count = 3, randomFn = Math.random) {
   const source = normalizeStickerSheets(pool);
-  const drawCount = Math.min(Math.max(0, Number(count) || 0), source.length);
+  if (!Number.isSafeInteger(count) || count < 0) throw new RangeError('draw count must be a nonnegative integer');
+  const drawCount = Math.min(count, source.length);
   const remaining = source.slice();
   const drawn = [];
 
   while (drawn.length < drawCount) {
-    const randomValue = Number(randomFn());
-    const safeRandom = Math.max(0, Math.min(0.999999999999, Number.isFinite(randomValue) ? randomValue : 0));
-    const index = Math.floor(safeRandom * remaining.length);
+    const index = rollInteger(0, remaining.length - 1, randomFn);
     drawn.push(remaining.splice(index, 1)[0]);
   }
 
@@ -122,7 +122,7 @@ function buildStickerRound(pool, randomFn = Math.random, count = 3) {
     return {
       drawnSheets: [],
       best: { sheetName: '', word: '', vowelCount: 0 },
-      summary: '贴纸池至少需要 3 张',
+      summary: `贴纸池至少需要 ${count} 张`,
     };
   }
 
@@ -137,14 +137,14 @@ function buildStickerRound(pool, randomFn = Math.random, count = 3) {
 }
 
 function getCombinationCount(size, pick) {
-  if (size < pick) return 0;
-  let numerator = 1;
-  let denominator = 1;
-  for (let step = 0; step < pick; step += 1) {
-    numerator *= size - step;
-    denominator *= step + 1;
+  if (!Number.isSafeInteger(size) || !Number.isSafeInteger(pick) || size < 0 || pick < 0 || size < pick) return 0;
+  let combinations = 1;
+  const steps = Math.min(pick, size - pick);
+  for (let step = 1; step <= steps; step += 1) {
+    combinations = combinations * (size - steps + step) / step;
   }
-  return numerator / denominator;
+  if (!Number.isSafeInteger(Math.round(combinations))) throw new RangeError('combination count exceeds safe integer precision');
+  return Math.round(combinations);
 }
 
 function formatProbability(value) {
@@ -167,20 +167,12 @@ function calculateStickerOdds(pool, thresholds = [6, 5, 4], count = 3) {
     };
   }
 
-  for (let first = 0; first < sheets.length - 2; first += 1) {
-    for (let second = first + 1; second < sheets.length - 1; second += 1) {
-      for (let third = second + 1; third < sheets.length; third += 1) {
-        const best = Math.max(
-          sheets[first].sheetPower,
-          sheets[second].sheetPower,
-          sheets[third].sheetPower,
-        );
-        hits.forEach((item) => {
-          if (best >= item.mana) item.hitCount += 1;
-        });
-      }
-    }
-  }
+  // Complement: all size-k draws minus draws containing only below-threshold sheets.
+  // This remains correct for any draw count, rather than hard-coding triples.
+  hits.forEach((item) => {
+    const below = sheets.filter((sheet) => sheet.sheetPower < item.mana).length;
+    item.hitCount = totalCombos - getCombinationCount(below, count);
+  });
 
   return {
     totalCombos,

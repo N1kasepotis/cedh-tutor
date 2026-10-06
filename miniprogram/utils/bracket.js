@@ -1,5 +1,4 @@
 const { normalizeCardName } = require('./scryfall');
-const { isQuestionnaireCommanderPoolMatch } = require('./bracket-commander-pool');
 const {
   buildEfficiencyProfile,
   buildCohesionProfile,
@@ -9,7 +8,6 @@ const {
   BRACKET_MANIFEST,
   BRACKET_LABELS,
   BAND_POSITION_CONFIG,
-  COMBO_SPEED_CONFIG,
   GAME_CHANGERS,
   BANNED_CARDS,
   BANNED_AS_COMPANION,
@@ -63,11 +61,7 @@ const MAX_DECK_CHARS = 50000;
 const MANA_CURVE_RELIABLE_COVERAGE = 0.8;
 const MANA_CURVE_MIN_NONLAND_CARDS = 20;
 const PRICE_RELIABLE_COVERAGE = 0.75;
-const PRICE_MIN_ELIGIBLE_CARDS = 20;
-const PRICE_SUPPORT_THRESHOLD_USD = 1200;
-// 高造价竞技主将升档：结构落在 B4/B4.5、快速法术力 > 此张数、可靠造价 > 此价，且主将命中 100 人竞技主将池 → B5。
-const EXPENSIVE_POOL_MIN_FAST_MANA = 3;
-const EXPENSIVE_POOL_PRICE_THRESHOLD_USD = 1500;
+const PRICE_MIN_COVERED_CARDS = 20;
 // 识别密度低于此线（收录名单只覆盖不到四分之一非地牌）时，判定可能遗漏未收录的高强度变量单卡，置信度封顶「中」。
 const RECOGNITION_DENSITY_FLOOR = 0.25;
 const CURVE_BUCKET_DEFINITIONS = Object.freeze([
@@ -227,7 +221,7 @@ function buildDeckMetrics(cards, metadataResult = {}) {
     }
   });
 
-  const metadataCoverage = totalCardCount ? manaCoveredCount / totalCardCount : 0;
+  const metadataCoverage = totalCardCount ? metadataCoveredCount / totalCardCount : 0;
   const unresolvedManaCount = Math.max(0, totalCardCount - manaCoveredCount);
   // Resolved lands are known to be outside the curve. Every unresolved card is treated
   // as a possible nonland so missing high-MV spells cannot be hidden by covered lands.
@@ -261,7 +255,7 @@ function buildDeckMetrics(cards, metadataResult = {}) {
     priceCoverage: roundMetric(priceCoverage, 4),
     estimatedTotalUsd: priceCoveredCount ? roundMetric(estimatedTotalUsd, 2) : null,
     priceReliable: priceCoverage >= PRICE_RELIABLE_COVERAGE
-      && priceEligibleCount >= PRICE_MIN_ELIGIBLE_CARDS,
+      && priceCoveredCount >= PRICE_MIN_COVERED_CARDS,
     lookupRequestedCount: Number(metadataResult.requestedCount) || 0,
     lookupResolvedCount: Number(metadataResult.resolvedCount) || 0,
     lookupFailedBatchCount: Number(metadataResult.failedBatchCount) || 0,
@@ -759,16 +753,10 @@ function comboHardMinimum(combo) {
   if (Number.isInteger(combo.hardMinimum)) return combo.hardMinimum;
   if (combo.cards.length !== 2) return 0;
 
-  // 认识这一对牌的话，档位以组合技库为准。
-  //
-  // 底下那套「早期→4，否则→2」的启发式只看得见法术力费用，看不见这个循环
-  // 到底能不能赢。实测手工库 39 条两卡条目，它跟组合技库有 21 条不一致，
-  // 其中 12 条偏低——Food Chain ＋ Squee、Kiki-Jiki ＋ Zealous Conscripts、
-  // Splinter Twin ＋ Pestermite、Worldgorger Dragon ＋ Animate Dead 这些
-  // 明摆着的四级桌组合技全被判成了 3。组合技库那个档位是从「速度 + 是否真两卡 +
-  // 产出是否致胜」三项算出来的，比只看费用准得多。
+  // hardMinimum 是历史字段名：这里保存工具保守基线，不是官方硬性规则。
+  // Spellbook 标签是定性指南；配对命中还需要检查启动资源、战场状态与额外组件。
   const known = spellbookBracketFor(combo.cards, canonicalCardKey);
-  // 官方 Bracket 2 的定义里明写「没有两卡无限组合技」，所以认出来的一律至少是 3
+  // 本工具保守地建议 B3 起；这不证明该配对可以在当前牌表中完成循环。
   if (known) return Math.max(known, 3);
 
   // 库里没有的退回原启发式，但下限从 2 提到 3——同一条官方定义，
@@ -778,13 +766,6 @@ function comboHardMinimum(combo) {
   // 两卡条目都在快照里，所以上面那个 known 永远非零。留着是给将来用的——
   // 手工库加了上游还没收录的变体时，它得有个说得通的兜底。
   return combo.speed === 'early' ? 4 : 3;
-}
-
-// 速度分档：组合技全套牌张法术力值合计 → 1..5（越小越快，档表在 config）。
-function comboSpeedTier(manaValue) {
-  if (!Number.isFinite(manaValue) || manaValue < 0) return null;
-  const tier = COMBO_SPEED_CONFIG.tiers.find((entry) => manaValue <= entry.maxManaValue);
-  return tier ? tier.speed : COMBO_SPEED_CONFIG.fallbackSpeed;
 }
 
 function metadataManaValue(name, metadataResult) {
@@ -798,7 +779,7 @@ function metadataManaValue(name, metadataResult) {
 // 单个变体的「最小成套」装配：固定件（required / commanderRequired）全算，
 // 可选组（anyOf）取已命中里最便宜一张，计数组（atLeast）取已命中里最便宜的 count 张。
 // 无组结构的精确组合技退回全卡。任一必需件缺 cmc 时返回 null（装配未知）。
-// 返回 { total, components }，components 为按成套顺序排列的各件法术力值（用于「启动法术力 x+x」展示）。
+// 返回牌张法术力值合计，不包括起动费用、替代费用、额外费用或所需游戏状态。
 function variantAssembly(variant, metadataResult) {
   const matchedKeys = new Set((variant.cards || []).map(canonicalCardKey));
   const fixed = (variant.required || []).concat(variant.commanderRequired || []);
@@ -856,16 +837,13 @@ function resolveComboAssembly(family, metadataResult) {
   return {
     ...family,
     assemblyManaValue: best.total,
-    assemblySpeed: comboSpeedTier(best.total),
     assemblyBreakdown: best.components.slice(),
   };
 }
 
-// 「早期组合技」双轨判定：人工 speed 标注（离线兜底）或客观速度档达标（元数据可用时）。
+// 仅使用维护者明确标注的早期组合技；法术力值不能推出实际启动回合。
 function isEarlyCombo(combo) {
-  if (combo.speed === 'early') return true;
-  return Number.isInteger(combo.assemblySpeed)
-    && combo.assemblySpeed >= COMBO_SPEED_CONFIG.earlyMinSpeed;
+  return combo.speed === 'early';
 }
 
 function clamp01(value) {
@@ -921,7 +899,7 @@ function competitiveResilienceSurplus(counts) {
 }
 
 // B5 四项必要条件的联合接近度（B4 区间定位与竞技升档门槛共用）：
-// 平均达成度取平方，表达「四项必须同时满足」的联合接近程度。
+// 均值的平方只是结构定位指标；各项是否达标另由竞技门槛逐项检查。
 function bandApproachToBFive(counts, combos, signals) {
   const totalSignals = (signals || []).reduce((total, signal) => total + signal.count, 0);
   const highAxes = [
@@ -929,9 +907,6 @@ function bandApproachToBFive(counts, combos, signals) {
     counts.engines >= 3, counts.winConditions >= 2, counts.command >= 1,
   ].filter(Boolean).length;
   const comboTrigger = combos.reduce((best, combo) => {
-    if (Number.isInteger(combo.assemblySpeed)) {
-      return Math.max(best, clamp01(combo.assemblySpeed / COMBO_SPEED_CONFIG.earlyMinSpeed));
-    }
     if (isEarlyCombo(combo)) return Math.max(best, 1);
     return Math.max(best, combo.matchKind === 'pattern' ? 0.35 : 0.5);
   }, 0);
@@ -954,16 +929,13 @@ function bandApproachToBFive(counts, combos, signals) {
 // 超出 B5 竞技强度阈值的余量（B4.5 与 B5 的升档门槛）。
 function bandCompetitiveSurplus(counts, combos) {
   const speedSurplus = combos.reduce((best, combo) => {
-    if (Number.isInteger(combo.assemblySpeed)) {
-      return Math.max(best, clamp01(combo.assemblySpeed - COMBO_SPEED_CONFIG.earlyMinSpeed));
-    }
     return Math.max(best, combo.speed === 'early' ? 0.5 : 0);
   }, 0);
   const axes = [
     bandAxis('fastMana', signalGroupLabel('fastMana'), (counts.fast - 3) / 3),
     bandAxis('consistency', CONSISTENCY_AXIS_LABEL, (consistencyReach(counts.tutors, counts.command, counts.engines) - 3) / 3),
     bandAxis('resilience', RESILIENCE_AXIS_LABEL, competitiveResilienceSurplus(counts)),
-    bandAxis('comboSpeed', '组合技装配速度', speedSurplus),
+    bandAxis('comboSpeed', '已标注早期组合技', speedSurplus),
   ];
   return {
     axes,
@@ -1190,8 +1162,8 @@ function evaluateBracket(parsed, options = {}) {
       gameChangers,
       `${gameChangers.length} 张主宰牌`,
       gameChangers.length > 3
-        ? '超过 B3 强化的 3 张基线，规则下限进入 B4 优化。'
-        : 'B2 核心不使用主宰牌，规则下限进入 B3 强化。',
+        ? '超过 B3 强化的 3 张基线，内容基线进入 B4 优化。'
+        : 'B2 核心不使用主宰牌，内容基线进入 B3 强化。',
       minimum,
     ));
   }
@@ -1224,13 +1196,13 @@ function evaluateBracket(parsed, options = {}) {
 
   detectedComboFamilies.forEach((combo) => {
     const minimum = combo.hardMinimum;
-    // 启动法术力：最小成套各件的法术力值明细，如 3+4+1（元数据缺失时省略此项）
+    // 牌张法术力值合计不是支付一次循环所需的法术力。
     const thresholdText = Array.isArray(combo.assemblyBreakdown) && combo.assemblyBreakdown.length
-      ? `，启动法术力 ${combo.assemblyBreakdown.join('+')}`
+      ? `，牌张法术力值 ${combo.assemblyBreakdown.join('+')}，启动另需满足牌张条件`
       : '';
-    const comboKind = minimum ? '完整双卡组合技' : '完整组合技';
-    const tail = minimum ? `自动触发 B${minimum} 规则下限` : '自动上调建议档位';
-    const detail = `检测到${comboKind}，${combo.result}${thresholdText}，${tail}`;
+    const comboKind = minimum ? '双卡组合技配对' : '组合技配方';
+    const tail = minimum ? `工具基线为 B${minimum}` : '参与工具估档';
+    const detail = `命中${comboKind}，满足条件可产生${combo.result}${thresholdText}，${tail}`;
     if (minimum) floorBracket = Math.max(floorBracket, minimum);
     evidence.push(buildEvidence(
       `COMBO_FAMILY_${combo.familyId.toUpperCase().replace(/-/g, '_')}`,
@@ -1256,8 +1228,7 @@ function evaluateBracket(parsed, options = {}) {
   // 长尾组合技收敛成**一条**证据，不是每命中一条就写一行。
   // 一副 cEDH 牌能命中二三十条，逐条铺开会把判定依据冲垮，用户看到的是一面墙而不是理由。
   const spellbookMinimum = detectedSpellbookCombos.reduce(
-    // 官方 Bracket 2 的定义里明写「没有两卡无限组合技」，所以只要存在就至少是 3；
-    // 3 与 4 之间的分寸交给 Spellbook 自己的判断，那正是它比我们手写规则准的地方。
+    // 使用 Spellbook 定性标签和本工具的保守 B3 基线，不作为官方分类证明。
     (maximum, combo) => Math.max(maximum, Math.max(Number(combo.bracket) || 1, 3)),
     0,
   );
@@ -1279,9 +1250,9 @@ function evaluateBracket(parsed, options = {}) {
       // 塞进几十张没点名的牌只会让那一栏变成噪音
       uniqueCardNames(shown.reduce((names, combo) => names.concat(combo.cards), [])),
       `两卡组合技 ${detectedSpellbookCombos.length} 组`,
-      `组合技库比对到 ${detectedSpellbookCombos.length} 组两卡组合技（最高一组：`
+      `组合技库命中 ${detectedSpellbookCombos.length} 组配对（满足条件可产生`
       + `${detectedSpellbookCombos[0].label}）：${listed}${rest}，`
-      + `自动触发 B${spellbookMinimum} 规则下限`,
+      + `工具基线 B${spellbookMinimum}，仍需核对启动资源与额外条件`,
       spellbookMinimum,
     ));
   }
@@ -1361,16 +1332,9 @@ function evaluateBracket(parsed, options = {}) {
   );
 
   const supportingSignalAxes = strongSignalAxisCount(signals);
-  const priceRaisedStrength = Boolean(
-    structurallyComplete
-    && deckMetrics.priceReliable
-    && deckMetrics.estimatedTotalUsd !== null
-    && deckMetrics.estimatedTotalUsd >= PRICE_SUPPORT_THRESHOLD_USD
-    && structuralStrengthBracket === 3
-    && metadataAdjustedStrengthBracket === 3
-    && supportingSignalAxes >= 2
-  );
-  const strengthBracket = priceRaisedStrength ? 4 : metadataAdjustedStrengthBracket;
+  // 印次、稀缺性与币价不代表牌张效率。造价只供参考，不改变工具估档。
+  const priceRaisedStrength = false;
+  const strengthBracket = metadataAdjustedStrengthBracket;
   if (signalStrengthBracket >= 3) {
     const activeLabels = contributingSignals
       .map((signal) => `${signal.label} ${signal.count}`)
@@ -1404,7 +1368,7 @@ function evaluateBracket(parsed, options = {}) {
       curveRaisedStrength ? 'strength' : 'context',
       [],
       curveRaisedStrength ? '合理法术力曲线' : '法术力曲线',
-      `平均 MV ${average}，MV≤2 占 ${lowRatio}%${curveRaisedStrength ? '；此项最多上调一档，不改变规则下限。' : '。'}`,
+      `平均 MV ${average}，MV≤2 占 ${lowRatio}%${curveRaisedStrength ? '；此项最多上调一档，不改变内容基线。' : '。'}`,
       curveRaisedStrength ? curveSupportedStrengthBracket : 0,
     ));
   }
@@ -1446,12 +1410,12 @@ function evaluateBracket(parsed, options = {}) {
   if (deckMetrics.estimatedTotalUsd !== null) {
     const estimated = Math.round(deckMetrics.estimatedTotalUsd);
     evidence.push(buildEvidence(
-      priceRaisedStrength ? 'DECK_PRICE_SUPPORT' : 'DECK_PRICE_CONTEXT',
-      priceRaisedStrength ? 'strength' : 'context',
+      'DECK_PRICE_CONTEXT',
+      'context',
       [],
       '非基本地预估造价（美元）',
-      `按 Scryfall 当前非闪价格，对基本地以外的牌估算约 $${estimated}${priceRaisedStrength ? '。牌表已有多轴 B3 构筑，结合这一造价升至 B4。' : '。这项数据不会单独改变档位。'}`,
-      priceRaisedStrength ? strengthBracket : 0,
+      `按 Scryfall 可用纸牌印次的非闪 USD 价格，基本地以外估算约 $${estimated}，造价不参与档位判断`,
+      0,
     ));
   }
 
@@ -1459,7 +1423,8 @@ function evaluateBracket(parsed, options = {}) {
   const competitiveProfile = structurallyComplete
     && !hasLegalityIssue
     && hasCompetitiveSignalDensity(signals, detectedComboFamilies, detectedComboPatterns);
-  const automaticBase = structurallyComplete ? 1 : 2;
+  // B1 描述主题与构筑意图；没有识别到强牌不能证明玩家有该意图。
+  const automaticBase = 2;
   const assignedWithoutMetrics = Math.min(
     Math.max(floorBracket, structuralStrengthBracket, automaticBase), 4,
   );
@@ -1499,20 +1464,9 @@ function evaluateBracket(parsed, options = {}) {
   const competitiveBracket = competitivePromoted
     ? (clearCompetitiveSurplus ? 5 : 4.5)
     : assignedBeforePromotion;
-  // 高造价竞技主将升档：落在 B4/B4.5 的完整牌表，若快速法术力 >3 张、可靠造价 >$1500、
-  // 且单主将或完整 Partners 命中 100 人竞技主将池，则升为 B5——高价快攻 + 已知竞技主将的组合按 cEDH 处理。
   const fastManaCardCount = promotionCounts.fast;
-  const expensivePoolPromoted = Boolean(
-    (competitiveBracket === 4 || competitiveBracket === 4.5)
-    && structurallyComplete
-    && !hasLegalityIssue
-    && fastManaCardCount > EXPENSIVE_POOL_MIN_FAST_MANA
-    && deckMetrics.priceReliable
-    && deckMetrics.estimatedTotalUsd !== null
-    && deckMetrics.estimatedTotalUsd > EXPENSIVE_POOL_PRICE_THRESHOLD_USD
-    && isQuestionnaireCommanderPoolMatch(parsed.commanders),
-  );
-  const assignedBracket = expensivePoolPromoted ? 5 : competitiveBracket;
+  const expensivePoolPromoted = false; // 保留结果结构供旧页面兼容
+  const assignedBracket = competitiveBracket;
   const curveInfluenced = assignedWithCurve > assignedWithoutMetrics;
   const efficiencyInfluenced = assignedWithEfficiency > assignedWithoutMetrics;
   const cohesionInfluenced = assignedWithCohesion > assignedWithoutMetrics;
@@ -1539,16 +1493,6 @@ function evaluateBracket(parsed, options = {}) {
       competitivePromoted ? competitiveBracket : 0,
     ));
   }
-  if (expensivePoolPromoted) {
-    evidence.push(buildEvidence(
-      'EXPENSIVE_POOL_PROMOTION',
-      'strength',
-      (parsed.commanders || []).map((card) => card.name),
-      '高造价竞技主将升档',
-      `快速法术力 ${fastManaCardCount} 张、按基本地以外的牌估算约 $${Math.round(deckMetrics.estimatedTotalUsd)}（超过 $${EXPENSIVE_POOL_PRICE_THRESHOLD_USD}），高造价与快速法术力搭配 cEDH 数据库排名前 100 的主将按 cEDH 强度处理，由 B${competitiveBracket} 升为 B5`,
-      5,
-    ));
-  }
   if (!evidence.some((item) => item.kind === 'rule' || item.kind === 'strength')) {
     evidence.push(buildEvidence(
       assignedBracket === 1 ? 'AUTO_LOW_SIGNAL_BASELINE' : 'AUTO_CORE_BASELINE',
@@ -1557,7 +1501,7 @@ function evaluateBracket(parsed, options = {}) {
       assignedBracket === 1 ? '低信号完整牌表' : '自动核心基线',
       assignedBracket === 1
         ? '牌表结构完整，且当前轻量规则集未检测到更高档触发。'
-        : '牌表不完整或存在解析提示，自动判定不会降至 B1。',
+        : '未检测到更高档信号，工具暂按 B2 估计，B1 需要确认主题展示意图。',
       assignedBracket,
     ));
   }
@@ -1571,10 +1515,10 @@ function evaluateBracket(parsed, options = {}) {
   }
   if (!deckMetrics.priceReliable) {
     const coverage = Math.floor(deckMetrics.priceCoverage * 100);
-    warnings.push(`非基本地预估造价数据覆盖 ${coverage}%（口径为基本地以外的 ${deckMetrics.priceEligibleCount} 张牌）；未同时达到 75% 与 20 张时，缺失价格不按 0 计算，造价不参与档位。`);
+    warnings.push(`非基本地预估造价数据覆盖 ${coverage}%（口径为基本地以外的 ${deckMetrics.priceEligibleCount} 张牌）；未同时达到 75% 与 20 张有价牌时，参考值不充分。缺失价格不按 0 计算，造价不参与档位。`);
   }
   if (deckMetrics.lookupFailedBatchCount) warnings.push('部分 Scryfall 卡牌数据请求失败，本次已使用可用数据并保留未覆盖项。');
-  if (deckMetrics.estimatedTotalUsd !== null) warnings.push('造价采用 Scryfall 当前代表印次的非闪 USD 参考价，不代表具体版本或本地成交价。');
+  if (deckMetrics.estimatedTotalUsd !== null) warnings.push('造价采用 Scryfall 可用纸牌印次的非闪 USD 参考价，不代表具体版本或本地成交价。');
   warnings.push('轻量数据集只核验已收录的强度触发牌，不做全量拼写、色组或类别禁牌校验。');
 
   const recognizedTriggerCards = [
@@ -1603,7 +1547,7 @@ function evaluateBracket(parsed, options = {}) {
     options.metadataResult || {},
     recognizedTriggerKeys,
   );
-  // 置信度衡量「档位判断有多可能出错」，不只是「输入有多完整」——除了数据缺口，
+  // 依据等级记录数据缺口和启发式边界，不是档位正确率的概率估计。除了数据缺口，
   // 还纳入判断的认知暴露：无法评估强度的单卡、未确认的组合技结构、只靠软性辅助上调支撑的档位。
   const softStepInfluenced = Boolean(
     curveInfluenced
@@ -1644,7 +1588,6 @@ function evaluateBracket(parsed, options = {}) {
   const confidence = !structurallyComplete || recognizedTriggerKeys.size === 0
     ? 'low'
     : (confidenceIssues.length ? 'medium' : 'high');
-  const confidenceText = confidence === 'high' ? '高' : (confidence === 'medium' ? '中' : '低');
   const bandPosition = computeBandPosition({
     assignedBracket,
     signals,
@@ -1666,10 +1609,10 @@ function evaluateBracket(parsed, options = {}) {
     'CONFIDENCE_PROFILE',
     'context',
     [],
-    `判定置信度：${confidenceText}`,
+    `评估依据：${confidence === 'high' ? '充分' : (confidence === 'medium' ? '有限' : '不足')}`,
     confidenceIssues.length
       ? confidenceIssues.join('，')
-      : '牌表结构完整，数据覆盖达标，收录名单已识别大部分单卡，档位由硬性规则或清晰结构锁定、无悬而未决项',
+      : '牌表结构完整，数据覆盖达标，已识别的构筑信号符合工具阈值，不代表已经验证实战强度',
     0,
   ));
   const label = BRACKET_LABELS[assignedBracket];
@@ -1838,9 +1781,8 @@ function buildBracketSummary(result, parseErrorCount = 0) {
     || errorCount > 0;
 
   if (assignedBracket === 1) {
-    sentences.push('规则下限是 B1');
-    sentences.push('没有发现会抬高下限的牌，也没有检测到足以升档的组合技、额外回合或效率组件');
-    sentences.push(provisionalResult ? '当前暂时归于B1强度' : '因此归于B1强度');
+    sentences.push('上次估档为 B1，主题展示意图尚未确认');
+    sentences.push('请重新分析并与牌桌确认主题与对局预期');
     pushBandPositionSentence(sentences, result);
     return finalizeBracketSummary(sentences);
   }
@@ -1848,15 +1790,15 @@ function buildBracketSummary(result, parseErrorCount = 0) {
   if (result.expensivePoolPromoted) {
     const rules = ruleSummaryLabels(result);
     sentences.push(rules.length
-      ? `因为检测到${joinChineseLabels(rules)}，规则下限是 B${floorBracket}`
-      : `规则下限是 B${floorBracket}`);
+      ? `因为检测到${joinChineseLabels(rules)}，内容基线是 B${floorBracket}`
+      : `内容基线是 B${floorBracket}`);
     const preBracket = Number(result.competitiveBracket) || 4;
     sentences.push(preBracket === 4.5
       ? '牌表已具备竞技构筑特征，先落在 B4.5 准竞技'
       : `结构判断落在 B${preBracket}`);
     const metrics = result.deckMetrics || {};
-    sentences.push(`快速法术力有 ${Number(result.expensivePoolFastMana) || 0} 张、按基本地以外的牌估算约 $${bracketSummaryUsd(metrics.estimatedTotalUsd)}（超过 $${bracketSummaryUsd(EXPENSIVE_POOL_PRICE_THRESHOLD_USD)}），且主将命中 cEDH 数据库排名前 100`);
-    sentences.push('高造价与快速法术力搭配 cEDH 数据库排名前 100 的主将按 cEDH 强度处理，因此升到B5强度');
+    sentences.push(`快速法术力 ${Number(result.expensivePoolFastMana) || 0} 张、基本地以外估价约 $${bracketSummaryUsd(metrics.estimatedTotalUsd)}，主将命中本地 100 条收录池`);
+    sentences.push('这些启发式信号让工具建议 B5，仍需确认竞技构筑意图与实战表现');
     pushBandPositionSentence(sentences, result);
     return finalizeBracketSummary(sentences);
   }
@@ -1864,8 +1806,8 @@ function buildBracketSummary(result, parseErrorCount = 0) {
   if (assignedBracket === 5 || assignedBracket === 4.5) {
     const rules = ruleSummaryLabels(result);
     sentences.push(rules.length
-      ? `因为检测到${joinChineseLabels(rules)}，规则下限是 B${floorBracket}`
-      : `规则下限是 B${floorBracket}`);
+      ? `因为检测到${joinChineseLabels(rules)}，内容基线是 B${floorBracket}`
+      : `内容基线是 B${floorBracket}`);
     const competitiveLabels = competitiveSummaryLabels(result);
     const densityText = competitiveLabels.length
       ? `${joinChineseLabels(competitiveLabels)}已经达到竞技构筑所需的密度`
@@ -1894,10 +1836,10 @@ function buildBracketSummary(result, parseErrorCount = 0) {
 
   const rules = ruleSummaryLabels(result);
   sentences.push(rules.length
-    ? `因为检测到${joinChineseLabels(rules)}，规则下限是 B${floorBracket}`
-    : `规则下限是 B${floorBracket}`);
+    ? `因为检测到${joinChineseLabels(rules)}，内容基线是 B${floorBracket}`
+    : `内容基线是 B${floorBracket}`);
 
-  const automaticBase = structurallyComplete ? 1 : 2;
+  const automaticBase = 2;
   const assignedWithoutMetrics = Number.isFinite(Number(result.assignedWithoutMetrics))
     ? Number(result.assignedWithoutMetrics)
     : Math.min(Math.max(floorBracket, structuralStrengthBracket, automaticBase), 4);
@@ -1949,7 +1891,7 @@ function buildBracketSummary(result, parseErrorCount = 0) {
   }
 
   if (result.priceInfluenced) {
-    sentences.push(`曲线、构筑效率、主题稳定性和组合技结构没有先触发升档，牌表本身已有 ${Number(result.supportingSignalAxes) || 0} 条强结构轴，按基本地以外的牌估算约 $${bracketSummaryUsd(metrics.estimatedTotalUsd)}，超过 $${bracketSummaryUsd(PRICE_SUPPORT_THRESHOLD_USD)} 的辅助线，因此从 B3 上调到 B4`);
+    sentences.push('造价仅供参考，不参与现版档位判断');
   }
 
   const metricInfluenced = result.curveInfluenced
@@ -1983,7 +1925,6 @@ module.exports = {
   detectKnownCombos,
   detectComboPatterns,
   collapseComboFamilies,
-  comboSpeedTier,
   resolveComboAssembly,
   isEarlyCombo,
   computeBandPosition,

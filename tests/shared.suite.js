@@ -236,27 +236,27 @@ test('quiz-flow 答案判定、选项编号与步骤状态', () => {
   assert.deepEqual(steps.map((step) => step.label), ['01', '02', '03']);
 });
 
-test('高转化率奖励只命中大样本高胜率主将', () => {
+test('高转化率奖励只命中已知大样本的高转化率主将', () => {
   const { calculateSourceStatsMultiplier } = require('../miniprogram/utils/recommender/stats');
   const { statsWeightConfig } = require('../miniprogram/config/recommendation-rules');
 
   const baseline = calculateSourceStatsMultiplier({
-    sourceStats: { entries: 600, metaShare: 0.02, winRate: 0.2 },
+    sourceStats: { entries: 600, metaShare: 0.02, conversionRate: 0.2 },
   }, statsWeightConfig);
   const highConversion = calculateSourceStatsMultiplier({
-    sourceStats: { entries: 215, metaShare: 0.0066, winRate: 0.255 },
+    sourceStats: { entries: 215, metaShare: 0.0066, conversionRate: 0.255 },
   }, statsWeightConfig);
   const smallSampleFluke = calculateSourceStatsMultiplier({
-    sourceStats: { entries: 40, metaShare: 0.0012, winRate: 0.4 },
+    sourceStats: { entries: 40, metaShare: 0.0012, conversionRate: 0.4 },
   }, statsWeightConfig);
 
   // Arcum 型（215 场 25.5%）应获得 highMultiplier；40 场小样本高胜率不奖励
   const midPlayBaseline = calculateSourceStatsMultiplier({
-    sourceStats: { entries: 215, metaShare: 0.0066, winRate: 0.2 },
+    sourceStats: { entries: 215, metaShare: 0.0066, conversionRate: 0.2 },
   }, statsWeightConfig);
   assert.ok(highConversion > midPlayBaseline);
   assert.ok(smallSampleFluke <= calculateSourceStatsMultiplier({
-    sourceStats: { entries: 40, metaShare: 0.0012, winRate: 0.2 },
+    sourceStats: { entries: 40, metaShare: 0.0012, conversionRate: 0.2 },
   }, statsWeightConfig));
   assert.ok(baseline >= 1);
 });

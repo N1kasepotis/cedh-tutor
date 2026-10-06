@@ -420,6 +420,10 @@ test('unknown polls, forged identity, invalid votes and corrupt tallies fail clo
       domain.replaceBallot(null, { choice: 'keep', perspective: 'both' }, null, ['keep']),
     { code: 'CORRUPT_TALLY' },
   );
+  const full = domain.emptyCounts(['keep']);
+  full.all.keep = Number.MAX_SAFE_INTEGER;
+  assert.throws(() => domain.replaceBallot(full, null,
+    { choice: 'keep', perspective: 'both' }, ['keep']), { code: 'CORRUPT_TALLY' });
 });
 test('moderation review/risky/error cannot create publicly retrievable content', async () => {
   for (const moderate of [
@@ -468,7 +472,10 @@ test('public snapshots resolve genuine prints; revisions and deletion enforce ow
   await assert.rejects(service({ action: 'revoke', id: published.id }, friend), {
     code: 'FORBIDDEN',
   });
-  await service({ action: 'revoke', id: published.id }, owner);
+  const revoked = await service({ action: 'revoke', id: published.id }, owner);
+  assert.deepEqual(await service({ action: 'revoke', id: published.id }, owner), revoked,
+    'lost revoke responses can retry without changing the revision');
+  await assert.rejects(service({ action: 'revoke', id: published.id }, friend), { code: 'NOT_FOUND' });
   await assert.rejects(service({ action: 'getShare', id: published.id }, owner), {
     code: 'NOT_FOUND',
   });
@@ -1570,6 +1577,18 @@ test('passport poster reads as a player archive with the QR relay at the bottom'
 
 // 短评折行：逗号句号不放在行首（连同前一个字一起换行）；末行只剩一两个字时，优先在上一行的逗号后断开，
 // 找不到停顿就挪到末行凑满四个字
+test('poster expands at its minimum font size rather than truncating a long card name', async () => {
+  const name = 'Very Long Card Name '.repeat(16).trim();
+  const { log, canvas } = await drawPassportPoster({
+    nickname: '牌友',
+    slots: [posterSlot(name), posterSlot('Sol Ring'), posterSlot('Brainstorm')],
+  });
+  const drawn = log.filter(entry => entry.op === 'text' && entry.fill === '#CEC6B9')
+    .map(entry => entry.text).join('').replace(/\s/g, '');
+  assert.ok(drawn.includes(name.replace(/\s/g, '')));
+  assert.ok(log.filter(entry => entry.op === 'text').every(entry => entry.y <= canvas.height - 40));
+});
+
 test('poster reasons keep punctuation off line starts and never end on a lone character', async () => {
   const reasons = [
     '开局先找它然后慢慢等对手把威胁全部拍，再处理掉',
@@ -1578,17 +1597,10 @@ test('poster reasons keep punctuation off line starts and never end on a lone ch
   ];
   const slots = reasons.map((reason) => posterSlot('Sol Ring', { reason }));
   const { log } = await drawPassportPoster({ nickname: '牌友', slots });
-  assert.deepEqual(
-    log.filter((entry) => entry.op === 'text' && entry.size === 30).map((entry) => entry.text),
-    [
-      '开局先找它然后慢慢等对手把威胁全部',
-      '拍，再处理掉',
-      '喜欢它的规则设计：一句话，',
-      '没有多余的字',
-      '零费改对象，对手的移除换去拆他自',
-      '己的主将',
-    ],
-  );
+  const lines = log.filter((entry) => entry.op === 'text' && entry.fill === '#ECE5D9');
+  assert.equal(lines.map((entry) => entry.text).join(''), reasons.join(''), '保留全部短评');
+  assert.ok(lines.every((entry) => !/^[，。、：；！？]/u.test(entry.text)), '标点不挤到行首');
+  assert.ok(lines.every((entry) => Array.from(entry.text).length > 2), '短评没有孤字行');
 });
 
 // 用户要求去掉名片标签：契约不再收标签，编辑页、牌友分享页和海报里都没有标签

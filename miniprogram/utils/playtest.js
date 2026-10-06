@@ -2,6 +2,7 @@
 // 页面只做渲染与手势，所有规则集中在这里以便 Node 测试。
 
 const { normalizeCardName } = require('./scryfall');
+const { rollInteger } = require('./random');
 
 const PLAYTEST_ZONES = ['battlefield', 'hand', 'library', 'graveyard', 'exile', 'command'];
 
@@ -42,7 +43,7 @@ function normalizeSectionHeader(line) {
 
 // MTGO/Moxfield/MTGso 纯文本：每行「数量 卡名」，允许 4x 写法；
 // 可用 Commander / Deck 区段标题，也可用第一个空行把后段视为指挥官区；
-// 无标题且无空行时，首 1–3 张自动识别为指挥官，其余归主牌。
+// 无标题且无空行时全部归主牌，不能凭行序猜测哪张牌是主将。
 function parseMtgoDeckText(text) {
   const source = String(text || '').replace(/\r\n?/g, '\n');
   const lines = source.split('\n');
@@ -60,13 +61,12 @@ function parseMtgoDeckText(text) {
   let sawCards = false;
   let explicitSection = false;
   let currentSection = 'main';
-  let sawBlank = false;
   let afterBlank = false;
 
   lines.forEach((rawLine) => {
     const line = rawLine.trim();
     if (!line) {
-      if (sawCards) { sawBlank = true; afterBlank = true; }
+      if (sawCards) afterBlank = true;
       return;
     }
 
@@ -94,16 +94,10 @@ function parseMtgoDeckText(text) {
   });
 
   // 分配：有区段标题 → 按标题；无标题但有空行 → 空行前为主牌，后为指挥官（兼容旧格式）；
-  // 无标题且无空行的连续块 → 首 ≤3 张为指挥官
+  // 无标题且无空行的连续块 → 全部归主牌
   const main = [];
   const commanders = [];
-  const isSingleBlock = !explicitSection && !sawBlank;
-
-  if (isSingleBlock && cards.length > 3) {
-    const commanderCount = Math.min(3, cards.length - 1);
-    for (let i = 0; i < commanderCount; i += 1) commanders.push(cleanCard(cards[i]));
-    for (let i = commanderCount; i < cards.length; i += 1) main.push(cleanCard(cards[i]));
-  } else if (explicitSection) {
+  if (explicitSection) {
     cards.forEach((card) => {
       (card.section === 'command' ? commanders : main).push(cleanCard(card));
     });
@@ -154,7 +148,7 @@ function expandCards(entries, startId) {
 function shuffleInPlace(cards, rng) {
   const random = typeof rng === 'function' ? rng : Math.random;
   for (let i = cards.length - 1; i > 0; i -= 1) {
-    const j = Math.floor(random() * (i + 1));
+    const j = rollInteger(0, i, random);
     const swap = cards[i];
     cards[i] = cards[j];
     cards[j] = swap;
@@ -197,7 +191,8 @@ function findCard(game, zone, cardId) {
 }
 
 // 跨区移动。进牌库支持 top/bottom；进战场清掉横置并保留/初始化坐标。
-// 衍生物（token: true）遵循 MTG 状态动作：一旦离开战场就直接消失，不进入目标区。
+// 衍生物离开战场后按状态动作消失；此手动试玩器省略它短暂停留目标区的时序，
+// 不解析死亡/离场触发（CR 704.5d）。
 function moveCard(game, fromZone, cardId, toZone, options) {
   if (!PLAYTEST_ZONES.includes(fromZone) || !PLAYTEST_ZONES.includes(toZone)) return false;
 

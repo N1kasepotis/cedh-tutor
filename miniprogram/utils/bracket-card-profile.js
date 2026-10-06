@@ -41,13 +41,35 @@ function faceOracleSource(card, face) {
   return { known: false, text: '' };
 }
 
+// MV at X=0, not an estimate of total casting cost (CR 202.3/202.4).
+function manaCostValue(cost) {
+  if (typeof cost !== 'string') return null;
+  const symbols = cost.match(/\{[^}]+\}/g) || [];
+  if (symbols.join('') !== cost) return null;
+  let total = 0;
+  for (const symbol of symbols) {
+    const value = symbol.slice(1, -1);
+    if (value === 'X') continue;
+    if (/^\d+$/.test(value)) total += Number(value);
+    else if (/^[WUBRGCS]$/.test(value)) total += 1;
+    else if (/^(?:[WUBRG]\/P|[WUBRG]\/[WUBRG](?:\/P)?)$/.test(value)) total += 1;
+    else if (/^2\/[WUBRG]$/.test(value)) total += 2;
+    else return null;
+  }
+  return Number.isSafeInteger(total) ? total : null;
+}
+
 function faceManaValue(card, face, index, faceCount) {
+  // Scryfall card_faces normally provide mana_cost, not cmc. This also distinguishes
+  // the two castable halves of split/adventure cards from the parent card's MV.
+  const printedValue = manaCostValue(face && face.mana_cost);
+  if (printedValue !== null) return printedValue;
   const faceValue = finiteManaValue(face && face.cmc);
   if (faceValue !== null) return faceValue;
   const cardValue = finiteManaValue(card && card.cmc);
   if (cardValue === null) return null;
   // Parent CMC is safe for a single face and for the front of transform/modal cards.
-  // Split/adventure parents can combine unlike costs, so they need face CMC data.
+  // Split parents combine the halves. Adventure parents use only the normal part.
   if (faceCount <= 1 || (index === 0 && !/^(?:split|adventure)$/i.test(card.layout || ''))) {
     return cardValue;
   }

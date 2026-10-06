@@ -2,9 +2,11 @@
 //
 // 计数口径（MTG 规则）：
 // - storm      = 本回合施放的所有咒语数（喂 Grapeshot / Empty the Warrens；复制不算施放，不加 storm）
-// - spells     = 瞬间/法术施放数（storm 的子集；喂 Ral, Leyline Prodigy 忠诚）
+// - spells     = 你本回合施放的瞬间/法术数（喂 Ral, Leyline Prodigy 忠诚）
+// - storm 为已经施放的总数；下一张带风暴的咒语将按此数复制，不能把它自己的施放也算进自己的复制数
 // - wins/losses= 抛硬币胜负
 // - selfDamage = Ral, Monsoon Mage 抛输的自伤
+const { rollInteger } = require('./random');
 
 function createStormState() {
   return {
@@ -28,8 +30,7 @@ function cloneStorm(state) {
 
 // 单次抛硬币是否赢；固定只消耗一次 rng()，便于确定性测试。
 function flipWin(rng) {
-  const random = typeof rng === 'function' ? rng : Math.random;
-  return random() < 0.5;
+  return rollInteger(0, 1, rng) === 0;
 }
 
 // 你的回合施放一张瞬间/法术：Ral 正面在场时只抛一次，输则自伤 1。

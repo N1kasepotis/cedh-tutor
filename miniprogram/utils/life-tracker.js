@@ -1,4 +1,5 @@
 const { lifeTrackerConfig } = require('../config/life-tracker');
+const { rollInteger } = require('./random');
 
 function clampLife(value) {
   const numeric = Math.round(Number(value) || 0);
@@ -21,7 +22,7 @@ function initialLifeFor(playerCount) {
 function shuffledColorKeys(rng = Math.random, playerCount = lifeTrackerConfig.playerCount) {
   const keys = lifeTrackerConfig.colors.map((color) => color.key);
   for (let index = keys.length - 1; index > 0; index -= 1) {
-    const target = Math.floor(Math.max(0, Math.min(0.999999, Number(rng()) || 0)) * (index + 1));
+    const target = rollInteger(0, index, rng);
     [keys[index], keys[target]] = [keys[target], keys[index]];
   }
   return keys.slice(0, normalizePlayerCount(playerCount));
@@ -50,16 +51,12 @@ function seatRingFor(playerCount) {
   return valid ? ring.slice() : Array.from({ length: count }, (_, index) => index + 1);
 }
 
-// 先手由 rng 均匀抽出，**再**倒推动画要跑多少步。
-//
-// 反过来做（先定步数、看它落在谁头上）看着更「自然」，但概率会依赖节奏参数——
-// 改一下 laps 或 easing 就悄悄改了公平性，而且没法测。抽签必须是可验证均匀的，
-// 动画只是把一个已经定下来的结果演出来。
+// 先抽先手再生成动画；在 [0,1) 均匀随机源假设下，各座位等机会。
+// Math.random 是伪随机源，动画节奏不参与抽签。
 function pickFirstPlayerId(state, rng = Math.random) {
   const players = state && Array.isArray(state.players) ? state.players : [];
   if (!players.length) return null;
-  const roll = Math.max(0, Math.min(0.999999, Number(rng()) || 0));
-  return players[Math.floor(roll * players.length)].id;
+  return players[rollInteger(0, players.length - 1, rng)].id;
 }
 
 // 生成赛跑序列：每一步点亮哪个座位、停留多久。

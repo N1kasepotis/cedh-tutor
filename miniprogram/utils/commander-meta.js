@@ -1,5 +1,5 @@
-// 指挥官 meta 标签推导：根据 edhtop16 统计与配置阈值给指挥官打
-// competitive / fringe / irrelevant / outdated / fun 标签。
+// competitive / fringe 是赛事统计启发式，outdated / irrelevant 是编辑标记，
+// fun 描述构筑特点；这些标签均不表示经过校准的实战胜率。
 // 阈值配置见 config/recommendation-rules.js 的 metaTagConfig。
 
 function hasAny(values, wanted) {
@@ -13,8 +13,9 @@ function addMetaTag(tags, tag) {
 
 function readStat(commander, key) {
   const value = commander && commander.sourceStats && commander.sourceStats[key];
+  if (value == null || value === '' || typeof value === 'boolean') return null;
   const number = Number(value);
-  return Number.isFinite(number) ? number : 0;
+  return Number.isFinite(number) ? number : null;
 }
 
 function deriveCommanderMetaTags(commander, config) {
@@ -36,18 +37,19 @@ function deriveCommanderMetaTags(commander, config) {
 
   const competitive = config.competitive;
   if (
-    entries >= competitive.minEntries
-    || metaShare >= competitive.minMetaShare
+    (entries != null && entries >= competitive.minEntries)
+    || (metaShare != null && metaShare >= competitive.minMetaShare)
     || elements.includes('top_play_count')
     || elements.includes('high_play_count')
-    || (entries >= competitive.minWinRateSampleEntries && winRate >= competitive.minWinRateWithSample)
+    || (entries != null && winRate != null && entries >= competitive.minWinRateSampleEntries && winRate >= competitive.minWinRateWithSample)
   ) {
     addMetaTag(tags, 'competitive');
   }
 
   const fringe = config.fringe;
   if (
-    entries >= fringe.minEntries
+    entries != null && metaShare != null && winRate != null
+    && entries >= fringe.minEntries
     && entries <= fringe.maxEntries
     && metaShare <= fringe.maxMetaShare
     && winRate >= fringe.minWinRate
@@ -55,13 +57,8 @@ function deriveCommanderMetaTags(commander, config) {
     addMetaTag(tags, 'fringe');
   }
 
-  const irrelevant = config.irrelevant;
-  if (
-    (entries <= irrelevant.maxEntries || metaShare <= irrelevant.maxMetaShare)
-    && winRate <= irrelevant.maxWinRate
-  ) {
-    addMetaTag(tags, 'irrelevant');
-  }
+  // 少量参赛和低样本胜率只能说明观察不足，不能推断牌组没有竞技意义。
+  // irrelevant 仅保留上面的显式编辑标记，不再由小样本自动生成。
 
   if (
     Number(matchTags.fun || 0) > 0
@@ -75,10 +72,16 @@ function deriveCommanderMetaTags(commander, config) {
 }
 
 function applyCommanderMetaTags(commanders, config) {
-  return commanders.map((commander) => ({
-    ...commander,
-    metaTags: deriveCommanderMetaTags(commander, config),
-  }));
+  return commanders.map((commander) => {
+    const stats = commander.sourceStats;
+    const hasCounts = stats && Number.isSafeInteger(stats.entries) && stats.entries >= 0
+      && Number.isSafeInteger(stats.topCuts) && stats.topCuts >= 0 && stats.topCuts <= stats.entries;
+    const normalized = hasCounts ? {
+      ...commander,
+      sourceStats: { ...stats, conversionRate: stats.entries ? stats.topCuts / stats.entries : null },
+    } : { ...commander, sourceStats: { ...(stats || {}), conversionRate: null } };
+    return { ...normalized, metaTags: deriveCommanderMetaTags(normalized, config) };
+  });
 }
 
 module.exports = {
