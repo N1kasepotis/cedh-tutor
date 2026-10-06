@@ -27,6 +27,7 @@ const { prefetchCardArt, getCardArt } = require('../../utils/card-art');
 const { splitCommanderNames } = require('../../utils/result-display');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, removeStorage, writeStorage } = require('../../utils/storage');
+const { rollInteger } = require('../../utils/random');
 
 const DECK_TEXT_STORAGE_KEY = 'playtestDeckText';
 // 手机上粘 100 行成本很高，够长才认为剪贴板里真是一份牌表
@@ -468,7 +469,7 @@ Page({
     const hand = this.game.hand;
     if (!hand.length) return;
 
-    const idx = Math.floor(Math.random() * hand.length);
+    const idx = rollInteger(0, hand.length - 1);
     const card = hand[idx];
 
     wx.showModal({

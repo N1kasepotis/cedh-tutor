@@ -9,6 +9,8 @@ const {
   resetManaPool,
   hasMana,
   totalMana,
+  saveManaPool,
+  loadManaPool,
 } = require('../miniprogram/utils/playtest-mana');
 
 test('createManaPool 六色从零开始', () => {
@@ -65,4 +67,29 @@ test('totalMana 求和', () => {
 
 test('MANA_COLORS 六色顺序正确', () => {
   assert.deepStrictEqual(MANA_COLORS, ['W', 'U', 'B', 'R', 'G', 'C']);
+});
+
+test('法术力数量拒绝小数，整数存档无损往返，非法写入保留已有记录', (t) => {
+  const previousWx = global.wx;
+  const records = new Map();
+  global.wx = {
+    getStorageSync: (key) => records.get(key),
+    setStorageSync: (key, value) => records.set(key, value),
+  };
+  t.after(() => { if (previousWx === undefined) delete global.wx; else global.wx = previousWx; });
+  const pool = createManaPool();
+  pool.G = 3;
+  pool.U = 2;
+  for (const amount of [0.5, 1.9, NaN, Infinity, Number.MAX_SAFE_INTEGER + 1]) {
+    assert.equal(addMana(pool, 'G', amount), false);
+    assert.equal(removeMana(pool, 'G', amount), false);
+    assert.equal(totalMana(pool), 5);
+  }
+  assert.ok(saveManaPool(pool));
+  assert.deepStrictEqual(loadManaPool(), pool);
+  const stored = [...records.values()];
+  assert.equal(saveManaPool({ ...pool, W: 1.5 }), false);
+  assert.deepStrictEqual([...records.values()], stored);
+  assert.deepStrictEqual(loadManaPool(), pool);
+  assert.equal(addMana({ ...pool, W: 1.5 }, 'G'), false);
 });

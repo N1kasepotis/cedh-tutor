@@ -1,0 +1,90 @@
+{
+  "retrievedAt": "2026-10-06T14:39:03.624Z",
+  "endpoint": "https://edhtop16.com/api/graphql",
+  "queryId": "86fac9d8c2353944c65306a21cd17574",
+  "timePeriod": "SIX_MONTHS",
+  "checks": [
+    {
+      "minSize": 16,
+      "sourceRows": 1246,
+      "sumEntries": 41079,
+      "sumMetaShare": 0.5189691112374335,
+      "denominators": [
+        79155
+      ],
+      "examples": [
+        {
+          "name": "Kinnan, Bonder Prodigy",
+          "conversionRate": 0.25866666666666666,
+          "topCuts": 776,
+          "count": 3000,
+          "metaShare": 0.0379003221527383,
+          "winRate": 0.21597975415762835
+        },
+        {
+          "name": "Hashaton, Scarab's Fist",
+          "conversionRate": 0.13675213675213677,
+          "topCuts": 16,
+          "count": 117,
+          "metaShare": 0.0014781125639567935,
+          "winRate": 0.1649269311064718
+        }
+      ]
+    },
+    {
+      "minSize": 50,
+      "sourceRows": 652,
+      "sumEntries": 14949,
+      "sumMetaShare": 0.8481702127659451,
+      "denominators": [
+        17625
+      ],
+      "examples": [
+        {
+          "name": "Kinnan, Bonder Prodigy",
+          "conversionRate": 0.19243697478991598,
+          "topCuts": 229,
+          "count": 1190,
+          "metaShare": 0.0675177304964539,
+          "winRate": 0.2059961315280464
+        },
+        {
+          "name": "Hashaton, Scarab's Fist",
+          "conversionRate": 0.2,
+          "topCuts": 6,
+          "count": 30,
+          "metaShare": 0.001702127659574468,
+          "winRate": 0.2229299363057325
+        }
+      ]
+    },
+    {
+      "minSize": 100,
+      "sourceRows": 387,
+      "sumEntries": 5276,
+      "sumMetaShare": 0.8883650446203032,
+      "denominators": [
+        5939
+      ],
+      "examples": [
+        {
+          "name": "Kinnan, Bonder Prodigy",
+          "conversionRate": 0.13808463251670378,
+          "topCuts": 62,
+          "count": 449,
+          "metaShare": 0.07560195319077286,
+          "winRate": 0.20281124497991967
+        },
+        {
+          "name": "Hashaton, Scarab's Fist",
+          "conversionRate": 0.125,
+          "topCuts": 1,
+          "count": 8,
+          "metaShare": 0.0013470281192119885,
+          "winRate": 0.20930232558139536
+        }
+      ]
+    }
+  ],
+  "method": "complete-source-list-pages; compare count/metaShare denominators across minimum-event-size filters"
+}

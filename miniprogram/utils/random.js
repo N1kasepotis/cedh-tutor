@@ -18,10 +18,35 @@ function sanitizeRange(minInput, maxInput) {
 
 function rollInteger(minInput, maxInput, randomFn = Math.random) {
   const { min, max } = sanitizeRange(minInput, maxInput);
-  const randomValue = Number(randomFn());
-  const safeRandom = Math.max(0, Math.min(1 - Number.EPSILON / 2, Number.isFinite(randomValue) ? randomValue : 0));
-
-  return Math.min(max, Math.floor(safeRandom * (max - min + 1)) + min);
+  const span = max - min + 1;
+  if (span === 1) return min;
+  const wordSpace = 2 ** 32;
+  const large = span > wordSpace;
+  // Power-of-two scaling extracts integer blocks without multiplying by span.
+  // Large ranges combine 21 + 32 bits from separate draws; all candidates are safe integers.
+  const space = large ? 2 ** 53 : wordSpace;
+  const limit = space - space % span;
+  const bucketSize = limit / span;
+  for (let attempt = 0; attempt < 128; attempt += 1) {
+    const first = Number(randomFn());
+    // Preserve the existing fallback for malformed injected sources. Math.random is in [0, 1).
+    if (!Number.isFinite(first) || first < 0) return min;
+    if (first >= 1) return max;
+    let candidate = Math.floor(first * wordSpace);
+    if (large) {
+      const second = Number(randomFn());
+      if (!Number.isFinite(second) || second < 0) return min;
+      if (second >= 1) return max;
+      candidate = Math.floor(first * 2 ** 21) * wordSpace + Math.floor(second * wordSpace);
+    }
+    // Reject the incomplete final bucket rather than giving some outputs extra candidates.
+    // Equal bucket sizes imply equal chances only when the source blocks are independent and uniform.
+    if (candidate < limit) {
+      const offset = (candidate - candidate % bucketSize) / bucketSize;
+      return min + offset;
+    }
+  }
+  throw new RangeError('随机源连续返回无法使用的数，请重试');
 }
 
 function createSequenceRandom(values) {

@@ -218,6 +218,42 @@ test('safe random ranges include their highest endpoint and reject precision los
   assert.throws(() => sanitizeRange(0, '9007199254740993'), RangeError);
 });
 
+test('integer random buckets have equal cardinality and exact boundaries, including large ranges', () => {
+  // BigInt is an independent integer oracle, used only in Node tests, not the Mini Program.
+  for (const span of [3n, 5n, 20n, 2n ** 32n + 1n, 2n ** 52n + 1n, 2n ** 53n - 1n]) {
+    const large = span > 2n ** 32n;
+    const space = large ? 2n ** 53n : 2n ** 32n;
+    const size = space / span;
+    const limit = size * span;
+    const candidates = new Set([0n, size - 1n, size, 2n * size - 1n, 2n * size, limit - 1n]);
+    for (const candidate of candidates) {
+      const values = large
+        ? [Number(candidate >> 32n) / 2 ** 21, Number(candidate & (2n ** 32n - 1n)) / 2 ** 32]
+        : [Number(candidate) / 2 ** 32];
+      const expected = Number(candidate / size);
+      for (const min of [0, -100, Number.MAX_SAFE_INTEGER - Number(span) + 1]) {
+        const max = min + Number(span) - 1;
+        assert.equal(rollInteger(min, max, createSequenceRandom(values)), min + expected,
+          `span=${span}, candidate=${candidate}, min=${min}`);
+      }
+    }
+  }
+});
+
+test('integer random rejects incomplete buckets and bounds retries for a stuck source', () => {
+  let calls = 0;
+  const smallValues = [1 - Number.EPSILON / 2, 0.5];
+  assert.equal(rollInteger(0, 2, () => { calls += 1; return smallValues.shift(); }), 1);
+  assert.equal(calls, 2);
+  const largeValues = [1 - Number.EPSILON / 2, 1 - Number.EPSILON / 2, 0, 7 / 2 ** 32];
+  calls = 0;
+  assert.equal(rollInteger(0, 2 ** 52, () => { calls += 1; return largeValues.shift(); }), 7);
+  assert.equal(calls, 4);
+  calls = 0;
+  assert.throws(() => rollInteger(0, 2, () => { calls += 1; return 1 - Number.EPSILON / 2; }), RangeError);
+  assert.equal(calls, 128);
+});
+
 test('Fisher-Yates has all six equally sized paths for three cards and conserves malformed RNG input', () => {
   const outcomes = new Set();
   for (let last = 0; last < 3; last += 1) {

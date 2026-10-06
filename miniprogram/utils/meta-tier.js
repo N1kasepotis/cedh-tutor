@@ -20,17 +20,16 @@ function buildCommanderArt(commanders) {
     mode: dual ? 'dual' : 'single',
     // 优先用构建期烤进快照的 cards.scryfall.io 直链：梯度表一屏就有十几张图，
     // 按 ID 取图会打 api.scryfall.com/cards/<id>?format=image，那是 API 端点，
-    // 每张图先查表再回 302 跳到 CDN，等于两次建连，全部叠在首屏上。
+    // 每张图先取得 API 的 302，再请求 CDN；这是两个 HTTP 请求，连接可能复用。
     // 快照是构建期产物，这步没有理由留到运行时——现在是零 API 请求、直连 CDN。
     // 回落保留：万一某条没烤上（构建时没网），仍按 ID 取图，不至于开天窗。
     //
     // **列表缩略图按格子形状选档，不跟详情面板共用一张**：
-    // 双拍档时每格只有 66rpx 宽（约 103 device px @3x），却在下发 626×457 的
-    // art_crop（124KB）——超配 18 倍。small 是 146×204、17KB，长宽比 0.716
-    // 与格子的 0.69 几乎一致，aspectFill 几乎不裁，换过去零视觉损失、省 86%。
-    // 单主将保持 art_crop：那格是 132×96 的横格（1.375:1），art_crop 的 1.37:1
-    // 正好铺满、显示的是纯画作；换成竖版整卡会裁出卡面中段（画作下沿 + 类别行），
-    // 那是拿主视觉换流量，不划算。
+    // 双拍档每格为 66×96rpx；small 是 146×204，长宽比 0.716 接近格子的 0.688。
+    // 在 390 CSS px、DPR 3 时，目标约 103×150 像素；其他设备需按实际视口计算。
+    // aspectFill 仍会裁边；图片字节与画作内容因印次而异，不能承诺固定节省比例。
+    // 单主将用纯画作的 art_crop 配合 132×96rpx 横格。官方给出的 art_crop 尺寸可变，
+    // 并非恒为 626×457；它能突出画作，但不能保证每张牌都恰好铺满且不裁切。
     images: named.map((commander) => ({
       cn: commander.cn || commander.en,
       en: commander.en,

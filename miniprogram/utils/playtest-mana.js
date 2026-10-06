@@ -12,15 +12,15 @@ function createManaPool() {
 
 function addMana(pool, color, amount) {
   if (amount === undefined) amount = 1;
-  if (!MANA_COLORS.includes(color) || !Number.isFinite(amount) || amount <= 0) return false;
-  pool[color] = Math.min(99, pool[color] + Math.floor(amount));
+  if (!MANA_COLORS.includes(color) || !Number.isSafeInteger(amount) || amount <= 0 || !isManaPool(pool)) return false;
+  pool[color] = Math.min(99, pool[color] + amount);
   return true;
 }
 
 function removeMana(pool, color, amount) {
   if (amount === undefined) amount = 1;
-  if (!MANA_COLORS.includes(color) || !Number.isFinite(amount) || amount <= 0) return false;
-  pool[color] = Math.max(0, pool[color] - Math.floor(amount));
+  if (!MANA_COLORS.includes(color) || !Number.isSafeInteger(amount) || amount <= 0 || !isManaPool(pool)) return false;
+  pool[color] = Math.max(0, pool[color] - amount);
   return true;
 }
 
@@ -61,7 +61,7 @@ function loadManaPool() {
 
 function isManaPool(pool) {
   return Boolean(pool && typeof pool === 'object' && MANA_COLORS.every((color) => (
-    Number.isFinite(pool[color]) && pool[color] >= 0 && pool[color] <= 99
+    Number.isSafeInteger(pool[color]) && pool[color] >= 0 && pool[color] <= 99
   )));
 }
 

@@ -43,7 +43,7 @@ function enqueueImageRequest(task) {
 }
 
 // 归一化卡名：把 Moxfield/MTGO 导出常用的弯引号（' ' ʼ ＇）替换为 ASCII 直引号。
-// Scryfall 对弯引号（编码后 %E2%80%99）会返回 400，直引号才能命中；
+// 统一导出格式、缓存键与配对匹配；当前 named API 也能接受部分弯引号写法。
 // 重音字母（Lim-Dûl 等）不动——Scryfall 原生支持，strip 反而会查不到。
 function normalizeCardName(name) {
   return String(name || '')
@@ -52,13 +52,12 @@ function normalizeCardName(name) {
     .trim();
 }
 
-// /cards/collection 的 name 标识符**只认正面名，给全名一律 not_found**。
-// 实测（2026-08）双面、拆分、融合、冒险四类全都如此：
+// /cards/collection 用正面名构造标识符。
+// 2026-10-06 实测 Agadeem / Wear / Brazen Borrower 的完整 A // B 名未找到，正面名命中：
 //   'Agadeem's Awakening // Agadeem, the Undercrypt'  → 未找到
 //   'Agadeem's Awakening'                            → 命中（返回的 name 反而是全名）
-// Moxfield / Archidekt 导出的 MDFC 地、冒险生物全是全名写法，cEDH 牌组一副五到十五张。
-// 不砍掉后半截，这些卡在批量端点上永远查不到：卡图退回 302 慢路，强度分级那边
-// 则是连 cmc、类别、价格一起查不到，被直接算进「元数据未覆盖」。
+// 导出牌表可能使用完整多部分牌名；named 与 collection 的查名行为不能互相推定。
+// 使用正面名请求，同时保留返回的完整名称用于牌表别名匹配。
 // 只作用于批量端点的标识符——?fuzzy= 那条路径反而认全名，不要拿这个函数去改它。
 function collectionIdentifier(name) {
   return normalizeCardName(name).split(/\s*\/\/\s*/)[0].trim();
