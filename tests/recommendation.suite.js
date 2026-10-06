@@ -876,7 +876,7 @@ test('irrelevant and outdated meta tags trigger the same recommendation penaltie
   assert.ok(calculateStatsMultiplier(outdatedDeck, statsWeightConfig) < calculateStatsMultiplier(currentDeck, statsWeightConfig));
 });
 
-test('bottom-half partner shells receive a configurable 0.7 weight reduction', () => {
+test('sparsely observed partner shells receive a fixed-threshold 0.7 weight reduction', () => {
   const config = {
     ...statsWeightConfig,
     minMultiplier: 0,
@@ -896,7 +896,7 @@ test('bottom-half partner shells receive a configurable 0.7 weight reduction', (
     lowPlayPartner: { ...statsWeightConfig.lowPlayPartner, enabled: false },
     outdated: { ...statsWeightConfig.outdated, enabled: false },
     irrelevant: { ...statsWeightConfig.irrelevant, enabled: false },
-    bottomHalfPartner: {
+    sparsePartner: {
       enabled: true,
       entriesBelowOrEqual: 61,
       metaShareBelowOrEqual: 0.001875,
@@ -919,8 +919,8 @@ test('bottom-half partner shells receive a configurable 0.7 weight reduction', (
     deckElements: ['solo_commander'],
   };
 
-  assert.ok(statsWeightConfig.bottomHalfPartner.enabled);
-  assert.equal(statsWeightConfig.bottomHalfPartner.multiplier, 0.7);
+  assert.ok(statsWeightConfig.sparsePartner.enabled);
+  assert.equal(statsWeightConfig.sparsePartner.multiplier, 0.7);
   assert.equal(calculateStatsMultiplier(bottomPartnerDeck, config), 0.7);
   assert.equal(calculateStatsMultiplier(upperPartnerDeck, config), 1);
   assert.equal(calculateStatsMultiplier(bottomSoloDeck, config), 1);
@@ -1108,7 +1108,7 @@ test('few observed entries do not classify partner shells as irrelevant', () => 
     },
     lowPlayPartner: { ...statsWeightConfig.lowPlayPartner, enabled: false },
     irrelevant: { ...statsWeightConfig.irrelevant, enabled: true },
-    bottomHalfPartner: { ...statsWeightConfig.bottomHalfPartner, enabled: false },
+    sparsePartner: { ...statsWeightConfig.sparsePartner, enabled: false },
   };
   const coldPartnerDeck = {
     name: 'Auto Fringe Partner A / Auto Fringe Partner B',
@@ -1199,16 +1199,16 @@ test('recommendations rank high play decks above equally matched normal play dec
   assert.ok(recommendations[0].score > recommendations[1].score);
 });
 
-test('competitive priority strongly favors decks with both top play rate and top win rate', () => {
+test('competitive priority strongly favors decks with both top play rate and top-cut conversion', () => {
   const profile = buildPreferenceProfile(questions, {
     priority: 'competitive',
   });
   const candidates = [
     {
-      name: 'Top Play And Top Win',
+      name: 'Top Play And Top Conversion',
       colorIdentity: 'UB',
       matchTags: { competitive: 10, consistency: 10 },
-      edhtop16Url: 'https://edhtop16.com/commander/Top%20Play%20And%20Top%20Win',
+      edhtop16Url: 'https://edhtop16.com/commander/Top%20Play%20And%20Top%20Conversion',
       sourceStats: { conversionRate: 0.22, entries: 650, metaShare: 0.02 },
     },
     {
@@ -1219,17 +1219,17 @@ test('competitive priority strongly favors decks with both top play rate and top
       sourceStats: { conversionRate: 0.18, entries: 1800, metaShare: 0.06 },
     },
     {
-      name: 'Top Win Only',
+      name: 'Top Conversion Only',
       colorIdentity: 'UB',
       matchTags: { competitive: 10, consistency: 10 },
-      edhtop16Url: 'https://edhtop16.com/commander/Top%20Win%20Only',
+      edhtop16Url: 'https://edhtop16.com/commander/Top%20Conversion%20Only',
       sourceStats: { conversionRate: 0.24, entries: 80, metaShare: 0.002 },
     },
   ];
 
   const recommendations = recommendCommanders(profile, candidates, 3, dimensionLabels, costTierConfig, statsWeightConfig);
 
-  assert.equal(recommendations[0].name, 'Top Play And Top Win');
+  assert.equal(recommendations[0].name, 'Top Play And Top Conversion');
   assert.ok(recommendations[0].score > recommendations[1].score);
   assert.ok(recommendations[0].score > recommendations[2].score);
 });

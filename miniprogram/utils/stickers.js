@@ -138,13 +138,29 @@ function buildStickerRound(pool, randomFn = Math.random, count = 3) {
 
 function getCombinationCount(size, pick) {
   if (!Number.isSafeInteger(size) || !Number.isSafeInteger(pick) || size < 0 || pick < 0 || size < pick) return 0;
+  const gcd = (left, right) => {
+    while (right) [left, right] = [right, left % right];
+    return left;
+  };
   let combinations = 1;
   const steps = Math.min(pick, size - pick);
   for (let step = 1; step <= steps; step += 1) {
-    combinations = combinations * (size - steps + step) / step;
+    // 先约分再相乘：最终结果可安全表示，也不保证先乘后除的中间值精确。
+    let numerator = size - steps + step;
+    let denominator = step;
+    const common = gcd(numerator, denominator);
+    numerator /= common;
+    denominator /= common;
+    const remaining = gcd(combinations, denominator);
+    combinations /= remaining;
+    denominator /= remaining;
+    if (denominator !== 1)
+      throw new RangeError('combination count exceeds safe integer precision');
+    combinations *= numerator;
+    if (!Number.isSafeInteger(combinations))
+      throw new RangeError('combination count exceeds safe integer precision');
   }
-  if (!Number.isSafeInteger(Math.round(combinations))) throw new RangeError('combination count exceeds safe integer precision');
-  return Math.round(combinations);
+  return combinations;
 }
 
 function formatProbability(value) {

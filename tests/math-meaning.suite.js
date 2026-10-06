@@ -15,8 +15,8 @@ const { commanders } = require('../miniprogram/config/commanders');
 const { buildDeckMetrics } = require('../miniprogram/utils/bracket');
 const { parseMtgoDeckText, shuffleInPlace } = require('../miniprogram/utils/playtest');
 const { rollInteger, sanitizeRange, createSequenceRandom } = require('../miniprogram/utils/random');
-const { buildSnapshot } = require('../scripts/refresh-commander-stats');
-const { commanderStatsManifest } = require('../miniprogram/config/commander-stats');
+const { buildSnapshot, attachWinRateVerification, verifySnapshotGames } = require('../scripts/refresh-commander-stats');
+const { commanderStatsManifest, commanderStats } = require('../miniprogram/config/commander-stats');
 const { buildSingleComponents, buildColorComponents, buildResourceComponents, topThreeFromComponents } = require('../scripts/diagnose-coverage');
 const { questions, matchingConfig } = require('../miniprogram/config/questionnaire');
 const { statsWeightConfig } = require('../miniprogram/config/commanders');
@@ -147,6 +147,24 @@ test('sticker odds match independent subset enumeration for every draw size', ()
   }
 });
 
+test('sticker combination counts preserve exact integers even when multiplication before division would overflow', () => {
+  const pool = Array.from({ length: 80 }, (_, index) => ({ id: String(index), words: [index === 0 ? 'aeiouy' : 'a', '', ''] }));
+  const choose = (size, pick) => {
+    let value = 1n;
+    for (let step = 1; step <= Math.min(pick, size - pick); step += 1)
+      value = value * BigInt(size - Math.min(pick, size - pick) + step) / BigInt(step);
+    return value;
+  };
+  for (const [size, pick] of [[56, 23], [56, 27], [57, 24], [60, 20], [80, 12]]) {
+    const exact = choose(size, pick);
+    const expectedHits = exact - choose(size - 1, pick);
+    const result = calculateStickerOdds(pool.slice(0, size), [6], pick);
+    assert.equal(result.totalCombos, Number(exact));
+    assert.equal(result.thresholds[0].hitCount, Number(expectedHits));
+  }
+  assert.throws(() => calculateStickerOdds(pool, [6], 40), RangeError);
+});
+
 test('poll proportions exclude unknown ballots and whole percent labels sum to 100', () => {
   const choices = [{ id: 'up' }, { id: 'down' }, { id: 'unknown' }];
   const result = calculatePollStats({ up: 1, down: 7, unknown: 9 }, choices);
@@ -154,6 +172,7 @@ test('poll proportions exclude unknown ballots and whole percent labels sum to 1
   assert.equal(result.known, 8);
   assert.equal(result.unknown, 9);
   assert.deepEqual(result.rows.map((row) => row.percent), [13, 87]);
+  assert.deepEqual(calculatePollStats({ up: 145, down: 55 }, choices).rows.map((row) => row.percent), [73, 27], 'equal remainders use choice order, not floating-point noise');
   assert.equal(calculatePollStats({ unknown: 1 }, choices).rows[0].percent, 0);
   for (let up = 0; up <= 20; up += 1) {
     for (let down = 0; down <= 20; down += 1) {
@@ -161,6 +180,18 @@ test('poll proportions exclude unknown ballots and whole percent labels sum to 1
       assert.equal(rows.reduce((sum, row) => sum + row.percent, 0), up + down ? 100 : 0);
       rows.forEach((row) => assert.ok(row.percent >= 0 && row.percent <= 100));
     }
+  }
+  const exactPercentages = (counts) => {
+    const total = counts.reduce((sum, value) => sum + BigInt(value), 0n);
+    const parts = counts.map((value, index) => ({ index, percent: Number(BigInt(value) * 100n / total), remainder: BigInt(value) * 100n % total }));
+    const missing = 100 - parts.reduce((sum, row) => sum + row.percent, 0);
+    parts.slice().sort((a, b) => a.remainder === b.remainder ? a.index - b.index : a.remainder > b.remainder ? -1 : 1)
+      .slice(0, missing).forEach((row) => { row.percent += 1; });
+    return parts.map((row) => row.percent);
+  };
+  for (const counts of [[145, 55], [Number.MAX_SAFE_INTEGER - 1, 1], [4000000000000000, 5007199254740991], [0, Number.MAX_SAFE_INTEGER]]) {
+    const rows = calculatePollStats({ up: counts[0], down: counts[1] }, choices).rows;
+    assert.deepEqual(rows.map((row) => row.percent), exactPercentages(counts));
   }
   assert.throws(() => calculatePollStats({ up: -1 }, choices), /CORRUPT_TALLY/);
 });
@@ -233,11 +264,45 @@ test('tournament refresh keeps a single source window and never substitutes the 
   for (const commander of commanders) {
     assert.ok(Math.abs(commander.sourceStats.metaShare - commander.sourceStats.entries / commanderStatsManifest.shareDenominator) < 1e-10);
   }
+  if (commanderStatsManifest.winRateVerification) {
+    const report = require(`../docs/audits/${commanderStatsManifest.winRateVerification.reportFile}`);
+    const verified = attachWinRateVerification({ manifest: {}, snapshot: commanderStats }, report);
+    assert.deepEqual(verified.manifest.winRateVerification, commanderStatsManifest.winRateVerification, 'verification claims must bind to the current rates and receipt hash');
+    assert.equal(verified.manifest.winRateDefinition, commanderStatsManifest.winRateDefinition);
+  }
 });
 
 test('few observed entries do not prove a commander is competitively irrelevant', () => {
   const tags = deriveCommanderMetaTags({ name: 'Rare deck', sourceStats: { entries: 3, winRate: 0, metaShare: 0.0001 } }, metaTagConfig);
   assert.equal(tags.includes('irrelevant'), false);
+});
+
+test('entry verification pools reported results including draws and rejects stale or incomplete receipts', async () => {
+  const nodes = [{ id: 'commander-A', name: 'A', stats: { count: 2, topCuts: 1, conversionRate: 0.5, metaShare: 0.2, winRate: 2 / 11 } }];
+  const roster = [{ name: 'A' }];
+  const result = buildSnapshot(nodes, roster);
+  const page = (id, wins, losses, draws, next) => ({ data: { node: { entries: {
+    edges: [{ node: { id, wins, losses, draws } }], pageInfo: { hasNextPage: !!next, endCursor: next },
+  } } } });
+  const requests = [];
+  const request = async (id, variables) => {
+    requests.push(variables);
+    return variables.cursor ? page('entry-2', 1, 8, 0, null) : page('entry-1', 1, 0, 1, 'next');
+  };
+  const report = await verifySnapshotGames(nodes, roster, result, request);
+  assert.equal(requests.length, 2);
+  assert.equal(requests[1].cursor, 'next');
+  assert.deepEqual([report.rows[0].wins, report.rows[0].losses, report.rows[0].draws], [2, 8, 1]);
+  assert.equal(report.rows[0].rebuilt, 2 / 11, 'pool results rather than average the two entry percentages or exclude draws');
+  assert.equal(result.manifest.winRateDefinition, 'sum(wins)/sum(wins+losses+draws)');
+  assert.equal(result.manifest.winRateVerification.rows, 1);
+  assert.throws(() => attachWinRateVerification(buildSnapshot(nodes, roster), { ...report, rows: [] }), /invalid/);
+  assert.throws(() => attachWinRateVerification(buildSnapshot(nodes, roster), { ...report, rows: [{ ...report.rows[0], entries: 1 }] }), /match/);
+  assert.throws(() => attachWinRateVerification(buildSnapshot(nodes, roster), { ...report, filters: { ...report.filters, minEventSize: 16 } }), /invalid/);
+  const changed = [{ ...nodes[0], stats: { ...nodes[0].stats, winRate: 0.5 } }];
+  assert.throws(() => attachWinRateVerification(buildSnapshot(changed, roster), report), /match/);
+  await assert.rejects(() => verifySnapshotGames(nodes, roster, buildSnapshot(nodes, roster), async () => page('entry-1', 1, 0, 1, null)), /match/);
+  await assert.rejects(() => verifySnapshotGames(nodes, roster, buildSnapshot(nodes, roster), async () => page('entry-1', 1, 0, 1, 'next')), /duplicate/);
 });
 
 test('damaged match dates remain unknown and do not fabricate current-day observations', () => {

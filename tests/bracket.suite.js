@@ -2186,7 +2186,7 @@ test('组合技快照：命中要两张都在，双面牌两种写法都认', ()
   });
 });
 
-test('长尾组合技收敛成一条证据，并按官方 B2 定义把下限顶到 3', () => {
+test('长尾组合技收敛成一条证据，并应用工具的保守 B3 内容基线', () => {
   const B = require('../miniprogram/utils/bracket');
   const { SPELLBOOK_CARD_NAMES, SPELLBOOK_COMBO_ROWS } = require('../miniprogram/config/spellbook-combos');
 
@@ -2217,13 +2217,12 @@ test('长尾组合技收敛成一条证据，并按官方 B2 定义把下限顶�
   assert.ok(fourResult.floorBracket >= 4,
     `${four.cards.join(' + ')} 是四级桌组合技，下限却只有 ${fourResult.floorBracket}`);
 
-  // 档位 1 的无限组合技：官方 Bracket 2 的定义里明写「没有两卡无限组合技」，
-  // 所以只要存在就至少是 3；3 与 4 之间的分寸交给 Spellbook 自己判断
+  // 映射为 1 的配方仍应用本工具的保守 B3 基线；不是官方认定的档位。
   const one = longTail.find((row) => row.bracket === 1);
   if (one) {
     const oneResult = evaluate(one.cards);
     assert.equal(oneResult.floorBracket, 3,
-      `${one.cards.join(' + ')} 是两卡无限组合技，下限应被顶到 3，实际 ${oneResult.floorBracket}`);
+      `${one.cards.join(' + ')} 的工具基线应为 3，实际 ${oneResult.floorBracket}`);
   }
 
   // 一副能命中很多条的牌：证据必须仍然只有**一条**。
@@ -2241,13 +2240,10 @@ test('长尾组合技收敛成一条证据，并按官方 B2 定义把下限顶�
   assert.ok(named <= 3, `正文点名了 ${named} 组组合技，太多了，应该只列前两组`);
   assert.match(lines[0].detail, /另有 \d+ 组未列出/,
     '命中数超过展示上限时要说明省略了多少组，不能让用户以为只有这几组');
-  // 这一页其余证据正文中位数 31 字、最长 70 字。长尾这条要多带一点信息（组数 + 两组卡名 +
-  // 最高档说法 + 下限），但不能失控成一堵墙——120 字是「明显更长但仍读得完」的上限。
-  // 这一页其余证据正文中位数 31 字、最长 70 字。长尾这条要多带一点信息
-  // （组数 + 最高档说法 + 两组卡名 + 省略数 + 下限），而英文卡名一组就占 35 字，
-  // 所以放宽到约两倍；再长就该减少点名的组数，而不是抬这个阈值。
+  // 卡名、分类、省略数和条件说明共用 150 字预算；长名称时减少举例。
   assert.ok(lines[0].detail.length < 150,
-    `证据正文 ${lines[0].detail.length} 字，这一页其余证据最长才 70 字`);
+    `证据正文 ${lines[0].detail.length} 字，超过 150 字预算`);
+  assert.match(lines[0].detail, /需核对启动资源与额外条件/);
   // 证据里点名的卡必须真的在牌表里（与 invariants.suite.js 的那条不变量同源）
   const deckKeys = new Set(B.parseBracketDeck(
     `${wide.map((n) => `1 ${n}`).join('\n')}\n\n1 Kinnan, Bonder Prodigy`,

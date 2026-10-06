@@ -1233,15 +1233,21 @@ function evaluateBracket(parsed, options = {}) {
     0,
   );
   if (detectedSpellbookCombos.length) {
-    // 只点名两组。这一页其余证据的正文中位数是 31 字、最长 70 字；逐组带上中文说法
-    // 列四组会写到 239 字——一条证据顶掉整栏，读起来是一堵墙而不是理由。
-    // 中文说法只报最高档那一组的（结果已按档位降序），其余交给卡名自己说话。
-    const SHOWN = 2;
-    const shown = detectedSpellbookCombos.slice(0, SHOWN);
-    const listed = shown.map((combo) => combo.cards.join(' ＋ ')).join('、');
-    const rest = detectedSpellbookCombos.length > SHOWN
-      ? `，另有 ${detectedSpellbookCombos.length - SHOWN} 组未列出`
-      : '';
+    // 至多两组，分类跟随自己的配对；长牌名时减少举例，不截断名称。
+    const shown = detectedSpellbookCombos.slice(0, 2);
+    const describe = (items) => {
+      const listed = items.map((combo) => `${combo.cards.join(' ＋ ')}（${combo.label}）`).join('；');
+      const omitted = detectedSpellbookCombos.length - items.length;
+      const examples = listed
+        ? listed + (omitted ? `；另有 ${omitted} 组未列出` : '')
+        : `共 ${omitted} 组配方，名称未列出`;
+      return `${examples}。工具基线 B${spellbookMinimum}；需核对启动资源与额外条件`;
+    };
+    let detail = describe(shown);
+    while (detail.length >= 150 && shown.length) {
+      shown.pop();
+      detail = describe(shown);
+    }
     floorBracket = Math.max(floorBracket, spellbookMinimum);
     evidence.push(buildEvidence(
       'SPELLBOOK_TWO_CARD_COMBOS',
@@ -1250,9 +1256,7 @@ function evaluateBracket(parsed, options = {}) {
       // 塞进几十张没点名的牌只会让那一栏变成噪音
       uniqueCardNames(shown.reduce((names, combo) => names.concat(combo.cards), [])),
       `两卡组合技 ${detectedSpellbookCombos.length} 组`,
-      `组合技库命中 ${detectedSpellbookCombos.length} 组配对（满足条件可产生`
-      + `${detectedSpellbookCombos[0].label}）：${listed}${rest}，`
-      + `工具基线 B${spellbookMinimum}，仍需核对启动资源与额外条件`,
+      detail,
       spellbookMinimum,
     ));
   }

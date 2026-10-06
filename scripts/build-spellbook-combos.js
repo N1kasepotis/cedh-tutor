@@ -21,19 +21,19 @@ const TAG_TO_BRACKET = {
   R: 4, S: 3, P: 3, O: 2, C: 2, E: 1, B: 0,
 };
 
-// 产出特性有 361 种，逐条翻译既维护不动也没必要——用户要知道的是「这套牌能干什么」，
-// 不是「无限魔法工艺触发」这个具体英文。归成九类，每类一句中文。
+// 产出名称由上游维护；只归并名称明确描述的效果，不从生物/指示物推断衍生物。
+// 默认类也可能包含有限或近乎无限效果，不能统一叫作无限循环。
 // 顺序即优先级：一个组合技同时产出无限法术力和胜利时，按胜利归类。
 const CATEGORIES = [
-  ['win', /^(Win the game|Each opponent loses the game|Infinite (damage|loss of life))/i, '伤害或取胜'],
+  ['win', /^(Win the game|(?:Each opponent|Target (?:opponent|player)) loses the game|Infinite (?:damage|combat damage)\b)/i, '伤害 / 取胜 / 淘汰'],
   ['lock', /^(Lock|Infinite (?:turns|combat phases))|control (?:all|some) opponents/i, '控制或回合循环'],
   ['mana', /^Infinite .*mana/i, '无限法术力'],
   ['draw', /^Infinite (?:card draw|draw triggers)/i, '无限抓牌'],
-  ['tokens', /^Infinite creature tokens|^Infinite .*creatures/i, '无限衍生物'],
-  ['storm', /^Infinite (?:storm count|magecraft|spell)/i, '无限施放与风暴数'],
-  ['life', /^Infinite (?:lifegain|life)/i, '无限获得生命'],
-  ['triggers', /^Infinite .*(?:trigger|ETB|LTB|untap|sacrifice)/i, '无限循环触发（需另配终结点）'],
-  ['other', /^Infinite/i, '无限循环'],
+  ['tokens', /^Infinite .*\btokens\b/i, '无限衍生物'],
+  ['storm', /^Infinite (?:storm count|magecraft triggers|(?:spell|commander) casts|casts)\b/i, '施放、魔艺或风暴循环'],
+  ['life', /^Infinite (?:lifegain|lifeloss|loss of life)\b/i, '无限生命变化'],
+  ['triggers', /^Infinite .*(?:triggers?\b|ETB\b|LTB\b)/i, '进出场或触发循环'],
+  ['other', /^Infinite/i, '其他效果'],
 ];
 
 function request(url, attempt = 0) {
@@ -299,4 +299,4 @@ if (require.main === module) main().catch((error) => {
   process.exit(1);
 });
 
-module.exports = { prioritizeVariants, render, CATEGORIES };
+module.exports = { prioritizeVariants, render, categoryOf, CATEGORIES };

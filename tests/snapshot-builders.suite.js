@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const os = require('node:os');
 const path = require('node:path');
 const { buildRows, writeSnapshot } = require('../scripts/build-planechase');
-const { prioritizeVariants } = require('../scripts/build-spellbook-combos');
+const { prioritizeVariants, categoryOf, CATEGORIES } = require('../scripts/build-spellbook-combos');
 const { buildCdnArt } = require('../miniprogram/utils/scryfall-cdn');
 const { PLANECHASE_CARDS } = require('../miniprogram/config/planechase');
 
@@ -53,4 +53,22 @@ test('Spellbook 构建：重复配对按最高档位与稳定产出优先级排�
   const rows = [variant('a', 'S', 'Infinite mana'), variant('b', 'R', 'Infinite mana'), variant('c', 'R', 'Win the game')];
   assert.deepEqual(prioritizeVariants(rows).map((row) => row.id), ['c', 'b', 'a']);
   assert.deepEqual(prioritizeVariants(rows.reverse()).map((row) => row.id), ['c', 'b', 'a']);
+});
+
+test('Spellbook 分类按实际产出区分生命流失、衍生物、魔艺与有限效果', () => {
+  const category = (...names) => categoryOf({ produces: names.map((name) => ({ feature: { name } })) });
+  const labels = Object.fromEntries(CATEGORIES.map(([id, pattern, label]) => [id, label]));
+  assert.equal(category('Infinite lifeloss'), 'life');
+  assert.equal(labels.life, '无限生命变化');
+  assert.equal(category('Infinite lifegain'), 'life');
+  assert.equal(category('Infinite +1/+1 counters on certain creatures'), 'other');
+  assert.equal(category('Infinite recursion of artifact creatures you control'), 'other');
+  assert.equal(category('Infinite tapped Treasure tokens'), 'tokens');
+  assert.equal(category('Infinite creature tokens with haste'), 'tokens');
+  assert.equal(category('Infinite magecraft triggers'), 'storm');
+  assert.equal(category('Infinite creature ETB'), 'triggers');
+  assert.equal(category('Near-infinite damage to all players'), 'other');
+  assert.equal(labels.other, '其他效果', 'a fallback cannot promise infinity');
+  assert.equal(category('Target opponent loses the game'), 'win');
+  assert.equal(category('Infinite combat damage to one opponent'), 'win');
 });

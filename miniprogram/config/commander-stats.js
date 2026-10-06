@@ -15,7 +15,15 @@ const commanderStatsManifest = {
   "shareDenominator": 17625,
   "shareDenominatorMethod": "consistent-source-count-divided-by-metaShare",
   "conversionDefinition": "topCuts/entries",
-  "winRateDefinition": "source-reported; aggregation denominator not independently verified"
+  "winRateDefinition": "sum(wins)/sum(wins+losses+draws)",
+  "winRateVerification": {
+    "retrievedAt": "2026-10-06T14:13:04.653Z",
+    "method": "recompute-all-roster-entry-results",
+    "queryId": "f3b0fec0f117f025ead64c4eec63399f",
+    "rows": 100,
+    "reportSha256": "b5a7629f6e034977edea3fa9e07c259520bcdcd958e53290a8b92b0ea117e006",
+    "reportFile": "edhtop16-win-rates-2026-10-06-b5a7629f6e03.json"
+  }
 };
 
 const commanderStats = {

@@ -51,8 +51,8 @@ function isLowPlayPartnerCommander(commander, config) {
   return isBelowPlayThreshold(play, entriesLimit, metaShareLimit);
 }
 
-function isBottomHalfPartnerCommander(commander, config) {
-  const partnerConfig = config && config.bottomHalfPartner || {};
+function isSparsePartnerCommander(commander, config) {
+  const partnerConfig = config && config.sparsePartner || {};
   if (!partnerConfig.enabled || !isPartnerShell(commander)) return false;
 
   const play = getPlayRateStats(commander);
@@ -163,8 +163,8 @@ function calculateSourceStatsMultiplier(commander, config) {
     multiplier *= Number(partnerConfig.multiplier || 1);
   }
 
-  if (isBottomHalfPartnerCommander(commander, config)) {
-    const partnerConfig = config.bottomHalfPartner || {};
+  if (isSparsePartnerCommander(commander, config)) {
+    const partnerConfig = config.sparsePartner || {};
     multiplier *= Number(partnerConfig.multiplier || 1);
   }
 
@@ -204,7 +204,7 @@ module.exports = {
   calculateSourceStatsMultiplier,
   getPlayRateSortValue,
   getPlayRateStats,
-  isBottomHalfPartnerCommander,
+  isSparsePartnerCommander,
   isIrrelevantCommander,
   isLowPlayCommander,
   isLowPlayPartnerCommander,

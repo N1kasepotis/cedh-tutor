@@ -63,7 +63,8 @@ const statsWeightConfig = {
     "multiplier": 0.88,
     "diversityPriorityPenalty": 1
   },
-  "bottomHalfPartner": {
+  // 固定样本 / 份额阈值，不是当前主将列表的中位数或百分位。
+  "sparsePartner": {
     "enabled": true,
     "entriesBelowOrEqual": 61,
     "metaShareBelowOrEqual": 0.001875,
