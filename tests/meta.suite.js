@@ -430,7 +430,7 @@ test('环境梯度：详情弹层用实色，打开时粒子停下，完整名�
   const wxss = readMini('pages/meta/meta.wxss');
   const theme = readMini('styles/themes/dark-table.wxss');
 
-  assert.match(wxml, /<particle-background paused="\{\{detail \? true : false\}\}" palette="meta">/);
+  assert.match(wxml, /<particle-background paused="\{\{detail \|\| monthlyDetail \? true : false\}\}" palette="meta">/);
   assert.match(wxss.match(/\.detail-panel\s*\{[^}]*\}/)[0], /background:\s*var\(--cedh-surface-solid\)/);
   const solid = theme.match(/\.meta\s*\{[^}]*--cedh-surface-solid:\s*(#[0-9a-f]{6})\s*;/i);
   assert.ok(solid, '.meta 要有自己的不透明实色，全局默认值是半透明的');

@@ -22,3 +22,6 @@ ehthumbs.db
 # Logs / temp
 *.log
 *.tmp
+runtime-secrets.json
+.env
+.env.*

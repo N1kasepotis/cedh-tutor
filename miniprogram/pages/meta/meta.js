@@ -6,9 +6,15 @@ const {
 } = require('../../utils/meta-tier');
 const { enableShareMenu } = require('../../utils/share');
 const { homePixelFontBase64 } = require('../../assets/home-pixel-font');
+const monthly = require('../../utils/monthly-meta');
 
 Page({
   data: {
+    mode: 'monthly', monthSummary: null, monthGroups: [], monthPeriods: [], monthIndex: 0,
+    monthLoading: false, monthError: '', monthOffline: false, monthQuery: '', monthHighSample: false,
+    monthOrder: 'score', monthColor: '', monthColorIndex: 0,
+    monthColorLabels: ['全部颜色', '含白色', '含蓝色', '含黑色', '含红色', '含绿色'],
+    monthMethodOpen: false, monthWatchOpen: false, monthlyDetail: null,
     tierGroups: [],
     summary: null,
     detail: null,
@@ -32,7 +38,71 @@ Page({
       tierGroups: buildTierGroups(metaTierEntries),
       summary: buildMetaSummary(),
     });
+    const saved = monthly.cached();
+    if (saved && saved.snapshot) this.applyMonthly(saved.snapshot, saved.periods || []);
+    if (!monthly.isFresh(saved)) this.loadMonthly();
   },
+
+  onUnload() { this.monthRequest = (this.monthRequest || 0) + 1; },
+  onPullDownRefresh() { this.loadMonthly(this.monthSnapshot && this.monthSnapshot.period, true).finally(() => wx.stopPullDownRefresh({})); },
+  selectMode(event) {
+    const mode = event.currentTarget.dataset.mode;
+    if (!['monthly', 'editorial'].includes(mode)) return;
+    this.setData({ mode, detail: null, monthlyDetail: null });
+  },
+  applyMonthly(snapshot, periods) {
+    this.monthSnapshot = snapshot;
+    const options = [...new Set([snapshot.period, ...periods])].filter((period) => /^20\d{2}-(0[1-9]|1[0-2])$/.test(period)).sort().reverse();
+    this.setData({ monthSummary: {
+      period: snapshot.period, asOf: snapshot.asOf.slice(0, 10), events: snapshot.coverage.events,
+      entries: snapshot.coverage.entries, coverage: snapshot.coverage.leaderCoverage,
+      baselineWin: snapshot.baselines.win, baselineCut: snapshot.baselines.cut,
+      excluded: Object.values(snapshot.coverage.excluded || {}).reduce((sum, value) => sum + value, 0),
+      minEntries: snapshot.model.minEntries, minPilots: snapshot.model.minPilots, minEvents: snapshot.model.minEvents,
+    }, monthPeriods: options, monthIndex: options.indexOf(snapshot.period) });
+    this.filterMonthly();
+  },
+  async loadMonthly(period, force = false) {
+    if (this.data.monthLoading && !force) return;
+    const request = this.monthRequest = (this.monthRequest || 0) + 1;
+    this.setData({ monthLoading: true, monthError: '', monthOffline: false });
+    try {
+      const result = await monthly.fetchMonthly(period);
+      if (request !== this.monthRequest) return;
+      this.applyMonthly(result.snapshot, result.periods || []);
+      if (result.snapshot.period === result.latestPeriod) monthly.cache(result);
+    } catch (_) {
+      if (request !== this.monthRequest) return;
+      this.setData({ monthOffline: Boolean(this.monthSnapshot), monthError: this.monthSnapshot ? '暂未刷新，正在显示已保存的月报' : '月报暂时无法读取，请重试' });
+    } finally { if (request === this.monthRequest) this.setData({ monthLoading: false }); }
+  },
+  retryMonthly() { this.loadMonthly(this.monthSnapshot && this.monthSnapshot.period); },
+  changeMonth(event) { const period = this.data.monthPeriods[Number(event.detail.value)]; if (period) this.loadMonthly(period, true); },
+  searchMonthly(event) { this.setData({ monthQuery: event.detail.value }); this.filterMonthly(); },
+  toggleHighSample() { this.setData({ monthHighSample: !this.data.monthHighSample }); this.filterMonthly(); },
+  changeMonthlyColor(event) {
+    const index = Number(event.detail.value); if (!Number.isInteger(index) || index < 0 || index > 5) return;
+    this.setData({ monthColorIndex: index, monthColor: ['', 'W', 'U', 'B', 'R', 'G'][index] }); this.filterMonthly();
+  },
+  selectMonthlyOrder(event) { const order = event.currentTarget.dataset.order; if (!['score', 'entries'].includes(order)) return; this.setData({ monthOrder: order }); this.filterMonthly(); },
+  toggleMonthMethod() { this.setData({ monthMethodOpen: !this.data.monthMethodOpen }); },
+  toggleMonthWatch() { this.setData({ monthWatchOpen: !this.data.monthWatchOpen }); this.filterMonthly(); },
+  filterMonthly() {
+    if (!this.monthSnapshot) return;
+    this.setData({ monthGroups: monthly.groups(this.monthSnapshot, {
+      query: this.data.monthQuery, highSample: this.data.monthHighSample, order: this.data.monthOrder,
+      color: this.data.monthColor, expandedWatch: this.data.monthWatchOpen,
+    }) });
+  },
+  openMonthlyDetail(event) {
+    const row = this.monthSnapshot && this.monthSnapshot.entries.find((entry) => entry.id === event.currentTarget.dataset.id);
+    if (!row) return;
+    const sources = this.monthSnapshot.events.filter((source) => row.sourceEvents.includes(source.id));
+    this.setData({ monthlyDetail: { ...monthly.decorate(row), sources } });
+  },
+  closeMonthlyDetail() { this.setData({ monthlyDetail: null }); },
+  copyMonthlySource() { wx.setClipboardData({ data: 'https://topdeck.gg', fail: () => wx.showToast({ title: '复制失败，请重试', icon: 'none' }) }); },
+  copyMonthlyEvent(event) { wx.setClipboardData({ data: event.currentTarget.dataset.title, fail: () => wx.showToast({ title: '复制失败，请重试', icon: 'none' }) }); },
 
   // 档位展开 / 收起。只翻 expanded，不重建 entries——重建会把整份列表再过一次桥。
   // 只改被点那一档的 expanded，用路径写法定点更新。
@@ -49,6 +119,7 @@ Page({
   },
 
   onShareAppMessage() {
+    if (this.data.mode === 'monthly') return { title: `${this.data.monthSummary ? this.data.monthSummary.period + ' ' : ''}cEDH 环境月报`, path: '/pages/meta/meta' };
     const summary = this.data.summary || {};
     return {
       title: summary.publicationTitle || '环境梯度｜cEDH 套牌梯度表',
@@ -57,6 +128,7 @@ Page({
   },
 
   onShareTimeline() {
+    if (this.data.mode === 'monthly') return { title: `${this.data.monthSummary ? this.data.monthSummary.period + ' ' : ''}cEDH 环境月报` };
     return { title: (this.data.summary || {}).publicationTitle || '环境梯度｜cEDH 套牌梯度表' };
   },
 
