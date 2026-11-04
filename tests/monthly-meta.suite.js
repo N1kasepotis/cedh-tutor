@@ -19,8 +19,8 @@ const info = { status: 'Complete', endDate: window.end - 100 };
 function memoryDb() {
   const docs = new Map(); let writes = 0;
   const db = { docs, get writes() { return writes; }, collection() { return { doc(id) { return {
-    async get() { if (!docs.has(id)) throw new Error('document does not exist'); return { data: structuredClone(docs.get(id)) }; },
-    async set({ data }) { writes += 1; docs.set(id, structuredClone(data)); },
+    async get() { if (!docs.has(id)) throw new Error('document does not exist'); return { data: { _id: id, ...structuredClone(docs.get(id)) } }; },
+    async set({ data }) { assert.equal('_id' in data, false, 'CloudBase rejects immutable _id in set.data'); writes += 1; docs.set(id, structuredClone(data)); },
   }; } }; }, async runTransaction(fn) { return fn(db); } };
   return db;
 }
@@ -67,6 +67,7 @@ test('monthly snapshots are deterministic, keep private pilot IDs out and reject
   const cards = { commander: { oracleId: 'oracle', name: 'Commander', colors: ['U'], image: 'https://cards.scryfall.io/small/test.jpg' } };
   const input = { period: '2026-10', events, cards, fetchedAt: '2026-11-04T00:00:00Z' };
   const a = engine.buildSnapshot(input); assert.deepEqual(a, engine.buildSnapshot(input));
+  assert.deepEqual(a, engine.buildSnapshot({ ...input, events: [...events].reverse() }));
   assert.equal(a.entries[0].score, 50); assert.ok(a.entries[0].interval);
   assert.equal(JSON.stringify(a).includes('private-'), false); assert.equal(JSON.stringify(a).includes('pilot"'), false);
   assert.throws(() => engine.buildSnapshot({ ...input, events: [...events, events[0]] }), /DUPLICATE_EVENTS/);
@@ -79,7 +80,9 @@ test('monthly frontend validates real snapshot, rejects corrupt data and project
   assert.ok(groups.length); const row = groups[0].rows[0];
   assert.ok(row.entries >= 100); assert.equal('sourceEvents' in row, false);
   assert.equal('normal' in row.commanders[0], false);
-  assert.ok(Buffer.byteLength(JSON.stringify(ui.groups(seed))) < 250000);
+  assert.ok(Buffer.byteLength(JSON.stringify(ui.groups(seed))) < 50000);
+  const watch = ui.groups(seed).find(group => group.id === 'watch');
+  assert.ok(watch.count > 0); assert.equal(watch.rows.length, 0);
   assert.equal(ui.isFresh({ checkedAt: 100 }, 99), false);
 });
 test('monthly cloud get is read-only; historical publication cannot roll back current pointer', async () => {
@@ -114,4 +117,30 @@ test('monthly cloud worker respects leases and preserves existing report on fetc
   await assert.rejects(service.tick(), /UPSTREAM_UNAVAILABLE/);
   assert.equal((await service.current()).snapshot.hash, seed.hash);
   assert.equal(db.docs.get(`${PREFIX}lease`).until, 0);
+});
+test('monthly scheduler records a server heartbeat and exposes only aggregate maintenance status', async () => {
+  const db = memoryDb(); const now = Date.UTC(2026, 10, 4);
+  const service = createService({ db, now: () => now });
+  await service.recordTrigger();
+  const status = await service.status();
+  assert.equal(status.lastTriggeredAt, now); assert.equal(status.phase, 'not_started');
+  assert.equal('candidateIds' in status, false); assert.equal('key' in status, false);
+});
+test('monthly page retains its report offline and ignores a superseded month request', async () => {
+  const fs = require('fs'); const path = require('path'); const vm = require('vm');
+  const file = path.resolve(__dirname, '../miniprogram/pages/meta/meta.js');
+  const localRequire = require('module').createRequire(file); let definition; let fetch;
+  vm.runInNewContext(fs.readFileSync(file, 'utf8'), { Page(value) { definition = value; }, wx: {}, console,
+    require(name) { return name === '../../utils/monthly-meta' ? { ...ui, fetchMonthly: (...args) => fetch(...args) } : localRequire(name); } });
+  const page = { ...definition, data: structuredClone(definition.data), setData(value) { Object.assign(this.data, value); } };
+  page.applyMonthly(seed, [seed.period]);
+  fetch = async () => { throw new Error('OFFLINE'); };
+  await page.loadMonthly();
+  assert.equal(page.data.monthOffline, true); assert.equal(page.data.monthSummary.period, seed.period);
+  assert.ok(page.data.monthError); assert.equal(page.data.monthLoading, false);
+  const pending = []; fetch = () => new Promise(resolve => pending.push(resolve));
+  const first = page.loadMonthly('2026-08', true); const second = page.loadMonthly('2026-09', true);
+  pending[1]({ snapshot: { ...seed, period: '2026-09' }, periods: [], latestPeriod: seed.period }); await second;
+  pending[0]({ snapshot: { ...seed, period: '2026-08' }, periods: [], latestPeriod: seed.period }); await first;
+  assert.equal(page.data.monthSummary.period, '2026-09'); assert.equal(page.data.monthLoading, false);
 });

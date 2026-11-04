@@ -250,7 +250,7 @@ Deck
 
 ## 本地验证
 
-本地检查使用 Node.js 24，与 CI 一致。前端与领域测试无需安装依赖；`cloudfunctions/community` 单独依赖 `wx-server-sdk`，通过微信云端安装，不打入小程序包。
+本地检查使用 Node.js 24，与 CI 一致。前端与领域测试无需安装依赖；`cloudfunctions/community` 与 `cloudfunctions/metaMonthly` 单独依赖 `wx-server-sdk`，通过微信云端安装，不打入小程序包。
 
 ```bash
 node scripts/build-meta-tier.js     # 更新环境梯度快照后重新生成 config/meta-tier.js
@@ -267,7 +267,7 @@ npm run syntax                      # 仅检查全部 JavaScript 语法
 npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊断
 ```
 
-当前基线：141 个 JavaScript 文件通过语法门禁，409 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 397,232 个画像）。微信最终编译包体及分包限制需用官方上传工具实测。
+当前基线：141 个 JavaScript 文件通过语法门禁，411 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 397,232 个画像）。微信最终编译包体及分包限制需用官方上传工具实测。
 
 随机工具接受安全整数上下限及跨度，小范围从 32 位整数块抽取，大范围分两次组合 21 + 32 位；每个结果分配相同大小的整数桶，舍弃不足一个桶的尾部，避免大范围浮点乘法取整及额外候选数造成的偏差。等机会依赖随机源整数块均匀、独立的假设；运行时仍使用 `Math.random`，其标准只要求近似均匀，未承诺密码学随机。停滞的注入随机源重试 128 次后报错。计算反例与来源见 [事实审查](docs/fact-audit.md)。
 

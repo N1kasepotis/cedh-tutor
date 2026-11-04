@@ -32,8 +32,8 @@ score = 25 × (p/μ + c)
 
 1. 本机用户级 `TOPDECK_API_KEY` 已配置。另创建至少 32 字符的随机 `META_ADMIN_TOKEN` 用于维护操作。两者均不进入 Git、聊天或前端。
 2. 将 `cloudfunctions/metaMonthly` 复制到私有临时目录，并仅在该目录生成忽略文件 `runtime-secrets.json`，字段 `topdeckKey`、`adminToken`。支持用服务端环境变量替代该文件。
-3. 使用官方 DevTools CLI `cloud functions deploy --env cloudbase-d6gvqujh4d0efe37f --paths <临时目录>/metaMonthly --project <实际开发工程> --remote-npm-install`。确认运行超时足够覆盖采集请求，部署定时触发器。
-4. 维护端调用 `seed` 发布随函数携带的历史回填，再调用 `tick` 实测检查点。普通调用只允许 `get`；伪造 event.Type 或 action 不产生维护权限，定时任务通过服务端 SOURCE 判断。
+3. 使用官方 DevTools CLI `cloud functions deploy --env cloudbase-d6gvqujh4d0efe37f --paths <临时目录>/metaMonthly --project <实际开发工程> --remote-npm-install`。在原生云开发控制台将超时设为 60 秒、内存保留 256 MB。CLI 代码上传不会创建触发器，需在实际工程中右键本函数的 `config.json`，选择「上传触发器」，再到云函数详情刷新确认线上规则。
+4. 维护端可调用 `status` 查看进度、失败次数与最近定时触发时间。维护端调用 `seed` 发布随函数携带的历史回填，再调用 `tick` 实测检查点。普通调用只允许 `get`；伪造 event.Type 或 action 不产生维护权限，定时任务通过服务端 SOURCE 判断。
 5. 删除本次私有部署暂存。用公开 `get` 验证月份、哈希、覆盖率和列表，再验证小程序的搜索、筛选、详情、缓存和离线状态。
 
 本地回填命令需显式指定私有缓存位置，缓存保存赛事原始 API 数据，不进入仓库：

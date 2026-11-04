@@ -128,6 +128,8 @@ function interval(row, eventIds, baselines) {
 }
 const round = (value, digits = 2) => Number(value.toFixed(digits));
 function buildSnapshot({ period, events, cards, excluded = {}, fetchedAt, previous = null }) {
+  // API order and checkpoint order can differ; bootstrap draws must address the same event sequence.
+  events = [...events].sort((a, b) => a.id.localeCompare(b.id));
   const window = periodWindow(period);
   const ids = events.map((event) => event.id);
   if (new Set(ids).size !== ids.length) throw new Error('DUPLICATE_EVENTS');

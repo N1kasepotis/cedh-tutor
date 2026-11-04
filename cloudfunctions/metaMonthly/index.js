@@ -19,6 +19,8 @@ exports.main = async (event = {}) => {
     if (event.action === 'get') return { ok: true, data: await service.current(event.period) };
     const context = cloud.getWXContext();
     if (context.SOURCE !== 'wx_trigger' && !matches(event.adminToken, process.env.META_ADMIN_TOKEN || privateConfig.adminToken)) return { ok: false, code: 'FORBIDDEN' };
+    if (context.SOURCE === 'wx_trigger') await service.recordTrigger();
+    if (event.action === 'status') return { ok: true, data: await service.status() };
     if (event.action === 'seed') {
       if (!seed) return { ok: false, code: 'NO_SEED' };
       for (const snapshot of history) await service.publish(snapshot);

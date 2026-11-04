@@ -27,7 +27,7 @@
 .month-arts { display: flex; width: 64px; height: 52px; flex-shrink: 0; overflow: hidden; }
 .month-arts image { flex: 1; min-width: 0; height: 52px; }
 .month-row-name { flex: 1; min-width: 0; font-size: 15px; font-weight: 600; line-height: 1.5; color: var(--cedh-text); overflow-wrap: anywhere; }
-.month-row-score { flex: 0 0 52px; text-align: right; font-size: 23px; line-height: 1.3; color: rgb(var(--tier-rgb)); }
+.month-row-score { flex: 0 0 auto; min-width: 3.5ch; white-space: nowrap; text-align: right; font-size: 23px; line-height: 1.3; color: rgb(var(--tier-rgb)); }
 .month-row-score .month-caption { font-size: 11px; font-weight: 400; }
 .month-row-stats { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 8px; margin-top: 12px; font-size: 12px; font-weight: 400; color: var(--cedh-text-soft); font-variant-numeric: tabular-nums; }
 .month-notice { padding: 12px; background: var(--cedh-surface-solid); border: var(--cedh-hairline); border-radius: var(--cedh-radius-control-sm); font-size: 14px; color: var(--cedh-text); }

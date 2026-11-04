@@ -64,12 +64,15 @@ function groups(snapshot, { query = '', highSample = false, order = 'score', col
     && (!color || row.colors.includes(color))
     && (!needle || `${row.name} ${row.nameEn}`.toLowerCase().includes(needle)));
   if (order === 'entries') rows = rows.sort((a, b) => b.entries - a.entries || a.name.localeCompare(b.name));
-  return TIERS.map((tier) => ({ ...tier, rows: rows.filter((row) => row.tier === tier.id).map((row) => ({
+  return TIERS.map((tier) => {
+    const matches = rows.filter((row) => row.tier === tier.id);
+    const expanded = tier.id !== 'watch' || expandedWatch;
+    return { ...tier, count: matches.length, rows: (expanded ? matches : []).map((row) => ({
     id: row.id, name: row.name, displayName: row.displayName, entries: row.entries,
     scoreLabel: row.scoreLabel, deltaLabel: row.deltaLabel, tier: row.tier,
     winLabel: row.winLabel, conversionLabel: row.conversionLabel,
     commanders: row.commanders.map(({ oracleId, image }) => ({ oracleId, image })),
-  })), expanded: tier.id !== 'watch' || expandedWatch }))
-    .filter((tier) => tier.rows.length);
+  })), expanded };
+  }).filter((tier) => tier.count);
 }
 module.exports = { TIERS, validSnapshot, cached, cache, isFresh, fetchMonthly, decorate, groups };

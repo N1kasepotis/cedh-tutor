@@ -15,7 +15,11 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
       throw error;
     }
   }
-  const write = (id, data) => collection.doc(id).set({ data: { ...data, kind: 'meta_monthly', updatedAt: now() } });
+  const write = (id, data) => {
+    // CloudBase reads add _id; it is immutable and must not be sent back in set.data.
+    const { _id, ...fields } = data;
+    return collection.doc(id).set({ data: { ...fields, kind: 'meta_monthly', updatedAt: now() } });
+  };
   async function current(period) {
     const pointer = await read(`${PREFIX}current`);
     if (period && (!/^20\d{2}-(0[1-9]|1[0-2])$/.test(period))) throw new Error('INVALID_PERIOD');
@@ -59,7 +63,11 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
     let job;
     try {
       job = await read(jobId(period));
-      if (job && job.phase === 'published' && job.modelVersion === engine.MODEL.version && !force) return { status: 'up_to_date', period, hash: job.hash };
+      if (job && job.phase === 'published' && job.modelVersion === engine.MODEL.version && !force) {
+        const published = await current(period);
+        if (published.snapshot) return { status: 'up_to_date', period, hash: published.snapshot.hash };
+        job = null;
+      }
       if (!job || job.modelVersion !== engine.MODEL.version || force) {
         const window = engine.periodWindow(period);
         const raw = await api.fetchEvents(key, window);
@@ -138,6 +146,15 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
       });
     }
   }
-  return { current, tick, publish };
+  async function recordTrigger() { await write(`${PREFIX}scheduler`, { lastTriggeredAt: now(), source: 'wx_trigger' }); }
+  async function status() {
+    const period = engine.previousPeriod(now());
+    const job = await read(jobId(period)); const scheduler = await read(`${PREFIX}scheduler`);
+    return { period, phase: job && job.phase || 'not_started', processed: job && job.cursor || 0,
+      candidates: job && job.candidateIds && job.candidateIds.length || 0,
+      lastError: job && job.lastError || null, attempts: job && job.attempts || 0,
+      lastTriggeredAt: scheduler && scheduler.lastTriggeredAt || null };
+  }
+  return { current, tick, publish, status, recordTrigger };
 }
 module.exports = { createService, COLLECTION, PREFIX };
