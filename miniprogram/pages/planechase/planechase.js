@@ -4,7 +4,7 @@ const { buildCdnArt } = require('../../utils/scryfall-cdn');
 const { setKeepScreenOn } = require('../../utils/keep-screen-on');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, writeStorage, backupStorage } = require('../../utils/storage');
-const STORAGE_KEY = 'planechaseState';
+const STORAGE_KEY = S.STORAGE_KEY;
 const PHASE_LABELS = { ready: '暂无待结算事项', resolve: '能力待结算', exit: '异象待换出', reveal: '处理展示牌', notes: '牌桌待确认' };
 const REVEAL_LABELS = { merge: '同时换入两张时空', append: '追加时空', echo: '展示牌置底并引发混沌', leave: '全部换出并置底' };
 const FACE_LABELS = { blank: '空白', chaos: '混沌符号', planeswalk: '鹏洛客符号' };
@@ -128,8 +128,7 @@ Page({
     const orderedCards = (indices) => indices.map((index, position, all) => ({ index, name: P.cardAt(index).name, canUp: position > 0, canDown: position < all.length - 1 }));
     this.setData({
       hasSession: true, phase, phaseLabel: PHASE_LABELS[phase], phaseHint, activeView,
-      pendingCount: session.triggers.length + session.tableNotes.length
-        + (phase === 'exit' || reveal && !session.triggers.some((source) => source.id === reveal.sourceId) ? 1 : 0),
+      pendingCount: S.pendingCountOf(session),
       expandedTrigger: session.triggers.some((source) => source.id === this.data.expandedTrigger) ? this.data.expandedTrigger : null,
       planes: game.activePlanes.map((index) => this.decorateCard(index)),
       playerCount: game.playerCount, deckLeft: game.planarDeck.length,
@@ -164,14 +163,16 @@ Page({
   },
 
   syncPrimary() {
-    const { phase, activeView, rollCost } = this.data;
+    const { phase, activeView, rollCost, pendingCount, triggers } = this.data;
     const browsePending = phase !== 'ready' && activeView !== 'work';
-    const onlyTrigger = phase === 'resolve' && this.data.triggers.length === 1 ? this.data.triggers[0] : null;
+    const onlyTrigger = phase === 'resolve' && triggers.length === 1 ? triggers[0] : null;
+    const choosing = !browsePending && phase === 'resolve' && !onlyTrigger;
     this.setData({
       primaryRevision: this.data.primaryRevision + 1,
-      primaryLabel: browsePending ? '前往结算台' : onlyTrigger ? onlyTrigger.actionLabel : { ready: '掷时空骰', resolve: '选择能力',
+      primaryLabel: browsePending ? '前往结算台' : onlyTrigger ? onlyTrigger.actionLabel : { ready: '掷时空骰', resolve: '选择待结算能力',
         exit: '换出异象', reveal: '确认并结算', notes: '已处理' }[phase],
-      primaryHint: phase === 'ready' ? rollCost ? `${rollCost} 法术力` : '免费' : '',
+      primaryHint: phase === 'ready' ? rollCost ? `${rollCost} 法术力` : '免费'
+        : browsePending ? `${pendingCount} 项待处理` : choosing ? `${triggers.length} 项` : '',
     });
   },
   selectView(event) {

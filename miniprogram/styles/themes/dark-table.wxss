@@ -88,6 +88,7 @@
   --cedh-accent-line: rgba(var(--module-accent-rgb), 0.4);
   --cedh-line: rgba(var(--module-accent-rgb), 0.2);
   --cedh-line-strong: rgba(var(--module-accent-rgb), 0.38);
+  --cedh-surface-solid: #141516;
 }
 
 /* 玻璃面板：继承 tracker .deck-card 的顶部高光效果；EDH hub 分包（.studio / .picker-shell）共用同一条 */

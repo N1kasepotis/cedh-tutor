@@ -116,44 +116,24 @@
   min-width: 0;
 }
 
-/* 名字一律单行、不换行不省略号：长了就降字号来塞进去（同「我的主将」页做法）。
-   断在词中间比小一号更难认，而省略号还会把双拍档的后半截整个吃掉。 */
+/* 字号固定，放不下就在空格处换行：不再为塞进一行而缩小，也不用省略号或裁切。
+   省略号会把双拍档的后半截吃掉；320 宽下 rpx 还要再缩一成多，小字要靠 px 保底。 */
 .deck-name {
-  overflow: hidden;
   color: var(--cedh-text);
   font-size: var(--cedh-text-14);
   font-weight: 700;
   line-height: 1.3;
-  white-space: nowrap;
-}
-
-.deck-name.name-compact {
-  font-size: 26rpx;
-}
-
-.deck-name.name-tight {
-  font-size: 24rpx;
+  overflow-wrap: anywhere;
 }
 
 /* 中文名下方的英文原名：等宽、退一档，作注记而不与中文名争主次 */
 .deck-en {
   margin-top: 3rpx;
-  overflow: hidden;
   color: var(--cedh-text-soft);
-  font-size: var(--cedh-text-10);
+  font-size: max(20rpx, 10px);
   letter-spacing: 0.02em;
   line-height: 1.35;
-  white-space: nowrap;
-}
-
-.deck-en.name-compact {
-  font-size: 18rpx;
-  letter-spacing: 0;
-}
-
-.deck-en.name-tight {
-  font-size: 16rpx;
-  letter-spacing: 0;
+  overflow-wrap: anywhere;
 }
 
 /* 原型标签移到行尾右对齐：它是分类而不是标题的一部分，
@@ -171,12 +151,12 @@
    最暗的 T4 在页面底色上也有 6.28:1，全部过 AA。 */
 .deck-tag {
   color: rgba(var(--tier-rgb), 0.88);
-  font-size: var(--cedh-text-10);
+  font-size: max(20rpx, 10px);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }
 
-/* 收尾语：与顶部署名行同为等宽小字，一头一尾把列表夹住 */
+/* 榜单性质与截至日期：与顶部署名行同为等宽小字，一头一尾把列表夹住 */
 .meta-tail {
   margin-top: var(--cedh-space-5);
   color: var(--cedh-text-soft);
@@ -200,12 +180,14 @@
 }
 
 /* 从底部滑入，而不是「啪」地出现：面板由底部触发、也从底部来，
-   保持空间连续性。只动 transform / opacity，不触发重排。 */
+   保持空间连续性。只动 transform / opacity，不触发重排。
+   实色底：.surface 是半透明玻璃，放在这里背后的列表会和卡文叠在一起。 */
 .detail-panel {
   display: flex;
   flex-direction: column;
   width: 100%;
   max-height: 86vh;
+  background: var(--cedh-surface-solid);
   padding: var(--cedh-space-4);
   padding-bottom: calc(var(--cedh-space-4) + env(safe-area-inset-bottom));
   animation: meta-sheet-in 220ms cubic-bezier(0.16, 1, 0.3, 1);

@@ -12,7 +12,6 @@ Page({
     tierGroups: [],
     summary: null,
     detail: null,
-    methodologyOpen: false,
   },
 
   onLoad() {
@@ -59,10 +58,6 @@ Page({
 
   onShareTimeline() {
     return { title: (this.data.summary || {}).publicationTitle || '环境梯度｜cEDH 套牌梯度表' };
-  },
-
-  toggleMethodology() {
-    this.setData({ methodologyOpen: !this.data.methodologyOpen });
   },
 
   openDetail(event) {

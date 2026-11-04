@@ -11,8 +11,26 @@ const {
 } = require('../../utils/stickers');
 const { enableShareMenu } = require('../../utils/share');
 const { readStorage, writeStorage } = require('../../utils/storage');
+const planechaseSession = require('../../utils/planechase-session');
 
 const stickerStorageKey = stickerConfig.storageKey;
+const PLANECHASE_SUBTITLE = '共享时空套牌与时空骰';
+
+// 只读存档：不写回、不升级。读不出或还没开打时用普通副标题，存档恢复留给竞逐时空页处理。
+function readPlanechaseEntry() {
+  const stored = readStorage(planechaseSession.STORAGE_KEY, {
+    schemaVersion: planechaseSession.SCHEMA_VERSION,
+    defaultValue: null,
+    autoUpgrade: false,
+    migrate: planechaseSession.migrateStoredSession,
+  });
+  const session = stored.ok && stored.value ? planechaseSession.decodeSession(stored.value) : null;
+  const resume = session ? planechaseSession.resumeSummary(session) : null;
+  if (!resume) return { planechaseResume: false, planechaseSub: PLANECHASE_SUBTITLE };
+  const parts = ['继续对局', `${resume.playerCount} 人`, `牌库 ${resume.deckLeft} 张`];
+  if (resume.pending) parts.push(`${resume.pending} 项待结算`);
+  return { planechaseResume: true, planechaseSub: parts.join('　') };
+}
 
 function decorateRolls(rollOffResult) {
   const winnerSeats = new Set(rollOffResult.winners.map((winner) => winner.seat));
@@ -49,11 +67,18 @@ Page({
     stickerRound: createEmptyStickerRound(),
     stickerAnimating: false,
     canDrawStickers: true,
+    planechaseResume: false,
+    planechaseSub: PLANECHASE_SUBTITLE,
   },
 
   onLoad() {
     enableShareMenu();
     this.loadStickerPool();
+  },
+
+  // 从竞逐时空返回时也要刷新：牌库和待结算项可能已经变了。
+  onShow() {
+    this.setData(readPlanechaseEntry());
   },
 
   onShareAppMessage() {

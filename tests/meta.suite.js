@@ -121,7 +121,7 @@ test('环境梯度列表只推渲染所需字段，详情仍取得到完整数�
   const sample = metaTierEntries[0];
   const slim = toListItem(sample);
   const full = decorateEntry(sample);
-  ['displayNameZh', 'displayNameEn', 'showEnName', 'nameZhClass', 'nameEnClass'].forEach((key) => {
+  ['displayNameZh', 'displayNameEn', 'showEnName'].forEach((key) => {
     assert.deepEqual(slim[key], full[key], `${key} 在列表投影与完整派生之间不一致`);
   });
 });
@@ -207,8 +207,11 @@ test('环境梯度页面：注册齐全、署名可见、外链只复制不内�
   // 页面按要求不再承载版权与界限论述；署名收敛为一行 byline（谁 + 何时）
   assert.match(wxml, /class="meta-byline mono">\{\{summary\.bylineLine\}\}/);
   assert.match(buildMetaSummary().bylineLine, /^cEDH小屋\s\d{4}\.\d{2}\.\d{2}$/);
-  // 列表末尾的收尾语
-  assert.match(wxml, /class="meta-tail mono">持续更新中\.\.\.</);
+  // 列表末尾写榜单性质和截至日期。这份榜随包发布，不会自己更新，不能写“持续更新”
+  assert.match(wxml, /class="meta-tail mono">\{\{summary\.tailLine\}\}</);
+  assert.equal(buildMetaSummary().tailLine, `人工编辑榜　截至 ${buildMetaSummary().publishedLabel}`);
+  assert.match(buildMetaSummary().publishedLabel, /^\d{4}\.\d{2}\.\d{2}$/);
+  assert.doesNotMatch(wxml, /持续更新/);
   // 禁的是「论述」——整段免责、界限、方法论说明；不是禁一切法律必需的署名。
   // 卡面美术署名一行由 shared.suite 的发布门禁强制（渲染卡图的页面都必须带），
   // 与要清掉的那类段落是两回事，所以按具体措辞禁，不按关键字一刀切。
@@ -322,11 +325,11 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
   const wxss = readMini('pages/meta/meta.wxss');
   const { particleConfig } = require('../miniprogram/config/particle');
   const {
-    shortenPartnerZh, shortenPartnerEn, englishProperNoun, fitClass, decorateEntry,
+    shortenPartnerZh, shortenPartnerEn, englishProperNoun, decorateEntry,
   } = require('../miniprogram/utils/meta-tier');
 
   // 粒子与连线走红色（取 T0 档位色一族）
-  assert.match(wxml, /<particle-background palette="meta">/);
+  assert.match(wxml, /<particle-background [^>]*palette="meta">/);
   const red = particleConfig.palettes.meta;
   assert.equal(red.accentColor, '#EF5B4C');
   ['accentColor', 'neutralColor', 'connectionColor'].forEach((key) => {
@@ -376,8 +379,8 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
     assert.ok(deck.showEnName && deck.displayNameEn,
       `${deck.nameZh} 没有第二行，只剩代号认不出是哪套牌`);
   });
-  assert.match(wxml, /class="deck-name \{\{deck\.nameZhClass\}\}">\{\{deck\.displayNameZh\}\}/);
-  assert.match(wxml, /class="deck-en mono \{\{deck\.nameEnClass\}\}"[^>]*>\{\{deck\.displayNameEn\}\}/);
+  assert.match(wxml, /class="deck-name">\{\{deck\.displayNameZh\}\}/);
+  assert.match(wxml, /class="deck-en mono"[^>]*>\{\{deck\.displayNameEn\}\}/);
 
   // 小窗里的两个按钮做透明化：去填充去投影，但必须保留描边——
   // 没有边框就成了两行普通文字，按钮的可点性就没了
@@ -405,35 +408,62 @@ test('环境梯度：红色粒子、无点号、长拍档缩短、中文名下�
   // 列表行的标签也取所在档位的颜色，避免 56 行清一色的灰
   assert.match(wxss, /\.deck-tag\s*\{[^}]*color:\s*rgba\(var\(--tier-rgb\)/);
 
-  // 一律单行：不换行、不省略号，长了降字号
+  // 字号固定，放不下就换行：不缩小、不省略、不裁切。
+  // rpx 在 320 宽下只剩 8.5px，英文名和标签要靠 px 保底
   ['deck-name', 'deck-en'].forEach((name) => {
     const rule = wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`))[0];
-    assert.match(rule, /white-space:\s*nowrap/);
-    assert.doesNotMatch(rule, /text-overflow/, `.${name} 不应再用省略号`);
+    assert.match(rule, /overflow-wrap:\s*anywhere/);
+    assert.doesNotMatch(rule, /white-space:\s*nowrap|text-overflow|overflow:\s*hidden/,
+      `.${name} 放不下要换行，不能裁切`);
   });
-  ['name-compact', 'name-tight'].forEach((step) => {
-    assert.match(wxss, new RegExp(`\\.deck-name\\.${step}\\s*\\{[^}]*font-size`));
-    assert.match(wxss, new RegExp(`\\.deck-en\\.${step}\\s*\\{[^}]*font-size`));
+  ['deck-en', 'deck-tag'].forEach((name) => {
+    const rule = wxss.match(new RegExp(`\\.${name}\\s*\\{[^}]*\\}`))[0];
+    assert.match(rule, /font-size:\s*max\(20rpx,\s*10px\)/, `.${name} 在窄屏上不能小于 10px`);
+  });
+  assert.doesNotMatch(wxss, /name-compact|name-tight/);
+  assert.doesNotMatch(wxml + readMini('utils/meta-tier.js'), /nameZhClass|nameEnClass|fitClass/);
+});
+
+// 详情面板原来是半透明的 .surface，背后的列表和粒子会和卡文叠在一起（2026-11-04 模拟器实测）
+test('环境梯度：详情弹层用实色，打开时粒子停下，完整名字留在详情', () => {
+  const wxml = readMini('pages/meta/meta.wxml');
+  const wxss = readMini('pages/meta/meta.wxss');
+  const theme = readMini('styles/themes/dark-table.wxss');
+
+  assert.match(wxml, /<particle-background paused="\{\{detail \? true : false\}\}" palette="meta">/);
+  assert.match(wxss.match(/\.detail-panel\s*\{[^}]*\}/)[0], /background:\s*var\(--cedh-surface-solid\)/);
+  const solid = theme.match(/\.meta\s*\{[^}]*--cedh-surface-solid:\s*(#[0-9a-f]{6})\s*;/i);
+  assert.ok(solid, '.meta 要有自己的不透明实色，全局默认值是半透明的');
+
+  // 档位色是详情面板里唯一的彩度，换到实色底上仍要过 AA
+  const channel = (value) => {
+    const unit = value / 255;
+    return unit <= 0.03928 ? unit / 12.92 : ((unit + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = (hex) => {
+    const value = parseInt(hex.slice(1), 16);
+    return 0.2126 * channel((value >> 16) & 255) + 0.7152 * channel((value >> 8) & 255) + 0.0722 * channel(value & 255);
+  };
+  metaTierConfig.tiers.forEach((tier) => {
+    const ratio = (luminance(tier.color) + 0.05) / (luminance(solid[1]) + 0.05);
+    assert.ok(ratio >= 4.5, `${tier.label} 档位色在详情底色上对比度只有 ${ratio.toFixed(2)}`);
   });
 
-  // 降级阶梯本身要能触发（当前数据靠缩短已全部塞下，机制仍须可用）
-  assert.equal(fitClass(5, 14, 17), '');
-  assert.equal(fitClass(15, 14, 17), 'name-compact');
-  assert.equal(fitClass(20, 14, 17), 'name-tight');
+  // 代号型牌组详情不再把代号抄两遍，第二行是两位主将的全名
+  const blueFarm = metaTierEntries.find((entry) => entry.nameZh === 'Blue Farm');
+  assert.equal(findEntry(blueFarm.id).fullNameEn, blueFarm.commanders.map((commander) => commander.en).join(' / '));
+  assert.match(wxml, /class="detail-en mono"[^>]*>\{\{detail\.fullNameEn\}\}/);
+  // 列表缩短过的双拍档，详情仍给全名；全名不随列表过桥
+  const shortened = metaTierEntries.map(decorateEntry).filter((deck) => deck.displayNameEn !== deck.fullNameEn);
+  assert.ok(shortened.length > 0, '当前数据应有缩短过的双拍档，否则这条断言没在测东西');
+  shortened.forEach((deck) => assert.ok(deck.fullNameEn.length > deck.displayNameEn.length));
+  assert.ok(!('fullNameEn' in buildTierGroups(metaTierEntries)[0].entries[0]));
 
-  // 全部 56 行按估算宽度都能单行放下（中日文≈1 字号，拉丁≈0.5 字号）
-  const ZH = { '': 28, 'name-compact': 26, 'name-tight': 24 };
-  const EN = { '': 20, 'name-compact': 18, 'name-tight': 16 };
-  const widthOf = (text, size) => Array.from(String(text))
-    .reduce((sum, ch) => sum + (/[一-鿿　-〿＀-￯]/.test(ch) ? size : size * 0.5), 0);
-  metaTierEntries.map(decorateEntry).forEach((deck) => {
-    assert.ok(widthOf(deck.displayNameZh, ZH[deck.nameZhClass]) <= 396,
-      `${deck.displayNameZh} 中文名单行放不下`);
-    if (deck.showEnName) {
-      assert.ok(widthOf(deck.displayNameEn, EN[deck.nameEnClass]) <= 396,
-        `${deck.displayNameEn} 英文名单行放不下`);
-    }
-  });
+  // 读屏名称要用列表投影里真有的字段，nameZh 没有投影，读出来是空的
+  assert.match(wxml, /aria-label="\{\{deck\.displayNameZh\}\}，查看详情"/);
+
+  // 编辑榜的方法说明入口按 7/29 的决定不恢复，开关一并删掉
+  assert.doesNotMatch(readMini('pages/meta/meta.js'), /methodology/i);
 });
 
 // 每周巡检脚本：判定「上游变了没」必须比规范化后的 JSON，不能比原始字节——

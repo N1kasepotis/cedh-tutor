@@ -158,6 +158,19 @@ page {
 .studio textarea {
   height: 160rpx;
 }
+/* 选牌组件的规则：要用标签选择器才压得过上面按钮和输入框的通用规则，只能写在页面级样式里。 */
+.picker-shell button.picker-result {
+  display: flex;
+  width: 100%;
+  gap: 22rpx;
+  text-align: left;
+  justify-content: flex-start;
+  margin-bottom: 14rpx;
+}
+.picker-shell input {
+  box-sizing: border-box;
+  min-width: 0;
+}
 .label {
   display: block;
   font-size: 26rpx;

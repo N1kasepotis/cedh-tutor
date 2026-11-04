@@ -1,4 +1,5 @@
-@import '../../styles.wxss';
+/* 公共样式由宿主页导入后经 apply-shared 进来。组件 wxss 只能写类选择器，
+   导入共享样式表会把其中的标签和属性选择器也算到组件头上，编译器因此告警。 */
 .studio.poll-panel {
   min-height: 0;
   padding: 0;

@@ -648,7 +648,7 @@ test('home removes particles while other interfaces retain theme-matched particl
     const markup = fs.readFileSync(path.join(root, file), 'utf8');
     assert.match(
       markup,
-      new RegExp(`<particle-background palette="${palette}"></particle-background>`),
+      new RegExp(`<particle-background(?: paused="[^"]*")? palette="${palette}"></particle-background>`),
       `${file} 的粒子背景应使用 ${palette} 主题配色`,
     );
     assert.ok(particleConfig.palettes && particleConfig.palettes[palette], `${palette} palette 应在 config/particle.js 收录`);
@@ -661,7 +661,7 @@ test('home removes particles while other interfaces retain theme-matched particl
       const markup = fs.readFileSync(path.join(root, file), 'utf8');
       assert.match(
         markup,
-        new RegExp(`<particle-background palette="${palette}"></particle-background>\\s*<view class="content-layer[ "]`),
+        new RegExp(`<particle-background(?: paused="[^"]*")? palette="${palette}"></particle-background>\\s*<view class="content-layer[ "]`),
         `${file} 的正文要紧跟粒子组件包进 content-layer`,
       );
       const pageJson = JSON.parse(fs.readFileSync(path.join(root, file.replace(/\.wxml$/, '.json')), 'utf8'));
@@ -683,6 +683,68 @@ test('home removes particles while other interfaces retain theme-matched particl
   assert.match(particleWxss, /width:\s*100vw/);
   assert.match(particleWxss, /height:\s*100vh/);
   assert.match(particleWxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.particle-canvas\s*{[^}]*display:\s*none/);
+});
+
+// 卡面和梯度详情是用来读字的：帧循环要停，画布要清空，页面切回前台也不能自己恢复
+test('粒子组件：paused 停帧、清空并隐藏，关闭后接着画', () => {
+  const vm = require('node:vm');
+  const { createRequire } = require('node:module');
+  const component = path.join(root, 'miniprogram/components/particle-background/particle-background');
+  let definition;
+  vm.runInNewContext(fs.readFileSync(`${component}.js`, 'utf8'), {
+    Component: (value) => { definition = value; },
+    require: createRequire(`${component}.js`),
+    wx: {},
+  }, { filename: `${component}.js` });
+
+  const frames = [];
+  const cancelled = [];
+  const clears = [];
+  const instance = {
+    ...definition.methods,
+    properties: { paused: false },
+    canvas: {
+      requestAnimationFrame: (callback) => { frames.push(callback); return frames.length; },
+      cancelAnimationFrame: (handle) => { cancelled.push(handle); },
+    },
+    ctx: { clearRect: (...args) => clears.push(args) },
+    width: 390,
+    height: 844,
+    touch: { x: 1, y: 1 },
+    boundDrawFrame() {},
+  };
+  const setPaused = (value) => {
+    instance.properties.paused = value;
+    definition.observers.paused.call(instance, value);
+  };
+
+  instance.startAnimation();
+  assert.equal(instance.frameHandle, 1);
+
+  setPaused(true);
+  assert.equal(instance.frameHandle, null, '暂停后帧循环要停');
+  assert.deepEqual(cancelled, [1]);
+  assert.deepEqual(Array.from(clears[0]), [0, 0, 390, 844], '暂停后画布要清空');
+  assert.equal(instance.touch, null);
+
+  definition.pageLifetimes.show.call(instance);
+  instance.startAnimation();
+  assert.equal(instance.frameHandle, null, '弹层还开着时，切回前台不能恢复动画');
+  assert.equal(frames.length, 1);
+
+  setPaused(false);
+  assert.equal(instance.frameHandle, 2, '关闭弹层后接着画');
+
+  // 属性可能先于画布初始化到达，这时没有东西要停
+  const early = { ...definition.methods, properties: { paused: true } };
+  assert.doesNotThrow(() => definition.observers.paused.call(early, true));
+
+  assert.match(fs.readFileSync(`${component}.wxml`, 'utf8'), /class="particle-canvas \{\{paused \? 'is-paused' : ''\}\}"/);
+  assert.match(fs.readFileSync(`${component}.wxss`, 'utf8'), /\.particle-canvas\.is-paused\s*\{[^}]*visibility:\s*hidden/);
+  assert.match(
+    fs.readFileSync(path.join(root, 'miniprogram/pages/planechase/planechase.wxml'), 'utf8'),
+    /<particle-background paused="\{\{inspect \? true : false\}\}" palette="random">/,
+  );
 });
 test('quiz and result action controls stay inside mobile width', () => {
   const quizWxml = fs.readFileSync(path.join(root, 'miniprogram/pages/quiz/quiz.wxml'), 'utf8').replace(/\r\n/g, '\n');

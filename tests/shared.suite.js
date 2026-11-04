@@ -618,6 +618,68 @@ test('WXSS 不得留下 WXML 与 JS 都够不着的孤儿样式', () => {
     + orphans.join('\n'));
 });
 
+// 组件 wxss 只能写类选择器。导入共享样式表也算：编译器把其中的标签和属性选择器记到组件头上，
+// 控制台报 Some selectors are not allowed in component wxss（2026-11-04 用 wcsc 复现，指向投票与选牌组件）。
+// Node 测试跑不了微信编译器，这里按同一条规则扫源码。
+test('组件 WXSS 只用类选择器，公共样式交给宿主页', () => {
+  const fs = require('node:fs');
+  const path = require('node:path');
+  const mini = path.join(__dirname, '..', 'miniprogram');
+
+  const files = [];
+  const walk = (dir) => {
+    fs.readdirSync(dir, { withFileTypes: true }).forEach((entry) => {
+      const full = path.join(dir, entry.name);
+      if (entry.isDirectory()) walk(full);
+      else files.push(full);
+    });
+  };
+  walk(mini);
+  const relative = (file) => path.relative(mini, file).split(path.sep).join('/');
+
+  const componentStyles = files.filter((file) => file.endsWith('.wxss') && relative(file).includes('components/'));
+  assert.ok(componentStyles.length >= 4, `只扫到 ${componentStyles.length} 个组件样式，路径规则可能失效了`);
+
+  const compound = '\\.[\\w-]+(?:::?[\\w-]+)*';
+  const classOnly = new RegExp(`^${compound}(?:[\\s>+~]*${compound})*$`);
+  const violations = [];
+  componentStyles.forEach((file) => {
+    const css = fs.readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    if (/@import/.test(css)) violations.push(`${relative(file)} → @import`);
+    const rules = css
+      .replace(/@keyframes[^{]*\{(?:[^{}]*\{[^{}]*\})*[^{}]*\}/g, '')
+      .replace(/@media[^{]*\{/g, '');
+    Array.from(rules.matchAll(/([^{}]+)\{/g), (match) => match[1])
+      .flatMap((prelude) => prelude.split(','))
+      .map((selector) => selector.trim())
+      .filter(Boolean)
+      .forEach((selector) => {
+        if (!classOnly.test(selector)) violations.push(`${relative(file)} → ${selector}`);
+      });
+  });
+  assert.deepEqual(violations, [], `组件 wxss 不能有这些写法：\n${violations.join('\n')}`);
+
+  // 选牌结果行和搜索框要用标签选择器才压得过通用规则，这两条只能放在页面级样式里
+  const shared = fs.readFileSync(path.join(mini, 'community/styles.wxss'), 'utf8');
+  assert.match(shared, /\.picker-shell button\.picker-result\s*\{[^}]*justify-content:\s*flex-start/);
+  assert.match(shared, /\.picker-shell input\s*\{[^}]*min-width:\s*0/);
+
+  // 不导入以后，投票和选牌组件的公共样式全靠 apply-shared 从宿主页进来：
+  // 少了隔离选项，或者宿主页没导入共享样式，组件就是一片裸样式
+  ['poll', 'card-picker'].forEach((name) => {
+    const js = fs.readFileSync(path.join(mini, `community/components/${name}/index.js`), 'utf8');
+    assert.match(js, /styleIsolation:\s*'apply-shared'/, `${name} 组件要接收页面样式`);
+    const hosts = files.filter((file) => file.endsWith('.json') && relative(file).startsWith('community/pages/'))
+      .filter((file) => Object.values(JSON.parse(fs.readFileSync(file, 'utf8')).usingComponents || {})
+        .some((target) => target.endsWith(`/components/${name}/index`)));
+    assert.ok(hosts.length > 0, `${name} 组件应有宿主页`);
+    hosts.forEach((file) => {
+      assert.match(fs.readFileSync(file.replace(/\.json$/, '.wxss'), 'utf8'), /@import '\.\.\/\.\.\/styles\.wxss'/,
+        `${relative(file)} 用了 ${name} 组件，必须导入共享样式`);
+    });
+  });
+});
+
 // README 的「当前基线」数字必须与真值对得上。
 //
 // 散文里的数字没有主人：改了代码不会有人回去重算它，于是它慢慢变成一句假话，

@@ -73,9 +73,8 @@ function shortCommanderName(commander) {
   return englishProperNoun(commander && commander.en);
 }
 
-// 列表行留给文字的宽度约 396rpx。中日文按 1 字≈1 字号估算，拉丁字母约 0.5 字号。
-// 超出就先换短名（语义层面），仍超出再降字号（排版层面），两级都用完才算到头——
-// 一律不换行、不省略号：断在词中间比小一号更难认。
+// 超过这个字数的双拍档先换短名（语义层面）。仍放不下就在空格处换行，字号不变，
+// 完整名字留给详情面板：缩小后在 320 宽屏上读不清，省略号又会吃掉后一位主将。
 const NAME_ZH_FIT = 14;
 const NAME_EN_FIT = 38;
 
@@ -91,13 +90,6 @@ function shortenPartnerEn(nameEn) {
   const parts = String(nameEn || '').split('/').map((part) => part.trim()).filter(Boolean);
   if (parts.length < 2) return nameEn;
   return parts.map(englishProperNoun).filter(Boolean).join(' + ');
-}
-
-// 字号档位与「我的主将」页同一套做法：按字数挂类名，样式表里逐级降字号
-function fitClass(length, compactAt, tightAt) {
-  if (length > tightAt) return 'name-tight';
-  if (length > compactAt) return 'name-compact';
-  return '';
 }
 
 // 第二行的职责是「这到底是哪套牌」。通常是中文名对应的英文原名；
@@ -123,10 +115,10 @@ function decorateEntry(entry) {
     art: buildCommanderArt(entry.commanders),
     displayNameZh: nameZh,
     displayNameEn: nameEn,
+    // 详情面板用：不缩写。代号型牌组（Blue Farm）这里是两位主将的全名，不重抄代号。
+    fullNameEn: secondary,
     // 中英同名时不重复显示（源数据里不少条目 name_zh === name_en）
     showEnName: Boolean(nameEn) && nameEn !== nameZh,
-    nameZhClass: fitClass(String(nameZh || '').length, NAME_ZH_FIT, NAME_ZH_FIT + 3),
-    nameEnClass: fitClass(String(nameEn || '').length, 26, 34),
     hasDeckUrl: Boolean(entry.deckUrl),
   };
 }
@@ -148,8 +140,6 @@ function toListItem(entry) {
     displayNameZh: full.displayNameZh,
     displayNameEn: full.displayNameEn,
     showEnName: full.showEnName,
-    nameZhClass: full.nameZhClass,
-    nameEnClass: full.nameEnClass,
     art: {
       mode: full.art.mode,
       images: full.art.images.map((image) => ({ en: image.en, art: image.art })),
@@ -231,6 +221,9 @@ function buildMetaSummary() {
     // 分布本身就是信息（T0 只有 2 个、T3 有 22 个），放在总计里反而看不出来。
     // 不用 · 分隔：全页已去掉点号，靠空格与 tabular-nums 的数字形态区分即可。
     bylineLine: `${metaTierConfig.brand}　${publishedLabel}`,
+    // 这份榜随小程序包发布，不会自己更新，所以写清性质和日期。
+    // 以后接入赛事榜时，靠「人工编辑榜」这几个字和它区分。
+    tailLine: `人工编辑榜　截至 ${publishedLabel}`,
   };
 }
 
@@ -244,7 +237,6 @@ module.exports = {
   buildSecondaryName,
   shortCommanderName,
   englishProperNoun,
-  fitClass,
   NAME_ZH_FIT,
   NAME_EN_FIT,
   decorateEntry,

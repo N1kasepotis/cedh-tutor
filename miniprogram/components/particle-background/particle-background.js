@@ -33,10 +33,22 @@ Component({
       type: String,
       value: '',
     },
+    // 阅读弹层打开时由页面传 true：停帧、清空并隐藏画布，关闭后接着画。
+    paused: {
+      type: Boolean,
+      value: false,
+    },
   },
 
   data: {
     enabled: particleConfig.defaultEnabled && performanceConfig.defaultMode !== 'off',
+  },
+
+  observers: {
+    paused(paused) {
+      if (paused) this.pauseAnimation();
+      else this.startAnimation();
+    },
   },
 
   lifetimes: {
@@ -181,7 +193,7 @@ Component({
     },
 
     startAnimation() {
-      if (!this.canvas || !this.ctx || this.frameHandle != null) return;
+      if (!this.canvas || !this.ctx || this.frameHandle != null || this.properties.paused) return;
       const requestFrame = this.canvas.requestAnimationFrame
         ? this.canvas.requestAnimationFrame.bind(this.canvas)
         : (callback) => setTimeout(() => callback(Date.now()), 16);
@@ -203,6 +215,13 @@ Component({
       }
 
       this.frameHandle = null;
+    },
+
+    // 除了隐藏还要清空：万一真机把画布合成在弹层上面，空画布也不会压住卡文。
+    pauseAnimation() {
+      this.stopAnimation();
+      this.touch = null;
+      if (this.ctx) this.ctx.clearRect(0, 0, this.width, this.height);
     },
 
     drawFrame(timestamp) {

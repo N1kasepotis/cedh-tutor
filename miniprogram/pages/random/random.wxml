@@ -2,6 +2,31 @@
   <particle-background palette="random"></particle-background>
 
   <view class="content-layer random-shell">
+    <!-- 独立工具放最上面：竞逐时空不再排在几张表单后面，有进度时直接写继续对局 -->
+    <view class="tool-directory">
+      <view class="random-panel surface tool-entry tool-entry-planechase" aria-role="button" aria-label="竞逐时空：{{planechaseSub}}" hover-class="pressable-active" hover-stay-time="120" bindtap="goPlanechase">
+        <view class="tool-entry-text">
+          <view class="tool-entry-title">竞逐时空</view>
+          <view class="tool-entry-sub {{planechaseResume ? 'tool-entry-resume' : ''}}">{{planechaseSub}}</view>
+        </view>
+        <view class="tool-entry-arrow">›</view>
+      </view>
+      <view class="random-panel surface tool-entry tool-entry-cabbage" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goCabbage">
+        <view class="tool-entry-text">
+          <view class="tool-entry-title">卷心菜对账</view>
+          <view class="tool-entry-sub">The Cabbage Merchant</view>
+        </view>
+        <view class="tool-entry-arrow">›</view>
+      </view>
+      <view class="random-panel surface tool-entry tool-entry-izzet" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goIzzet">
+        <view class="tool-entry-text">
+          <view class="tool-entry-title">伊捷风暴</view>
+          <view class="tool-entry-sub">风雨法师拉尔 <text class="tool-entry-en">Ral, Monsoon Mage</text></view>
+        </view>
+        <view class="tool-entry-arrow">›</view>
+      </view>
+    </view>
+
     <view class="random-panel surface">
       <view class="panel-title">随机数</view>
       <view class="range-row">
@@ -76,30 +101,6 @@
           </view>
         </view>
       </view>
-    </view>
-
-    <view class="random-panel surface tool-entry tool-entry-cabbage" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goCabbage">
-      <view class="tool-entry-text">
-        <view class="tool-entry-title">卷心菜对账</view>
-        <view class="tool-entry-sub">The Cabbage Merchant</view>
-      </view>
-      <view class="tool-entry-arrow">›</view>
-    </view>
-
-    <view class="random-panel surface tool-entry tool-entry-izzet" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="goIzzet">
-      <view class="tool-entry-text">
-        <view class="tool-entry-title">伊捷风暴</view>
-        <view class="tool-entry-sub">风雨法师拉尔 <text class="tool-entry-en">Ral, Monsoon Mage</text></view>
-      </view>
-      <view class="tool-entry-arrow">›</view>
-    </view>
-
-    <view class="random-panel surface tool-entry tool-entry-planechase" aria-role="button" aria-label="竞逐时空：共享时空套牌与时空骰" hover-class="pressable-active" hover-stay-time="120" bindtap="goPlanechase">
-      <view class="tool-entry-text">
-        <view class="tool-entry-title">竞逐时空</view>
-        <view class="tool-entry-sub">共享时空套牌与时空骰</view>
-      </view>
-      <view class="tool-entry-arrow">›</view>
     </view>
 
   </view>

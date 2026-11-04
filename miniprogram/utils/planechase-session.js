@@ -4,7 +4,9 @@ const P = require('./planechase');
 const { PLANECHASE_CARDS } = require('../config/planechase');
 const { LEGACY_CARD_IDS } = require('../config/planechase-rules');
 const SCHEMA_VERSION = 2;
+const STORAGE_KEY = 'planechaseState';
 const PLAYER_COUNTS = [2, 3, 4, 5];
+const NEW_GAME_ACTION = '新对局已开始';
 const idToIndex = new Map(PLANECHASE_CARDS.map((row, index) => [row[6], index]));
 const copy = (value) => JSON.parse(JSON.stringify(value));
 const validIndex = (index) => Number.isInteger(index) && index >= 0 && index < PLANECHASE_CARDS.length;
@@ -39,7 +41,7 @@ function isGame(game) {
 function frameOf(session) { const frame = copy(session); delete frame.undo; return frame; }
 function createSession(playerCount = 4, rng = Math.random) {
   return { game: P.createGame(PLAYER_COUNTS.includes(playerCount) ? playerCount : 4, rng),
-    triggers: [], nextTrigger: 1, visit: 1, reveal: null, lastAction: '新对局已开始',
+    triggers: [], nextTrigger: 1, visit: 1, reveal: null, lastAction: NEW_GAME_ACTION,
     tableNotes: [], undo: null };
 }
 function isTrigger(source, nextId, visit) {
@@ -159,6 +161,18 @@ function phaseOf(session) {
   if (session.triggers.length) return 'resolve';
   if (session.tableNotes.length) return 'notes';
   return 'ready';
+}
+// 展示牌的来源还在触发列表里时不重复计数。
+function pendingCountOf(session) {
+  const reveal = session.reveal;
+  const extra = phaseOf(session) === 'exit'
+    || (reveal && !session.triggers.some((source) => source.id === reveal.sourceId));
+  return session.triggers.length + session.tableNotes.length + (extra ? 1 : 0);
+}
+// 混沌工具目录的“继续对局”摘要。进页面自动建的空局和刚重新洗牌的局都还没有进度，返回 null。
+function resumeSummary(session) {
+  if (!isSession(session) || session.lastAction === NEW_GAME_ACTION) return null;
+  return { playerCount: session.game.playerCount, deckLeft: session.game.planarDeck.length, pending: pendingCountOf(session) };
 }
 function beginWalk(session, sourceId) {
   if (session.game.activePlanes.length > 1) {
@@ -293,5 +307,5 @@ function transition(session, action, rng = Math.random) {
   }
   return isSession(next) ? next : null;
 }
-module.exports = { SCHEMA_VERSION, PLAYER_COUNTS, createSession, isGame, isSession, encodeSession, decodeSession, migrateStoredSession, phaseOf, canLeavePhenomenon, transition };
+module.exports = { SCHEMA_VERSION, STORAGE_KEY, PLAYER_COUNTS, createSession, isGame, isSession, encodeSession, decodeSession, migrateStoredSession, phaseOf, pendingCountOf, resumeSummary, canLeavePhenomenon, transition };
 

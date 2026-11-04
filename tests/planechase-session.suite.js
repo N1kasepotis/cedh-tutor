@@ -388,6 +388,135 @@ test('page：多来源不隐式选择能力，复制和反击选项保持来源�
   assert.ok(!page.session.triggers.some((source) => source.id === id));
 });
 
+test('page：底部主按钮写明下一步和待处理数，结算入口只留这一个', () => {
+  const planes = { currentTarget: { dataset: { view: 'planes' } } };
+  const work = { currentTarget: { dataset: { view: 'work' } } };
+
+  const several = act(arranged([norn, ordinary[0]]), { type: 'causeChaos' });
+  assert.equal(several.triggers.length, 2);
+  let page = pageHarness(saved(several)).open();
+  assert.equal(page.data.activeView, 'work');
+  assert.equal(page.data.primaryLabel, '选择待结算能力');
+  assert.equal(page.data.primaryHint, '2 项');
+  page.selectView(planes);
+  assert.equal(page.data.primaryLabel, '前往结算台');
+  assert.equal(page.data.primaryHint, '2 项待处理');
+  page.selectView(work);
+  assert.equal(page.data.primaryHint, '2 项', '回到结算台后按钮要换回选择能力');
+
+  const single = act(arranged(), { type: 'causeChaos' });
+  assert.equal(single.triggers.length, 1);
+  page = pageHarness(saved(single)).open();
+  assert.equal(page.data.primaryLabel, page.data.triggers[0].actionLabel, '只有一项时直接写结算动作');
+  assert.equal(page.data.primaryHint, '');
+  page.selectView(planes);
+  assert.equal(page.data.primaryHint, '1 项待处理');
+
+  // 牌桌事项也算待处理，和结算台标签上的数一致
+  const notes = act(arranged([ordinary[1]], [ordinary[0]]), { type: 'walk' });
+  page = pageHarness(saved(notes)).open();
+  page.selectView(planes);
+  assert.equal(page.data.primaryHint, `${page.data.pendingCount} 项待处理`);
+  assert.ok(page.data.pendingCount > 0);
+
+  page = pageHarness(saved(arranged())).open();
+  assert.equal(page.data.primaryLabel, '掷时空骰');
+  assert.equal(page.data.primaryHint, '免费');
+
+  const root = path.join(__dirname, '../miniprogram/pages/planechase');
+  const wxml = fs.readFileSync(path.join(root, 'planechase.wxml'), 'utf8');
+  assert.doesNotMatch(wxml, /pending-link|去结算|bindtap="showWork"/, '当前时空页不再放第二个结算入口');
+  assert.doesNotMatch(fs.readFileSync(path.join(root, 'planechase.wxss'), 'utf8'), /pending-link/);
+});
+
+test('session：继续对局摘要不把空局和重新洗牌算作进度', () => {
+  const fresh = S.createSession(4, seeded(1));
+  assert.equal(S.resumeSummary(fresh), null);
+  const rolled = act(fresh, { type: 'roll' }, () => 0);
+  assert.deepEqual(S.resumeSummary(rolled), { playerCount: 4, deckLeft: rolled.game.planarDeck.length, pending: 1 });
+  assert.equal(S.resumeSummary(act(rolled, { type: 'undo' })), null, '撤回到空局后没有进度');
+  assert.equal(S.resumeSummary(act(rolled, { type: 'restart', playerCount: 3 })), null);
+  assert.equal(S.resumeSummary({ broken: true }), null);
+});
+
+// 混沌工具页只读这份存档。读的时候写回或升级，都可能盖掉竞逐时空页还要恢复的东西
+function toolDirectory(initial) {
+  const writes = [];
+  const memory = new Map(initial === undefined ? [] : [['planechaseState', clone(initial)]]);
+  const api = {
+    getStorageSync(key) { return memory.has(key) ? clone(memory.get(key)) : ''; },
+    setStorageSync(key, value) { writes.push(key); memory.set(key, clone(value)); },
+  };
+  const file = path.join(__dirname, '../miniprogram/pages/random/random.js');
+  const realRequire = createRequire(file);
+  const injected = {
+    '../../utils/storage': {
+      readStorage: (key, options) => storage.readStorage(key, { ...options, api }),
+      writeStorage: (key, value, options) => storage.writeStorage(key, value, { ...options, api }),
+    },
+    '../../utils/share': { enableShareMenu() {} },
+  };
+  let page;
+  vm.runInNewContext(fs.readFileSync(file, 'utf8'), { wx: api,
+    require: (name) => injected[name] || realRequire(name), Page: (definition) => { page = definition; } }, { filename: file });
+  page.data = clone(page.data);
+  page.setData = function setData(patch) { Object.assign(this.data, patch); };
+  page.onLoad();
+  page.onShow();
+  return { page, writes, memory };
+}
+
+test('混沌工具目录：有进度写继续对局，只读存档，读不出就用普通副标题', () => {
+  const plain = '共享时空套牌与时空骰';
+  assert.equal(toolDirectory().page.data.planechaseSub, plain);
+  const empty = toolDirectory(saved(S.createSession(4, seeded(1))));
+  assert.equal(empty.page.data.planechaseSub, plain);
+  assert.equal(empty.page.data.planechaseResume, false);
+
+  const rolled = act(arranged([ordinary[0]], [ordinary[1]]), { type: 'roll' }, () => 0);
+  const envelope = saved(rolled);
+  const live = toolDirectory(envelope);
+  assert.equal(live.page.data.planechaseResume, true);
+  assert.equal(live.page.data.planechaseSub, `继续对局　4 人　牌库 ${rolled.game.planarDeck.length} 张　1 项待结算`);
+  assert.deepEqual(live.writes, []);
+  assert.deepEqual(live.memory.get('planechaseState'), envelope);
+
+  // 从竞逐时空返回时要重新读：这局结算完，待结算那一段就该消失
+  const blank = act(arranged(), { type: 'roll' }, () => 0.5);
+  assert.equal(S.phaseOf(blank), 'ready');
+  live.memory.set('planechaseState', saved(blank));
+  live.page.onShow();
+  assert.equal(live.page.data.planechaseSub, `继续对局　4 人　牌库 ${blank.game.planarDeck.length} 张`);
+
+  // 损坏和未来版本的存档留给竞逐时空页处理恢复，这里不提示也不碰
+  const broken = { __storage: 'cedh-storage', schemaVersion: 2, data: { broken: true } };
+  for (const bad of [broken, { ...envelope, schemaVersion: 99 }]) {
+    const harness = toolDirectory(bad);
+    assert.equal(harness.page.data.planechaseSub, plain);
+    assert.equal(harness.page.data.planechaseResume, false);
+    assert.deepEqual(harness.writes, []);
+    assert.deepEqual(harness.memory.get('planechaseState'), bad);
+  }
+
+  // 第一版的裸存档能认出来，但这里不升级
+  const legacy = { planarDeck: arranged().game.planarDeck.map((index) => LEGACY_CARD_IDS.indexOf(cards[index][6])),
+    activePlanes: arranged().game.activePlanes.map((index) => LEGACY_CARD_IDS.indexOf(cards[index][6])),
+    playerCount: 4, rollsThisTurn: 1, dieModifier: 'none', pending: null, trimmed: [], lastRoll: null,
+    limits: arranged().game.limits };
+  const old = toolDirectory(legacy);
+  assert.equal(old.page.data.planechaseResume, true);
+  assert.deepEqual(old.writes, []);
+  assert.deepEqual(old.memory.get('planechaseState'), legacy);
+
+  const wxml = fs.readFileSync(path.join(__dirname, '../miniprogram/pages/random/random.wxml'), 'utf8');
+  const order = ['class="tool-directory"', 'tool-entry-planechase', 'tool-entry-cabbage', 'tool-entry-izzet', '>随机数<', '>先手判定<'];
+  const positions = order.map((text) => wxml.indexOf(text));
+  assert.ok(positions.every((at) => at >= 0), `目录结构缺项：${order[positions.indexOf(-1)]}`);
+  assert.deepEqual(positions, positions.slice().sort((a, b) => a - b), '工具目录要排在表单前面，竞逐时空排第一');
+  assert.match(wxml, /aria-label="竞逐时空：\{\{planechaseSub\}\}"/);
+  assert.match(wxml, /tool-entry-sub \{\{planechaseResume \? 'tool-entry-resume' : ''\}\}/);
+});
+
 test('page：卡面弹层阻断底部结算与视图切换；保存失败不切换到未提交步骤', () => {
   const harness = pageHarness(saved(arranged()), { rng: 0 });
   const page = harness.open();

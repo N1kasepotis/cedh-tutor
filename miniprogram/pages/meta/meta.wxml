@@ -1,5 +1,5 @@
 <view class="page meta">
-  <particle-background palette="meta"></particle-background>
+  <particle-background paused="{{detail ? true : false}}" palette="meta"></particle-background>
 
   <view class="content-layer meta-shell">
     <view class="meta-head" wx:if="{{summary}}">
@@ -35,7 +35,7 @@
         wx:for-item="deck"
         wx:key="id"
         aria-role="button"
-        aria-label="{{deck.nameZh}}，查看详情"
+        aria-label="{{deck.displayNameZh}}，查看详情"
         hover-class="pressable-active"
         hover-stay-time="120"
         data-id="{{deck.id}}"
@@ -53,8 +53,8 @@
           ></image>
         </view>
         <view class="deck-body">
-          <view class="deck-name {{deck.nameZhClass}}">{{deck.displayNameZh}}</view>
-          <view class="deck-en mono {{deck.nameEnClass}}" wx:if="{{deck.showEnName}}">{{deck.displayNameEn}}</view>
+          <view class="deck-name">{{deck.displayNameZh}}</view>
+          <view class="deck-en mono" wx:if="{{deck.showEnName}}">{{deck.displayNameEn}}</view>
         </view>
         <view class="deck-tags">
           <text class="deck-tag mono" wx:for="{{deck.tags}}" wx:for-item="tag" wx:key="*this">{{tag}}</text>
@@ -63,7 +63,7 @@
       </block>
     </view>
 
-    <view class="meta-tail mono">持续更新中...</view>
+    <view class="meta-tail mono">{{summary.tailLine}}</view>
   </view>
 
   <view class="detail-mask" wx:if="{{detail}}" bindtap="closeDetail" catchtouchmove="stopPropagation">
@@ -71,7 +71,7 @@
       <view class="detail-head">
         <view class="detail-kicker mono">{{detail.tierLabel}}</view>
         <view class="detail-name">{{detail.nameZh}}</view>
-        <view class="detail-en mono" wx:if="{{detail.showEnName}}">{{detail.nameEn}}</view>
+        <view class="detail-en mono" wx:if="{{detail.showEnName}}">{{detail.fullNameEn}}</view>
       </view>
 
       <view class="detail-commanders">
