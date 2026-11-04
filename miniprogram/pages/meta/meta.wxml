@@ -49,7 +49,7 @@
           <view>表现分以 50 为基准，胜率与按赛事晋级机会修正的晋级率各占一半，小样本向基准收缩。</view>
           <view>至少 {{monthSummary.minEntries}} 次参赛、{{monthSummary.minPilots}} 位牌手、{{monthSummary.minEvents}} 场赛事才参与分档。区间来自赛事重采样，反映观测赛绩。</view>
           <view>本期排除 {{monthSummary.excluded}} 场不符合口径或数据不完整的赛事。出场占比独立展示，不增加表现分。</view>
-          <view>参考 Lemora’s Cards 的胜率与晋级率等权思路，使用本项目公开计算模型。每月自动更新，旧期保留。</view>
+          <view>每月自动更新，旧期保留。</view>
         </view>
       </block>
     </block>

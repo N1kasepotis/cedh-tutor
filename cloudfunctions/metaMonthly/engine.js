@@ -190,7 +190,7 @@ function buildSnapshot({ period, events, cards, excluded = {}, fetchedAt, previo
   const snapshot = {
     schemaVersion: 1, modelVersion: MODEL.version, period, windowStart: new Date(window.start * 1000).toISOString(),
     windowEnd: new Date(window.end * 1000).toISOString(), asOf: new Date(window.end * 1000 - 1).toISOString(),
-    fetchedAt, source: { name: 'TopDeck.gg', url: 'https://topdeck.gg', video: 'https://www.youtube.com/watch?v=N-ce6_qbOV8' },
+    fetchedAt, source: { name: 'TopDeck.gg', url: 'https://topdeck.gg' },
     model: MODEL, baselines: { win: round(baselines.win * 100, 2), cut: round(baselines.cut * 100, 2) },
     coverage: { events: events.length, entries: totalEntries, mappedEntries: namedEntries, unmappedEntries: unmapped,
       leaderCoverage: round(namedEntries / totalEntries * 100, 1), games: totalGames,
