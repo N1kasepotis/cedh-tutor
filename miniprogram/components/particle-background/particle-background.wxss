@@ -13,7 +13,7 @@
   visibility: hidden;
 }
 
-/* Canvas 动画无法从 JS 侧感知系统减弱动效设置，直接隐藏画布 */
+/* 系统减弱动效时隐藏画布。组件初始化时读到这里的 display:none，就不再启动帧循环 */
 @media (prefers-reduced-motion: reduce) {
   .particle-canvas {
     display: none;

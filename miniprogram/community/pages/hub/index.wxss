@@ -66,6 +66,7 @@
   color: var(--cedh-accent-ink);
 }
 .entry-title {
+  color: var(--cedh-text);
   font-size: 32rpx;
   font-weight: 600;
   line-height: 1.4;

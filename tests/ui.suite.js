@@ -686,6 +686,38 @@ test('home removes particles while other interfaces retain theme-matched particl
 });
 
 // 卡面和梯度详情是用来读字的：帧循环要停，画布要清空，页面切回前台也不能自己恢复
+// 全站量过一遍最小字之后改的几处：能点的按钮和要读的中文说明不该是 9 到 10px，标题不该和说明一样暗
+test('操作按钮和中文说明不用过小的字，卡片标题比说明亮', () => {
+  const wxss = (file) => fs.readFileSync(path.join(root, 'miniprogram', file), 'utf8');
+  const rule = (text, selector) => {
+    const found = text.match(new RegExp(`(?:^|\\n)${selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*\\{([^}]*)\\}`));
+    assert.ok(found, `找不到 ${selector}`);
+    return found[1];
+  };
+  // 骰子快捷按钮是主要操作
+  assert.match(rule(wxss('pages/random/random.wxss'), '.preset-chip'), /font-size:\s*var\(--cedh-text-14\)/);
+  // EDHTI 的翻页和问卷同一个分量
+  assert.match(rule(wxss('pages/edhti/edhti.wxss'), '.action-button'), /font-size:\s*var\(--cedh-text-14\)/);
+
+  // 战情室的说明文字：窄屏上 rpx 会缩，下限保住 10px，颜色不用最淡的一档
+  const tracker = wxss('pages/tracker/tracker.wxss');
+  ['.stat-micro-label', '.stat-micro-sub', '.record-select-label'].forEach((selector) => {
+    assert.match(rule(tracker, selector), /font-size:\s*max\(20rpx,\s*10px\)/, `${selector} 要有下限`);
+  });
+  ['.stat-micro-sub', '.record-select-label'].forEach((selector) => {
+    assert.match(rule(tracker, selector), /color:\s*var\(--cedh-text-soft\)/, `${selector} 是要读的中文`);
+  });
+
+  // EDH hub 卡片：按钮默认是次要文字色，标题要自己写主文字色
+  assert.match(rule(wxss('community/pages/hub/index.wxss'), '.entry-title'), /color:\s*var\(--cedh-text\)/);
+
+  // 伊捷风暴的标签列要放得下“我的瞬间/法术”：6 个汉字加斜杠共约 7em，字号和列宽都是 rpx，所以任何屏宽都成立
+  const izzet = wxss('pages/izzet/izzet.wxss');
+  const column = Number(rule(izzet, '.izzet-stat').match(/grid-template-columns:\s*(\d+)rpx/)[1]);
+  const spacing = Number(rule(izzet, '.izzet-stat-label').match(/letter-spacing:\s*([\d.]+)em/)[1]);
+  assert.ok(24 * (6 * (1 + spacing) + 0.6 + spacing) <= column, '标签会在“法术”中间断行');
+});
+
 test('粒子组件：paused 停帧、清空并隐藏，关闭后接着画', () => {
   const vm = require('node:vm');
   const { createRequire } = require('node:module');
@@ -738,6 +770,56 @@ test('粒子组件：paused 停帧、清空并隐藏，关闭后接着画', () =
   // 属性可能先于画布初始化到达，这时没有东西要停
   const early = { ...definition.methods, properties: { paused: true } };
   assert.doesNotThrow(() => definition.observers.paused.call(early, true));
+
+  // 系统减弱动效：样式表隐藏了画布，帧循环也不能在后面空转
+  let windowed;
+  vm.runInNewContext(fs.readFileSync(`${component}.js`, 'utf8'), {
+    Component: (value) => { windowed = value; },
+    require: createRequire(`${component}.js`),
+    wx: { getWindowInfo: () => ({ windowWidth: 390, windowHeight: 844, pixelRatio: 2 }) },
+  }, { filename: `${component}.js` });
+  const initWith = (display) => {
+    const updates = [];
+    const requested = [];
+    const context = {
+      ...windowed.methods,
+      properties: { paused: false, palette: '' },
+      data: {},
+      setData(patch) { updates.push(patch); },
+      createSelectorQuery: () => ({
+        select: () => ({
+          fields: (options) => ({
+            exec: (callback) => {
+              assert.deepEqual(Array.from(options.computedStyle), ['display'], '要读算出来的 display');
+              callback([{
+                display,
+                width: 390,
+                height: 844,
+                node: {
+                  width: 0,
+                  height: 0,
+                  getContext: () => ({ scale() {} }),
+                  requestAnimationFrame: (callback) => { requested.push(callback); return requested.length; },
+                },
+              }]);
+            },
+          }),
+        }),
+      }),
+    };
+    context.initCanvas();
+    return { updates, requested, context };
+  };
+  const reduced = initWith('none');
+  assert.deepEqual(reduced.updates.map((patch) => ({ ...patch })), [{ enabled: false }], '减弱动效时撤掉画布');
+  assert.equal(reduced.requested.length, 0, '减弱动效时不启动帧循环');
+  assert.equal(reduced.context.canvas, undefined);
+  const normal = initWith('block');
+  assert.deepEqual(normal.updates, [], '正常情况不撤画布');
+  assert.equal(normal.requested.length, 1, '正常情况启动帧循环');
+  const unknown = initWith(undefined);
+  assert.equal(unknown.requested.length, 1, '某个基础库读不到样式时，宁可照常画，也不把背景弄没');
+  assert.match(fs.readFileSync(`${component}.wxss`, 'utf8'), /@media \(prefers-reduced-motion: reduce\)\s*\{\s*\.particle-canvas\s*\{\s*display:\s*none/);
 
   assert.match(fs.readFileSync(`${component}.wxml`, 'utf8'), /class="particle-canvas \{\{paused \? 'is-paused' : ''\}\}"/);
   assert.match(fs.readFileSync(`${component}.wxss`, 'utf8'), /\.particle-canvas\.is-paused\s*\{[^}]*visibility:\s*hidden/);

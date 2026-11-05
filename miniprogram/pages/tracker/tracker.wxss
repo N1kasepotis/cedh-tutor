@@ -220,9 +220,9 @@ page {
   display: block;
   color: rgba(var(--module-accent-rgb), 0.92);
   font-family: var(--cedh-font-mono);
-  font-size: 18rpx;
+  font-size: max(20rpx, 10px);
   font-weight: 600;
-  letter-spacing: 0.2em;
+  letter-spacing: 0.14em;
   line-height: 1.2;
   text-transform: uppercase;
 }
@@ -230,9 +230,9 @@ page {
 .stat-micro-sub {
   display: block;
   margin-top: 3rpx;
-  color: var(--cedh-text-faint);
-  font-size: 18rpx;
-  letter-spacing: 0.12em;
+  color: var(--cedh-text-soft);
+  font-size: max(20rpx, 10px);
+  letter-spacing: 0.04em;
   line-height: 1.2;
 }
 
@@ -337,8 +337,8 @@ page {
 
 .record-select-label {
   margin-bottom: 4rpx;
-  color: var(--cedh-text-faint);
-  font-size: 18rpx;
+  color: var(--cedh-text-soft);
+  font-size: max(20rpx, 10px);
   font-weight: 600;
   letter-spacing: 0.08em;
 }

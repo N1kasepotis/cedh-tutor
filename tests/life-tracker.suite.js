@@ -708,3 +708,330 @@ test('中心菜单在最长的横屏机型上也不出框', () => {
   assert.match(rows[0], /bindtap="resetGame"/);
   assert.match(rows[1], /bindtap="setPlayerMode"/, '第二行应是人数档位');
 });
+
+// ---------------------------------------------------------------------------
+// 按压：几个人同时按、滑开取消、加减提示
+//
+// 牌桌上“每位对手失去 2 点”时几个人会一起按。全页只留一份按压状态的时候，
+// 后按的人会抹掉先按的人，抬手时那一点还会记到别人头上。
+// ---------------------------------------------------------------------------
+
+function fakeClock() {
+  let now = 0;
+  let sequence = 0;
+  const timers = new Map();
+  return {
+    setTimeout(callback, delay) {
+      sequence += 1;
+      timers.set(sequence, { at: now + delay, callback });
+      return sequence;
+    },
+    clearTimeout(id) {
+      timers.delete(id);
+    },
+    advance(ms) {
+      const end = now + ms;
+      for (;;) {
+        const due = Array.from(timers.entries())
+          .filter(([, timer]) => timer.at <= end)
+          .sort((a, b) => a[1].at - b[1].at)[0];
+        if (!due) break;
+        timers.delete(due[0]);
+        now = due[1].at;
+        due[1].callback();
+      }
+      now = end;
+    },
+    pending: () => timers.size,
+  };
+}
+
+function openLifeTracker(playerCount = 4) {
+  const originals = {
+    Page: global.Page,
+    wx: global.wx,
+    setTimeout: global.setTimeout,
+    clearTimeout: global.clearTimeout,
+  };
+  const clock = fakeClock();
+  const store = new Map();
+  let definition = null;
+  global.Page = (config) => { definition = config; };
+  global.wx = {
+    getStorageSync: (key) => (store.has(key) ? store.get(key) : ''),
+    setStorageSync: (key, value) => store.set(key, JSON.parse(JSON.stringify(value))),
+    removeStorageSync: (key) => store.delete(key),
+    showToast: () => {},
+    setKeepScreenOn: () => {},
+    showShareMenu: () => {},
+  };
+  global.setTimeout = clock.setTimeout;
+  global.clearTimeout = clock.clearTimeout;
+  const modulePath = require.resolve('../miniprogram/pages/life-tracker/life-tracker.js');
+  delete require.cache[modulePath];
+  require(modulePath);
+  global.Page = originals.Page;
+
+  const { createLifeTrackerState } = getLifeTrackerUtils();
+  const setCalls = [];
+  const page = Object.assign(Object.create(definition), {
+    data: { players: [], playerCount, menuOpen: false, undoVisible: false },
+    gameState: createLifeTrackerState({ rng: () => 0.25, playerCount }),
+    setData(patch) {
+      setCalls.push(patch);
+      Object.keys(patch).forEach((key) => {
+        const indexed = key.match(/^players\[(\d+)\]\.(\w+)$/);
+        if (indexed) this.data.players[Number(indexed[1])][indexed[2]] = patch[key];
+        else this.data[key] = patch[key];
+      });
+    },
+  });
+  page.syncPlayers();
+
+  // WXML 里 data-delta 是字符串，data-id 是数字，这里照实传
+  const touch = (seat, delta, x = 100, y = 100) => ({
+    currentTarget: { dataset: { id: seat, delta } },
+    changedTouches: [{ clientX: x, clientY: y }],
+  });
+  return {
+    page,
+    clock,
+    store,
+    setCalls,
+    touch,
+    lives: () => page.data.players.map((player) => player.life),
+    hints: () => page.data.players.map((player) => player.hintUsed),
+    tap(seat, delta) {
+      page.startLifePress(touch(seat, delta));
+      page.endLifePress(touch(seat, delta));
+    },
+    close() {
+      Object.assign(global, originals);
+    },
+  };
+}
+
+test('几个人同时按，各记各的，不互相抹掉', () => {
+  const table = openLifeTracker();
+  try {
+    table.page.startLifePress(table.touch(1, '-1'));
+    table.page.startLifePress(table.touch(2, '-1'));
+    table.page.startLifePress(table.touch(4, '-1'));
+    table.page.endLifePress(table.touch(1, '-1'));
+    assert.deepEqual(table.lives(), [39, 40, 40, 40], '谁抬手记谁，不能记到后按的人头上');
+    table.page.endLifePress(table.touch(4, '-1'));
+    table.page.endLifePress(table.touch(2, '-1'));
+    assert.deepEqual(table.lives(), [39, 39, 40, 39]);
+    table.clock.advance(5000);
+    assert.deepEqual(table.lives(), [39, 39, 40, 39], '抬手后不能再有定时器继续改血');
+    assert.equal(table.clock.pending(), 0);
+
+    // 同一个人上下两半各按一根手指，也是两次独立的按压
+    table.page.startLifePress(table.touch(3, '1'));
+    table.page.startLifePress(table.touch(3, '-1'));
+    table.page.endLifePress(table.touch(3, '1'));
+    table.page.endLifePress(table.touch(3, '-1'));
+    assert.deepEqual(table.lives(), [39, 39, 40, 39]);
+  } finally {
+    table.close();
+  }
+});
+
+test('长按连加时别人点一下不打断，且只推变化的那一格', () => {
+  const table = openLifeTracker();
+  try {
+    const bulkBefore = table.setCalls.filter((patch) => 'players' in patch).length;
+    table.page.startLifePress(table.touch(1, '1'));
+    table.clock.advance(419);
+    assert.equal(table.lives()[0], 40, '没到长按时间不改血');
+    table.clock.advance(1);
+    assert.equal(table.lives()[0], 41);
+
+    table.tap(2, '-1');
+    assert.equal(table.lives()[1], 39);
+    table.clock.advance(85);
+    assert.equal(table.lives()[0], 42, '别人点一下之后，长按还在继续');
+    table.clock.advance(75);
+    assert.equal(table.lives()[0], 43, '连加越来越快');
+
+    table.page.endLifePress(table.touch(1, '1'));
+    assert.equal(table.lives()[0], 43, '长按抬手不再多记一次短按');
+    table.clock.advance(5000);
+    assert.equal(table.lives()[0], 43);
+    assert.equal(table.clock.pending(), 0);
+
+    const bulkAfter = table.setCalls.filter((patch) => 'players' in patch).length;
+    assert.equal(bulkAfter, bulkBefore, '记血不整数组过桥');
+  } finally {
+    table.close();
+  }
+});
+
+test('手指滑开就算没按，长按时滑开也停下', () => {
+  const table = openLifeTracker();
+  try {
+    // 按稳的手指也会抖：20px 以内仍是一次正常的点击
+    table.page.startLifePress(table.touch(1, '1', 100, 100));
+    table.page.moveLifePress(table.touch(1, '1', 112, 116));
+    table.page.endLifePress(table.touch(1, '1', 112, 116));
+    assert.equal(table.lives()[0], 41);
+
+    table.page.startLifePress(table.touch(2, '1', 100, 100));
+    table.page.moveLifePress(table.touch(2, '1', 130, 100));
+    table.page.endLifePress(table.touch(2, '1', 130, 100));
+    assert.equal(table.lives()[1], 40, '滑开后抬手不记血');
+    table.page.syncPlayers();
+    assert.equal(table.hints()[1], false, '没记上血，提示还留着');
+
+    table.page.startLifePress(table.touch(3, '-1', 100, 100));
+    table.clock.advance(420);
+    assert.equal(table.lives()[2], 39);
+    table.page.moveLifePress(table.touch(3, '-1', 100, 60));
+    table.clock.advance(2000);
+    assert.equal(table.lives()[2], 39, '长按时滑开就不再连减');
+
+    // 系统手势把触摸收走时同样不记
+    table.page.startLifePress(table.touch(4, '1'));
+    table.page.cancelLifePress(table.touch(4, '1'));
+    table.clock.advance(2000);
+    assert.equal(table.lives()[3], 40);
+    table.page.syncPlayers();
+    assert.equal(table.hints()[3], false, '被收走的触摸不算按过');
+
+    // 别人的手指滑开不影响我
+    table.page.startLifePress(table.touch(1, '-1', 100, 100));
+    table.page.moveLifePress(table.touch(2, '-1', 300, 300));
+    table.page.endLifePress(table.touch(1, '-1', 100, 100));
+    assert.equal(table.lives()[0], 40);
+  } finally {
+    table.close();
+  }
+});
+
+test('切后台、重置、切人数都掐掉所有按压', () => {
+  const table = openLifeTracker();
+  try {
+    table.page.startLifePress(table.touch(1, '1'));
+    table.page.startLifePress(table.touch(2, '1'));
+    table.clock.advance(420);
+    table.page.onHide();
+    assert.deepEqual(table.lives(), [41, 41, 40, 40]);
+    table.clock.advance(5000);
+    assert.deepEqual(table.lives(), [41, 41, 40, 40], '切后台后不能再改血');
+    table.page.endLifePress(table.touch(1, '1'));
+    assert.deepEqual(table.lives(), [41, 41, 40, 40], '回来才抬手也不多记');
+
+    table.page.startLifePress(table.touch(3, '1'));
+    table.page.resetGame();
+    table.clock.advance(1000);
+    assert.equal(table.lives()[2], 40, '重置后不能被旧按压改血');
+
+    table.page.startLifePress(table.touch(4, '1'));
+    table.page.setPlayerMode({ currentTarget: { dataset: { count: 5 } } });
+    table.clock.advance(1000);
+    assert.equal(table.lives()[3], 40, '切人数后不能被旧按压改血');
+    table.page.dismissUndo();
+  } finally {
+    table.close();
+  }
+});
+
+test('加减提示按座位收起，记血不写新的存储', () => {
+  const table = openLifeTracker();
+  try {
+    assert.deepEqual(table.hints(), [false, false, false, false], '进页时每个座位都有提示');
+    table.page.startLifePress(table.touch(2, '1'));
+    assert.equal(table.hints()[1], false, '手指按下时还没记血，提示不动');
+    table.page.endLifePress(table.touch(2, '1'));
+    assert.deepEqual(table.hints(), [false, true, false, false], '只收起按过的那个座位');
+
+    // 长按到第一次记血时也算按过
+    table.page.startLifePress(table.touch(3, '-1'));
+    table.clock.advance(420);
+    assert.deepEqual(table.hints(), [false, true, true, false]);
+    table.page.endLifePress(table.touch(3, '-1'));
+
+    // 按过的座位重新同步后不会再冒出来，新加入的座位有自己的提示
+    table.page.setPlayerMode({ currentTarget: { dataset: { count: 5 } } });
+    assert.deepEqual(table.hints(), [false, true, true, false, false]);
+    table.page.resetGame();
+    assert.deepEqual(table.hints(), [false, true, true, false, false]);
+    table.page.dismissUndo();
+
+    assert.deepEqual(Array.from(table.store.keys()), ['fourPlayerLifeTracker'], '提示状态不进存储');
+    const stored = table.store.get('fourPlayerLifeTracker');
+    assert.doesNotMatch(JSON.stringify(stored), /hintUsed|usedSeats/);
+  } finally {
+    table.close();
+  }
+});
+
+test('加减提示跟着座位转，点上去仍是加减，不落进中心菜单和数字', () => {
+  const wxml = readPage('wxml');
+  const wxss = readPage('wxss');
+  const hitArea = (name) => wxml.match(new RegExp(`class="life-hit-area ${name}"[\\s\\S]*?<\\/view>`))[0];
+
+  // 提示是加减区的子节点，所以在 player-face 里，跟着座位转
+  assert.match(hitArea('life-increase'), /data-delta="1"[\s\S]*catchtouchmove="moveLifePress"[\s\S]*class="life-hint life-hint-plus \{\{item\.hintUsed \? 'life-hint-used' : ''\}\}" aria-hidden="true"/);
+  assert.match(hitArea('life-decrease'), /data-delta="-1"[\s\S]*catchtouchmove="moveLifePress"[\s\S]*class="life-hint \{\{item\.hintUsed \? 'life-hint-used' : ''\}\}" aria-hidden="true"/);
+  assert.doesNotMatch(hitArea('life-decrease'), /life-hint-plus/, '减号不能多出一条竖线');
+
+  const rule = (selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const found = wxss.match(new RegExp(`(?:^|\\n)${escaped}\\s*{([^}]*)}`));
+    assert.ok(found, `找不到 ${selector}`);
+    return found[1];
+  };
+  const hint = rule('.life-hint');
+  assert.match(hint, /pointer-events:\s*none/, '提示不能挡住按压');
+  assert.match(rule('.life-hint.life-hint-used'), /opacity:\s*0\s*;/);
+  assert.match(rule('.life-increase .life-hint'), /bottom:/, '加号贴着中线的上方');
+  assert.match(rule('.life-decrease .life-hint'), /top:/, '减号贴着中线的下方');
+  assert.match(wxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.life-hint\s*{[^}]*transition:\s*none/);
+
+  // 侧坐那位：他的上是屏幕左边，所以加号在左半的靠中线处，减号在右半的靠中线处，减号转成竖线
+  assert.match(rule('.player-facing-right .life-hint'), /rotate\(-90deg\)/);
+  assert.match(rule('.player-facing-right .life-increase .life-hint'), /right:\s*4\.5vh[\s\S]*left:\s*auto/);
+  assert.match(rule('.player-facing-right .life-decrease .life-hint'), /left:\s*4\.5vh/);
+
+  // 位置按真实常量算。两人局和三人局的上座横跨整屏，提示落进中心菜单的热区就会点开菜单
+  const offset = Number(hint.match(/left:\s*calc\(50% \+ min\((\d+(?:\.\d+)?)vh,\s*40%\)\)/)[1]);
+  const size = Number(hint.match(/width:\s*(\d+(?:\.\d+)?)vh/)[1]);
+  const hubHalfRpx = Number(rule('.hub-trigger-hit').match(/width:\s*(\d+)rpx/)[1]) / 2;
+  [1.78, 2.16, 2.3].forEach((aspect) => {
+    const hubHalfVh = (hubHalfRpx * aspect * 100) / 750;
+    assert.ok(offset - size / 2 > hubHalfVh, `${aspect}:1 上提示碰到了中心菜单的热区`);
+    // 五人局的格子最窄：宽 40vw，一半是 20vw
+    const zoneHalfVh = 20 * aspect;
+    assert.ok(offset + size / 2 < zoneHalfVh, `${aspect}:1 上提示出了五人局的格子`);
+  });
+  // 四位数血量也不能压到提示：数字半宽按每字 0.6em、21vh 字号估算
+  assert.ok(offset - size / 2 > (4 * 0.6 * 21) / 2, '提示压到了 -999 这样的长数字');
+  // 右座的高度偏移要和普通座位的横向偏移一致
+  assert.match(rule('.player-facing-right .life-hint'), new RegExp(`top:\\s*calc\\(50% - ${offset + size / 2}vh\\)`));
+});
+
+test('中心菜单的按钮在窄屏上也不小于 44pt，也不出框', () => {
+  const wxss = readPage('wxss');
+  const block = (name) => wxss.match(new RegExp(`\\.${name}\\s*{([\\s\\S]*?)}`))[1];
+  const number = (text, pattern) => Number(text.match(pattern)[1]);
+  const menu = block('dropdown-menu');
+  const action = block('hub-action');
+  const minHeight = number(action, /min-height:\s*(\d+)px/);
+  const minWidth = number(menu, /min-width:\s*(\d+)px/);
+  const top = number(menu, /top:\s*(\d+)rpx/);
+  const gap = number(menu, /gap:\s*(\d+)rpx/);
+  const height = number(action, /\n\s*height:\s*(\d+)rpx/);
+  const width = number(menu, /\n\s*width:\s*(\d+)rpx/);
+  assert.equal(minHeight, 44);
+
+  [[568, 320], [667, 375], [844, 390], [896, 390]].forEach(([screenWidth, screenHeight]) => {
+    const rpx = screenWidth / 750;
+    const rowHeight = Math.max(height * rpx, minHeight);
+    const menuWidth = Math.max(width * rpx, minWidth);
+    const perButton = (menuWidth - gap * rpx * 3) / 4;
+    assert.ok(perButton >= 44, `${screenWidth} 宽上人数按钮只有 ${perButton.toFixed(1)}pt 宽`);
+    const bottom = screenHeight / 2 + (top + gap) * rpx + rowHeight * 2;
+    assert.ok(bottom <= screenHeight * 0.96, `${screenWidth}×${screenHeight} 上菜单底边到了 ${bottom.toFixed(0)}pt`);
+  });
+});

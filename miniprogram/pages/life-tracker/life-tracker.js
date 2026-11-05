@@ -22,10 +22,18 @@ const PERSIST_DEBOUNCE_MS = 180;
 // 重置与切人数会抹掉一整局血量，但它们在长局里是高频合法操作：
 // 给撤销而不是二次确认，既不丢数据也不给正常路径加一次点击
 const UNDO_WINDOW_MS = 8000;
+// 手指滑开超过这个距离就算没按：隔着手机伸手拿牌时碰到屏幕，不该记一点血，
+// 长按连加时滑开也是停下来的办法。按稳的手指也会抖几像素，所以不能设得太小
+const SLIDE_CANCEL_PX = 24;
 
 function colorForKey(key) {
   return lifeTrackerConfig.colors.find((color) => color.key === key)
     || lifeTrackerConfig.colors[0];
+}
+
+function pressKeyOf(event) {
+  const { id, delta } = event.currentTarget.dataset;
+  return `${id}:${delta}`;
 }
 
 function cloneLifeState(state) {
@@ -65,7 +73,7 @@ Page({
   },
 
   onHide() {
-    this.clearLifePress(false);
+    this.clearLifePresses();
     this.stopRace();
     this.dismissUndo();
     this.writeStorage();
@@ -73,7 +81,7 @@ Page({
   },
 
   onUnload() {
-    this.clearLifePress(false);
+    this.clearLifePresses();
     this.stopRace();
     this.dismissUndo();
     this.writeStorage();
@@ -122,6 +130,7 @@ Page({
         // 抽完先手，中签者那条外缘留成他的颜色。抽签只热闹两秒，
         // 但「谁先手」整局都在用来数回合顺序，所以它得留下来。
         isFirstPlayer: player.id === this.gameState.firstPlayerId,
+        hintUsed: Boolean(this.usedSeats && this.usedSeats[player.id]),
       };
     });
     this.setData({ players, playerCount });
@@ -160,57 +169,82 @@ Page({
     // 一旦有人继续记血，撤销回上一局就不再是用户想要的了
     if (this.data.undoVisible) this.dismissUndo();
     this.gameState = changePlayerLife(this.gameState, playerId, delta);
-    this.syncPlayers();
+    // 按过一次，这个座位的加减提示就完成任务了。不写存储：重新进页时换了人也看得到
+    this.usedSeats = { ...this.usedSeats, [playerId]: true };
+    // 长按连加每 48ms 跑到这里一次，几个人同时按还会叠加，所以只推变化的那一格
+    const index = this.gameState.players.findIndex((player) => player.id === playerId);
+    if (index >= 0) {
+      this.setData({
+        [`players[${index}].life`]: this.gameState.players[index].life,
+        [`players[${index}].hintUsed`]: true,
+      });
+    }
     this.scheduleStorageWrite();
   },
 
+  // 每个加减区各记各的按压。牌桌上“每位对手失去 2 点”时几个人会同时按，
+  // 全页只留一份按压状态的话，后按的人会抹掉先按的人，抬手时那一点还会记到别人头上。
   startLifePress(event) {
     const playerId = Number(event.currentTarget.dataset.id);
     const delta = Number(event.currentTarget.dataset.delta);
     if (!playerId || !delta) return;
 
-    this.clearLifePress(false);
-    this.lifePress = { playerId, delta, repeated: false, repeatDelay: ACCELERATED_START_MS };
-    this.lifePressTimer = setTimeout(() => {
-      if (!this.lifePress) return;
-      this.lifePress.repeated = true;
+    const key = pressKeyOf(event);
+    this.releaseLifePress(key, false);
+    const touch = (event.changedTouches && event.changedTouches[0]) || {};
+    const press = {
+      playerId,
+      delta,
+      repeated: false,
+      repeatDelay: ACCELERATED_START_MS,
+      x: touch.clientX,
+      y: touch.clientY,
+    };
+    press.timer = setTimeout(() => {
+      press.repeated = true;
       this.applyLifeChange(playerId, delta);
-      this.scheduleAcceleratedChange();
+      this.scheduleAcceleratedChange(press);
     }, LONG_PRESS_DELAY_MS);
+    this.lifePresses = { ...this.lifePresses, [key]: press };
   },
 
-  scheduleAcceleratedChange() {
-    if (!this.lifePress) return;
-    const press = this.lifePress;
-    this.lifeRepeatTimer = setTimeout(() => {
-      if (!this.lifePress) return;
+  scheduleAcceleratedChange(press) {
+    press.timer = setTimeout(() => {
       this.applyLifeChange(press.playerId, press.delta);
       press.repeatDelay = Math.max(48, Math.round(press.repeatDelay * 0.88));
-      this.scheduleAcceleratedChange();
+      this.scheduleAcceleratedChange(press);
     }, press.repeatDelay);
   },
 
-  endLifePress() {
-    this.clearLifePress(true);
+  moveLifePress(event) {
+    const key = pressKeyOf(event);
+    const press = this.lifePresses && this.lifePresses[key];
+    const touch = event.changedTouches && event.changedTouches[0];
+    if (!press || !touch) return;
+    const moved = Math.hypot(touch.clientX - press.x, touch.clientY - press.y);
+    if (moved > SLIDE_CANCEL_PX) this.releaseLifePress(key, false);
+  },
+
+  endLifePress(event) {
+    this.releaseLifePress(pressKeyOf(event), true);
     this.writeStorage();
   },
 
-  cancelLifePress() {
-    this.clearLifePress(false);
+  cancelLifePress(event) {
+    this.releaseLifePress(pressKeyOf(event), false);
     this.writeStorage();
   },
 
-  clearLifePress(applyShortTap) {
-    if (this.lifePressTimer) clearTimeout(this.lifePressTimer);
-    if (this.lifeRepeatTimer) clearTimeout(this.lifeRepeatTimer);
-    this.lifePressTimer = null;
-    this.lifeRepeatTimer = null;
+  releaseLifePress(key, applyShortTap) {
+    const press = this.lifePresses && this.lifePresses[key];
+    if (!press) return;
+    clearTimeout(press.timer);
+    delete this.lifePresses[key];
+    if (applyShortTap && !press.repeated) this.applyLifeChange(press.playerId, press.delta);
+  },
 
-    const press = this.lifePress;
-    this.lifePress = null;
-    if (applyShortTap && press && !press.repeated) {
-      this.applyLifeChange(press.playerId, press.delta);
-    }
+  clearLifePresses() {
+    Object.keys(this.lifePresses || {}).forEach((key) => this.releaseLifePress(key, false));
   },
 
   scheduleStorageWrite() {
@@ -307,7 +341,7 @@ Page({
   },
 
   resetGame() {
-    this.clearLifePress(false);
+    this.clearLifePresses();
     this.stopRace();
     this.undoPendingSnapshot = cloneLifeState(this.gameState);
     this.gameState = resetLifeTrackerState(this.gameState);
@@ -324,7 +358,7 @@ Page({
       this.setData({ menuOpen: false });
       return;
     }
-    this.clearLifePress(false);
+    this.clearLifePresses();
     this.stopRace();
     this.undoPendingSnapshot = cloneLifeState(this.gameState);
     this.gameState = setLifeTrackerPlayerCount(this.gameState, count);

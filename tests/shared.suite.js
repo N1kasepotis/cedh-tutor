@@ -725,8 +725,7 @@ test('README 的基线数字与真值一致', () => {
       + '再 require 一遍只会让它们跑两遍、把条数报虚');
   });
 
-  // 语法门禁的文件数：口径是全仓（含 tests 与 scripts），与 scripts/check-syntax.js 一致
-  // 口径必须与 scripts/check-syntax.js 一致：它只走 miniprogram / scripts / tests 三个根，
+  // 语法门禁的文件数，口径必须与 scripts/check-syntax.js 一致：它只走 miniprogram / scripts / tests / cloudfunctions 四个根，
   // 不是全仓——照全仓算会多出 tools 等目录，得到一个跟门禁输出对不上的数字
   const jsFiles = [];
   const walk = (dir) => {

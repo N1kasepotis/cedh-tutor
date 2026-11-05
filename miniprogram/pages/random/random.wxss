@@ -72,7 +72,7 @@
   background: var(--cedh-surface-muted);
   border: var(--cedh-hairline);
   border-radius: var(--cedh-radius-control-sm);
-  font-size: var(--cedh-text-10);
+  font-size: var(--cedh-text-14);
   font-weight: 600;
   letter-spacing: 0.1em;
 }

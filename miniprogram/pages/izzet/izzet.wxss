@@ -89,7 +89,7 @@
 /* 标签固定宽 → 数值紧跟标签、逐行成列对齐；控件推到最右 */
 .izzet-stat {
   display: grid;
-  grid-template-columns: 168rpx 1fr auto;
+  grid-template-columns: 188rpx 1fr auto;
   align-items: center;
   gap: var(--cedh-space-2);
 }
@@ -99,7 +99,7 @@
   font-family: var(--cedh-font-mono);
   font-size: var(--cedh-text-12);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 

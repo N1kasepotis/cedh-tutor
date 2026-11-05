@@ -249,6 +249,76 @@ page {
   background: rgba(var(--player-rgb), 0.14);
 }
 
+/* 加减提示放在 face 里，跟着座位转，所以每个方向看都是上加下减。
+   放在数字旁边而不放正上下：两人局和三人局的上座横跨整屏，正上下正好落进中心菜单的热区，
+   点提示反而打开菜单。线条用背景画：字符的基线随字体变，转 90 度后会偏。
+   这个座位按过一次就淡出，只提醒还没按过的人。 */
+.life-hint {
+  position: absolute;
+  left: calc(50% + min(28vh, 40%));
+  width: 5vh;
+  height: 5vh;
+  margin-left: -2.5vh;
+  opacity: 0.6;
+  transition: opacity 240ms ease-out;
+  pointer-events: none;
+}
+
+.life-increase .life-hint {
+  bottom: 4.5vh;
+}
+
+.life-decrease .life-hint {
+  top: 4.5vh;
+}
+
+.life-hint::before,
+.life-hint-plus::after {
+  content: "";
+  position: absolute;
+  background: #ffffff;
+  border-radius: 999rpx;
+}
+
+.life-hint::before {
+  top: 50%;
+  left: 0;
+  width: 100%;
+  height: 2rpx;
+  margin-top: -1rpx;
+}
+
+.life-hint-plus::after {
+  top: 0;
+  left: 50%;
+  width: 2rpx;
+  height: 100%;
+  margin-left: -1rpx;
+}
+
+.life-hint.life-hint-used {
+  opacity: 0;
+}
+
+/* 侧坐那位朝屏幕左侧看：他的上是屏幕左边，他的右手边是屏幕上方。
+   把上面那套位置按这个方向换算一遍，减号转过来才是他眼里的横线。 */
+.player-facing-right .life-hint {
+  top: calc(50% - 30.5vh);
+  margin-left: 0;
+  transform: rotate(-90deg);
+}
+
+.player-facing-right .life-increase .life-hint {
+  right: 4.5vh;
+  bottom: auto;
+  left: auto;
+}
+
+.player-facing-right .life-decrease .life-hint {
+  top: calc(50% - 30.5vh);
+  left: 4.5vh;
+}
+
 .player-summary {
   position: absolute;
   top: 50%;
@@ -371,8 +441,10 @@ page {
   flex-direction: column;
   gap: 6rpx;
   /* 220 而不是 180：人数那行从三颗变四颗，每颗净宽 (220-3*6)/4 = 50.5rpx，
-     「5人」两字在 16rpx 字号下约 32rpx，还留得下呼吸 */
+     「5人」两字在 16rpx 字号下约 32rpx，还留得下呼吸。
+     rpx 跟着屏宽缩，窄屏上四颗按钮会窄过 44pt，下限保住手指够得着。 */
   width: 220rpx;
+  min-width: 190px;
   padding: 0;
   visibility: hidden;
   opacity: 0;
@@ -410,7 +482,7 @@ page {
   width: auto;
   height: 44rpx;
   min-width: 0;
-  min-height: 0;
+  min-height: 44px;
   padding: 0;
   color: rgba(255, 255, 255, 0.82);
   background: rgba(2, 3, 4, 0.97);
@@ -498,6 +570,10 @@ page {
      被切换的是一条 3rpx 发丝线，面积远在 WCAG 2.3.1 的小面积豁免之内，
      而且变的是不透明度不是位移，不触发前庭反应。 */
   .seat-edge {
+    transition: none;
+  }
+
+  .life-hint {
     transition: none;
   }
 

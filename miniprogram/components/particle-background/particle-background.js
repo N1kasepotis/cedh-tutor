@@ -87,11 +87,13 @@ Component({
       const query = this.createSelectorQuery();
 
       query.select('#particleCanvas')
-        .fields({ node: true, size: true })
+        .fields({ node: true, size: true, computedStyle: ['display'] })
         .exec((result) => {
           const canvasInfo = result && result[0];
 
-          if (!canvasInfo || !canvasInfo.node) {
+          // 系统减弱动效时样式表把画布 display:none 了。小程序没有接口直接读这项设置，
+          // 读算出来的样式就知道了；不判断的话，看不见的画布还在每帧算粒子，白耗电
+          if (!canvasInfo || !canvasInfo.node || canvasInfo.display === 'none') {
             this.setData({ enabled: false });
             return;
           }

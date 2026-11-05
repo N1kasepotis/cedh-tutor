@@ -20,9 +20,12 @@
           data-delta="1"
           hover-class="life-hit-active"
           catchtouchstart="startLifePress"
+          catchtouchmove="moveLifePress"
           catchtouchend="endLifePress"
           catchtouchcancel="cancelLifePress"
-        ></view>
+        >
+          <view class="life-hint life-hint-plus {{item.hintUsed ? 'life-hint-used' : ''}}" aria-hidden="true"></view>
+        </view>
 
         <view class="player-summary">
           <text class="life-value" aria-label="生命值 {{item.life}}">{{item.life}}</text>
@@ -36,9 +39,12 @@
           data-delta="-1"
           hover-class="life-hit-active"
           catchtouchstart="startLifePress"
+          catchtouchmove="moveLifePress"
           catchtouchend="endLifePress"
           catchtouchcancel="cancelLifePress"
-        ></view>
+        >
+          <view class="life-hint {{item.hintUsed ? 'life-hint-used' : ''}}" aria-hidden="true"></view>
+        </view>
       </view>
     </view>
 

@@ -18,10 +18,14 @@ Component({
     known: 0,
     unknown: 0,
     mine: null,
+    // busy 只代表投票在路上；读票和投票分开，读票时选项照常能点
     busy: false,
+    reading: false,
+    readFailed: false,
     error: '',
     closed: false,
-    online: api.available(),
+    // 这个环境有没有云服务，不代表这一次连得上；连不连得上看 reading 和 readFailed
+    cloudReady: api.available(),
     updated: '',
   },
   observers: {
@@ -46,6 +50,8 @@ Component({
           mine: null,
           rows: [],
           busy: false,
+          reading: false,
+          readFailed: false,
           error: '',
           closed: false,
         });
@@ -76,8 +82,8 @@ Component({
       this.setData({ localChoice: choice, error: '' });
       this.remember();
       this.triggerEvent('answer', { choice });
-      const { online, closed, mine } = this.data;
-      if (online && !closed && !(mine && mine.choice === choice))
+      const { cloudReady, closed, mine } = this.data;
+      if (cloudReady && !closed && !(mine && mine.choice === choice))
         this.request('vote', { vote: this.voteValue() });
     },
     // 票数只看全部参与者，不再按牌手类别分开统计
@@ -90,10 +96,13 @@ Component({
         this.setData({ stats: null, error: '票数暂时无法读取' });
       }
     },
+    // 读票不挡投票：云函数冷启动时读票要等几秒，选项不该一直点不动。投票的结果本身带票数，
+    // 服务端按人替换选票，读票结果晚到也会被序号作废
     async request(action, extra = {}) {
       if (this.data.busy) return;
+      const isRead = action === 'poll';
       const request = ++this.requestId;
-      this.setData({ busy: true, error: '' });
+      this.setData({ busy: !isRead, reading: isRead, error: '' });
       try {
         const result = await api.call(action, {
           pollId: this.properties.pollId,
@@ -105,6 +114,8 @@ Component({
           mine: result.mine,
           updated: new Date(result.updatedAt).toLocaleDateString(),
           busy: false,
+          reading: false,
+          readFailed: false,
         });
         this.decorate();
       } catch (error) {
@@ -112,9 +123,9 @@ Component({
         // 服务端不认这个题号（换题后云函数还没重新部署，或禁牌表换了轮次）：刷新也没用，
         // 投票整块收起，不把“选项已变化”这类用户做不了任何事的提示摆出来
         if (error.code === 'INVALID_VOTE')
-          this.setData({ closed: true, stats: null, mine: null, busy: false });
-        // 进页时读票失败不打扰作答；投票这类用户主动的操作失败仍要说清楚
-        else if (action === 'poll') this.setData({ busy: false });
+          this.setData({ closed: true, stats: null, mine: null, busy: false, reading: false, readFailed: false });
+        // 读票失败不打扰作答，只留一行能重试的小字；投票这类用户主动的操作失败仍要说清楚
+        else if (isRead) this.setData({ reading: false, readFailed: true });
         else this.setData({ error: error.message, busy: false });
       }
     },

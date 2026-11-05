@@ -5,6 +5,12 @@
   padding: 0;
   background: transparent;
 }
+.poll-retry {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-top: 16rpx;
+}
 .bar-track {
   height: 8rpx;
   background: var(--cedh-line);

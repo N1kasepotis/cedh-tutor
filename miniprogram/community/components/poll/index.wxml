@@ -14,8 +14,19 @@
     </button>
   </view>
   <view wx:if="{{error}}" class="error">{{error}}</view>
-  <view wx:if="{{!compact && !online}}" class="notice">当前无法连接投票服务，可先保存选择</view>
-  <view wx:if="{{!compact && online && closed}}" class="notice">这一轮投票暂未开放，可先保存选择</view>
+  <view wx:if="{{!compact && !cloudReady}}" class="notice">当前无法连接投票服务，可先保存选择</view>
+  <view wx:if="{{!compact && cloudReady && closed}}" class="notice">这一轮投票暂未开放，可先保存选择</view>
+  <view wx:if="{{readFailed && (!compact || localChoice)}}" class="poll-retry">
+    <text class="muted">票数没读到</text>
+    <button
+      hover-class="pressable-active"
+      class="link quiet-link"
+      bindtap="refresh"
+      disabled="{{reading || busy}}"
+    >
+      {{reading ? '读取中' : '重试'}}
+    </button>
+  </view>
   <view wx:if="{{stats && (!compact || localChoice)}}" class="section">
     <view class="section-title">牌手投票</view>
     <view class="metadata muted">

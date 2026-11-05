@@ -920,6 +920,153 @@ test('ban vote asks only for a stance and counts every player together', async (
   }
 });
 
+// 读票失败原来只是悄悄清掉 busy：票数区不出现，也没有办法再试一次。而且读票期间选项全是禁用的，
+// 云函数冷启动时要等几秒才点得动
+test('poll keeps choices tappable while reading and offers a retry when the read fails', async () => {
+  const filename = path.resolve(__dirname, '../miniprogram/community/components/poll/index.js');
+  const markup = fs.readFileSync(
+    path.join(__dirname, '../miniprogram/community/components/poll/index.wxml'),
+    'utf8',
+  );
+  const previous = global.wx;
+  const stored = new Map();
+  const calls = [];
+  const pending = [];
+  let definition;
+  const settle = () => new Promise((resolve) => setImmediate(resolve));
+  const answer = (data) => ({
+    result: {
+      ok: true,
+      data: { counts: { all: { keep: 3, mull: 1, unknown: 0 } }, mine: data.vote || null, updatedAt: 1 },
+    },
+  });
+  try {
+    global.wx = {
+      getStorageSync: (key) => (stored.has(key) ? stored.get(key) : ''),
+      setStorageSync: (key, value) => stored.set(key, value),
+      cloud: {
+        init() {},
+        callFunction: ({ data }) => {
+          calls.push(data);
+          return new Promise((resolve, reject) => pending.push({ data, resolve, reject }));
+        },
+      },
+    };
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Component: (value) => {
+        definition = value;
+      },
+      require: createRequire(filename),
+      wx: global.wx,
+    });
+    const poll = {
+      ...definition.methods,
+      properties: {
+        pollId: 'ban:test-card',
+        choices: [
+          { id: 'keep', label: '维持禁用' },
+          { id: 'mull', label: '解禁' },
+          { id: 'unknown', label: '不了解' },
+        ],
+        compact: false,
+      },
+      data: structuredClone(definition.data),
+      setData(value) {
+        Object.assign(this.data, value);
+      },
+      triggerEvent() {},
+    };
+    const finish = async (index, ok = true) => {
+      const call = pending[index];
+      if (ok) call.resolve(answer(call.data));
+      else call.reject(new Error('offline'));
+      await settle();
+    };
+    const tap = (choice) => poll.choose({ currentTarget: { dataset: { choice } } });
+
+    assert.equal(definition.data.cloudReady, true, '有云服务只说明能试，不说明连得上');
+    assert.doesNotMatch(markup, /online/);
+
+    // 读票中：选项不禁用，重试也不会重复发
+    poll.loadPoll();
+    assert.equal(poll.data.reading, true);
+    assert.equal(poll.data.busy, false, '读票不禁用选项');
+    await finish(0, false);
+    assert.equal(poll.data.reading, false);
+    assert.equal(poll.data.readFailed, true);
+    assert.equal(poll.data.error, '', '读票失败不弹错误文字，不打扰作答');
+    assert.equal(poll.data.busy, false);
+
+    // 重试时那一行还在，改成读取中，成功后消失
+    poll.refresh();
+    assert.equal(poll.data.reading, true);
+    assert.equal(poll.data.readFailed, true);
+    await finish(1);
+    assert.equal(poll.data.readFailed, false);
+    assert.equal(poll.data.reading, false);
+    assert.equal(poll.data.sample, 4);
+
+    // 读票还没回来就投票：投票立刻发出去，晚到的读票结果不能盖掉投票结果
+    poll.loadPoll();
+    assert.equal(pending.length, 3);
+    tap('mull');
+    assert.equal(pending.length, 4, '读票途中点选项，投票马上发出');
+    assert.equal(pending[3].data.action, 'vote');
+    assert.equal(poll.data.busy, true);
+    assert.equal(poll.data.reading, false, '投票一发出，读票状态就作废');
+    await finish(3);
+    assert.equal(poll.data.mine.choice, 'mull');
+    await finish(2);
+    assert.equal(poll.data.mine.choice, 'mull', '晚到的读票结果被作废');
+    assert.equal(poll.data.reading, false);
+
+    // 投票途中不重复提交，也不读票
+    tap('keep');
+    assert.equal(pending.length, 5);
+    poll.refresh();
+    assert.equal(pending.length, 5, '投票在路上时不发读票');
+    await finish(4);
+
+    // 投票失败仍然说清楚，不算读票失败；再点一次还能重发
+    tap('mull');
+    await finish(5, false);
+    assert.notEqual(poll.data.error, '');
+    assert.equal(poll.data.readFailed, false);
+    assert.equal(poll.data.busy, false);
+    tap('mull');
+    assert.equal(pending[6].data.action, 'vote');
+    assert.equal(poll.data.error, '', '重新投票时清掉旧错误');
+    await finish(6);
+
+    // 换题时清掉上一题的读取状态
+    poll.loadPoll();
+    await finish(7, false);
+    assert.equal(poll.data.readFailed, true);
+    poll.properties.pollId = 'ban:other-card';
+    poll.loadPoll();
+    assert.equal(poll.data.readFailed, false, '换了题不留上一题的失败');
+    await finish(8);
+
+    // 服务端不认题号时整块收起，也不留重试
+    poll.loadPoll();
+    const closing = pending[pending.length - 1];
+    closing.resolve({ result: { ok: false, code: 'INVALID_VOTE' } });
+    await settle();
+    assert.equal(poll.data.closed, true);
+    assert.equal(poll.data.readFailed, false);
+    assert.equal(poll.data.reading, false);
+  } finally {
+    global.wx = previous;
+  }
+
+  assert.match(
+    markup,
+    /wx:if="\{\{readFailed && \(!compact \|\| localChoice\)\}\}" class="poll-retry">[\s\S]*?票数没读到[\s\S]*?bindtap="refresh"[\s\S]*?disabled="\{\{reading \|\| busy\}\}"[\s\S]*?\{\{reading \? '读取中' : '重试'\}\}/,
+    '练习题没答之前不提读票失败；答了之后才需要票数',
+  );
+  assert.match(markup, /bindtap="choose"\s+disabled="\{\{busy\}\}"/, '选项只在投票途中禁用');
+});
+
 // 三张牌认识你底部按用户要求精简：草稿自动存本机，去掉“保存到本机”；“生成分享名片”成功后原位变成“发给牌友”，
 // “生成名片图片”生成后原位变成“保存到相册”；完整卡牌、只看卡画是标题行里的两个文字选项，不再单独占一行开关
 test('passport bottom keeps one share button, one image button and an inline image style choice', () => {
