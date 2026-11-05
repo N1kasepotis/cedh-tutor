@@ -1,10 +1,12 @@
 const crypto = require('crypto');
+const officialNames = require('./commander-names.json');
 
 const MODEL = Object.freeze({
   version: 'relative-performance-v1', days: 90, minPlayers: 50, minSwissRounds: 4,
   minLeaderCoverage: 0.8, minFourSeatCoverage: 0.8,
   minEntries: 20, minPilots: 5, minEvents: 3, winPriorGames: 80, cutPriorEntries: 40,
-  bootstrapSamples: 240,
+  // At 240 draws, reseeding the same data moved 7% of ranked rows to another tier. At 4000 it moves under 2%.
+  bootstrapSamples: 4000,
 });
 const DAY = 86400;
 function hash(value) { return crypto.createHash('sha256').update(JSON.stringify(value)).digest('hex'); }
@@ -35,7 +37,8 @@ function normalizeEvent(event, info, window) {
   if (info.endDate >= window.end || info.endDate < event.startDate) return rejected('finished_after_cutoff');
   if (event.isLeague || event.isTeamEvent || info.isTeamEvent) return rejected('unsupported_format');
   if (event.game !== 'Magic: The Gathering' || event.format !== 'EDH') return rejected('unsupported_format');
-  if (/precon|pauper|bingo|off[ -]?meta|fringe|planechase|commander\s+draft/i.test(event.tournamentName || '')) return rejected('special_event');
+  // Commander Brackets 1-4 are explicitly not cEDH. Bracket 5 is, so it stays. "Tester" events are organizers trying the software.
+  if (/precon|pauper|bingo|off[ -]?meta|fringe|planechase|commander\s+draft|bracket\s*[1-4]\b|^\s*tester\b/i.test(event.tournamentName || '')) return rejected('special_event');
   if (!Number.isInteger(event.swissNum) || event.swissNum < MODEL.minSwissRounds) return rejected('short_swiss');
   const players = new Map();
   for (const standing of event.standings) {
@@ -171,10 +174,11 @@ function buildSnapshot({ period, events, cards, excluded = {}, fetchedAt, previo
     const bounds = sampleReady ? interval(row, ids, baselines) : null;
     const tier = !bounds ? 'watch' : bounds[0] > 50 ? 't1' : bounds[1] < 50 ? 't3' : 't2';
     const previousRow = previousRows.get(row.id);
+    const commanders = row.commanders.map((card) => ({ ...card, nameZh: card.nameZh || officialNames[card.oracleId] || '' }));
     return {
-      id: row.id, name: row.commanders.map((card) => card.nameZh || card.name).join(' + '),
-      nameEn: row.commanders.map((card) => card.name).join(' / '), commanders: row.commanders,
-      colors: [...new Set(row.commanders.flatMap((card) => card.colors || []))].sort(),
+      id: row.id, name: commanders.map((card) => card.nameZh || card.name).join(' + '),
+      nameEn: commanders.map((card) => card.name).join(' / '), commanders,
+      colors: [...new Set(commanders.flatMap((card) => card.colors || []))].sort(),
       tier, score: value === null ? null : round(value, 1), interval: bounds && bounds.map((bound) => round(bound, 1)),
       entries: row.entries, monthEntries: row.monthEntries, pilots: row.pilots.size, events: row.events.size,
       games: row.games, wins: row.wins, draws: row.draws,

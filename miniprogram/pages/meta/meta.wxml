@@ -8,13 +8,14 @@
     </view>
     <block wx:if="{{mode === 'monthly'}}">
       <view class="month-head">
-        <view><view class="meta-title">环境月报</view><view class="month-caption">公开赛事，逐月追踪</view></view>
+        <view><view class="meta-title">环境月报</view><view class="month-caption">公开赛事，以欧美为主</view></view>
         <picker wx:if="{{monthSummary}}" range="{{monthPeriods}}" value="{{monthIndex}}" bindchange="changeMonth" aria-label="选择月报月份">
           <view class="month-date">{{monthSummary.period}} <text aria-hidden="true">⌄</text></view>
         </picker>
       </view>
       <view wx:if="{{monthLoading}}" class="month-status" aria-live="polite">正在读取月报</view>
       <view wx:if="{{monthError}}" class="month-notice" aria-live="polite"><text>{{monthError}}</text><button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link" bindtap="retryMonthly" disabled="{{monthLoading}}">重试</button></view>
+      <view wx:if="{{monthDelayed}}" class="month-notice" aria-live="polite"><text>新一期月报还没生成，当前最新是 {{monthPeriods[0]}}</text></view>
       <block wx:if="{{monthSummary}}">
         <view class="month-overview">
           <view><text class="month-number mono">{{monthSummary.events}}</text><text class="month-caption">场赛事</text></view>
@@ -22,6 +23,7 @@
           <view><text class="month-number mono">{{monthSummary.coverage}}%</text><text class="month-caption">主将覆盖</text></view>
         </view>
         <view class="month-asof">截至 {{monthSummary.asOf}}　最近 90 天</view>
+        <button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link month-credit" bindtap="copyMonthlySource">数据来自 TopDeck.gg　复制链接</button>
         <view class="month-search-label">搜索套牌或主将</view>
         <input class="month-search" value="{{monthQuery}}" placeholder="中文常用名或英文牌名" aria-label="搜索套牌或主将" bindinput="searchMonthly" maxlength="80" />
         <view class="month-filters">
@@ -33,7 +35,7 @@
           <button hover-class="pressable-active" hover-stay-time="120" class="month-button {{monthHighSample ? 'is-selected' : ''}}" aria-pressed="{{monthHighSample}}" bindtap="toggleHighSample">100+ 参赛</button>
         </view>
         <view class="month-tier" wx:for="{{monthGroups}}" wx:key="id" wx:for-item="group" style="--tier-rgb: {{group.rgb}};">
-          <view class="month-tier-head"><view><text class="month-tier-label">{{group.label}}</text><text class="month-caption">{{group.count}} 套</text></view><text wx:if="{{group.id !== 'watch'}}" class="month-caption">{{group.hint}}</text><button wx:else class="month-button month-link" bindtap="toggleMonthWatch">{{group.expanded ? '收起' : '展开'}}</button></view>
+          <view class="month-tier-head"><view><text class="month-tier-label">{{group.label}}</text><text class="month-caption">{{group.count}} 套</text></view><button wx:if="{{group.toggleable}}" class="month-button month-link" bindtap="toggleMonthWatch">{{group.expanded ? '收起' : '展开'}}</button><text wx:else class="month-caption">{{group.hint}}</text></view>
           <block wx:if="{{group.expanded}}">
             <button wx:for="{{group.rows}}" wx:for-item="row" wx:key="id" class="month-button month-row" data-id="{{row.id}}" bindtap="openMonthlyDetail" aria-label="{{row.name}}，{{row.entries}} 次参赛，查看赛绩">
               <view class="month-row-top"><view class="month-arts" aria-hidden="true"><image wx:for="{{row.commanders}}" wx:for-item="card" wx:key="oracleId" src="{{card.image}}" mode="aspectFit" lazy-load="{{true}}"></image></view><view class="month-row-name">{{row.displayName}}<view wx:if="{{row.deltaLabel && row.tier !== 'watch'}}" class="month-caption">较上期 {{row.deltaLabel}}</view></view><view class="month-row-score mono">{{row.scoreLabel}}<text class="month-caption">表现分</text></view></view>
@@ -42,12 +44,14 @@
           </block>
         </view>
         <view wx:if="{{!monthGroups.length}}" class="month-empty">没有符合筛选的套牌</view>
-        <view class="month-source"><button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link" bindtap="copyMonthlySource">数据来自 TopDeck.gg ↗</button><button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link" bindtap="toggleMonthMethod" aria-expanded="{{monthMethodOpen}}">统计口径 {{monthMethodOpen ? '−' : '+'}}</button></view>
+        <view class="month-source"><button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link" bindtap="copyMonthlySource">数据来自 TopDeck.gg　复制链接</button><button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link" bindtap="toggleMonthMethod" aria-expanded="{{monthMethodOpen}}">统计口径 {{monthMethodOpen ? '−' : '+'}}</button></view>
         <view wx:if="{{monthMethodOpen}}" class="month-method">
-          <view>收录 50 人以上、至少 4 轮瑞士轮的已完成 EDH 赛事。按开赛日期进入 90 天窗口，完赛时间不晚于月末。</view>
+          <view>收录 50 人以上、至少 4 轮瑞士轮的已完成 EDH 赛事。按开赛日期进入 90 天窗口，完赛时间不晚于月末。名称标明预组、贫民或 Bracket 1 到 4 的赛事不计入。</view>
+          <view>赛事来自 TopDeck 的公开记录，目前以欧美为主，中文地区的赛事很少。主办方没有录入主将的赛事不计入。</view>
           <view>胜率只计算已完成的四人瑞士轮，和局计入分母，轮空和淘汰轮另行排除。晋级人数由淘汰阶段实际牌手确认。</view>
           <view>表现分以 50 为基准，胜率与按赛事晋级机会修正的晋级率各占一半，小样本向基准收缩。</view>
           <view>至少 {{monthSummary.minEntries}} 次参赛、{{monthSummary.minPilots}} 位牌手、{{monthSummary.minEvents}} 场赛事才参与分档。区间来自赛事重采样，反映观测赛绩。</view>
+          <view>分档是统计信号，区间贴近 50 的套牌可能逐月换档，单月升降不等于强弱变化。</view>
           <view>本期排除 {{monthSummary.excluded}} 场不符合口径或数据不完整的赛事。出场占比独立展示，不增加表现分。</view>
           <view>每月自动更新，旧期保留。</view>
         </view>
@@ -120,14 +124,15 @@
   </view>
 
   <view class="detail-mask" wx:if="{{monthlyDetail}}" bindtap="closeMonthlyDetail" catchtouchmove="stopPropagation">
-    <view class="detail-panel month-detail" catchtap="stopPropagation" aria-role="dialog" aria-label="{{monthlyDetail.name}}赛事表现">
+    <view class="detail-panel month-detail" catchtap="stopPropagation" style="--tier-rgb: {{monthlyDetail.tierRgb}};" aria-role="dialog" aria-label="{{monthlyDetail.name}}赛事表现">
       <view class="month-detail-head"><view class="detail-name">{{monthlyDetail.name}}</view><button hover-class="pressable-active" hover-stay-time="120" class="month-button" bindtap="closeMonthlyDetail" aria-label="关闭赛绩详情">关闭</button></view>
       <scroll-view class="detail-scroll" scroll-y="{{true}}">
         <view class="detail-en">{{monthlyDetail.nameEn}}</view>
         <view class="month-detail-arts"><image wx:for="{{monthlyDetail.commanders}}" wx:key="oracleId" src="{{item.normal}}" mode="aspectFit" lazy-load="{{true}}"></image></view>
-        <view class="month-detail-metrics"><view>表现分 <text>{{monthlyDetail.scoreLabel}}</text></view><view>95% 区间 <text>{{monthlyDetail.intervalLabel}}</text></view><view>瑞士轮胜率 <text>{{monthlyDetail.wins}} / {{monthlyDetail.games}}　{{monthlyDetail.winLabel}}</text></view><view>和局率 <text>{{monthlyDetail.drawRate}}%</text></view><view>晋级率 <text>{{monthlyDetail.cuts}} / {{monthlyDetail.cutEntries}}　{{monthlyDetail.conversionLabel}}</text></view><view>参赛占比 <text>{{monthlyDetail.shareLabel}}</text></view><view>独立牌手 <text>{{monthlyDetail.pilots}} 位</text></view><view>赛事覆盖 <text>{{monthlyDetail.events}} 场</text></view><view>本月出场 <text>{{monthlyDetail.monthEntries}} 次</text></view></view>
+        <view class="month-detail-metrics"><view>表现分 <text>{{monthlyDetail.scoreLabel}}</text></view><view>95% 区间 <text>{{monthlyDetail.intervalLabel}}</text></view><view>瑞士轮胜率 <text>{{monthlyDetail.wins}} / {{monthlyDetail.games}}　{{monthlyDetail.winLabel}}</text></view><view>和局率 <text>{{monthlyDetail.drawLabel}}</text></view><view>晋级率 <text>{{monthlyDetail.cuts}} / {{monthlyDetail.cutEntries}}　{{monthlyDetail.conversionLabel}}</text></view><view>参赛占比 <text>{{monthlyDetail.shareLabel}}</text></view><view>独立牌手 <text>{{monthlyDetail.pilots}} 位</text></view><view>赛事覆盖 <text>{{monthlyDetail.events}} 场</text></view><view>本月出场 <text>{{monthlyDetail.monthEntries}} 次</text></view></view>
+        <button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link month-credit" bindtap="copyMonthlySource">数据来自 TopDeck.gg　复制链接</button>
         <view class="detail-section-title">来源赛事</view>
-        <button wx:for="{{monthlyDetail.sources}}" wx:key="id" class="month-button month-event" data-title="{{item.title}}" bindtap="copyMonthlyEvent">{{item.title}}<text class="month-caption">复制赛事名</text></button>
+        <button wx:for="{{monthlyDetail.sources}}" wx:key="id" class="month-button month-event" data-id="{{item.id}}" bindtap="copyMonthlyEvent">{{item.title}}<text class="month-caption">复制赛事链接</text></button>
       </scroll-view>
     </view>
   </view>

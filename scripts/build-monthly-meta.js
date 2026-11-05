@@ -9,8 +9,11 @@ async function build({ period, cacheDir, output, previous = null }) {
   fs.mkdirSync(cacheDir, { recursive: true });
   const window = engine.periodWindow(period);
   const sourceFile = path.join(cacheDir, `source-${period}.json`);
-  const raw = fs.existsSync(sourceFile) ? JSON.parse(fs.readFileSync(sourceFile, 'utf8')) : await network.fetchEvents(process.env.TOPDECK_API_KEY, window);
-  fs.writeFileSync(sourceFile, JSON.stringify(raw));
+  const cachedSource = fs.existsSync(sourceFile);
+  const raw = cachedSource ? JSON.parse(fs.readFileSync(sourceFile, 'utf8')) : await network.fetchEvents(process.env.TOPDECK_API_KEY, window);
+  if (!cachedSource) fs.writeFileSync(sourceFile, JSON.stringify(raw));
+  // Rebuilding from the cache must not pretend the data was just fetched.
+  const fetchedAt = fs.statSync(sourceFile).mtime.toISOString();
   const events = []; const excluded = {}; const seen = new Set();
   const reject = (reason) => { excluded[reason] = (excluded[reason] || 0) + 1; };
   for (const event of raw) {
@@ -29,13 +32,15 @@ async function build({ period, cacheDir, output, previous = null }) {
   const cardFile = path.join(cacheDir, 'cards.json');
   const cards = await network.fetchCards(events.flatMap((event) => event.records.map((record) => record.leader)), fs.existsSync(cardFile) ? JSON.parse(fs.readFileSync(cardFile, 'utf8')) : {});
   fs.writeFileSync(cardFile, JSON.stringify(cards));
-  const snapshot = engine.buildSnapshot({ period, events, cards, excluded, fetchedAt: new Date().toISOString(), previous });
+  const snapshot = engine.buildSnapshot({ period, events, cards, excluded, fetchedAt, previous });
   fs.mkdirSync(path.dirname(output), { recursive: true });
   fs.writeFileSync(output, JSON.stringify(snapshot));
   console.log(JSON.stringify({ period, events: events.length, entries: snapshot.coverage.entries, coverage: snapshot.coverage.leaderCoverage,
     decks: snapshot.entries.length, ranked: snapshot.entries.filter((row) => row.tier !== 'watch').length, bytes: fs.statSync(output).size, excluded }));
   return snapshot;
 }
-if (require.main === module) build({ period: argument('--period') || engine.previousPeriod(), cacheDir: argument('--cache'), output: argument('--output') })
+// Pass --previous <last month's snapshot> or every "change since last month" comes out empty.
+const previousSnapshot = () => (argument('--previous') ? JSON.parse(fs.readFileSync(argument('--previous'), 'utf8')) : null);
+if (require.main === module) build({ period: argument('--period') || engine.previousPeriod(), cacheDir: argument('--cache'), output: argument('--output'), previous: previousSnapshot() })
   .catch((error) => { console.error(/^[A-Z0-9_]+$/.test(error.message) ? error.message : 'BUILD_FAILED'); process.exitCode = 1; });
 module.exports = { build };

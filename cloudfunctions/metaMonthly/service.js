@@ -49,6 +49,20 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
       await transaction.collection(COLLECTION).doc(`${PREFIX}current`).set({ data: { ...safeCurrent, periods, kind: 'meta_monthly' } });
     });
   }
+  // Per-player checkpoints exist only to compute one report (TopDeck Developer Terms 8.2).
+  // Failure here must never touch the published report, so it is swallowed and retried on the next tick.
+  async function cleanup(job) {
+    if (!job || job.cleaned) return;
+    try {
+      const ids = job.candidateIds || [];
+      for (let offset = 0; offset < ids.length; offset += 10) {
+        await Promise.all(ids.slice(offset, offset + 10).map((id) => collection.doc(eventId(job.period, id)).remove()));
+      }
+      job.cleaned = true;
+      await write(jobId(job.period), job);
+    } catch (_) { /* Retried on the next tick. */ }
+  }
+  const priorPeriod = (period) => engine.previousPeriod(Date.parse(`${period}-01T00:00:00Z`));
   async function tick({ force = false } = {}) {
     const started = now(); const owner = crypto.randomBytes(12).toString('hex');
     const period = engine.previousPeriod(started);
@@ -65,10 +79,15 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
       job = await read(jobId(period));
       if (job && job.phase === 'published' && job.modelVersion === engine.MODEL.version && !force) {
         const published = await current(period);
-        if (published.snapshot) return { status: 'up_to_date', period, hash: published.snapshot.hash };
+        if (published.snapshot) {
+          await cleanup(job);
+          return { status: 'up_to_date', period, hash: published.snapshot.hash };
+        }
         job = null;
       }
       if (!job || job.modelVersion !== engine.MODEL.version || force) {
+        // A job that never finished last month can no longer resume, so its checkpoints go too.
+        await cleanup(await read(jobId(priorPeriod(period))));
         const window = engine.periodWindow(period);
         const raw = await api.fetchEvents(key, window);
         const excluded = {}; const candidateIds = [];
@@ -127,12 +146,12 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
         const cardDoc = await read(`${PREFIX}cards`);
         const cards = await api.fetchCards(events.flatMap((event) => event.records.map((record) => record.leader)), cardDoc && cardDoc.cards || {});
         await write(`${PREFIX}cards`, { cards });
-        const date = new Date(`${period}-01T00:00:00Z`); date.setUTCMonth(date.getUTCMonth() - 1);
-        const prior = await current(date.toISOString().slice(0, 7));
+        const prior = await current(priorPeriod(period));
         const snapshot = engine.buildSnapshot({ period, events, cards, excluded: job.excluded, fetchedAt: job.fetchedAt, previous: prior.snapshot });
         await publish(snapshot);
         job.phase = 'published'; job.hash = snapshot.hash; job.lastError = null;
         await write(jobId(period), job);
+        await cleanup(job);
         return { status: 'published', period, hash: snapshot.hash, events: events.length, entries: snapshot.coverage.entries };
       }
       throw new Error('INVALID_JOB_PHASE');
@@ -152,7 +171,7 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
     const job = await read(jobId(period)); const scheduler = await read(`${PREFIX}scheduler`);
     return { period, phase: job && job.phase || 'not_started', processed: job && job.cursor || 0,
       candidates: job && job.candidateIds && job.candidateIds.length || 0,
-      lastError: job && job.lastError || null, attempts: job && job.attempts || 0,
+      lastError: job && job.lastError || null, attempts: job && job.attempts || 0, cleaned: Boolean(job && job.cleaned),
       lastTriggeredAt: scheduler && scheduler.lastTriggeredAt || null };
   }
   return { current, tick, publish, status, recordTrigger };

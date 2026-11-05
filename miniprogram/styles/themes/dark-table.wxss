@@ -89,6 +89,8 @@
   --cedh-line: rgba(var(--module-accent-rgb), 0.2);
   --cedh-line-strong: rgba(var(--module-accent-rgb), 0.38);
   --cedh-surface-solid: #141516;
+  /* 全局默认字色是深棕，这页底是黑的。没写颜色或档位色变量缺失的文字，也要看得见。 */
+  color: var(--cedh-text);
 }
 
 /* 玻璃面板：继承 tracker .deck-card 的顶部高光效果；EDH hub 分包（.studio / .picker-shell）共用同一条 */

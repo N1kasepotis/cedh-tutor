@@ -86,7 +86,7 @@
 
    **与强度分级刻意解耦**：梯度是署名的人工判断，强度分级是本地确定性规则 + 可审计判定链。把前者注入后者会毁掉判定链的可审计性，也会让同一副牌的档位随第三方编辑改动而变。因此评估器侧禁止 `require` 梯度数据（有测试守），B5 也**不再承诺**「待 meta 分析加入后提供」。页面署名写明「不代表本工具的强度分级结论」。
 
-**赛事月报**：环境梯度新增默认的赛事月报视图，支持月份选择、主将搜索、颜色与参赛样本筛选、赛绩详情及离线缓存。`metaMonthly` 云函数按月滚动计算最近 90 天公开赛事，统计规则、自动更新与部署流程见 [赛事月报](docs/monthly-meta.md)。原有小屋编辑榜保留，两个来源均不进入 Bracket 判定。
+**赛事月报**：环境梯度新增默认的赛事月报视图，支持月份选择、主将搜索（含 Blue Farm 这类套牌名和官方简中牌名）、颜色与参赛样本筛选、赛绩详情及离线缓存。首屏、详情和页脚都显示 TopDeck 署名与可复制的链接；赛事以欧美为主，页面直接写明。`metaMonthly` 云函数按月滚动计算最近 90 天公开赛事，统计规则、自动更新与部署流程见 [赛事月报](docs/monthly-meta.md)。原有小屋编辑榜保留，两个来源均不进入 Bracket 判定。
 
 ## 技术约束
 
@@ -120,6 +120,7 @@
 - **合法域名**：配置 **request 合法域名** `https://api.scryfall.com`（`wx.request` JSON：卡牌元数据、批量取图链）、**downloadFile 合法域名** `https://cards.scryfall.io` 与 `https://api.scryfall.com`。
   - `cards.scryfall.io` 现在是卡图的**主路径而不是重定向目标**——卡图已全部改为直连 CDN，少配这一条会让画布导出取不到图。
   - `api.scryfall.com` 在 downloadFile 里仍要保留：批量解析失败时按卡名取图的回落路径仍走它（`?format=image` 会 302 到 CDN）。
+- **数据不在 MIT 范围内**：`LICENSE` 只覆盖源代码。TopDeck 派生的月报快照、cEDH小屋编辑榜、卡牌名称与文字等第三方数据另列在 [NOTICE.md](NOTICE.md)，不授予任何权利。TopDeck 开发者条款禁止授权 API 数据，`LICENSE` 保持标准 MIT 原文，排除说明放在 NOTICE。
 - **第三方数据署名**：组合技识别用 [Commander Spellbook](https://commanderspellbook.com/) 的两卡组合技快照（后端与前端均为 MIT，社区维护；EDHREC 的组合技页也用这份数据）。随包快照、不联网，与环境梯度同样的处理方式。强度分级页需保留数据来源署名。
 - **AppID**：使用根目录 `project.config.json` 中实际小程序的 AppID。配置文件不能证明主体资质、操作账号权限或提审资格；这些以小程序后台当前状态为准。
 
@@ -180,6 +181,7 @@ external/edhti/                    EDHTI 来源仓库，仅备查，不入包
 tools/meta-tier/current.json       环境梯度源快照（cEDH小屋发布工具链导出，非小程序包内容）
 scripts/build-home-pixel-font.js   从受控 TTF 子集重建首页 base64 模块
 scripts/build-home-voronoi.js      重算首页整页背景 Voronoi 线场（改种子数/疏密后重跑，带可见区预览）
+scripts/build-commander-names.js   从 Scryfall 生成官方简中主将名表（生成物 cloudfunctions/metaMonthly/commander-names.json）
 scripts/build-meta-tier.js         从 tools/meta-tier/current.json 生成环境梯度配置（含过滤与导流剥离）
 scripts/build-planechase.js        烤竞逐时空的时空／异象快照（生成物 config/planechase.js，勿手改）
 scripts/meta-tier-diff.js          比对上游与本地快照（规范化 JSON + 结构校验），供每周巡检调用
@@ -254,6 +256,7 @@ Deck
 
 ```bash
 node scripts/build-meta-tier.js     # 更新环境梯度快照后重新生成 config/meta-tier.js
+node scripts/build-commander-names.js # 更新赛事月报用的官方简中主将名表（会联网，按 Scryfall 限速翻页）
 node scripts/build-commander-art.js # 改过 config/commanders.js 后重新烤主将卡图直链（会联网并自检）
 node scripts/refresh-commander-stats.js --verify-games --write # 同步统计并逐记录复算胜率，保存无个人信息的审查凭据
 node scripts/build-spellbook-combos.js # 同步 Commander Spellbook 的两卡组合技快照（会联网并自检）
@@ -267,7 +270,7 @@ npm run syntax                      # 仅检查全部 JavaScript 语法
 npm run diagnose                    # 严格推荐覆盖率与视觉复杂度诊断
 ```
 
-当前基线：141 个 JavaScript 文件通过语法门禁，411 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 397,232 个画像）。微信最终编译包体及分包限制需用官方上传工具实测。
+当前基线：142 个 JavaScript 文件通过语法门禁，431 项测试全绿；推荐诊断覆盖 100/100 位主将，`deadCount = 0`（基准覆盖集 397,232 个画像）。微信最终编译包体及分包限制需用官方上传工具实测。
 
 随机工具接受安全整数上下限及跨度，小范围从 32 位整数块抽取，大范围分两次组合 21 + 32 位；每个结果分配相同大小的整数桶，舍弃不足一个桶的尾部，避免大范围浮点乘法取整及额外候选数造成的偏差。等机会依赖随机源整数块均匀、独立的假设；运行时仍使用 `Math.random`，其标准只要求近似均匀，未承诺密码学随机。停滞的注入随机源重试 128 次后报错。计算反例与来源见 [事实审查](docs/fact-audit.md)。
 

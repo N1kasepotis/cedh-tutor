@@ -8,10 +8,21 @@ const { enableShareMenu } = require('../../utils/share');
 const { homePixelFontBase64 } = require('../../assets/home-pixel-font');
 const monthly = require('../../utils/monthly-meta');
 
+// 观察中有几百行，搜索会把它们展开过桥。等输入停一下再筛，别每敲一个字传一次。
+const SEARCH_DELAY_MS = 150;
+
+function copyLink(url, title) {
+  wx.setClipboardData({
+    data: url,
+    success: () => wx.showToast({ title, icon: 'none' }),
+    fail: () => wx.showToast({ title: '复制失败，请重试', icon: 'none' }),
+  });
+}
+
 Page({
   data: {
     mode: 'monthly', monthSummary: null, monthGroups: [], monthPeriods: [], monthIndex: 0,
-    monthLoading: false, monthError: '', monthOffline: false, monthQuery: '', monthHighSample: false,
+    monthLoading: false, monthError: '', monthOffline: false, monthDelayed: false, monthQuery: '', monthHighSample: false,
     monthOrder: 'score', monthColor: '', monthColorIndex: 0,
     monthColorLabels: ['全部颜色', '含白色', '含蓝色', '含黑色', '含红色', '含绿色'],
     monthMethodOpen: false, monthWatchOpen: false, monthlyDetail: null,
@@ -43,7 +54,7 @@ Page({
     if (!monthly.isFresh(saved)) this.loadMonthly();
   },
 
-  onUnload() { this.monthRequest = (this.monthRequest || 0) + 1; },
+  onUnload() { this.monthRequest = (this.monthRequest || 0) + 1; clearTimeout(this.monthSearchTimer); },
   onPullDownRefresh() { this.loadMonthly(this.monthSnapshot && this.monthSnapshot.period, true).finally(() => wx.stopPullDownRefresh({})); },
   selectMode(event) {
     const mode = event.currentTarget.dataset.mode;
@@ -59,7 +70,7 @@ Page({
       baselineWin: snapshot.baselines.win, baselineCut: snapshot.baselines.cut,
       excluded: Object.values(snapshot.coverage.excluded || {}).reduce((sum, value) => sum + value, 0),
       minEntries: snapshot.model.minEntries, minPilots: snapshot.model.minPilots, minEvents: snapshot.model.minEvents,
-    }, monthPeriods: options, monthIndex: options.indexOf(snapshot.period) });
+    }, monthPeriods: options, monthIndex: options.indexOf(snapshot.period), monthDelayed: monthly.isDelayed(options[0]) });
     this.filterMonthly();
   },
   async loadMonthly(period, force = false) {
@@ -78,7 +89,11 @@ Page({
   },
   retryMonthly() { this.loadMonthly(this.monthSnapshot && this.monthSnapshot.period); },
   changeMonth(event) { const period = this.data.monthPeriods[Number(event.detail.value)]; if (period) this.loadMonthly(period, true); },
-  searchMonthly(event) { this.setData({ monthQuery: event.detail.value }); this.filterMonthly(); },
+  searchMonthly(event) {
+    this.setData({ monthQuery: event.detail.value });
+    clearTimeout(this.monthSearchTimer);
+    this.monthSearchTimer = setTimeout(() => this.filterMonthly(), SEARCH_DELAY_MS);
+  },
   toggleHighSample() { this.setData({ monthHighSample: !this.data.monthHighSample }); this.filterMonthly(); },
   changeMonthlyColor(event) {
     const index = Number(event.detail.value); if (!Number.isInteger(index) || index < 0 || index > 5) return;
@@ -101,8 +116,8 @@ Page({
     this.setData({ monthlyDetail: { ...monthly.decorate(row), sources } });
   },
   closeMonthlyDetail() { this.setData({ monthlyDetail: null }); },
-  copyMonthlySource() { wx.setClipboardData({ data: 'https://topdeck.gg', fail: () => wx.showToast({ title: '复制失败，请重试', icon: 'none' }) }); },
-  copyMonthlyEvent(event) { wx.setClipboardData({ data: event.currentTarget.dataset.title, fail: () => wx.showToast({ title: '复制失败，请重试', icon: 'none' }) }); },
+  copyMonthlySource() { copyLink(monthly.SOURCE_URL, 'TopDeck 链接已复制'); },
+  copyMonthlyEvent(event) { copyLink(monthly.eventUrl(event.currentTarget.dataset.id), '赛事链接已复制'); },
 
   // 档位展开 / 收起。只翻 expanded，不重建 entries——重建会把整份列表再过一次桥。
   // 只改被点那一档的 expanded，用路径写法定点更新。
