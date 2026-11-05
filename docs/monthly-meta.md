@@ -36,6 +36,8 @@ score = 25 × (p/μ + c)
 
 ## 部署
 
+`scripts/deploy-monthly-meta.ps1` 一步完成下面第 2、3 步的代码上传和暂存清理，Windows PowerShell 5.1 就能运行。代码更新后还要调用一次 `seed`，随函数携带的快照才会发布。
+
 1. 本机用户级 `TOPDECK_API_KEY` 已配置。另创建至少 32 字符的随机 `META_ADMIN_TOKEN` 用于维护操作。两者均不进入 Git、聊天或前端。
 2. 将 `cloudfunctions/metaMonthly` 复制到私有临时目录，并仅在该目录生成忽略文件 `runtime-secrets.json`，字段 `topdeckKey`、`adminToken`。支持用服务端环境变量替代该文件。
 3. 使用官方 DevTools CLI `cloud functions deploy --env cloudbase-d6gvqujh4d0efe37f --paths <临时目录>/metaMonthly --project <实际开发工程> --remote-npm-install`。在原生云开发控制台将超时设为 60 秒、内存保留 256 MB。CLI 代码上传不会创建触发器，需在实际工程中右键本函数的 `config.json`，选择「上传触发器」，再到云函数详情刷新确认线上规则。

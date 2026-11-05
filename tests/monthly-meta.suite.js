@@ -479,6 +479,14 @@ test('monthly page credits TopDeck wherever data appears and states its limits',
   assert.equal(pageJson.enablePullDownRefresh, true);
   assert.equal(pageJson.backgroundTextStyle, 'light', 'dark dots on a dark page cannot be seen');
 });
+test('monthly deploy script runs on the Windows PowerShell this machine has', () => {
+  const script = read('scripts/deploy-monthly-meta.ps1');
+  assert.match(script, /^[\x00-\x7f]*$/, 'without a BOM, non-ASCII text is garbled when PowerShell 5.1 reads the script');
+  assert.doesNotMatch(script, /ToHexString|RandomNumberGenerator\]::Fill/, 'these need PowerShell 7');
+  assert.match(script, /\$ErrorActionPreference = 'Continue'[\s\S]*2>&1[\s\S]*\$ErrorActionPreference = 'Stop'/);
+  assert.match(script, /Where-Object \{ \$_\.Name -ne 'runtime-secrets\.json' \}/);
+  assert.match(script, /finally \{[\s\S]*Remove-Item/, 'the staging copy holds secrets and must always be removed');
+});
 test('third-party data is carved out of the MIT license', () => {
   const notice = read('NOTICE.md');
   assert.match(notice, /does not cover/);

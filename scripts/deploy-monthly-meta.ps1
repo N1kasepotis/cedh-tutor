@@ -9,8 +9,8 @@ if ([string]::IsNullOrWhiteSpace($key)) { throw 'MISSING_TOPDECK_KEY' }
 $adminToken = [Environment]::GetEnvironmentVariable('META_ADMIN_TOKEN', 'User')
 if ([string]::IsNullOrWhiteSpace($adminToken) -or $adminToken.Length -lt 32) {
   $bytes = New-Object byte[] 32
-  [Security.Cryptography.RandomNumberGenerator]::Fill($bytes)
-  $adminToken = [Convert]::ToHexString($bytes).ToLowerInvariant()
+  [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+  $adminToken = -join ($bytes | ForEach-Object { $_.ToString('x2') })
   [Environment]::SetEnvironmentVariable('META_ADMIN_TOKEN', $adminToken, 'User')
 }
 $privateRoot = [IO.Path]::GetFullPath([IO.Path]::GetTempPath())
@@ -20,10 +20,17 @@ try {
   New-Item -ItemType Directory -Path $target | Out-Null
   Get-ChildItem -LiteralPath $source -File | Where-Object { $_.Name -ne 'runtime-secrets.json' } | Copy-Item -Destination $target
   @{ topdeckKey = $key; adminToken = $adminToken } | ConvertTo-Json -Compress | Set-Content -LiteralPath (Join-Path $target 'runtime-secrets.json') -Encoding utf8
-  $result = & 'C:\Program Files (x86)\Tencent\微信web开发者工具\cli.bat' cloud functions deploy --env $Environment --paths $target --project $Project --remote-npm-install 2>&1
-  $result | ForEach-Object { Write-Output $_ }
+  # Keep this file ASCII: Windows PowerShell reads scripts without a BOM in the system code page, which would garble the install folder's name.
+  $cli = (Get-ChildItem -Path (Join-Path ${env:ProgramFiles(x86)} 'Tencent\*\cli.bat') | Select-Object -First 1).FullName
+  if (-not $cli) { throw 'MISSING_DEVTOOLS_CLI' }
+  # The CLI writes progress to stderr. Under Stop, Windows PowerShell treats the first such line as a fatal error.
+  $ErrorActionPreference = 'Continue'
+  $result = & $cli cloud functions deploy --env $Environment --paths $target --project $Project --remote-npm-install 2>&1
+  $deployExit = $LASTEXITCODE
+  $ErrorActionPreference = 'Stop'
+  $result | ForEach-Object { Write-Output "$_" }
   # The official CLI can return exit 0 with a per-function failure table.
-  if ($LASTEXITCODE -ne 0 -or ($result -join "`n") -match 'fail to deploy|\[error\]|metaMonthly.*false') { throw 'DEPLOY_FAILED' }
+  if ($deployExit -ne 0 -or ($result -join "`n") -match 'fail to deploy|\[error\]|metaMonthly.*false') { throw 'DEPLOY_FAILED' }
 } finally {
   # Delete only this invocation's verified, uniquely named private staging directory.
   $resolved = [IO.Path]::GetFullPath($staging)
