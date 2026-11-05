@@ -560,7 +560,7 @@
   background: rgba(var(--module-accent-rgb), 0.1);
   border: 1rpx solid rgba(var(--module-accent-rgb), 0.24);
   border-radius: var(--cedh-radius-pill);
-  font-size: 19rpx;
+  font-size: max(20rpx, 10px);
   line-height: 1.2;
 }
 
@@ -744,7 +744,7 @@
 .curve-count {
   min-height: 22rpx;
   color: rgba(255, 254, 250, 0.5);
-  font-size: 16rpx;
+  font-size: max(20rpx, 10px);
   line-height: 1;
 }
 
@@ -769,7 +769,7 @@
 .curve-label {
   margin-top: 7rpx;
   color: rgba(255, 254, 250, 0.45);
-  font-size: 18rpx;
+  font-size: max(20rpx, 10px);
 }
 
 .metrics-empty {
@@ -799,8 +799,8 @@
 
 .efficiency-label {
   overflow: hidden;
-  color: rgba(255, 254, 250, 0.45);
-  font-size: 17rpx;
+  color: var(--cedh-text-soft);
+  font-size: max(20rpx, 10px);
   line-height: 1.25;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -817,8 +817,8 @@
   flex-wrap: wrap;
   gap: 10rpx 18rpx;
   margin-top: 20rpx;
-  color: rgba(255, 254, 250, 0.4);
-  font-size: 18rpx;
+  color: rgba(255, 254, 250, 0.58);
+  font-size: max(20rpx, 10px);
 }
 
 .coverage-title {
@@ -870,8 +870,8 @@
 }
 
 .chain-label {
-  color: rgba(255, 254, 250, 0.5);
-  font-size: 19rpx;
+  color: var(--cedh-text-soft);
+  font-size: max(20rpx, 10px);
 }
 
 .chain-arrow {
@@ -936,7 +936,7 @@
   background: rgba(var(--module-accent-rgb), 0.07);
   border: 1rpx solid rgba(var(--module-accent-rgb), 0.2);
   border-radius: 10rpx;
-  font-size: 16rpx;
+  font-size: max(20rpx, 10px);
 }
 
 /* 必须撑满剩余宽度：否则短依据的 copy 会收缩，reason-head 的 space-between
@@ -965,7 +965,7 @@
 .reason-role {
   flex: 0 0 auto;
   color: rgba(var(--module-accent-rgb), 0.85);
-  font-size: 19rpx;
+  font-size: max(20rpx, 10px);
   letter-spacing: 0.04em;
   white-space: nowrap;
 }

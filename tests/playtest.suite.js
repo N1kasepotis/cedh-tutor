@@ -613,6 +613,10 @@ test('对局顶栏在「撤销」出现后仍能单行放下，且标签不断�
   const gap = 8; // --cedh-space-1
   const button = (label) => Math.max(minW, width(label) + padX * 2);
 
+  // “生命”叠在数字上面，不占这一行的宽度
+  assert.match(fs.readFileSync(path.join(root, 'miniprogram/pages/playtest/playtest.wxml'), 'utf8'),
+    /aria-label="生命减一"[^>]*>−<\/view>\s*<view class="life-val mono"><text class="life-label">生命<\/text>\{\{life\}\}<\/view>\s*<view[^>]*aria-label="生命加一"/);
+  assert.match(rule('life-label'), /display:\s*block/);
   const readouts = width('手牌 7') + 16 + (56 + 4 + 56 + 4 + 56);
   const available = 750 - 24 * 2; // 页面左右各 --cedh-space-4
   const labels = ['撤销', 'Token', '随机弃', '刷新', '重置'];

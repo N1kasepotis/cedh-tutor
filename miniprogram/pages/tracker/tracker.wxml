@@ -69,7 +69,7 @@
             <view class="stat-line">
               <text class="stat-line-value mono">{{item.stats.wins}}/{{item.stats.losses}}/{{item.stats.draws}}</text>
               <view class="stat-line-meta">
-                <text class="stat-micro-label">W / L / D</text>
+                <text class="stat-micro-label">W/L/D</text>
                 <text class="stat-micro-sub">胜负平</text>
               </view>
             </view>

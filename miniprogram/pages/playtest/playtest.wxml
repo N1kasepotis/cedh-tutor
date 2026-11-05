@@ -31,9 +31,9 @@
       <view class="board-left">
         <view class="hand-count mono">手牌 {{counts.hand}}</view>
         <view class="life-counter">
-          <view class="life-btn" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="lifeDown">−</view>
-          <view class="life-val mono">{{life}}</view>
-          <view class="life-btn" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="lifeUp">+</view>
+          <view class="life-btn" aria-role="button" hover-class="pressable-active" hover-stay-time="120" aria-label="生命减一" bindtap="lifeDown">−</view>
+          <view class="life-val mono"><text class="life-label">生命</text>{{life}}</view>
+          <view class="life-btn" aria-role="button" hover-class="pressable-active" hover-stay-time="120" aria-label="生命加一" bindtap="lifeUp">+</view>
         </view>
       </view>
       <view class="board-actions">

@@ -694,6 +694,46 @@ test('操作按钮和中文说明不用过小的字，卡片标题比说明亮',
     assert.ok(found, `找不到 ${selector}`);
     return found[1];
   };
+  // 全站门禁：字号不再低于 20rpx（390 宽约 10.4px）。例外只有不靠读字的记号，
+  // 血量页是横屏，rpx 按长边算，16rpx 实际有 18pt，所以不算
+  const exempt = new Set([
+    'pages/bracket/bracket.wxss .import-mark',
+    'pages/playtest/playtest.wxss .import-mark',
+    'pages/playtest/playtest.wxss .mana-symbol-letter',
+  ]);
+  const walk = (dir) => fs.readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
+    const full = path.join(dir, entry.name);
+    if (entry.isDirectory()) return walk(full);
+    return entry.name.endsWith('.wxss') ? [full] : [];
+  });
+  const miniRoot = path.join(root, 'miniprogram');
+  const tiny = [];
+  walk(miniRoot).forEach((file) => {
+    const relative = path.relative(miniRoot, file).split(path.sep).join('/');
+    if (relative.startsWith('pages/life-tracker/')) return;
+    const source = fs.readFileSync(file, 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+    for (const [, selector, body] of source.matchAll(/([^{}]+)\{([^{}]*)\}/g)) {
+      const size = body.match(/font-size:\s*(\d+(?:\.\d+)?)rpx/);
+      if (size && Number(size[1]) < 20 && !exempt.has(`${relative} ${selector.trim()}`)) tiny.push(`${relative} ${selector.trim()} ${size[1]}rpx`);
+    }
+  });
+  assert.deepEqual(tiny, [], '要读的字不低于 20rpx，写 max(20rpx, 10px) 同时保住窄屏');
+
+  // 战绩行的改和删：圆圈只有 36rpx，热区要撑开，否则对局中很难点准
+  const trackerStyles = wxss('pages/tracker/tracker.wxss');
+  assert.match(rule(trackerStyles, '.match-action'), /position:\s*relative/);
+  const hit = rule(trackerStyles, '.match-action::after');
+  assert.match(hit, /position:\s*absolute/);
+  const rowHeight = Number(rule(trackerStyles, '.match-row').match(/min-height:\s*(\d+)rpx/)[1]);
+  const up = Number(hit.match(/top:\s*-(\d+)rpx/)[1]);
+  const down = Number(hit.match(/bottom:\s*-(\d+)rpx/)[1]);
+  assert.ok(36 + up + down >= rowHeight, '热区要撑满整行高度');
+  assert.ok(Number(hit.match(/right:\s*-(\d+)rpx/)[1]) <= 4 && Number(hit.match(/left:\s*-(\d+)rpx/)[1]) <= 4, '两颗之间只有 8rpx，各占一半，互不抢点');
+  assert.match(rule(trackerStyles, '.match-action.match-edit::after'), /left:\s*-12rpx/);
+  assert.match(rule(trackerStyles, '.match-action.match-delete::after'), /right:\s*-12rpx/);
+  // 胜率 100.0% 时右栏变窄，W / L / D 带空格就折成两行
+  assert.match(fs.readFileSync(path.join(root, 'miniprogram/pages/tracker/tracker.wxml'), 'utf8'), /stat-micro-label">W\/L\/D</);
+
   // 骰子快捷按钮是主要操作
   assert.match(rule(wxss('pages/random/random.wxss'), '.preset-chip'), /font-size:\s*var\(--cedh-text-14\)/);
   // EDHTI 的翻页和问卷同一个分量
