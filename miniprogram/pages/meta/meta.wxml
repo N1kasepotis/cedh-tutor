@@ -48,7 +48,7 @@
         <view wx:if="{{monthMethodOpen}}" class="month-method">
           <view>收录 50 人以上、至少 4 轮瑞士轮的已完成 EDH 赛事。按开赛日期进入 90 天窗口，完赛时间不晚于月末。名称标明预组、贫民或 Bracket 1 到 4 的赛事不计入。</view>
           <view>赛事来自 TopDeck 的公开记录，目前以欧美为主，中文地区的赛事很少。主办方没有录入主将的赛事不计入。</view>
-          <view>胜率只计算已完成的四人瑞士轮，和局计入分母，轮空和淘汰轮另行排除。晋级人数由淘汰阶段实际牌手确认。</view>
+          <view>胜率只计算已完成的四人瑞士轮，平局计入分母，轮空和淘汰轮另行排除。晋级人数由淘汰阶段实际牌手确认。</view>
           <view>表现分以 50 为基准，胜率与按赛事晋级机会修正的晋级率各占一半，小样本向基准收缩。</view>
           <view>至少 {{monthSummary.minEntries}} 次参赛、{{monthSummary.minPilots}} 位牌手、{{monthSummary.minEvents}} 场赛事才参与分档。区间来自赛事重采样，反映观测赛绩。</view>
           <view>分档是统计信号，区间贴近 50 的套牌可能逐月换档，单月升降不等于强弱变化。</view>
@@ -129,7 +129,7 @@
       <scroll-view class="detail-scroll" scroll-y="{{true}}">
         <view class="detail-en">{{monthlyDetail.nameEn}}</view>
         <view class="month-detail-arts"><image wx:for="{{monthlyDetail.commanders}}" wx:key="oracleId" src="{{item.normal}}" mode="aspectFit" lazy-load="{{true}}"></image></view>
-        <view class="month-detail-metrics"><view>表现分 <text>{{monthlyDetail.scoreLabel}}</text></view><view>95% 区间 <text>{{monthlyDetail.intervalLabel}}</text></view><view>瑞士轮胜率 <text>{{monthlyDetail.wins}} / {{monthlyDetail.games}}　{{monthlyDetail.winLabel}}</text></view><view>和局率 <text>{{monthlyDetail.drawLabel}}</text></view><view>晋级率 <text>{{monthlyDetail.cuts}} / {{monthlyDetail.cutEntries}}　{{monthlyDetail.conversionLabel}}</text></view><view>参赛占比 <text>{{monthlyDetail.shareLabel}}</text></view><view>独立牌手 <text>{{monthlyDetail.pilots}} 位</text></view><view>赛事覆盖 <text>{{monthlyDetail.events}} 场</text></view><view>本月出场 <text>{{monthlyDetail.monthEntries}} 次</text></view></view>
+        <view class="month-detail-metrics"><view>表现分 <text>{{monthlyDetail.scoreLabel}}</text></view><view>95% 区间 <text>{{monthlyDetail.intervalLabel}}</text></view><view>瑞士轮胜率 <text>{{monthlyDetail.wins}} / {{monthlyDetail.games}}　{{monthlyDetail.winLabel}}</text></view><view>平局率 <text>{{monthlyDetail.drawLabel}}</text></view><view>晋级率 <text>{{monthlyDetail.cuts}} / {{monthlyDetail.cutEntries}}　{{monthlyDetail.conversionLabel}}</text></view><view>参赛占比 <text>{{monthlyDetail.shareLabel}}</text></view><view>独立牌手 <text>{{monthlyDetail.pilots}} 位</text></view><view>赛事覆盖 <text>{{monthlyDetail.events}} 场</text></view><view>本月出场 <text>{{monthlyDetail.monthEntries}} 次</text></view></view>
         <button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link month-credit" bindtap="copyMonthlySource">数据来自 TopDeck.gg　复制链接</button>
         <view class="detail-section-title">来源赛事</view>
         <button wx:for="{{monthlyDetail.sources}}" wx:key="id" class="month-button month-event" data-id="{{item.id}}" bindtap="copyMonthlyEvent">{{item.title}}<text class="month-caption">复制赛事链接</text></button>

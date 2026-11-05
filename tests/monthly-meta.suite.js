@@ -471,6 +471,8 @@ test('monthly page credits TopDeck wherever data appears and states its limits',
   assert.match(wxml, /单月升降不等于强弱变化/);
   assert.match(wxml, /Bracket 1 到 4 的赛事不计入/);
   assert.match(wxml, /wx:if="\{\{monthDelayed\}\}"/);
+  assert.match(wxml, /<view>平局率 <text>\{\{monthlyDetail\.drawLabel\}\}<\/text><\/view>/);
+  assert.doesNotMatch(wxml, /和局/, 'the app says 平局 everywhere, including the tracker');
   assert.match(wxml, /class="detail-panel month-detail"[^>]*style="--tier-rgb: \{\{monthlyDetail\.tierRgb\}\};"/);
   assert.match(wxml, /data-id="\{\{item\.id\}\}" bindtap="copyMonthlyEvent">\{\{item\.title\}\}<text class="month-caption">复制赛事链接</);
   assert.match(wxml, /<button wx:if="\{\{group\.toggleable\}\}"/);
@@ -483,9 +485,14 @@ test('monthly deploy script runs on the Windows PowerShell this machine has', ()
   const script = read('scripts/deploy-monthly-meta.ps1');
   assert.match(script, /^[\x00-\x7f]*$/, 'without a BOM, non-ASCII text is garbled when PowerShell 5.1 reads the script');
   assert.doesNotMatch(script, /ToHexString|RandomNumberGenerator\]::Fill/, 'these need PowerShell 7');
-  assert.match(script, /\$ErrorActionPreference = 'Continue'[\s\S]*2>&1[\s\S]*\$ErrorActionPreference = 'Stop'/);
   assert.match(script, /Where-Object \{ \$_\.Name -ne 'runtime-secrets\.json' \}/);
   assert.match(script, /finally \{[\s\S]*Remove-Item/, 'the staging copy holds secrets and must always be removed');
+  // On 2026-11-04 a run ended without its finally block and left the secrets copy behind.
+  const sweep = script.indexOf("-Filter 'cedh-monthly-deploy-*'");
+  assert.ok(sweep > 0 && sweep < script.indexOf('New-Item -ItemType Directory'), 'each run first removes what an interrupted run left behind');
+  assert.match(script, /taskkill\.exe \/T \/F \/PID/, 'a CLI that never exits must not block the cleanup');
+  assert.match(script, /DEPLOY_TIMEOUT/);
+  assert.doesNotMatch(script, /2>&1/, 'capturing output in silence looks like a hang, which invites closing the window');
 });
 test('third-party data is carved out of the MIT license', () => {
   const notice = read('NOTICE.md');
