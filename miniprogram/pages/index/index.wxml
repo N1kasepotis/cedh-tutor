@@ -93,7 +93,7 @@
         <text class="home-button-index home-index-meta">08</text>
         <view class="home-button-text">
           <text class="home-button-zh">环境梯度</text>
-          <text wx:if="{{metaUpdatedLabel}}" class="home-meta-updated">{{metaUpdatedLabel}}</text>
+          <view wx:if="{{metaUpdatedLabel}}" class="home-meta-updated" aria-hidden="true"><text class="home-meta-face">{{metaUpdatedLabel}}</text></view>
           <text class="home-button-en">META TIER LIST</text>
         </view>
       </view>

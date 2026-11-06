@@ -566,7 +566,7 @@ test('home pixel font subset covers every static text glyph on the home page', (
   assert.deepEqual(labelMissing, [], `月报更新日期缺字：${labelMissing.join('')}`);
 });
 
-// 月报入口的更新日期：电光蓝色块、黑字，贴在“环境梯度”后面。读不到就整块不显示，不留空位
+// 月报入口的更新日期：电光蓝色块、黑字，贴在“环境梯度”后面，斜切加双色硬阴影。读不到就整块不显示，不留空位
 test('首页月报入口显示电光蓝的更新日期，读不到就不显示', async () => {
   const vm = require('node:vm');
   const { createRequire } = require('node:module');
@@ -575,7 +575,7 @@ test('首页月报入口显示电光蓝的更新日期，读不到就不显示',
   const filename = path.join(root, 'miniprogram/pages/index/index.js');
   const row = wxml.slice(wxml.indexOf('home-button-meta'), wxml.indexOf('home-community-entry'));
   assert.match(row, /aria-label="环境梯度\{\{metaUpdatedLabel \? '，' \+ metaUpdatedLabel : ''\}\}"/, '读屏也要读到日期');
-  assert.match(row, /<text class="home-button-zh">环境梯度<\/text>\s*<text wx:if="\{\{metaUpdatedLabel\}\}" class="home-meta-updated">\{\{metaUpdatedLabel\}\}<\/text>\s*<text class="home-button-en">META TIER LIST<\/text>/);
+  assert.match(row, /<text class="home-button-zh">环境梯度<\/text>\s*<view wx:if="\{\{metaUpdatedLabel\}\}" class="home-meta-updated" aria-hidden="true"><text class="home-meta-face">\{\{metaUpdatedLabel\}\}<\/text><\/view>\s*<text class="home-button-en">META TIER LIST<\/text>/);
   assert.equal((wxml.match(/home-meta-updated/g) || []).length, 1, '只有月报入口有日期');
 
   const rule = (selector) => {
@@ -592,18 +592,41 @@ test('首页月报入口显示电光蓝的更新日期，读不到就不显示',
   const luminance = (hex) => 0.2126 * channel(hex, 0) + 0.7152 * channel(hex, 1) + 0.0722 * channel(hex, 2);
   const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
   assert.ok(contrast('#00B3FF', '#D0F03C') < 2.5, '蓝字压荧光黄本来就看不清');
-  const label = rule('.home-meta-updated');
-  assert.match(label, /color:\s*#0A0A0A/);
-  assert.match(label, /background:\s*#00B3FF/);
+  const badge = rule('.home-meta-updated');
+  const face = rule('.home-meta-face');
+  assert.match(face, /color:\s*#0A0A0A/);
+  assert.match(face, /background:\s*#00B3FF/);
   assert.ok(contrast('#0A0A0A', '#00B3FF') >= 4.5);
-  assert.match(label, /margin:\s*0 auto 0 \d+rpx/, '右边距 auto 把它贴在中文后面，英文副标题照旧靠右');
-  assert.match(label, /font-size:\s*10px/, '点阵字在 10px 原尺寸最清楚');
-  // 故障行整行变电光蓝，色块要反过来；按下时整行反黑，色块保持电光蓝
-  const glitch = rule('.home-button.is-glitch .home-meta-updated');
-  assert.match(glitch, /color:\s*#00B3FF/);
-  assert.match(glitch, /background:\s*#0A0A0A/);
-  assert.match(rule('.home-button.home-index-active .home-meta-updated'), /background:\s*#00B3FF/);
-  assert.ok(wxss.indexOf('.home-button.home-index-active .home-meta-updated') > wxss.indexOf('.home-button.is-glitch .home-meta-updated'),
+  assert.match(badge, /margin:\s*0 auto 0 \d+rpx/, '右边距 auto 把它贴在中文后面，英文副标题照旧靠右');
+  assert.match(face, /font-size:\s*10px/, '点阵字在 10px 原尺寸最清楚');
+
+  // 斜化走 skewX：本页禁斜体。阴影是两层没有模糊的实色块：本页禁阴影属性
+  const slant = Number(badge.match(/transform:\s*skewX\(-(\d+)deg\)/)[1]);
+  assert.ok(slant >= 8 && slant <= 15, `斜切 ${slant} 度，太小看不出，太大点阵字会糊`);
+  assert.match(badge, /position:\s*relative/);
+  const far = rule('.home-meta-updated::before');
+  const near = rule('.home-meta-updated::after');
+  [far, near].forEach((layer) => assert.match(layer, /content:\s*""[\s\S]*position:\s*absolute[\s\S]*top:\s*0[\s\S]*right:\s*0[\s\S]*bottom:\s*0[\s\S]*left:\s*0/));
+  assert.match(far, /background:\s*#FFFFFF/);
+  assert.match(near, /background:\s*#0A0A0A/);
+  const offset = (block) => Number(block.match(/translate\((\d+)px,\s*\1px\)/)[1]);
+  assert.ok(offset(far) > offset(near) && offset(near) > 0, '两层阴影要错开，远的一层更远');
+  assert.match(face, /position:\s*relative[\s\S]*z-index:\s*1/, '色块要压在两层阴影上面');
+  // 这一行的文字容器会裁掉溢出：色块加错位的总高不能超过中文的行高
+  assert.match(badge, /align-self:\s*flex-start/);
+  const zhSize = Number(rule('.home-button-zh').match(/font-size:\s*(\d+)px/)[1]);
+  const padding = Number(face.match(/padding:\s*(\d+)px/)[1]);
+  assert.ok(10 + padding * 2 + offset(far) <= zhSize, '阴影的下缘会被这一行裁掉');
+
+  // 故障行整行变电光蓝，色块和阴影都要换色；按下时整行反黑，近的一层换白
+  const glitchFace = rule('.home-button.is-glitch .home-meta-face');
+  assert.match(glitchFace, /color:\s*#00B3FF/);
+  assert.match(glitchFace, /background:\s*#0A0A0A/);
+  assert.match(rule('.home-button.is-glitch .home-meta-updated::after'), /background:\s*#FFFFFF/);
+  assert.match(rule('.home-button.is-glitch .home-meta-updated::before'), /background:\s*#0A0A0A/);
+  assert.match(rule('.home-button.home-index-active .home-meta-face'), /background:\s*#00B3FF/);
+  assert.match(rule('.home-button.home-index-active .home-meta-updated::after'), /background:\s*#FFFFFF/);
+  assert.ok(wxss.indexOf('.home-button.home-index-active .home-meta-face') > wxss.indexOf('.home-button.is-glitch .home-meta-face'),
     '按下写在故障之后，两者同时成立时按下胜出');
 
   // 行为：先用本机记的日期，过期才问云函数；问不到保持原样，不弹提示
