@@ -2,6 +2,7 @@ const { enableShareMenu } = require('../../utils/share');
 const { HOME_VORONOI_EDGES } = require('../../config/home-voronoi');
 const { homePixelFontBase64 } = require('../../assets/home-pixel-font');
 const { titleFontBase64 } = require('../../assets/title-font');
+const monthlyLatest = require('../../utils/monthly-latest');
 
 function getHomeNavClearancePx() {
   let windowInfo = {};
@@ -46,6 +47,8 @@ Page({
     // 事故色 glitch 行：每次进首页随机让一个功能入口"故障"成电光蓝，制造不可预测的粗野破坏感
     glitchIndex: 0,
     redactionLine: 3,
+    // 月报入口的“X月X日更新”，读不到时为空，整块不显示
+    metaUpdatedLabel: '',
     // 整页背景 Voronoi 线场：构建期算好的静态几何，进页面推一次就不再动数据。
     // 动效全部交给 CSS transform，不走 setData——每帧过桥重算是移动端最贵的做法。
     fieldLines: HOME_VORONOI_EDGES.map((edge, index) => ({ ...edge, k: `l${index}` })),
@@ -76,10 +79,27 @@ Page({
   },
 
   onShow() {
+    const latest = monthlyLatest.readLatest();
     this.setData({
       glitchIndex: Math.floor(Math.random() * HOME_ACTION_COUNT),
       redactionLine: Math.floor(Math.random() * REDACTION_LINE_COUNT),
+      metaUpdatedLabel: monthlyLatest.updatedLabel(latest && latest.publishedAt),
     });
+    this.refreshMetaUpdated();
+  },
+
+  // 本机记着的日期先显示；六小时内没问过才问一次云函数，问不到就保持原样，首页不为这个弹提示
+  refreshMetaUpdated() {
+    const request = (this.metaRequest || 0) + 1;
+    this.metaRequest = request;
+    this.metaRefresh = monthlyLatest.refreshLatest()
+      .then((latest) => {
+        if (latest && request === this.metaRequest) {
+          this.setData({ metaUpdatedLabel: monthlyLatest.updatedLabel(latest.publishedAt) });
+        }
+      })
+      .catch(() => {});
+    return this.metaRefresh;
   },
 
   onShareAppMessage() {

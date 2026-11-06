@@ -89,10 +89,11 @@
         </view>
       </view>
 
-      <view class="home-button home-button-meta home-button-tall {{glitchIndex === 7 ? 'is-glitch' : ''}}" aria-role="button" aria-label="环境梯度" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goMeta">
+      <view class="home-button home-button-meta home-button-tall {{glitchIndex === 7 ? 'is-glitch' : ''}}" aria-role="button" aria-label="环境梯度{{metaUpdatedLabel ? '，' + metaUpdatedLabel : ''}}" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goMeta">
         <text class="home-button-index home-index-meta">08</text>
         <view class="home-button-text">
           <text class="home-button-zh">环境梯度</text>
+          <text wx:if="{{metaUpdatedLabel}}" class="home-meta-updated">{{metaUpdatedLabel}}</text>
           <text class="home-button-en">META TIER LIST</text>
         </view>
       </view>

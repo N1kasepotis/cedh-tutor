@@ -414,6 +414,27 @@ page {
   background: #00B3FF;
 }
 
+/* 月报入口的更新日期。电光蓝的字直接压在荧光黄上对比度不到 2:1，所以做成电光蓝色块、黑字；
+   右边距 auto 把它贴在中文后面，英文副标题照旧靠右。点阵字在 10px 原尺寸最清楚。 */
+.home-meta-updated {
+  display: block;
+  flex: 0 0 auto;
+  align-self: center;
+  margin: 0 auto 0 16rpx;
+  padding: 3px 4px;
+  color: #0A0A0A;
+  background: #00B3FF;
+  font-size: 10px;
+  letter-spacing: 1px;
+  line-height: 1;
+}
+
+/* 故障行整行变电光蓝，色块反过来才看得见 */
+.home-button.is-glitch .home-meta-updated {
+  color: #00B3FF;
+  background: #0A0A0A;
+}
+
 .home-button.is-glitch .home-button-zh,
 .home-button.is-glitch .home-button-en {
   color: #0A0A0A;
@@ -422,6 +443,12 @@ page {
 /* 暴力按压：整块反相为黑底 + 电光蓝字，而非温柔缩放 */
 .home-index-active {
   background: #0A0A0A;
+}
+
+/* 按下时整行反黑，色块保持电光蓝。写在故障规则之后，两者同时成立时按下胜出 */
+.home-button.home-index-active .home-meta-updated {
+  color: #0A0A0A;
+  background: #00B3FF;
 }
 
 .home-index-active .home-button-index,

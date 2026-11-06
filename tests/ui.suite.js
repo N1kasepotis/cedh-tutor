@@ -561,6 +561,114 @@ test('home pixel font subset covers every static text glyph on the home page', (
   assert.match(text, /名片 \/ 禁牌 \/ 条约 \/ 练习 →/, '入口副标题应在扫描范围内');
   const missing = [...new Set([...text].filter((ch) => /\S/.test(ch) && !mapped.has(ch.codePointAt(0))))];
   assert.deepEqual(missing, [], `首页点阵子集缺字：${missing.join('')}`);
+  // 月报入口的日期是绑定出来的，不在静态文字里，单独查它会用到的字
+  const labelMissing = [...'0123456789月日更新'].filter((ch) => !mapped.has(ch.codePointAt(0)));
+  assert.deepEqual(labelMissing, [], `月报更新日期缺字：${labelMissing.join('')}`);
+});
+
+// 月报入口的更新日期：电光蓝色块、黑字，贴在“环境梯度”后面。读不到就整块不显示，不留空位
+test('首页月报入口显示电光蓝的更新日期，读不到就不显示', async () => {
+  const vm = require('node:vm');
+  const { createRequire } = require('node:module');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
+  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
+  const filename = path.join(root, 'miniprogram/pages/index/index.js');
+  const row = wxml.slice(wxml.indexOf('home-button-meta'), wxml.indexOf('home-community-entry'));
+  assert.match(row, /aria-label="环境梯度\{\{metaUpdatedLabel \? '，' \+ metaUpdatedLabel : ''\}\}"/, '读屏也要读到日期');
+  assert.match(row, /<text class="home-button-zh">环境梯度<\/text>\s*<text wx:if="\{\{metaUpdatedLabel\}\}" class="home-meta-updated">\{\{metaUpdatedLabel\}\}<\/text>\s*<text class="home-button-en">META TIER LIST<\/text>/);
+  assert.equal((wxml.match(/home-meta-updated/g) || []).length, 1, '只有月报入口有日期');
+
+  const rule = (selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const found = wxss.match(new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`));
+    assert.ok(found, `找不到 ${selector}`);
+    return found[1];
+  };
+  // 电光蓝的字直接压在荧光黄上，对比度不到 2:1，所以是色块加黑字
+  const channel = (hex, i) => {
+    const value = parseInt(hex.slice(1 + i * 2, 3 + i * 2), 16) / 255;
+    return value <= 0.03928 ? value / 12.92 : ((value + 0.055) / 1.055) ** 2.4;
+  };
+  const luminance = (hex) => 0.2126 * channel(hex, 0) + 0.7152 * channel(hex, 1) + 0.0722 * channel(hex, 2);
+  const contrast = (a, b) => (Math.max(luminance(a), luminance(b)) + 0.05) / (Math.min(luminance(a), luminance(b)) + 0.05);
+  assert.ok(contrast('#00B3FF', '#D0F03C') < 2.5, '蓝字压荧光黄本来就看不清');
+  const label = rule('.home-meta-updated');
+  assert.match(label, /color:\s*#0A0A0A/);
+  assert.match(label, /background:\s*#00B3FF/);
+  assert.ok(contrast('#0A0A0A', '#00B3FF') >= 4.5);
+  assert.match(label, /margin:\s*0 auto 0 \d+rpx/, '右边距 auto 把它贴在中文后面，英文副标题照旧靠右');
+  assert.match(label, /font-size:\s*10px/, '点阵字在 10px 原尺寸最清楚');
+  // 故障行整行变电光蓝，色块要反过来；按下时整行反黑，色块保持电光蓝
+  const glitch = rule('.home-button.is-glitch .home-meta-updated');
+  assert.match(glitch, /color:\s*#00B3FF/);
+  assert.match(glitch, /background:\s*#0A0A0A/);
+  assert.match(rule('.home-button.home-index-active .home-meta-updated'), /background:\s*#00B3FF/);
+  assert.ok(wxss.indexOf('.home-button.home-index-active .home-meta-updated') > wxss.indexOf('.home-button.is-glitch .home-meta-updated'),
+    '按下写在故障之后，两者同时成立时按下胜出');
+
+  // 行为：先用本机记的日期，过期才问云函数；问不到保持原样，不弹提示
+  const store = new Map(); const calls = []; const toasts = [];
+  let answer = { ok: true, data: { latestPeriod: '2026-10', publishedAt: Date.UTC(2026, 10, 5, 2) } };
+  const fakeWx = {
+    getWindowInfo: () => ({ statusBarHeight: 20, windowHeight: 844 }),
+    getMenuButtonBoundingClientRect: () => ({ bottom: 56 }),
+    showShareMenu() {},
+    showToast: (options) => toasts.push(options),
+    getStorageSync: (key) => (store.has(key) ? store.get(key) : ''),
+    setStorageSync: (key, value) => store.set(key, structuredClone(value)),
+    cloud: { init() {}, async callFunction(options) { calls.push(options.data); if (answer instanceof Error) throw answer; return { result: answer }; } },
+  };
+  const previous = global.wx;
+  global.wx = fakeWx;
+  try {
+    let definition;
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Page: (value) => { definition = value; },
+      require: createRequire(filename),
+      wx: fakeWx,
+      Math,
+    }, { filename });
+    const page = Object.assign(Object.create(definition), {
+      data: structuredClone(definition.data),
+      setData(patch) { Object.assign(this.data, patch); },
+    });
+    assert.equal(page.data.metaUpdatedLabel, '');
+    page.onShow();
+    assert.equal(page.data.metaUpdatedLabel, '', '第一次进首页还不知道日期');
+    await page.metaRefresh;
+    assert.equal(page.data.metaUpdatedLabel, '11月5日更新');
+    assert.deepEqual(calls, [{ action: 'latest' }]);
+
+    page.data.metaUpdatedLabel = '';
+    page.onShow();
+    assert.equal(page.data.metaUpdatedLabel, '11月5日更新', '再进首页立刻显示，不等网络');
+    await page.metaRefresh;
+    assert.equal(calls.length, 1, '六小时内不再问');
+
+    store.clear();
+    answer = new Error('offline');
+    page.data.metaUpdatedLabel = '';
+    page.onShow();
+    await page.metaRefresh;
+    assert.equal(page.data.metaUpdatedLabel, '', '问不到就不显示');
+    assert.equal(toasts.length, 0, '首页不为这个弹提示');
+
+    // 两次进首页的请求先后乱序回来：只认后发的那次
+    store.clear();
+    const pending = [];
+    fakeWx.cloud.callFunction = () => new Promise((resolve) => pending.push(resolve));
+    page.onShow();
+    const first = page.metaRefresh;
+    page.onShow();
+    const second = page.metaRefresh;
+    pending[1]({ result: { ok: true, data: { latestPeriod: '2026-11', publishedAt: Date.UTC(2026, 11, 4) } } });
+    await second;
+    pending[0]({ result: { ok: true, data: { latestPeriod: '2026-10', publishedAt: Date.UTC(2026, 10, 5, 2) } } });
+    await first;
+    assert.equal(page.data.metaUpdatedLabel, '12月4日更新', '先发的请求晚回来，不能盖掉新的日期');
+  } finally {
+    global.wx = previous;
+  }
 });
 
 test('bracket page lists exhaustive reasons without a secondary evidence drawer', () => {

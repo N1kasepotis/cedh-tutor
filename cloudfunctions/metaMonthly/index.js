@@ -17,6 +17,7 @@ exports.main = async (event = {}) => {
   const service = createService({ db: cloud.database(), seed, key: process.env.TOPDECK_API_KEY || privateConfig.topdeckKey });
   try {
     if (event.action === 'get') return { ok: true, data: await service.current(event.period) };
+    if (event.action === 'latest') return { ok: true, data: await service.latest() };
     const context = cloud.getWXContext();
     if (context.SOURCE !== 'wx_trigger' && !matches(event.adminToken, process.env.META_ADMIN_TOKEN || privateConfig.adminToken)) return { ok: false, code: 'FORBIDDEN' };
     if (context.SOURCE === 'wx_trigger') await service.recordTrigger();

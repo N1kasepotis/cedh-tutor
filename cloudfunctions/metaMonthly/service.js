@@ -27,7 +27,16 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
     const stored = version && await read(version.snapshotId);
     const snapshot = stored && stored.snapshot || (!period || seed && period === seed.period ? seed : null);
     const periods = [...new Set([...(pointer && pointer.periods || []), ...(seed ? [seed.period] : [])])].sort().reverse().slice(0, 12);
-    return { snapshot, periods, latestPeriod: pointer && pointer.period || seed && seed.period || null };
+    const publishedAt = stored && version && Number.isFinite(version.publishedAt) ? version.publishedAt : null;
+    return { snapshot, periods, latestPeriod: pointer && pointer.period || seed && seed.period || null, publishedAt };
+  }
+  // 首页只要知道最新一期什么时候发布，不用拉整份月报
+  async function latest() {
+    const pointer = await read(`${PREFIX}current`);
+    return {
+      latestPeriod: pointer && pointer.period || seed && seed.period || null,
+      publishedAt: pointer && Number.isFinite(pointer.publishedAt) ? pointer.publishedAt : null,
+    };
   }
   async function publish(snapshot) {
     const { hash, ...payload } = snapshot;
@@ -41,7 +50,10 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
     if (!saved || saved.snapshot.hash !== snapshot.hash) throw new Error('PUBLISH_VERIFY_FAILED');
     await db.runTransaction(async (transaction) => {
       const pointer = await read(`${PREFIX}current`, transaction);
-      const next = { period: snapshot.period, snapshotId: id, hash: snapshot.hash, publishedAt: now() };
+      // 同一份内容重新发布（比如重跑 seed）不算更新，首页显示的更新日期不跟着变
+      const previous = await read(`${PREFIX}period_${snapshot.period}`, transaction);
+      const unchanged = previous && previous.hash === snapshot.hash && Number.isFinite(previous.publishedAt);
+      const next = { period: snapshot.period, snapshotId: id, hash: snapshot.hash, publishedAt: unchanged ? previous.publishedAt : now() };
       await transaction.collection(COLLECTION).doc(`${PREFIX}period_${snapshot.period}`).set({ data: { ...next, kind: 'meta_monthly' } });
       const periods = [...new Set([snapshot.period, ...(pointer && pointer.periods || [])])].sort().reverse().slice(0, 12);
       const current = !pointer || snapshot.period >= pointer.period ? next : pointer;
@@ -174,6 +186,6 @@ function createService({ db, key, seed = null, now = Date.now, api = network }) 
       lastError: job && job.lastError || null, attempts: job && job.attempts || 0, cleaned: Boolean(job && job.cleaned),
       lastTriggeredAt: scheduler && scheduler.lastTriggeredAt || null };
   }
-  return { current, tick, publish, status, recordTrigger };
+  return { current, latest, tick, publish, status, recordTrigger };
 }
 module.exports = { createService, COLLECTION, PREFIX };

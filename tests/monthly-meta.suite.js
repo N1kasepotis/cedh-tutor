@@ -109,6 +109,125 @@ test('monthly cloud get is read-only; historical publication cannot roll back cu
   // An older backfill remains selectable even though current does not move backwards.
   assert.ok((await service.current()).periods.includes('2026-09'));
 });
+// 首页月报入口的更新日期：云端只回最新一期和发布时间，不回整份月报。
+// 同一份内容重新发布（比如重跑 seed）不算更新，日期不该跟着变
+test('monthly latest is a tiny public read and re-publishing the same content keeps the update time', async () => {
+  const db = memoryDb(); let clock = Date.UTC(2026, 10, 5, 2);
+  const service = createService({ db, seed, now: () => clock });
+  assert.deepEqual(await service.latest(), { latestPeriod: seed.period, publishedAt: null }, '还没发布过，只有随函数带的快照');
+  assert.equal((await service.current()).publishedAt, null);
+  assert.equal(db.writes, 0, '读不写库');
+
+  await service.publish(seed);
+  const first = clock;
+  assert.deepEqual(await service.latest(), { latestPeriod: seed.period, publishedAt: first });
+  assert.equal((await service.current()).publishedAt, first);
+  assert.equal((await service.current(seed.period)).publishedAt, first);
+
+  clock += 86400000;
+  await service.publish(seed);
+  assert.equal((await service.latest()).publishedAt, first, '同一份内容重跑不算更新');
+  assert.equal((await service.current(seed.period)).publishedAt, first);
+
+  const { hash, ...payload } = seed;
+  const revised = { ...payload, fetchedAt: '2026-11-06T00:00:00.000Z' }; revised.hash = engine.hash(revised);
+  await service.publish(revised);
+  assert.equal((await service.latest()).publishedAt, clock, '内容变了才是新的更新');
+  assert.equal((await service.current()).snapshot.hash, revised.hash);
+
+  const newest = clock; clock += 86400000;
+  const old = { ...payload, period: '2026-09' }; old.hash = engine.hash(old);
+  await service.publish(old);
+  assert.deepEqual(await service.latest(), { latestPeriod: seed.period, publishedAt: newest }, '补发旧月份不改首页的日期');
+  const backfilled = clock;
+  assert.equal((await service.current('2026-09')).publishedAt, backfilled);
+  clock += 86400000;
+  await service.publish(old);
+  assert.equal((await service.current('2026-09')).publishedAt, backfilled, '旧月份原样重发也不算更新，比的是这一期自己的内容');
+
+  const next = { ...payload, period: '2026-11' }; next.hash = engine.hash(next);
+  await service.publish(next);
+  assert.deepEqual(await service.latest(), { latestPeriod: '2026-11', publishedAt: clock }, '最新一期来自云端记录，不是随函数带的快照');
+
+  // 快照文档读不到时退回随函数带的快照，那份快照没有发布时间
+  const pointer = db.docs.get(`${PREFIX}current`);
+  db.docs.delete(pointer.snapshotId);
+  const fallback = await service.current();
+  assert.equal(fallback.snapshot.hash, seed.hash);
+  assert.equal(fallback.publishedAt, null);
+});
+
+test('monthly cloud entry serves latest to anyone and never runs maintenance for it', async () => {
+  const calls = [];
+  const spy = (name) => async () => { calls.push(name); return { latestPeriod: '2026-10', publishedAt: null }; };
+  const service = { current: spy('current'), latest: spy('latest'), tick: spy('tick'), status: spy('status'), publish: spy('publish'), recordTrigger: spy('trigger') };
+  const main = cloudEntry({ service });
+  const answer = await main({ action: 'latest' });
+  assert.equal(answer.ok, true);
+  assert.deepEqual(answer.data, { latestPeriod: '2026-10', publishedAt: null });
+  assert.deepEqual(calls, ['latest']);
+  calls.length = 0;
+  assert.equal((await main({ action: 'latest', force: true, period: '2026-09' })).ok, true);
+  assert.deepEqual(calls, ['latest'], '多余参数不会变成别的操作');
+});
+
+test('home update label uses Beijing dates, asks at most every six hours and keeps the old date on failure', async () => {
+  const latest = require('../miniprogram/utils/monthly-latest');
+  assert.equal(latest.updatedLabel(Date.parse('2026-11-04T20:27:19Z')), '11月5日更新', 'UTC 晚上已经是北京第二天');
+  assert.equal(latest.updatedLabel(Date.parse('2026-11-30T15:59:59Z')), '11月30日更新');
+  assert.equal(latest.updatedLabel(Date.parse('2026-11-30T16:00:00Z')), '12月1日更新');
+  assert.equal(latest.updatedLabel(Date.parse('2026-12-31T16:00:00Z')), '1月1日更新');
+  for (const bad of [null, undefined, NaN, Infinity, '1794000000000', 0, Date.UTC(2026, 9, 31)]) {
+    assert.equal(latest.updatedLabel(bad), '', String(bad));
+  }
+
+  const store = new Map(); const calls = [];
+  let answer = { ok: true, data: { latestPeriod: '2026-10', publishedAt: Date.UTC(2026, 10, 5, 2) } };
+  const api = {
+    getStorageSync: (key) => (store.has(key) ? store.get(key) : ''),
+    setStorageSync: (key, value) => store.set(key, structuredClone(value)),
+    cloud: { init() {}, async callFunction(options) { calls.push(options); if (answer instanceof Error) throw answer; return { result: answer }; } },
+  };
+  const now = Date.UTC(2026, 10, 6, 1);
+  assert.equal(latest.readLatest(api), null);
+  assert.deepEqual(await latest.refreshLatest(api, now), { latestPeriod: '2026-10', publishedAt: Date.UTC(2026, 10, 5, 2) });
+  assert.deepEqual(calls.map((call) => ({ name: call.name, data: call.data })), [{ name: 'metaMonthly', data: { action: 'latest' } }], '只问发布时间，不拉整份月报');
+  assert.ok(calls[0].timeout <= 10000);
+  assert.equal(await latest.refreshLatest(api, now + latest.TTL - 1), null, '六小时内不再问');
+  assert.equal(calls.length, 1);
+  answer = { ok: true, data: { latestPeriod: '2026-11', publishedAt: Date.UTC(2026, 11, 4) } };
+  assert.equal((await latest.refreshLatest(api, now + latest.TTL)).latestPeriod, '2026-11');
+  assert.equal(latest.updatedLabel(latest.readLatest(api).publishedAt), '12月4日更新');
+
+  const later = now + latest.TTL * 3;
+  for (const failure of [new Error('offline'), { ok: false, code: 'FORBIDDEN' },
+    { ok: true, data: { latestPeriod: '2026-13', publishedAt: Date.UTC(2026, 11, 4) } },
+    { ok: true, data: { latestPeriod: '2026-11', publishedAt: '2026-12-04' } }]) {
+    answer = failure;
+    await assert.rejects(latest.refreshLatest(api, later));
+  }
+  assert.equal(latest.readLatest(api).publishedAt, Date.UTC(2026, 11, 4), '问失败或拿到坏数据，本机记的日期不动');
+
+  store.clear();
+  answer = { ok: true, data: { latestPeriod: '2026-10', publishedAt: null } };
+  assert.equal((await latest.refreshLatest(api, now)).publishedAt, null);
+  assert.equal(latest.updatedLabel(latest.readLatest(api).publishedAt), '', '云端还没发布过就不显示');
+  assert.equal(await latest.refreshLatest(api, now + 1), null, '也记下检查时间，不会每次都问');
+
+  store.clear();
+  assert.equal(latest.remember({ latestPeriod: '2026-10', snapshot: {} }, api, now), false, '旧版云函数不带发布时间，不记');
+  assert.equal(latest.remember({ latestPeriod: '2026-10', publishedAt: null, snapshot: {} }, api, now), false, '月报页拿到的是没发布过的随包快照，也不记');
+  assert.equal(latest.readLatest(api), null);
+  assert.equal(latest.remember({ latestPeriod: '2026-10', publishedAt: Date.UTC(2026, 10, 5, 2), snapshot: {} }, api, now), true);
+  const before = calls.length;
+  assert.equal(await latest.refreshLatest(api, now + 1000), null, '月报页刚记过，首页不用再问');
+  assert.equal(calls.length, before);
+  await assert.rejects(latest.fetchLatest({ ...api, cloud: undefined }), /UNAVAILABLE/);
+
+  const metaJs = fs.readFileSync(path.join(root, 'miniprogram/pages/meta/meta.js'), 'utf8');
+  assert.match(metaJs, /if \(result\.snapshot\.period === result\.latestPeriod\) \{\s*monthly\.cache\(result\);\s*monthlyLatest\.remember\(result\);\s*\}/,
+    '月报页只在拿到最新一期时记日期，翻旧月份不算');
+});
 test('monthly cloud worker checkpoints, resumes, publishes once and releases its lease', async () => {
   const db = memoryDb(); let fetches = 0;
   const api = { async fetchEvents() { fetches += 1; return ['a', 'b', 'c'].map((id) => fixture(id)); }, async fetchInfo() { return info; }, async sleep() {},

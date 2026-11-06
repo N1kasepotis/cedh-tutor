@@ -7,6 +7,7 @@ const {
 const { enableShareMenu } = require('../../utils/share');
 const { homePixelFontBase64 } = require('../../assets/home-pixel-font');
 const monthly = require('../../utils/monthly-meta');
+const monthlyLatest = require('../../utils/monthly-latest');
 
 // 观察中有几百行，搜索会把它们展开过桥。等输入停一下再筛，别每敲一个字传一次。
 const SEARCH_DELAY_MS = 150;
@@ -81,7 +82,10 @@ Page({
       const result = await monthly.fetchMonthly(period);
       if (request !== this.monthRequest) return;
       this.applyMonthly(result.snapshot, result.periods || []);
-      if (result.snapshot.period === result.latestPeriod) monthly.cache(result);
+      if (result.snapshot.period === result.latestPeriod) {
+        monthly.cache(result);
+        monthlyLatest.remember(result);
+      }
     } catch (_) {
       if (request !== this.monthRequest) return;
       this.setData({ monthOffline: Boolean(this.monthSnapshot), monthError: this.monthSnapshot ? '暂未刷新，正在显示已保存的月报' : '月报暂时无法读取，请重试' });
