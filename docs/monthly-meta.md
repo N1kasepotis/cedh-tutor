@@ -44,6 +44,12 @@ score = 25 × (p/μ + c)
 
 `scripts/deploy-monthly-meta.ps1` 一步完成下面第 2、3 步的代码上传和暂存清理，Windows PowerShell 5.1 就能运行。运行时别关窗口：窗口被关时收尾不会执行，密钥副本会留到下次运行才被清掉。代码更新后还要调用一次 `seed`，随函数携带的快照才会发布。
 
+2026-11-06 第一次用真实 CLI 跑这个脚本：部署成功了，脚本却报 `DEPLOY_FAILED`，暂存目录连同密钥副本也没删掉。CLI 的结果表是 UTF-8，PowerShell 5.1 按本机的 gb2312 读，表格竖线变成汉字，成功判断就匹配不上；收尾删目录时 CLI 留下的子进程还占着日志，删除第一下就失败。副本留了约两分钟，发现后覆盖明文、移到回收站。它只在本机同一账户的临时目录里，同样的值本来就在这个账户的环境变量中，所以没有更换 key。
+
+现在日志按 UTF-8 读，成功判断不依赖分隔符；收尾先抹掉密钥副本，再重试删目录，删不掉时只剩日志和公开代码；上次留下的目录被锁着时，也不再挡住下一次部署。用模拟真实输出的假 CLI 对照过：旧脚本在 UTF-8 表格、子进程占着日志、成功后卡住三种情况下失败，新脚本六种情况全部通过。
+
+要彻底不在本机生成密钥副本，可以在云开发控制台给 `metaMonthly` 配置环境变量 `TOPDECK_API_KEY` 和 `META_ADMIN_TOKEN`（函数优先读环境变量），之后部署就用不着 `runtime-secrets.json`。脚本目前还没有跳过这个文件的开关。
+
 1. 本机用户级 `TOPDECK_API_KEY` 已配置。另创建至少 32 字符的随机 `META_ADMIN_TOKEN` 用于维护操作。两者均不进入 Git、聊天或前端。
 2. 将 `cloudfunctions/metaMonthly` 复制到私有临时目录，并仅在该目录生成忽略文件 `runtime-secrets.json`，字段 `topdeckKey`、`adminToken`。支持用服务端环境变量替代该文件。
 3. 使用官方 DevTools CLI `cloud functions deploy --env cloudbase-d6gvqujh4d0efe37f --paths <临时目录>/metaMonthly --project <实际开发工程> --remote-npm-install`。在原生云开发控制台将超时设为 60 秒、内存保留 256 MB。CLI 代码上传不会创建触发器，需在实际工程中右键本函数的 `config.json`，选择「上传触发器」，再到云函数详情刷新确认线上规则。

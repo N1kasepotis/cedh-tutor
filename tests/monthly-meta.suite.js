@@ -605,7 +605,27 @@ test('monthly deploy script runs on the Windows PowerShell this machine has', ()
   assert.match(script, /^[\x00-\x7f]*$/, 'without a BOM, non-ASCII text is garbled when PowerShell 5.1 reads the script');
   assert.doesNotMatch(script, /ToHexString|RandomNumberGenerator\]::Fill/, 'these need PowerShell 7');
   assert.match(script, /Where-Object \{ \$_\.Name -ne 'runtime-secrets\.json' \}/);
-  assert.match(script, /finally \{[\s\S]*Remove-Item/, 'the staging copy holds secrets and must always be removed');
+  assert.match(script, /finally \{[\s\S]*Remove-Staging \$resolved/, 'the staging copy holds secrets and must always be removed');
+  // 2026-11-06, the first run with the real CLI: its result table is UTF-8, and read in this machine's gb2312 the box
+  // characters became CJK letters, so a good deploy was reported as DEPLOY_FAILED. A CLI child also still held the logs
+  // when finally ran, the removal failed on the first file, and the folder kept the secrets copy.
+  assert.match(script, /Get-Content -LiteralPath \$stdout, \$stderr -Raw -Encoding UTF8/);
+  const remover = script.slice(script.indexOf('function Remove-Staging'), script.indexOf('# A run whose window was closed'));
+  const wipe = remover.indexOf("WriteAllText($secrets, '{}')");
+  assert.ok(wipe > 0 && wipe < remover.indexOf('Remove-Item -LiteralPath $folder'), 'wipe the secrets before trying to remove the folder');
+  assert.match(remover, /for \(\$i = 0; \$i -lt \$attempts/, 'retry while a CLI child still holds the logs');
+  assert.match(script, /ForEach-Object \{ \$null = Remove-Staging \$_\.FullName \d+ \}/, 'a locked leftover must not stop the next deploy');
+  // PowerShell runs .NET regex, whose word classes count CJK letters as word characters; JavaScript's do not.
+  // Translate them so these checks use the same semantics the script does.
+  const dotnet = (pattern) => new RegExp(pattern.replace(/\\W/g, '[^\\p{L}\\p{N}_]').replace(/\\w/g, '[\\p{L}\\p{N}_]'), 'u');
+  const succeeded = dotnet(script.match(/\$succeeded = '([^']+)'/)[1]);
+  const failed = dotnet(script.match(/\$failed = '([^']+)'/)[1]);
+  assert.equal(dotnet('metaMonthly\\W+true').test('\u9239? metaMonthly \u9239? true'), false, 'the old pattern is what failed on 2026-11-06');
+  const bar = String.fromCharCode(0x2502);
+  assert.ok(succeeded.test(`${bar} metaMonthly ${bar} true    ${bar} 10 ${bar}`));
+  assert.ok(succeeded.test('\u9239? metaMonthly \u9239? true    \u9239? 10'), 'still matches if the box characters are ever mis-decoded');
+  assert.ok(!succeeded.test(`${bar} metaMonthly ${bar} false ${bar}\n${bar} other ${bar} true ${bar}`), 'a true on another row does not count');
+  assert.ok(failed.test(`${bar} metaMonthly ${bar} false ${bar}`));
   // On 2026-11-04 a run ended without its finally block and left the secrets copy behind.
   const sweep = script.indexOf("-Filter 'cedh-monthly-deploy-*'");
   assert.ok(sweep > 0 && sweep < script.indexOf('New-Item -ItemType Directory'), 'each run first removes what an interrupted run left behind');
