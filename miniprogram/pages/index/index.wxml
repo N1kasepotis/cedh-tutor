@@ -1,16 +1,3 @@
-<!-- 故障行的序号底版：七段数码管，两位数字都走这一个模板；亮哪几段由 index.wxss 的段位表决定 -->
-<template name="home-clock-digit">
-  <view class="home-digit home-digit-{{digit}}">
-    <view class="home-seg home-seg-a"></view>
-    <view class="home-seg home-seg-b"></view>
-    <view class="home-seg home-seg-c"></view>
-    <view class="home-seg home-seg-d"></view>
-    <view class="home-seg home-seg-e"></view>
-    <view class="home-seg home-seg-f"></view>
-    <view class="home-seg home-seg-g"></view>
-  </view>
-</template>
-
 <view class="page home">
   <view class="home-field" aria-hidden="true">
     <view class="home-field-drift">
@@ -45,10 +32,6 @@
 
     <view class="home-actions" aria-role="navigation" aria-label="主要功能">
       <view class="home-button home-button-edhti home-button-tall home-button-heavy {{glitchIndex === 0 ? 'is-glitch' : ''}}" aria-role="button" aria-label="人格测试" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goEdhti">
-        <view class="home-button-index home-index-edhti" aria-hidden="true">
-          <template is="home-clock-digit" data="{{digit: 0}}" />
-          <template is="home-clock-digit" data="{{digit: 1}}" />
-        </view>
         <view class="home-button-text">
           <text class="home-button-zh">人格测试</text>
           <text class="home-button-en">EDHTI PROFILE</text>
@@ -56,10 +39,6 @@
       </view>
 
       <view class="home-button home-button-match home-button-short home-button-shift {{glitchIndex === 1 ? 'is-glitch' : ''}}" aria-role="button" aria-label="火花觉醒，指挥官问卷" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goQuiz">
-        <view class="home-button-index home-index-match" aria-hidden="true">
-          <template is="home-clock-digit" data="{{digit: 0}}" />
-          <template is="home-clock-digit" data="{{digit: 2}}" />
-        </view>
         <view class="home-button-text">
           <text class="home-button-zh">火花觉醒</text>
           <text class="home-button-en">COMMANDER FINDER</text>
@@ -69,10 +48,6 @@
       <view class="home-rule-slash" aria-hidden="true">/////////////////////////////</view>
 
       <view class="home-button home-button-bracket {{glitchIndex === 2 ? 'is-glitch' : ''}}" aria-role="button" aria-label="强度分级" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goBracket">
-        <view class="home-button-index home-index-bracket" aria-hidden="true">
-          <template is="home-clock-digit" data="{{digit: 0}}" />
-          <template is="home-clock-digit" data="{{digit: 3}}" />
-        </view>
         <view class="home-button-text">
           <text class="home-button-zh">强度分级</text>
           <text class="home-button-en">BRACKET ANALYSIS</text>
@@ -80,10 +55,6 @@
       </view>
 
       <view class="home-button home-button-playtest home-button-short {{glitchIndex === 3 ? 'is-glitch' : ''}}" aria-role="button" aria-label="套牌试玩" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goPlaytest">
-        <view class="home-button-index home-index-playtest" aria-hidden="true">
-          <template is="home-clock-digit" data="{{digit: 0}}" />
-          <template is="home-clock-digit" data="{{digit: 4}}" />
-        </view>
         <view class="home-button-text">
           <text class="home-button-zh home-button-zh-sm">套牌试玩</text>
           <text class="home-button-en">DECK SANDBOX</text>
@@ -91,10 +62,6 @@
       </view>
 
       <view class="home-button home-button-life home-button-tall home-button-heavy {{glitchIndex === 4 ? 'is-glitch' : ''}}" aria-role="button" aria-label="血量记录" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goLifeTracker">
-        <view class="home-button-index home-index-life" aria-hidden="true">
-          <template is="home-clock-digit" data="{{digit: 0}}" />
-          <template is="home-clock-digit" data="{{digit: 5}}" />
-        </view>
         <view class="home-button-text">
           <text class="home-button-zh">血量记录</text>
           <text class="home-button-en">LIFE COUNTER</text>
@@ -102,10 +69,6 @@
       </view>
 
       <view class="home-button home-button-random home-button-shift {{glitchIndex === 5 ? 'is-glitch' : ''}}" aria-role="button" aria-label="混沌工具" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goRandom">
-        <view class="home-button-index home-index-random" aria-hidden="true">
-          <template is="home-clock-digit" data="{{digit: 0}}" />
-          <template is="home-clock-digit" data="{{digit: 6}}" />
-        </view>
         <view class="home-button-text">
           <text class="home-button-zh">混沌工具</text>
           <text class="home-button-en">CHAOS TOOLKIT</text>
@@ -113,10 +76,6 @@
       </view>
 
       <view class="home-button home-button-tracker {{glitchIndex === 6 ? 'is-glitch' : ''}}" aria-role="button" aria-label="我的主将" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goTracker">
-        <view class="home-button-index home-index-tracker" aria-hidden="true">
-          <template is="home-clock-digit" data="{{digit: 0}}" />
-          <template is="home-clock-digit" data="{{digit: 7}}" />
-        </view>
         <view class="home-button-text">
           <text class="home-button-zh">我的主将</text>
           <text class="home-button-en">COMMANDER LOG</text>
@@ -124,10 +83,6 @@
       </view>
 
       <view class="home-button home-button-meta home-button-tall {{glitchIndex === 7 ? 'is-glitch' : ''}}" aria-role="button" aria-label="环境梯度{{metaUpdatedLabel ? '，' + metaUpdatedLabel : ''}}" hover-class="home-index-active" hover-start-time="0" hover-stay-time="60" bindtap="goMeta">
-        <view class="home-button-index home-index-meta" aria-hidden="true">
-          <template is="home-clock-digit" data="{{digit: 0}}" />
-          <template is="home-clock-digit" data="{{digit: 8}}" />
-        </view>
         <view class="home-button-text">
           <text class="home-button-zh">环境梯度</text>
           <view wx:if="{{metaUpdatedLabel}}" class="home-meta-updated" aria-hidden="true"><text class="home-meta-face">{{metaUpdatedLabel}}</text></view>

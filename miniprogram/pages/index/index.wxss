@@ -205,20 +205,16 @@ page {
   border-top: 5px solid #0A0A0A;
 }
 
-/* 有意破坏：行高不等、部分偏移打破左对齐线、编号巨号压字、分割线粗暴混用 */
+/* 有意破坏：行高不等、部分偏移打破左对齐线、分割线粗暴混用 */
 .home-button {
   box-sizing: border-box;
-  position: relative;
   display: flex;
   min-width: 0;
   min-height: 0;
   flex: 1 1 0;
   align-items: center;
   padding: 0 40rpx 0 20rpx;
-  /* 从 visible 改成 hidden：沉底的巨号序号靠这一条被行的下缘切断。
-     裁切发生在 padding box 边界，也就是 border-bottom 那条发丝线的**内**侧，
-     所以数字正好被那条线切住，而不是被切在线之外留出一道缝。 */
-  overflow: hidden;
+  overflow: visible;
   color: #0A0A0A;
   background: transparent;
   border: 0;
@@ -243,152 +239,7 @@ page {
   border-bottom: 5px solid #0A0A0A;
 }
 
-/* ===== 序号：故障行的七段数码管底版 =====
-   01–08 画成数字钟上那种七段数码管：每一段是一块直角色块，段与段之间留一道缝。
-   字形不再借字体，是七块矩形自己拼出来的，所以笔画粗细、缝宽、倾角都由下面几个数决定，
-   不受字体加载与回退影响，首页也不必为它引进第三款字。
-
-   **整枚数字必须完整落在行里，不能再被行框裁掉**。巨号那一版把字号放到行高的两倍、
-   上下各裁掉一截，那对 Archivo 的字形无所谓；七段数码管不行——顶段、底段一被裁掉，
-   07 就读成 01，08 只剩一个 H。所以这里 1em 就是一枚数字的高度，字号让它填到行高的九成左右：
-   390×844 实测基础行内高 37.9px，4.1vh 合 34.6px。行最矮的是屏高刚过 700px 的机型
-   （标题区从 40vh 跳到 45vh），那一档也只到行高的 99%。
-
-   **字号按行高分三档，比例直接取自已有的 flex-grow**（tall 1.45 / base 1 / short 0.72），
-   所以「每一行的数码管填满自己那一行」是同一条规则，不是八个各自拍脑袋的数值。
-   **字号必须用 vh，不能用 px**：八行是 .home-actions（flex 1 1 55%）按 flex-grow 分的，
-   高度跟着视口高走。用 px 的话只在某一种屏高上正好填满，换台机器不是溢出就是留白。
-
-   **前倾 10 度、不横向拉伸**：数字钟的数码管本来就前倾，skewX(-10deg) 与字标同一个动作。
-   巨号那一版的横向拉伸撤掉了：拉宽会让竖段比横段粗近一倍，而数码管的七段要一样粗。
-
-   **贴在行的右端，不再压在中文底下**。数码管只有行高那么大，两位数字最宽也就 100px，
-   放在左边正好被四个中文整个盖住，矮行上几乎看不见；挪到右端，压在它上面的只剩一行
-   10px 的英文副标题，读得出是个钟。right 取行的右内边距 40rpx；斜切绕右端的中线，
-   右上角往右偏约 0.09em，高行也不到 5px，右内边距盖得住，不会被行框切出一道竖边。
-
-   常态不显示：底版只在随机 glitch 到的那一行出现，见下面的 is-glitch 规则。 */
-.home-button-index {
-  position: absolute;
-  display: flex;
-  right: 40rpx;
-  top: 50%;
-  z-index: 0;
-  font-size: 4.1vh;
-  transform: translateY(-50%) skewX(-10deg);
-  transform-origin: right center;
-  opacity: 0;
-  pointer-events: none;
-}
-
-/* 底版只在随机 glitch 到的那一行显示——八行同时亮着数码管会跟整页线场糊成一团，
-   而每次进页只亮一行，它就从墙纸变成了一次事件。
-   同屏永远只有一个数字，所以「八色两两分得开」这条判据随之作废：
-   你根本没机会并排比较。留下的判据只有「压在它上面的黑字还读不读得了」。
-
-   **不透明度是 0.28 而不是常态那套 0.38**：glitch 行的底是电光蓝，
-   比酸性黄绿暗得多（相对亮度 0.37 对 0.78），再叠一层暗色就没余量了——
-   实测 0.38 时三行的黑字掉到 4.5:1 以下（最差 3.91:1）。
-   0.28 是窗口中点：最差黑字 4.8:1 过 AA，最差可见度 1.27:1 仍看得出来。
-
-   **数字保留本行的主题色，不跟着 glitch 转黑**：整行都反相成蓝底黑字，
-   只有底版还留着这一行自己的颜色——读作「故障之下这一行的本色透出来」。 */
-.home-button.is-glitch .home-button-index {
-  opacity: 0.28;
-}
-
-/* 高行与矮行的数码管按各自的 flex-grow 等比放大缩小，八行填满的比例才一致 */
-.home-button-tall .home-button-index {
-  font-size: 5.95vh;
-}
-
-.home-button-short .home-button-index {
-  font-size: 2.95vh;
-}
-
-/* 一枚数字宽 0.8、高 1（单位是这一行数码管的高度），上下两半各接近一个方格，
-   读作方方正正的「方体」；两枚之间隔 0.22。 */
-.home-digit {
-  position: relative;
-  flex: 0 0 auto;
-  width: 0.8em;
-  height: 1em;
-}
-
-.home-digit + .home-digit {
-  margin-left: 0.22em;
-}
-
-/* 段是直角色块，颜色跟着容器上那条 .home-index-* 主题色走（currentColor），
-   按压反相时容器换色，七段一起换。竖段占住四角、各贯通半高，横段夹在两列竖段之间，
-   段与段之间一律留 0.04 的缝——数字钟的样子就在这几道缝上。七段一样粗，都是 0.15。 */
-.home-seg {
-  position: absolute;
-  background: currentColor;
-}
-
-.home-seg-a { left: 0.19em; top: 0; width: 0.42em; height: 0.15em; }
-.home-seg-b { left: 0.65em; top: 0; width: 0.15em; height: 0.48em; }
-.home-seg-c { left: 0.65em; top: 0.52em; width: 0.15em; height: 0.48em; }
-.home-seg-d { left: 0.19em; top: 0.85em; width: 0.42em; height: 0.15em; }
-.home-seg-e { left: 0; top: 0.52em; width: 0.15em; height: 0.48em; }
-.home-seg-f { left: 0; top: 0; width: 0.15em; height: 0.48em; }
-.home-seg-g { left: 0.19em; top: 0.425em; width: 0.42em; height: 0.15em; }
-
-/* 段位表：每个数字熄掉哪几段。标准七段命名：a 顶、b 右上、c 右下、d 底、e 左下、f 左上、g 中。
-   只列首页用得到的 0–8；8 七段全亮，所以没有它的条目。 */
-.home-digit-0 .home-seg-g,
-.home-digit-1 .home-seg-a,
-.home-digit-1 .home-seg-d,
-.home-digit-1 .home-seg-e,
-.home-digit-1 .home-seg-f,
-.home-digit-1 .home-seg-g,
-.home-digit-2 .home-seg-c,
-.home-digit-2 .home-seg-f,
-.home-digit-3 .home-seg-e,
-.home-digit-3 .home-seg-f,
-.home-digit-4 .home-seg-a,
-.home-digit-4 .home-seg-d,
-.home-digit-4 .home-seg-e,
-.home-digit-5 .home-seg-b,
-.home-digit-5 .home-seg-e,
-.home-digit-6 .home-seg-b,
-.home-digit-7 .home-seg-d,
-.home-digit-7 .home-seg-e,
-.home-digit-7 .home-seg-f,
-.home-digit-7 .home-seg-g {
-  display: none;
-}
-
-/* 每行的序号取该入口目标页自己的主题色（与 config/particle.js 的 palettes 同源），
-   八行八色互不重复，序号因此成了「这一行通向哪个世界」的色标。
-   基类刻意不设 color——颜色只从下面八条里来，漏掉一行会直接继承成黑色而露馅。
-
-   **色相沿用，明度重算**：粒子主题色是为各自页面的深色底调的，直接搬到首页这块
-   酸性黄绿上全部不可读——实测 1.53–2.72:1，最差的 tracker 金只有 1.53:1。
-   这里保住色相与饱和度、只压明度。
-
-   序号改成 0.38 的底版之后，「这一色本身够不够亮」已经不是判据了——它不再是要读的
-   文字。真正要守的换成两条，都在测试里按混合后的实际颜色算：
-   ① 八色混到底色上之后**仍然两两分得开**（ΔE ≥ 12）。这条比原来那条严得多：
-      这八个色是为了当小字才压暗的，压暗的色低透明度混上去会一起塌向底色，
-      0.19 时最小 ΔE 只剩 5.6（8 位量化后），八行看着完全一样。
-   ② 压在数字上的中文与英文副标题**仍然过 AA**（都 ≥ 4.5:1）。
-   改任何一条色、或改 opacity，这两项都要重新验算。 */
-.home-index-edhti    { color: #C00080; } /* 人格测试：品红 */
-.home-index-match    { color: #804B07; } /* 火花觉醒：橙棕 */
-.home-index-bracket  { color: #1A705F; } /* 强度分级：翡翠 */
-.home-index-playtest { color: #305ECB; } /* 套牌试玩：长春花蓝 */
-.home-index-life     { color: #6A0C1F; } /* 血量记录：深绯 */
-.home-index-random   { color: #920FB3; } /* 混沌工具：紫罗兰 */
-.home-index-tracker  { color: #4B6600; } /* 我的主将：橄榄 */
-.home-index-meta     { color: #B6210A; } /* 环境梯度：朱砂 */
-
 .home-button-text {
-  /* 压在沉底巨号之上。绝对定位的元素默认画在普通流元素之后，
-     所以这里必须显式提层，否则序号会盖住中文。 */
-  position: relative;
-  z-index: 1;
   display: flex;
   min-width: 0;
   flex: 1 1 auto;
@@ -538,7 +389,6 @@ page {
   background: #00B3FF;
 }
 
-.home-index-active .home-button-index,
 .home-index-active .home-button-zh,
 .home-index-active .home-button-en {
   color: #00B3FF;

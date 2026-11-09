@@ -96,19 +96,10 @@ test('home is a single-screen acid index with the eight existing actions', () =>
       'META TIER LIST',
     ],
   );
-  // 01–08 序号：故障行的七段数码管底版。两位数字都走同一个 home-clock-digit 模板，
-  // 唯一按行变化的是颜色——取该入口目标页自己的主题色，详见下方的色板与对比度校验。
-  // 形态本身仍是八行同款：不得再出现按行的字号、形变或模板差异。纯装饰，读屏跳过。
-  const indexTags = Array.from(
-    wxml.matchAll(/<view class="home-button-index([^"]*)" aria-hidden="true">\s*<template is="home-clock-digit" data="\{\{digit: (\d)\}\}" \/>\s*<template is="home-clock-digit" data="\{\{digit: (\d)\}\}" \/>\s*<\/view>/g),
-    (m) => ({ extra: m[1].trim(), num: `${m[2]}${m[3]}` }),
-  );
-  assert.deepEqual(indexTags.map((t) => t.num),
-    ['01', '02', '03', '04', '05', '06', '07', '08']);
-  indexTags.forEach((t) => {
-    assert.match(t.extra, /^home-index-[a-z]+$/,
-      `序号只许再挂一枚按行的主题色类，实际是「${t.extra}」`);
-  });
+  // 入口不带序号。01–08 前后改过九轮，最后一版是 glitch 行里的七段数码管，2026-11-09 看过效果后整体撤掉，
+  // 八枚按行的主题色一并删除。这里挡住它们被加回来（home-index-active 是整行按压态，不在此列）。
+  assert.doesNotMatch(wxml, /home-button-index|home-clock|home-index-(?!active)/, '首页入口已撤掉序号，不要再加回');
+  assert.doesNotMatch(wxss, /home-button-index|home-digit|home-seg|\.home-index-(?!active)/, '序号的样式已随序号一并删除');
   assert.deepEqual(
     Array.from(wxml.matchAll(/class="home-button home-button-([a-z]+)/g), (match) => match[1]),
     ['edhti', 'match', 'bracket', 'playtest', 'life', 'random', 'tracker', 'meta'],
@@ -211,12 +202,7 @@ test('home is a single-screen acid index with the eight existing actions', () =>
     '首页一律直角，全文件只此一条显式的 border-radius: 0',
   );
 
-  // 色板只有一类例外：八枚序号的入口主题色，集中在一处、逐条校验，不许散到别处；
-  // 剔掉它们之后，全页其余部分仍必须只用那六个字面量。
-  const entryHues = Array.from(
-    wxss.matchAll(/\.home-index-[a-z]+\s*\{\s*color:\s*(#[0-9A-F]{6});/gi),
-    (match) => match[1].toUpperCase(),
-  );
+  // 色板没有例外：全页只用下面六个字面量（八枚序号主题色已随序号一并撤掉）。
   // 扫剥掉注释的版本：色板契约管的是「页面画了什么」，不是「注释提到什么」。
   // 注释里为交代取舍常要写出备选色值（例如「若要达 AA 需把某个蓝压到多深」），
   // 那不是使用。真正的使用一定出现在声明里，照样会被这里抓到。
@@ -224,7 +210,7 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   const colorLiterals = Array.from(
     wxssNoComments.matchAll(/#[0-9a-f]{6}|rgba?\([^)]*\)/gi),
     (match) => match[0].replace(/\s/g, '').toUpperCase(),
-  ).filter((c) => !entryHues.includes(c));
+  );
   assert.deepEqual(
     new Set(colorLiterals),
     new Set(['#D0F03C', '#FFFFFF', '#0A0A0A', '#00B3FF', 'RGBA(0,0,0,0.35)', 'RGBA(0,0,0,0.7)']),
@@ -233,208 +219,8 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   // 中文入口为纯黑（最大对比），英文副标题 0.7 过 AA 正文对比度；imprint 退到 0.35 近乎隐形
   assert.match(wxss, /\.home-button-zh\s*{[^}]*color:\s*#0A0A0A/);
 
-  // 序号是故障行的七段数码管底版。这一组锁的是「填满这一行、又读得出是哪个数」的几个前提；
-  // 段位表与段的几何另有一条测试。
-  const indexRule = wxss.match(/\.home-button-index\s*\{[^}]*\}/)[0];
-
-  // ① 三档字号必须是从已有的 flex-grow 等比推出来的，不是三个拍脑袋的数值。
-  // 「每一行的数字填满自己那一行」是一条规则；三个各自调出来的数值就只是巧合，
-  // 改了行高比例之后会悄悄失配——有的行满出去、有的行留白。
-  const growOf = (cls) => Number((wxss.match(new RegExp(`\\.${cls}\\s*\\{[^}]*flex-grow:\\s*(\\d*\\.?\\d+)`)) || [])[1]);
-  const vhOf = (rule) => Number((rule.match(/font-size:\s*(\d*\.?\d+)vh/) || [])[1]);
-  const baseVh = vhOf(indexRule);
-  assert.ok(baseVh > 0, '底版字号必须用 vh：八行高度跟着视口高走，用 px 换台机器就填不满');
-  const tallRule = wxss.match(/\.home-button-tall \.home-button-index\s*\{[^}]*\}/);
-  const shortRule = wxss.match(/\.home-button-short \.home-button-index\s*\{[^}]*\}/);
-  assert.ok(tallRule && shortRule, '高行与矮行都要有自己那一档底版字号');
-  [['home-button-tall', tallRule[0]], ['home-button-short', shortRule[0]]].forEach(([cls, rule]) => {
-    const want = baseVh * growOf(cls);
-    const got = vhOf(rule);
-    assert.ok(Math.abs(got - want) < 0.15,
-      `${cls} 的底版字号是 ${got}vh，但按 flex-grow ${growOf(cls)} 等比应为 ${want.toFixed(2)}vh——`
-      + '八行填满的比例会对不齐');
-  });
-
-  // ② 整枚数字必须完整落在行里。七段数码管的顶段、底段一被裁掉，07 就读成 01、08 只剩一个 H，
-  // 所以不能沿用巨号那一版「字号放到行高两倍、上下各裁一截」的做法；也不能小到不像填满这一行。
-  // 行高是按视口高分出来的：八行内容高合计 = 屏高 − 标题区 − 130.7px 固定部分，再按 flex-grow 合计分。
-  // 固定部分是 390×844 模拟器实测的（顶栏粗线 5、斜杠分隔行 12.7、EDH hub 入口 44、版权 53、
-  // 八行边线 16）；标题区高度与它的 700px 断点从 WXSS 读。行最矮的是屏高刚过 700px 的机型，
-  // 标题区在那里从 40vh 跳到 45vh。
-  const heroVh = Number(wxss.match(/\.home-hero\s*\{[^}]*flex:\s*0 0 (\d+)vh/)[1]);
-  const shortHero = wxss.match(/@media \(max-height: (\d+)px\)\s*\{[^@]*?flex-basis:\s*(\d+)vh/);
-  assert.ok(heroVh > 0 && shortHero, '读不到标题区高度或它的矮屏断点');
-  const growTotal = Array.from(wxml.matchAll(/class="home-button home-button-[a-z]+([^"]*)"/g), (m) => {
-    if (/home-button-tall/.test(m[1])) return growOf('home-button-tall');
-    if (/home-button-short/.test(m[1])) return growOf('home-button-short');
-    return 1;
-  }).reduce((sum, grow) => sum + grow, 0);
-  const fills = [];
-  for (let height = 640; height <= 1000; height += 1) {
-    const hero = height <= Number(shortHero[1]) ? Number(shortHero[2]) : heroVh;
-    const baseRowPx = (height * (1 - hero / 100) - 130.7) / growTotal;
-    fills.push({ height, fill: (baseVh * height / 100) / baseRowPx });
-  }
-  const tightest = fills.reduce((a, b) => (b.fill > a.fill ? b : a));
-  const loosest = fills.reduce((a, b) => (b.fill < a.fill ? b : a));
-  assert.ok(tightest.fill <= 1,
-    `屏高 ${tightest.height}px 时数码管有行高的 ${(tightest.fill * 100).toFixed(1)}%，顶段底段会被行框裁掉`);
-  assert.ok(loosest.fill >= 0.85,
-    `屏高 ${loosest.height}px 时数码管只有行高的 ${(loosest.fill * 100).toFixed(1)}%，看着不像填满这一行`);
-  assert.match(indexRule, /top:\s*50%/, '数码管要竖直居中，上下留白才一样');
-
-  // ③ 前倾 10 度、不横向拉伸。斜化走 skewX，与字标同一个角度；拉宽会让竖段比横段粗近一倍，
-  // 而数码管的七段要一样粗。
-  assert.match(indexRule, /transform:\s*translateY\(-50%\) skewX\(-10deg\);/,
-    '只竖直居中再前倾 10 度，不再横向拉伸');
-  assert.doesNotMatch(indexRule, /scale/, '横向拉伸会让竖段比横段粗，数码管七段要一样粗');
-  // 贴在行的右端：数码管只有行高那么大，放在左边正好被四个中文整个盖住，矮行上几乎看不见。
-  // right 取行的右内边距；斜切绕右端中线，右上角往右偏 tan10° × 半个字高，右内边距要盖得住
-  const buttonRule = wxss.match(/\.home-button\s*\{[^}]*\}/)[0];
-  const padRight = Number(buttonRule.match(/padding:\s*0 (\d+)rpx 0 \d+rpx/)[1]);
-  assert.match(indexRule, new RegExp(`(^|[\\s;{])right:\\s*${padRight}rpx`), '数码管右缘取行的右内边距');
-  assert.doesNotMatch(indexRule, /(^|[\s;{])left:/, '数码管放左边会被中文整个盖住');
-  assert.match(indexRule, /transform-origin:\s*right center/);
-  assert.doesNotMatch(wxss, /\.home-button-shift \.home-button-index/,
-    '右移的两行只动左内边距，贴右端的数码管不必跟着改');
-  const tallEmPx = vhOf(tallRule[0]) * 8.44;
-  assert.ok(Math.tan(10 * Math.PI / 180) * tallEmPx / 2 < padRight * 390 / 750,
-    '高行数码管斜切后右上角会探出行框，被切出一道竖边');
-
-  // ④ 两枚数字横排；字形由七段色块拼出，不借字体
-  assert.match(indexRule, /position:\s*absolute/);
-  assert.match(indexRule, /display:\s*flex/);
-  assert.doesNotMatch(indexRule, /font-family/, '数码管是色块拼的，不借字体');
-
-  // 行容器要做定位参照，裁切发生在 padding box（发丝线内侧）
-  assert.match(buttonRule, /position:\s*relative/, '数码管绝对定位，行容器要做参照');
-  assert.match(buttonRule, /overflow:\s*hidden/);
-  // 文字必须显式提层：绝对定位元素默认画在普通流之后，不提层序号会盖住中文
-  assert.match(wxss, /\.home-button-text\s*\{[^}]*position:\s*relative[^}]*z-index:\s*1/,
-    '文字块要压在数码管之上');
-
-  // 基类不得自带颜色：颜色只能来自下面八条按行的主题色，
-  // 漏掉一行会直接继承成黑色，这条断言就是为了让那种遗漏立刻暴露
-  assert.doesNotMatch(indexRule, /(^|[^-])color:/,
-    '序号基类不得设 color，颜色只从按行主题色来');
-  // 容器本身不许有底色或投影：色块在七段上，底版靠 opacity 与主题色成立；
-  // 容器加底色会盖住线场，加投影则是首页全页禁用的
-  assert.doesNotMatch(indexRule, /background|text-shadow/);
-
-  // 八行各取目标页自己的主题色，八色互不重复
-  const hueRules = Array.from(
-    wxss.matchAll(/\.home-index-([a-z]+)\s*\{\s*color:\s*(#[0-9A-F]{6});\s*\}/gi),
-    (m) => ({ slug: m[1], hex: m[2].toUpperCase() }),
-  );
-  const rowSlugs = Array.from(
-    wxml.matchAll(/class="home-button home-button-([a-z]+)/g),
-    (m) => m[1],
-  );
-  assert.equal(hueRules.length, 8, '八行序号各需一条主题色');
-  assert.deepEqual(hueRules.map((h) => h.slug).sort(), [...rowSlugs].sort(),
-    '序号的主题色必须与八个入口一一对应');
-  assert.equal(new Set(hueRules.map((h) => h.hex)).size, 8,
-    `八枚序号颜色不得重复：${hueRules.map((h) => h.hex).join(' ')}`);
-  // 每一行的模板都要真的挂上自己那条色类
-  rowSlugs.forEach((slug) => {
-    assert.match(wxml, new RegExp(`home-button-${slug}[\\s\\S]*?home-button-index home-index-${slug}`),
-      `${slug} 行的序号没挂上自己的主题色`);
-  });
-
-  // 对比度：粒子主题色是给各自页面的深色底调的，直接搬到首页这块酸性黄绿上
-  // 全部不可读（实测 1.53–2.72:1，最差的 tracker 金只有 1.53:1，10px 下几乎看不见）。
-  // 这里保住色相与饱和度、只压明度到刚过 AA。改任何一条都必须重新验算。
-  const luminance = (hex) => {
-    const chan = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
-      .map((v) => (v <= 0.03928 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-    return 0.2126 * chan[0] + 0.7152 * chan[1] + 0.0722 * chan[2];
-  };
-  const contrast = (a, b) => {
-    const [x, y] = [luminance(a), luminance(b)];
-    return (Math.max(x, y) + 0.05) / (Math.min(x, y) + 0.05);
-  };
-  // 底版只在随机 glitch 到的那一行显示，常态是透明的。
-  // 于是同屏永远只有一个数字——「八色两两分得开」这条判据随之作废（没机会并排比较），
-  // 原来那条按酸性黄绿算混合 ΔE 的门禁一并撤掉。留下的判据只有一条：
-  // 压在底版上的黑字还读不读得了，而且要按 glitch 行真实的电光蓝底算。
-  assert.match(indexRule, /opacity:\s*0;/, '常态不显示底版：八行同时铺满巨号会跟整页线场糊成一团');
-  const glitchRule = wxss.match(/\.home-button\.is-glitch \.home-button-index\s*\{[^}]*\}/);
-  assert.ok(glitchRule, '底版要有一条 is-glitch 下的显示规则');
-  const glitchAlpha = Number(glitchRule[0].match(/opacity:\s*(\d?\.\d+)/)[1]);
-  assert.ok(glitchAlpha > 0, 'glitch 行必须把底版显示出来');
-
-  // glitch 行的底是电光蓝，比酸性黄绿暗得多（相对亮度 0.37 对 0.78），
-  // 再叠一层暗色就没余量了——实测 0.38 时三行的黑字掉到 4.5:1 以下（最差 3.91:1）。
-  const mix = (hex, alpha, over) => [1, 3, 5].map((i) => (
-    parseInt(hex.substr(i, 2), 16) * alpha + parseInt(over.substr(i, 2), 16) * (1 - alpha)
-  ));
-  const toHex = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
-  hueRules.forEach(({ slug, hex }) => {
-    const plate = toHex(mix(hex, glitchAlpha, '#00B3FF'));
-    const text = contrast(plate, '#0A0A0A');
-    assert.ok(text >= 4.5,
-      `${slug} 行 glitch 时，黑字压在底版 ${plate} 上只有 ${text.toFixed(2)}:1，未过 AA`);
-    // 也不能淡到看不见——那样这个效果就白做了
-    const seen = contrast(plate, '#00B3FF');
-    assert.ok(seen >= 1.25,
-      `${slug} 行的底版在电光蓝上只有 ${seen.toFixed(2)}:1，几乎看不出来`);
-  });
-
-  // 八色之间必须**看得出**不同，而不只是数值上不重复。用 CIE Lab ΔE 量，
-  // 「色相差多少度」在深色端根本不可靠——初版 life #C61A28 与 meta #C71807
-  // 是两个不同的十六进制值、色相也差 12°，实际 ΔE 只有 14.7，肉眼就是同一枚红。
-  //
-  // 这条曾被误删过一次：改成「只在 glitch 行显示」时，我把整块 Lab 机制连同
-  // 「混合后 ΔE」一起切掉了——但失效的只是**混合后**那条（同屏不会出现两个数字，
-  // 没机会并排比较），原色之间要看得出不同这件事一直成立。
-  const toLab = (hex) => {
-    const linear = [1, 3, 5].map((i) => parseInt(hex.substr(i, 2), 16) / 255)
-      .map((v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4));
-    const [r, g, b] = linear;
-    const xyz = [
-      (r * 0.4124 + g * 0.3576 + b * 0.1805) / 0.95047,
-      r * 0.2126 + g * 0.7152 + b * 0.0722,
-      (r * 0.0193 + g * 0.1192 + b * 0.9505) / 1.08883,
-    ].map((t) => (t > 0.008856 ? Math.cbrt(t) : 7.787 * t + 16 / 116));
-    return [116 * xyz[1] - 16, 500 * (xyz[0] - xyz[1]), 200 * (xyz[1] - xyz[2])];
-  };
-  const deltaE = (a, b) => {
-    const [A, B] = [toLab(a), toLab(b)];
-    return Math.hypot(A[0] - B[0], A[1] - B[1], A[2] - B[2]);
-  };
-  let closest = { gap: Infinity, pair: '' };
-  hueRules.forEach((a, i) => hueRules.slice(i + 1).forEach((b) => {
-    const gap = deltaE(a.hex, b.hex);
-    if (gap < closest.gap) closest = { gap, pair: `${a.slug} ${a.hex} / ${b.slug} ${b.hex}` };
-  }));
-  assert.ok(closest.gap >= 30,
-    `最接近的两枚序号色差 ΔE 只有 ${closest.gap.toFixed(1)}，看上去会是同一个色：${closest.pair}`);
-
-  // 「为什么不能用更低的不透明度」这件事，以前只写在注释里——注释里的数字没有主人，
-  // 改了颜色也不会有人重算它。搬进测试之后它会自己防守：哪天八色被调得在低透明度下
-  // 也分得开了，这条会红，提醒去重新考虑那个被否掉的方案，而不是让注释继续说瞎话。
-  const quantize = (rgb) => `#${rgb.map((v) => Math.round(v).toString(16).padStart(2, '0')).join('')}`;
-  let faint = Infinity;
-  const lowPlates = hueRules.map(({ hex }) => quantize(mix(hex, 0.19, '#D0F03C')));
-  lowPlates.forEach((a, i) => lowPlates.slice(i + 1).forEach((b) => {
-    faint = Math.min(faint, deltaE(a, b));
-  }));
-  assert.ok(faint < 8,
-    `低透明度（0.19）下八色混到酸性黄绿上最小 ΔE 已到 ${faint.toFixed(2)}——`
-    + '当初否掉「低透明度水印」正是因为这个值太小（约 5.6，8 位量化后）。'
-    + '它若变大，那个方案就重新可行了，注释与取舍都要重写。');
-
-  // 数字保留本行主题色、不跟着 glitch 转黑：整行反相成蓝底黑字，只有底版还留着
-  // 这一行自己的颜色——读作「故障之下这一行的本色透出来」。
-  assert.doesNotMatch(wxss, /\.home-button\.is-glitch \.home-button-index,/,
-    '底版不该被 glitch 的黑字覆盖收编，否则八行主题色变成死代码');
-
-  // 反相态要盖过按行主题色：glitch 行是电光蓝底、按压态是纯黑底，
-  // 八种主题色在这两种底上都会糊掉。靠选择器权重压过去（三类 / 两类 > 一类），
-  // 所以这两条规则不能被改回单类选择器
-  // glitch 行只反相中文与副标题；序号底版保留主题色（见上）
+  // glitch 行整行变电光蓝，中文与副标题跟着反成纯黑
   assert.match(wxss, /\.home-button\.is-glitch \.home-button-zh,/);
-  assert.match(wxss, /\.home-index-active \.home-button-index,/);
 
   // 功能文本（入口副标题）按正文对比度要求：10px + 0.7 alpha 在 #D0F03C 上约 7.5:1，过 AA 4.5:1
   assert.match(wxss, /\.home-button-en\s*{[^}]*color:\s*rgba\(0,0,0,0\.7\)[^}]*font-size:\s*10px/);
@@ -445,87 +231,6 @@ test('home is a single-screen acid index with the eight existing actions', () =>
   ['纯前端', '本地配置', '技术', '接口', '云', 'edhtop16'].forEach((word) => {
     assert.doesNotMatch(wxml, new RegExp(word), `home page should not show ${word}`);
   });
-});
-
-// 七段数码管的段位表与几何。段位表写在 WXSS 里（每个数字熄掉哪几段），这里按标准七段逐个核对；
-// 几何上要求七段一样粗、都在一枚数字的框内、两两之间留缝——数字钟的样子就在这几道缝上。
-test('首页故障行序号是七段数码管：段位表对得上，七段等粗、直角、段间留缝', () => {
-  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
-  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
-  const css = wxss.replace(/\/\*[\s\S]*?\*\//g, '');
-
-  const template = wxml.match(/<template name="home-clock-digit">([\s\S]*?)<\/template>/);
-  assert.ok(template, '两位数字要走同一个七段模板');
-  assert.match(template[1], /<view class="home-digit home-digit-\{\{digit\}\}">/);
-  assert.deepEqual(
-    Array.from(template[1].matchAll(/<view class="home-seg home-seg-([a-g])"><\/view>/g), (m) => m[1]),
-    ['a', 'b', 'c', 'd', 'e', 'f', 'g'],
-    '模板里七段各一枚，按 a 到 g 排',
-  );
-
-  // 段是直角色块，颜色跟容器上的主题色走（全页零圆角另有门禁）
-  const segRule = css.match(/\.home-seg\s*\{[^}]*\}/)[0];
-  assert.match(segRule, /background:\s*currentColor/, '段要跟本行主题色走，按压反相时一起变');
-  assert.doesNotMatch(segRule, /#[0-9a-f]{3,6}|rgba?\(/i, '段不许写死颜色');
-
-  // 几何：单位 em，1em 是一枚数字的高度
-  const num = (rule, prop) => {
-    const match = rule.match(new RegExp(`(?:^|[\\s;{])${prop}:\\s*(\\d*\\.?\\d+)(?:em)?;`));
-    assert.ok(match, `读不到 ${prop}：${rule}`);
-    return Number(match[1]);
-  };
-  const digitRule = css.match(/\.home-digit\s*\{[^}]*\}/)[0];
-  const width = num(digitRule, 'width');
-  assert.equal(num(digitRule, 'height'), 1, '1em 就是一枚数字的高度');
-  const segs = {};
-  'abcdefg'.split('').forEach((id) => {
-    const rule = css.match(new RegExp(`\\.home-seg-${id}\\s*\\{[^}]*\\}`))[0];
-    const left = num(rule, 'left');
-    const top = num(rule, 'top');
-    segs[id] = { left, top, right: left + num(rule, 'width'), bottom: top + num(rule, 'height') };
-  });
-  const near = (a, b) => Math.abs(a - b) < 1e-6;
-  Object.entries(segs).forEach(([id, s]) => {
-    assert.ok(s.left >= 0 && s.top >= 0 && s.right <= width + 1e-6 && s.bottom <= 1 + 1e-6, `${id} 段出了数字框`);
-  });
-  // 七段一样粗：横段的高与竖段的宽是同一个数
-  const thick = segs.a.bottom - segs.a.top;
-  ['a', 'd', 'g'].forEach((id) => assert.ok(near(segs[id].bottom - segs[id].top, thick), `${id} 段粗细不一`));
-  ['b', 'c', 'e', 'f'].forEach((id) => assert.ok(near(segs[id].right - segs[id].left, thick), `${id} 段粗细不一`));
-  // 顶段贴着数字框上沿、底段贴着下沿，中段居中
-  assert.ok(near(segs.a.top, 0) && near(segs.d.bottom, 1), '顶段底段要贴着数字框上下沿');
-  assert.ok(near((segs.g.top + segs.g.bottom) / 2, 0.5), '中段要居中');
-  // 两两之间都留缝：缝要看得见，又不能宽过半个段粗
-  let narrowest = Infinity;
-  const ids = Object.keys(segs);
-  ids.forEach((a, i) => ids.slice(i + 1).forEach((b) => {
-    const [p, q] = [segs[a], segs[b]];
-    const gap = Math.max(
-      Math.max(p.left, q.left) - Math.min(p.right, q.right),
-      Math.max(p.top, q.top) - Math.min(p.bottom, q.bottom),
-    );
-    assert.ok(gap > 0, `${a} 段与 ${b} 段连在一起了，读不出数码管的缝`);
-    narrowest = Math.min(narrowest, gap);
-  }));
-  assert.ok(narrowest >= 0.03 && narrowest <= thick / 2,
-    `段间最窄的缝是 ${narrowest.toFixed(3)}em，要在 0.03em 与半个段粗之间`);
-
-  // 段位表：WXSS 只写每个数字熄掉哪几段，这里按标准七段核对首页用到的每个数字
-  const hiddenRule = css.match(/((?:\.home-digit-\d \.home-seg-[a-g]\s*,\s*)*\.home-digit-\d \.home-seg-[a-g])\s*\{\s*display:\s*none;\s*\}/);
-  assert.ok(hiddenRule, '段位表要集中在一条 display: none 规则里');
-  const hidden = {};
-  Array.from(hiddenRule[1].matchAll(/\.home-digit-(\d) \.home-seg-([a-g])/g)).forEach(([, digit, seg]) => {
-    hidden[digit] = (hidden[digit] || '') + seg;
-  });
-  const standard = { 0: 'abcdef', 1: 'bc', 2: 'abdeg', 3: 'abcdg', 4: 'bcfg', 5: 'acdfg', 6: 'acdefg', 7: 'abc', 8: 'abcdefg' };
-  const used = [...new Set(Array.from(wxml.matchAll(/data="\{\{digit: (\d)\}\}"/g), (m) => m[1]))].sort();
-  assert.deepEqual(used, ['0', '1', '2', '3', '4', '5', '6', '7', '8']);
-  used.forEach((digit) => {
-    const lit = 'abcdefg'.split('').filter((seg) => !(hidden[digit] || '').includes(seg)).join('');
-    assert.equal(lit, standard[digit], `数字 ${digit} 应亮 ${standard[digit]}，实际亮 ${lit}`);
-  });
-  assert.deepEqual(Object.keys(hidden).filter((digit) => !used.includes(digit)), [],
-    '段位表里不留首页用不到的数字');
 });
 
 test('home uses licensed embedded display and pixel fonts with device-safe fallbacks', () => {
