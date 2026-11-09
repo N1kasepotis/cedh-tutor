@@ -243,63 +243,45 @@ page {
   border-bottom: 5px solid #0A0A0A;
 }
 
-/* ===== 序号：填满整行上下的超宽体底版 =====
-   从「文字左侧的一枚 10px 小标记」改成「填满这一行上下、被行框裁断的超宽巨号」。
-   数字不再是拿来读的，是这一行的底版。
+/* ===== 序号：故障行的七段数码管底版 =====
+   01–08 画成数字钟上那种七段数码管：每一段是一块直角色块，段与段之间留一道缝。
+   字形不再借字体，是七块矩形自己拼出来的，所以笔画粗细、缝宽、倾角都由下面几个数决定，
+   不受字体加载与回退影响，首页也不必为它引进第三款字。
 
-   **字面沿用字标那一款并沿用它的变形手法**：包里没有第三款字，而 scaleX 是这一页
-   已经在用的（字标是 scaleX(1.18) skewX(-10deg)），底版拉到 1.9 是同一个动作推到更远，
-   读作同一个设计系统里的东西。首页因此仍只有两种声音：Archivo Black 喊（字标 + 底版），
-   点阵字低语（中文 + 副标题）。
-
-   **拉伸必须绕左端，不能绕中轴**。填满行高之后数字本身就很宽，绕中轴拉伸会把左半边
-   推到 left:0 之外——而行的 overflow 在 padding box 裁切，那里会切出一条硬邦邦的竖边，
-   看着像裁错了。绕左端拉，墨迹只往右长，左缘始终与中文对齐。字标用的也是 left center。
+   **整枚数字必须完整落在行里，不能再被行框裁掉**。巨号那一版把字号放到行高的两倍、
+   上下各裁掉一截，那对 Archivo 的字形无所谓；七段数码管不行——顶段、底段一被裁掉，
+   07 就读成 01，08 只剩一个 H。所以这里 1em 就是一枚数字的高度，字号让它填到行高的九成左右：
+   390×844 实测基础行内高 37.9px，4.1vh 合 34.6px。行最矮的是屏高刚过 700px 的机型
+   （标题区从 40vh 跳到 45vh），那一档也只到行高的 99%。
 
    **字号按行高分三档，比例直接取自已有的 flex-grow**（tall 1.45 / base 1 / short 0.72），
-   所以「每一行的数字填满自己那一行」是同一条规则，不是八个各自拍脑袋的数值；
-   每行被裁掉的比例也因此大致相同，不会有的行满、有的行只剩一条带。
-
+   所以「每一行的数码管填满自己那一行」是同一条规则，不是八个各自拍脑袋的数值。
    **字号必须用 vh，不能用 px**：八行是 .home-actions（flex 1 1 55%）按 flex-grow 分的，
    高度跟着视口高走。用 px 的话只在某一种屏高上正好填满，换台机器不是溢出就是留白。
-   刻意取得比行高略大：宁可被裁一点，也不要在某些机型上填不满露出空档——
-   顶部与底部都被裁，正是「填满上下限」要的样子。
 
-   **不写 font-weight 也不写 font-style**：这款字本身就是 Black 字重、也没有斜体字面，
-   而 wx.loadFontFace 注册时不带字重描述符（即注册成 normal），写 900 或 italic
-   系统只能合成——假粗体把本来就厚的笔画抹糊，合成斜体是切变。10px 时看不出来，
-   这个尺寸一眼就露。首页因此全页零斜体。
+   **前倾 10 度、不横向拉伸**：数字钟的数码管本来就前倾，skewX(-10deg) 与字标同一个动作。
+   巨号那一版的横向拉伸撤掉了：拉宽会让竖段比横段粗近一倍，而数码管的七段要一样粗。
 
-   display: block 是显式写的，不靠 position: absolute 去隐式块化——
-   WXML 的 <text> 是行内组件，宽度与对齐在行内盒上不生效，这一条不能省。 */
+   **贴在行的右端，不再压在中文底下**。数码管只有行高那么大，两位数字最宽也就 100px，
+   放在左边正好被四个中文整个盖住，矮行上几乎看不见；挪到右端，压在它上面的只剩一行
+   10px 的英文副标题，读得出是个钟。right 取行的右内边距 40rpx；斜切绕右端的中线，
+   右上角往右偏约 0.09em，高行也不到 5px，右内边距盖得住，不会被行框切出一道竖边。
+
+   常态不显示：底版只在随机 glitch 到的那一行出现，见下面的 is-glitch 规则。 */
 .home-button-index {
   position: absolute;
-  display: block;
-  left: 0;
+  display: flex;
+  right: 40rpx;
   top: 50%;
   z-index: 0;
-  font-family: "cEDHDisplay", "Arial Black", sans-serif;
-  font-size: 10vh;
-  letter-spacing: -0.04em;
-  line-height: 1;
-  /* 先竖直居中，再绕左端横向拉宽，最后斜化。
-     斜化走 skewX 而不是 font-style：这款字没有斜体字面，写 italic 系统只能合成，
-     而合成本身也就是切变——既然如此，不如显式写出角度、拿到确定的结果。
-     字标用的也是 skewX(-10deg)，两者因此是同一个动作。
-     skewX 排在 scaleX 左边（即后作用于已拉宽的字形），视觉倾角才是标称的 10 度；
-     排到右边会先斜后拉，1.9 倍会把倾角放大到约 18.5 度，跟字标就对不上了。 */
-  transform: translateY(-50%) skewX(-10deg) scaleX(1.9);
-  transform-origin: left center;
-  /* 0.38 是一个两头卡死的窄窗口：
-     低于 0.38，八枚主题色在这块酸性黄绿上混成一片——实测 0.19 时两两最小 ΔE 只有 5.6（混合结果按 8 位量化后算；不量化是 5.9），
-     肉眼就是同一个颜色，「序号是色标」当场失效；
-     高于 0.40，压在数字上的 10px 英文副标题（0.7 黑）掉到 4.5:1 以下，不再过 AA。
-     常态不显示：底版只在随机 glitch 到的那一行出现，见下面的 is-glitch 规则。 */
+  font-size: 4.1vh;
+  transform: translateY(-50%) skewX(-10deg);
+  transform-origin: right center;
   opacity: 0;
   pointer-events: none;
 }
 
-/* 底版只在随机 glitch 到的那一行显示——八行同时铺满巨号会跟整页线场糊成一团，
+/* 底版只在随机 glitch 到的那一行显示——八行同时亮着数码管会跟整页线场糊成一团，
    而每次进页只亮一行，它就从墙纸变成了一次事件。
    同屏永远只有一个数字，所以「八色两两分得开」这条判据随之作废：
    你根本没机会并排比较。留下的判据只有「压在它上面的黑字还读不读得了」。
@@ -315,13 +297,67 @@ page {
   opacity: 0.28;
 }
 
-/* 高行与矮行的底版按各自的 flex-grow 等比放大缩小，裁切比例才在八行之间一致 */
+/* 高行与矮行的数码管按各自的 flex-grow 等比放大缩小，八行填满的比例才一致 */
 .home-button-tall .home-button-index {
-  font-size: 14.5vh;
+  font-size: 5.95vh;
 }
 
 .home-button-short .home-button-index {
-  font-size: 7.2vh;
+  font-size: 2.95vh;
+}
+
+/* 一枚数字宽 0.8、高 1（单位是这一行数码管的高度），上下两半各接近一个方格，
+   读作方方正正的「方体」；两枚之间隔 0.22。 */
+.home-digit {
+  position: relative;
+  flex: 0 0 auto;
+  width: 0.8em;
+  height: 1em;
+}
+
+.home-digit + .home-digit {
+  margin-left: 0.22em;
+}
+
+/* 段是直角色块，颜色跟着容器上那条 .home-index-* 主题色走（currentColor），
+   按压反相时容器换色，七段一起换。竖段占住四角、各贯通半高，横段夹在两列竖段之间，
+   段与段之间一律留 0.04 的缝——数字钟的样子就在这几道缝上。七段一样粗，都是 0.15。 */
+.home-seg {
+  position: absolute;
+  background: currentColor;
+}
+
+.home-seg-a { left: 0.19em; top: 0; width: 0.42em; height: 0.15em; }
+.home-seg-b { left: 0.65em; top: 0; width: 0.15em; height: 0.48em; }
+.home-seg-c { left: 0.65em; top: 0.52em; width: 0.15em; height: 0.48em; }
+.home-seg-d { left: 0.19em; top: 0.85em; width: 0.42em; height: 0.15em; }
+.home-seg-e { left: 0; top: 0.52em; width: 0.15em; height: 0.48em; }
+.home-seg-f { left: 0; top: 0; width: 0.15em; height: 0.48em; }
+.home-seg-g { left: 0.19em; top: 0.425em; width: 0.42em; height: 0.15em; }
+
+/* 段位表：每个数字熄掉哪几段。标准七段命名：a 顶、b 右上、c 右下、d 底、e 左下、f 左上、g 中。
+   只列首页用得到的 0–8；8 七段全亮，所以没有它的条目。 */
+.home-digit-0 .home-seg-g,
+.home-digit-1 .home-seg-a,
+.home-digit-1 .home-seg-d,
+.home-digit-1 .home-seg-e,
+.home-digit-1 .home-seg-f,
+.home-digit-1 .home-seg-g,
+.home-digit-2 .home-seg-c,
+.home-digit-2 .home-seg-f,
+.home-digit-3 .home-seg-e,
+.home-digit-3 .home-seg-f,
+.home-digit-4 .home-seg-a,
+.home-digit-4 .home-seg-d,
+.home-digit-4 .home-seg-e,
+.home-digit-5 .home-seg-b,
+.home-digit-5 .home-seg-e,
+.home-digit-6 .home-seg-b,
+.home-digit-7 .home-seg-d,
+.home-digit-7 .home-seg-e,
+.home-digit-7 .home-seg-f,
+.home-digit-7 .home-seg-g {
+  display: none;
 }
 
 /* 每行的序号取该入口目标页自己的主题色（与 config/particle.js 的 palettes 同源），
