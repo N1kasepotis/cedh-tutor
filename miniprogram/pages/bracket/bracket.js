@@ -415,15 +415,25 @@ Page({
     this.setData({ result: null, analyzing: false });
   },
 
+  // 和套牌试玩的「清除现套牌」同一确认强度：粘贴 100 行牌表是全站最大的输入成本，清掉前先问一句
   clearDeck() {
-    this.analysisRequestId = (this.analysisRequestId || 0) + 1;
-    removeStorage(DECK_TEXT_STORAGE_KEY);
-    this.setData({
-      deckText: '',
-      canAnalyze: false,
-      result: null,
-      inputWarning: '',
-      analyzing: false,
+    if (!this.data.deckText) return;
+    wx.showModal({
+      title: '清空牌表',
+      content: '会清空输入框和已保存的牌表文本',
+      confirmText: '清空',
+      success: (result) => {
+        if (!result.confirm) return;
+        this.analysisRequestId = (this.analysisRequestId || 0) + 1;
+        removeStorage(DECK_TEXT_STORAGE_KEY);
+        this.setData({
+          deckText: '',
+          canAnalyze: false,
+          result: null,
+          inputWarning: '',
+          analyzing: false,
+        });
+      },
     });
   },
 });

@@ -123,6 +123,7 @@
 }
 
 .izzet-ctrl {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -134,6 +135,16 @@
   border-radius: var(--cedh-radius-control-sm);
   font-size: var(--cedh-text-14);
   line-height: 1;
+}
+
+/* 热区与外观解耦（ux-goals G），与卷心菜对账同一套数：画 68rpx，摸 88rpx */
+.izzet-ctrl::after {
+  content: "";
+  position: absolute;
+  top: -10rpx;
+  right: -8rpx;
+  bottom: -10rpx;
+  left: -8rpx;
 }
 
 .izzet-flips {
@@ -151,6 +162,17 @@
 }
 
 .izzet-footer .text-button {
+  position: relative;
   color: var(--cedh-text-soft);
   font-size: var(--cedh-text-14);
+}
+
+/* 撤销 / 新回合只有一行字高：热区上下各伸 26rpx。上方是掷硬币的读数，不可点。 */
+.izzet-footer .text-button::after {
+  content: "";
+  position: absolute;
+  top: -26rpx;
+  right: -16rpx;
+  bottom: -26rpx;
+  left: -16rpx;
 }

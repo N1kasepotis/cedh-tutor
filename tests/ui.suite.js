@@ -880,6 +880,10 @@ test('bracket keeps its deck text, offers clipboard import, and hands off to pla
   assert.match(js, /onLoad\(\)\s*{[\s\S]*this\.restoreDeckText\(\)/);
   assert.match(js, /handleDeckInput\(event\)\s*{[\s\S]*this\.persistDeckText\(deckText\)/);
   assert.match(js, /clearDeck\(\)\s*{[\s\S]*removeStorage\(DECK_TEXT_STORAGE_KEY\)/);
+  // 清空牌表先确认，和套牌试玩的「清除现套牌」同一确认强度、同一句说明（ux-goals B、C）
+  assert.match(js, /clearDeck\(\)\s*{[\s\S]{0,200}wx\.showModal\(\{[\s\S]{0,160}content:\s*'会清空输入框和已保存的牌表文本'[\s\S]{0,400}removeStorage\(DECK_TEXT_STORAGE_KEY\)/,
+    '清空牌表要先弹窗确认，再清存储');
+  assert.doesNotMatch(js, /clearDeck\(\)\s*{\s*this\.analysisRequestId/, '清空不能不问就执行');
   // 长度上限复用 utils/bracket 的常量，不在页面里另抄一份
   assert.match(js, /MAX_DECK_CHARS,\s*\n\s*MAX_DECK_LINES,\s*\n\}\s*=\s*require\('\.\.\/\.\.\/utils\/bracket'\)/);
 
@@ -1381,4 +1385,60 @@ test('second visual sweep: quiet tracker actions, official card names, one paste
   for (const file of ['miniprogram/pages/bracket/bracket.wxss', 'miniprogram/pages/playtest/playtest.wxss']) {
     assert.match(read(file), /\.import-secondary\s*\{[^}]*font-size:\s*max\(19rpx, 10px\)/, `${file} 说明文字不小于 10px`);
   }
+});
+
+// 2026-11-10 全页美学自检（docs/ux-goals.md 末尾）。小控件的热区与外观解耦（ux-goals G：触控热区不小于
+// 44×44 CSS px）：控件本身 position: relative，一个 content:"" 的 ::after 向外伸出看不见的热区，做法同战情室的改/删。
+// 这里按每条 ::after 的上下伸出量加上控件自身高度，核对纵向够不够 88rpx（375 宽即 44px）。
+test('试玩、卷心菜、伊捷的小控件有伸到 88rpx 的隐形热区，关键按钮有 44px 下限', () => {
+  const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
+  const css = (rel) => read(rel).replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (sheet, selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = sheet.match(new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`));
+    assert.ok(match, `缺少规则 ${selector}`);
+    return match[1];
+  };
+  const rpx = (block, prop) => {
+    const match = block.match(new RegExp(`(?:^|[\\s;])${prop}:\\s*(-?\\d+)rpx`));
+    return match ? Number(match[1]) : null;
+  };
+  const cases = [
+    ['miniprogram/pages/playtest/playtest.wxss', '.life-btn', '.life-btn::after', 56],
+    ['miniprogram/pages/playtest/playtest.wxss', '.board-action', '.board-action::after', 44],
+    ['miniprogram/pages/playtest/playtest.wxss', '.mana-ctrl', '.mana-ctrl::after', 48],
+    ['miniprogram/pages/cabbage/cabbage.wxss', '.cabbage-ctrl', '.cabbage-ctrl::after', 68],
+    // 文字按钮没有写死的高度：14px 字一行约 36rpx，上下各伸 26rpx 才够
+    ['miniprogram/pages/cabbage/cabbage.wxss', '.cabbage-footer .text-button', '.cabbage-footer .text-button::after', 36],
+    ['miniprogram/pages/izzet/izzet.wxss', '.izzet-ctrl', '.izzet-ctrl::after', 68],
+    ['miniprogram/pages/izzet/izzet.wxss', '.izzet-footer .text-button', '.izzet-footer .text-button::after', 36],
+  ];
+  for (const [file, base, after, ownHeight] of cases) {
+    const sheet = css(file);
+    assert.match(rule(sheet, base), /position:\s*relative/, `${base} 要做 ::after 的定位参照`);
+    const zone = rule(sheet, after);
+    assert.match(zone, /content:\s*"";/, `${after} 要有 content`);
+    const top = rpx(zone, 'top');
+    const bottom = rpx(zone, 'bottom');
+    assert.ok(top !== null && bottom !== null && top < 0 && bottom < 0, `${after} 要向上下伸出`);
+    const reach = ownHeight - top - bottom;
+    assert.ok(reach >= 88, `${after} 纵向只到 ${reach}rpx，不足 88rpx`);
+  }
+  // 法术力 ± 左右也要伸：每格横向有 102rpx，伸 20rpx 邻格够不到；总量格只有 60rpx 宽，靠左右伸出补足
+  const playtest = css('miniprogram/pages/playtest/playtest.wxss');
+  assert.match(rule(playtest, '.mana-ctrl::after'), /position:\s*absolute[\s\S]*left:\s*-20rpx/);
+  assert.match(rule(playtest, '.mana-total::after'), /content:\s*"";[\s\S]*left:\s*-\d+rpx/);
+  // 关键按钮的 px 下限：rpx 在 320 宽的机型上缩到 32 到 35px
+  const tracker = css('miniprogram/pages/tracker/tracker.wxss');
+  assert.match(rule(tracker, '.add-match-button'), /min-height:\s*max\(44px, 82rpx\)/);
+  assert.match(rule(tracker, '.add-deck-button'), /min-height:\s*max\(44px, 84rpx\)/);
+  // 牌库面板里的每个可点元素都要有按压反馈（D 反馈），和全站其余可点控件一样
+  const panel = read('miniprogram/pages/playtest/playtest.wxml');
+  const zone = panel.slice(panel.indexOf('class="zone-panel '), panel.indexOf('</scroll-view>', panel.indexOf('class="zone-panel ')));
+  const tappables = zone.match(/<view\b[^>]*bindtap="[^"]+"[^>]*>/g) || [];
+  assert.ok(tappables.length >= 9, `牌库面板应有至少 9 个可点元素，找到 ${tappables.length}`);
+  tappables.forEach((tag) => assert.match(tag, /hover-class="pressable-active"/, `缺按压反馈：${tag.slice(0, 80)}`));
+  // 加载中的文案以省略号收尾，和全站其余加载文案一致
+  assert.match(read('miniprogram/pages/meta/meta.wxml'), />正在读取月报…</);
+  assert.match(read('miniprogram/community/components/card-picker/index.wxml'), />正在查找…</);
 });

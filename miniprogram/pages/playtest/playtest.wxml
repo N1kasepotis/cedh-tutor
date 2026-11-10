@@ -177,9 +177,9 @@
       <view class="zone-panel-head">
         <view class="zone-panel-title">{{panelTitle}}　{{panelCards.length}}</view>
         <view class="zone-panel-actions">
-          <view wx:if="{{panelZone === 'library'}}" class="text-button {{revealTop ? 'reveal-toggle-on' : ''}}" aria-role="button" bindtap="toggleRevealTop">{{revealTop ? '隐藏库顶' : '展示库顶'}}</view>
-          <view wx:if="{{panelZone === 'library'}}" class="text-button" aria-role="button" bindtap="shuffleLibrary">洗牌</view>
-          <view class="text-button" aria-role="button" bindtap="closeZone">关闭</view>
+          <view wx:if="{{panelZone === 'library'}}" class="text-button {{revealTop ? 'reveal-toggle-on' : ''}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="toggleRevealTop">{{revealTop ? '隐藏库顶' : '展示库顶'}}</view>
+          <view wx:if="{{panelZone === 'library'}}" class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="shuffleLibrary">洗牌</view>
+          <view class="text-button" aria-role="button" hover-class="pressable-active" hover-stay-time="120" bindtap="closeZone">关闭</view>
         </view>
       </view>
       <input
@@ -193,13 +193,13 @@
       />
       <scroll-view class="zone-panel-list" scroll-y>
         <view wx:for="{{panelCards}}" wx:key="id" class="zone-panel-row">
-          <view class="zone-panel-name" aria-role="button" aria-label="查看 {{item.name}}" data-id="{{item.id}}" bindtap="inspectPanelCard">{{item.name}}</view>
+          <view class="zone-panel-name" aria-role="button" aria-label="查看 {{item.name}}" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" bindtap="inspectPanelCard">{{item.name}}</view>
           <view class="zone-panel-move">
-            <view class="move-chip" aria-role="button" data-id="{{item.id}}" data-to="hand" bindtap="movePanelCard">手牌</view>
-            <view class="move-chip" aria-role="button" data-id="{{item.id}}" data-to="battlefield" bindtap="movePanelCard">战场</view>
-            <view class="move-chip" wx:if="{{panelZone !== 'graveyard'}}" aria-role="button" data-id="{{item.id}}" data-to="graveyard" bindtap="movePanelCard">坟场</view>
-            <view class="move-chip" wx:if="{{panelZone !== 'library' && panelZone !== 'command'}}" aria-role="button" data-id="{{item.id}}" data-to="library" bindtap="movePanelCard">库顶</view>
-            <view class="move-chip" wx:if="{{panelZone !== 'exile' && panelZone !== 'command'}}" aria-role="button" data-id="{{item.id}}" data-to="exile" bindtap="movePanelCard">放逐</view>
+            <view class="move-chip" aria-role="button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" data-to="hand" bindtap="movePanelCard">手牌</view>
+            <view class="move-chip" aria-role="button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" data-to="battlefield" bindtap="movePanelCard">战场</view>
+            <view class="move-chip" wx:if="{{panelZone !== 'graveyard'}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" data-to="graveyard" bindtap="movePanelCard">坟场</view>
+            <view class="move-chip" wx:if="{{panelZone !== 'library' && panelZone !== 'command'}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" data-to="library" bindtap="movePanelCard">库顶</view>
+            <view class="move-chip" wx:if="{{panelZone !== 'exile' && panelZone !== 'command'}}" aria-role="button" hover-class="pressable-active" hover-stay-time="120" data-id="{{item.id}}" data-to="exile" bindtap="movePanelCard">放逐</view>
           </view>
         </view>
         <view

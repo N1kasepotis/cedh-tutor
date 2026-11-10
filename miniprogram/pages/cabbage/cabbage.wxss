@@ -151,6 +151,7 @@
 }
 
 .cabbage-ctrl {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -162,6 +163,17 @@
   border-radius: var(--cedh-radius-control-sm);
   font-size: var(--cedh-text-14);
   line-height: 1;
+}
+
+/* 热区与外观解耦（ux-goals G）：按钮画 68rpx 高，摸起来 88rpx。左右各伸 8rpx，
+   正好接到 space-2 列距的一半；上下各伸 10rpx，行与行之间刚好不相碰。 */
+.cabbage-ctrl::after {
+  content: "";
+  position: absolute;
+  top: -10rpx;
+  right: -8rpx;
+  bottom: -10rpx;
+  left: -8rpx;
 }
 
 .cabbage-activate {
@@ -198,6 +210,18 @@
 }
 
 .cabbage-footer .text-button {
+  position: relative;
   color: var(--cedh-text-soft);
   font-size: var(--cedh-text-14);
+}
+
+/* 底部三个文字按钮只有一行字高：热区上下各伸 26rpx 到 88rpx 以上。
+   上方到「横置 2 个食品」按钮隔着 space-4，伸不进去。 */
+.cabbage-footer .text-button::after {
+  content: "";
+  position: absolute;
+  top: -26rpx;
+  right: -16rpx;
+  bottom: -26rpx;
+  left: -16rpx;
 }

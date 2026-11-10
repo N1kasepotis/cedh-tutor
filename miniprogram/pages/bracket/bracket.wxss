@@ -139,7 +139,8 @@
   align-items: center;
   justify-content: center;
   min-width: 76rpx;
-  min-height: 76rpx;
+  /* 关键操作用明确的 px 下限：76rpx 在 320 宽的机型上只有 32px（ux-goals G） */
+  min-height: max(44px, 76rpx);
   color: rgba(var(--module-accent-rgb), 0.88);
   font-size: max(20rpx, 12px);
 }
@@ -1017,7 +1018,7 @@
   gap: 14rpx;
   flex: 0 1 286rpx;
   min-width: 0;
-  min-height: 82rpx;
+  min-height: max(44px, 82rpx);
   color: rgba(227, 242, 234, 0.88);
   background: linear-gradient(180deg, rgba(25, 32, 29, 0.97), rgba(5, 8, 7, 0.98));
   border: 1rpx solid rgba(var(--module-accent-rgb), 0.38);

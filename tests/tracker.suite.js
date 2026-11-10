@@ -389,6 +389,14 @@ test('tracker chart drawing is isolated from page state', () => {
   assert.doesNotMatch(pageJs, /paintSeatWinrateChart\(ctx,/);
   assert.match(chartJs, /function paintChart\(ctx,\s*width,\s*height,\s*series,\s*type\)/);
   assert.match(chartJs, /function paintSeatWinrateChart\(ctx,\s*width,\s*height,\s*series\)/);
+  // 座次图顶部有两行字：n= 标签基线 12（9px 字），数值标签压在柱顶上方。满格的柱子（100.0%）
+  // 柱顶就在 paddingTop，数值标签的下限必须让它整个落在 n= 那一行之下，否则两行字叠在一起。
+  const seatBlock = chartJs.slice(chartJs.indexOf('function paintSeatWinrateChart'), chartJs.indexOf('ctx.textAlign = \'left\';', chartJs.indexOf('function paintSeatWinrateChart')));
+  const seatPaddingTop = Number(seatBlock.match(/const paddingTop = (\d+);/)[1]);
+  const seatLabelFloor = Number(seatBlock.match(/Math\.max\((\d+), y - 6\)/)[1]);
+  assert.match(seatBlock, /ctx\.font = '9px sans-serif';\s*ctx\.fillText\(`n=\$\{item\.sampleSize \|\| 0\}`, x \+ barWidth \/ 2, 12\)/, 'n= 标签基线在 12');
+  assert.ok(seatLabelFloor >= 12 + 11 + 3, `数值标签基线下限 ${seatLabelFloor}，会压到基线 12 的 n= 标签`);
+  assert.ok(seatPaddingTop - 6 >= seatLabelFloor, `paddingTop ${seatPaddingTop} 不够：满格时标签只能靠下限硬撑，贴着柱顶`);
   assert.match(chartJs, /function getWinRateViewport\(values\)/);
   assert.equal(CHART_COLORS.accent, '#2FA75D');
   assert.equal(CHART_COLORS.winrateInk, '#F2D0A2');

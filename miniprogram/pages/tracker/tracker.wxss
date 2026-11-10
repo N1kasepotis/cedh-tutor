@@ -393,7 +393,8 @@ page {
 
 .add-match-button {
   flex: 1 1 auto;
-  min-height: 82rpx;
+  /* 关键操作用明确的 px 下限：82rpx 在 320 宽的机型上只有 35px（ux-goals G） */
+  min-height: max(44px, 82rpx);
   margin-top: var(--cedh-space-2);
 }
 
@@ -608,7 +609,7 @@ page {
 }
 
 .add-deck-button {
-  min-height: 84rpx;
+  min-height: max(44px, 84rpx);
   font-size: var(--cedh-text-14);
   font-weight: 560;
 }

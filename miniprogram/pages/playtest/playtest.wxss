@@ -172,6 +172,7 @@
 }
 
 .life-btn {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -183,6 +184,17 @@
   border-radius: var(--cedh-radius-control-sm);
   font-size: var(--cedh-text-16);
   line-height: 1;
+}
+
+/* 热区与外观解耦（ux-goals G）：圆按钮画 56rpx，摸起来 88rpx。做法同战情室的改/删：
+   一个看不见的伪元素向四周各伸 16rpx。左右邻居是「手牌 7」「生命 40」这些读数，不会抢到。 */
+.life-btn::after {
+  content: "";
+  position: absolute;
+  top: -16rpx;
+  right: -16rpx;
+  bottom: -16rpx;
+  left: -16rpx;
 }
 
 .life-val {
@@ -213,6 +225,7 @@
 /* min-width 92→72、内边距 16→12、间距改 space-1：五颗按钮加读数区合计 692rpx，
    落回 702rpx 之内。nowrap 是硬保证——宁可整块换行，也不许标签在按钮里断字。 */
 .board-action {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -516,8 +529,20 @@
   line-height: 1;
 }
 
+/* 顶栏五颗 22px 高的小按钮：画面不动，热区上下各伸 22rpx 到 88rpx；左右只伸 4rpx，
+   正好接到 space-1 间距的一半，不越过邻居。 */
+.board-action::after {
+  content: "";
+  position: absolute;
+  top: -22rpx;
+  right: -4rpx;
+  bottom: -22rpx;
+  left: -4rpx;
+}
+
 /* 对局中最高频的点按之一：44rpx 是法术力栏纵向空间内能给到的最大目标 */
 .mana-ctrl {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -528,6 +553,17 @@
   font-size: var(--cedh-text-14);
   font-weight: 650;
   line-height: 1;
+}
+
+/* ± 的热区补到 88rpx：左右各伸 20rpx（每格横向有 102rpx，邻格够不到），纵向一半伸向面板
+   内边距、一半伸进中间的色标圆——色标不可点，所以 + 和 − 的热区互不相碰。 */
+.mana-ctrl::after {
+  content: "";
+  position: absolute;
+  top: -20rpx;
+  right: -20rpx;
+  bottom: -20rpx;
+  left: -20rpx;
 }
 
 .mana-ctrl-plus {
@@ -563,6 +599,7 @@
 }
 
 .mana-total {
+  position: relative;
   display: flex;
   flex: 0 0 auto;
   flex-direction: column;
@@ -575,6 +612,16 @@
   margin-left: 4rpx;
   padding-left: var(--cedh-space-2);
   border-left: var(--cedh-hairline);
+}
+
+/* 总量格只有 60rpx 宽：热区向左伸进分隔线前的间距、向右伸到面板内边距，补到 88rpx */
+.mana-total::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: -16rpx;
+  bottom: 0;
+  left: -12rpx;
 }
 
 .mana-total-num {

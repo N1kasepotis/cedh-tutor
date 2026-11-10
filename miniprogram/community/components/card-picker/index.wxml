@@ -58,7 +58,7 @@
           <view class="notice">{{item.lang}} / {{item.set}} #{{item.number}}</view>
         </view>
       </button>
-      <view wx:if="{{busy}}" class="empty">正在查找</view>
+      <view wx:if="{{busy}}" class="empty">正在查找…</view>
       <view wx:if="{{!busy && !results.length}}" class="empty">
         {{mode === 'prints' ? '该语言暂无可用版本，试试所有语言' : '输入中英文牌名'}}
       </view>

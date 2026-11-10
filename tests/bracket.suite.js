@@ -2013,9 +2013,10 @@ test('Bracket page and two home entries are wired without creating a Meta page',
   assert.match(bracketJs, /const efficiencyRows = \[[\s\S]*const coverageRows = \[/);
   assert.match(bracketWxml, /class="result-action-dock"[\s\S]*aria-label="修改当前牌表"/);
   assert.match(bracketWxss, /\.result-action-dock\s*\{[\s\S]*position:\s*fixed/);
-  assert.match(bracketWxss, /\.clear-link\s*\{[\s\S]*min-height:\s*76rpx/);
+  // 两个关键按钮带 44px 下限：rpx 在 320 宽的机型上缩到 32 到 35px（ux-goals G）
+  assert.match(bracketWxss, /\.clear-link\s*\{[\s\S]*min-height:\s*max\(44px, 76rpx\)/);
   assert.doesNotMatch(bracketWxss, /\.details-toggle|\.details-body|\.detail-group|\.combo-row|bracket-details-enter/);
-  assert.match(bracketWxss, /\.edit-button\s*\{[\s\S]*min-height:\s*82rpx/);
+  assert.match(bracketWxss, /\.edit-button\s*\{[\s\S]*min-height:\s*max\(44px, 82rpx\)/);
   assert.doesNotMatch(bracketJs, /selectedIntent|intentOptions|selectIntent|showImportHelp|toggleImportHelp|comboIntent|handleComboIntent/);
   assert.doesNotMatch(bracketUtils, /comboIntent|DECLARED_INTENT/);
   assert.match(bracketWxss, /\.bracket\.is-input[\s\S]*overflow:\s*hidden/);

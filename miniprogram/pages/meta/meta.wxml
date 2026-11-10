@@ -13,7 +13,7 @@
           <view class="month-date">{{monthSummary.period}} <text aria-hidden="true">⌄</text></view>
         </picker>
       </view>
-      <view wx:if="{{monthLoading}}" class="month-status" aria-live="polite">正在读取月报</view>
+      <view wx:if="{{monthLoading}}" class="month-status" aria-live="polite">正在读取月报…</view>
       <view wx:if="{{monthError}}" class="month-notice" aria-live="polite"><text>{{monthError}}</text><button hover-class="pressable-active" hover-stay-time="120" class="month-button month-link" bindtap="retryMonthly" disabled="{{monthLoading}}">重试</button></view>
       <view wx:if="{{monthDelayed}}" class="month-notice" aria-live="polite"><text>新一期月报还没生成，当前最新是 {{monthPeriods[0]}}</text></view>
       <block wx:if="{{monthSummary}}">

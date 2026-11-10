@@ -161,7 +161,9 @@ function paintChart(ctx, width, height, series, type) {
 
 function paintSeatWinrateChart(ctx, width, height, series) {
   const paddingX = 20;
-  const paddingTop = 24;
+  // 顶部留两行字：n= 标签的基线在 12，数值标签最高到 26（11px 字，和上一行隔 3px）。
+  // 原来只留 24，满格的柱子（100.0%）把数值标签压在 n= 标签上。
+  const paddingTop = 32;
   const paddingBottom = 34;
   const chartWidth = Math.max(1, width - paddingX * 2);
   const chartHeight = Math.max(1, height - paddingTop - paddingBottom);
@@ -192,7 +194,7 @@ function paintSeatWinrateChart(ctx, width, height, series) {
     ctx.fillStyle = CHART_COLORS.text;
     ctx.font = '11px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(item.rateLabel || '—', x + barWidth / 2, Math.max(12, y - 6));
+    ctx.fillText(item.rateLabel || '—', x + barWidth / 2, Math.max(26, y - 6));
 
     ctx.fillStyle = CHART_COLORS.mutedText;
     ctx.font = '10px sans-serif';
