@@ -7,6 +7,11 @@
 .meta .month-button.is-selected { color: var(--cedh-text); background: var(--cedh-accent-soft); border-color: var(--cedh-line-strong); }
 .meta .month-button[disabled]:not([size='mini']) { color: var(--cedh-text-faint); background: var(--cedh-surface-muted); }
 .month-tab { flex: 1; }
+/* 两个页签不走按钮那套底色：未选中只剩次要色的字，选中的用主题色描边加主文字色。
+   原来选中只比未选中亮一点（底色 7% 对 14%、字 68% 对 100%），读起来像两个按钮，分不出当前页。
+   边框用 transparent 不用 none，两种状态占的尺寸一样，切换不跳。 */
+.meta .month-tab:not([size='mini']) { background: transparent; border-color: transparent; }
+.meta .month-tab.is-selected { color: var(--cedh-text); background: transparent; border-color: var(--cedh-accent); }
 .month-caption, .month-asof, .month-status { display: block; font-size: 12px; line-height: 1.6; color: var(--cedh-text-soft); }
 .month-caption { margin-top: 4px; }
 .month-head { margin-top: 8px; }

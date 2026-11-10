@@ -155,9 +155,21 @@ test('卷心菜对账是独立全屏页，绿/白文本分色、常亮、切出�
   assert.match(wxml, /bindtap="cabbageCast"/);
   assert.match(wxml, /bindtap="cabbageActivate"/);
   assert.match(wxml, /bindtap="cabbageTapToken"/);
-  // 底部：全部重置（untapAll）+ 重置 1 个食品（Clock of Omens 解 1 个横置的食品）+ 清空；衍生物用官方简中名
+  // 底部：撤销 + 全部重置（untapAll）+ 重置 1 个食品（Clock of Omens 解 1 个横置的食品）+ 清空；衍生物用官方简中名
+  assert.match(wxml, /bindtap="cabbageUndo"[^>]*>撤销/);
   assert.match(wxml, /bindtap="cabbageUntapAll"[^>]*>全部重置/);
   assert.match(wxml, /bindtap="cabbageUntapOneFood"[^>]*>重置 1 个食品/);
+  assert.ok(wxml.indexOf('bindtap="cabbageUndo"') < wxml.indexOf('bindtap="cabbageUntapAll"'), '撤销排在底栏最左，和伊捷风暴一样');
+  // 2026-11-10 用户拍板：清空没有撤销而伊捷风暴有，是同类操作不同确认强度（ux-goals B、E）。
+  // 每个改衍生物的处理器都先存快照，撤销退一步；引擎开关不进历史，和伊捷一致。
+  const pageJs = fs.readFileSync(path.join(root2, 'cabbage.js'), 'utf8');
+  ['cabbageCast', 'cabbageAddToken', 'cabbageTapToken', 'cabbageRemoveToken', 'cabbageActivate', 'cabbageUntapAll', 'cabbageUntapOneFood', 'cabbageReset']
+    .forEach((name) => {
+      assert.match(pageJs, new RegExp(`${name}\\((?:event)?\\)\\s*{\\s*this\\.pushCabbageHistory\\(\\);`), `${name} 改状态前要先存快照`);
+    });
+  assert.doesNotMatch(pageJs, /toggleCabbageEngine\(event\)\s*{\s*this\.pushCabbageHistory/, '引擎开关不进撤销历史');
+  assert.match(pageJs, /cabbageUndo\(\)\s*{\s*if \(!this\.cabbageHistory\.length\) return;\s*this\.cabbageState = this\.cabbageHistory\.pop\(\);/);
+  assert.match(pageJs, /if \(this\.cabbageHistory\.length > 50\) this\.cabbageHistory\.shift\(\);/, '历史封顶 50 步');
   assert.match(wxml, /wx:for="\{\{cabbageEngineList\}\}"/);
   assert.doesNotMatch(wxml, /征募抵泛用|产出三倍|每 token → 绿/);
   // 绿法术力 = 绿色 accent 文本；泛用 = 白；页根将 accent 覆盖为绿

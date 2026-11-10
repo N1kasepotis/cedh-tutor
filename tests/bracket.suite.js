@@ -2017,6 +2017,14 @@ test('Bracket page and two home entries are wired without creating a Meta page',
   assert.match(bracketWxss, /\.clear-link\s*\{[\s\S]*min-height:\s*max\(44px, 76rpx\)/);
   assert.doesNotMatch(bracketWxss, /\.details-toggle|\.details-body|\.detail-group|\.combo-row|bracket-details-enter/);
   assert.match(bracketWxss, /\.edit-button\s*\{[\s\S]*min-height:\s*max\(44px, 82rpx\)/);
+  // 圆角只用体系里的 token（12 / 24 / 28 / 999rpx），不再散落 10、12、18、22rpx 这类自己的数。
+  // 只有两处是图形不是控件圆角，留着写死：柱状图柱顶的 4rpx 和铅笔小图标的 3rpx。
+  const rawRadiusOwners = [];
+  for (const block of bracketWxss.replace(/\/\*[\s\S]*?\*\//g, '').matchAll(/([^{}]+)\{([^}]*)\}/g)) {
+    const radius = block[2].match(/border-radius:\s*([^;]+);/);
+    if (radius && /\d+rpx/.test(radius[1]) && !/var\(/.test(radius[1])) rawRadiusOwners.push(block[1].trim());
+  }
+  assert.deepEqual(rawRadiusOwners.sort(), ['.curve-bar', '.edit-icon'], '圆角要用 --cedh-radius-* token');
   assert.doesNotMatch(bracketJs, /selectedIntent|intentOptions|selectIntent|showImportHelp|toggleImportHelp|comboIntent|handleComboIntent/);
   assert.doesNotMatch(bracketUtils, /comboIntent|DECLARED_INTENT/);
   assert.match(bracketWxss, /\.bracket\.is-input[\s\S]*overflow:\s*hidden/);

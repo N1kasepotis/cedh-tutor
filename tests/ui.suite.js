@@ -1442,3 +1442,26 @@ test('试玩、卷心菜、伊捷的小控件有伸到 88rpx 的隐形热区，�
   assert.match(read('miniprogram/pages/meta/meta.wxml'), />正在读取月报…</);
   assert.match(read('miniprogram/community/components/card-picker/index.wxml'), />正在查找…</);
 });
+
+// 2026-11-10 用户拍板：梯度页的两个页签不再是两个底色相近的按钮。未选中只剩次要色的字（底色、边框都透明），
+// 选中的用主题色描边加主文字色。边框只能透明不能 none，否则两种状态尺寸不同、切换会跳。
+test('梯度页页签：未选中无底色无边框，选中用主题色描边与主文字色', () => {
+  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/meta/meta.wxss'), 'utf8').replace(/\/\*[\s\S]*?\*\//g, '');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/meta/meta.wxml'), 'utf8');
+  const tabs = wxml.match(/<button[^>]*class="month-button month-tab[^"]*"[^>]*>/g) || [];
+  assert.equal(tabs.length, 2, '两个页签都要同时挂 month-button 与 month-tab');
+  tabs.forEach((tag) => assert.match(tag, /aria-role="tab"[^>]*aria-selected=/));
+  const plain = wxss.match(/\.meta \.month-tab:not\(\[size='mini'\]\)\s*\{([^}]*)\}/);
+  assert.ok(plain, '未选中的页签要有自己的规则');
+  assert.match(plain[1], /background:\s*transparent/);
+  assert.match(plain[1], /border-color:\s*transparent/);
+  assert.doesNotMatch(plain[1], /border:\s*(none|0)/, '边框要留着占位，只把颜色设成透明');
+  const selected = wxss.match(/\.meta \.month-tab\.is-selected\s*\{([^}]*)\}/);
+  assert.ok(selected, '选中的页签要有自己的规则');
+  assert.match(selected[1], /color:\s*var\(--cedh-text\)/);
+  assert.match(selected[1], /border-color:\s*var\(--cedh-accent\)/);
+  assert.match(selected[1], /background:\s*transparent/, '选中态靠描边，不靠底色');
+  // 页签规则必须写在通用按钮规则之后，同权重时后者才生效
+  assert.ok(wxss.indexOf('.meta .month-tab.is-selected') > wxss.indexOf('.meta .month-button.is-selected'));
+  assert.ok(wxss.indexOf(".meta .month-tab:not([size='mini'])") > wxss.indexOf(".meta .month-button:not([size='mini'])"));
+});

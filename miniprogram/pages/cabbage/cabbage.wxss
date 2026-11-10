@@ -195,18 +195,11 @@
   opacity: 0.6;
 }
 
+/* 四个文字按钮两端对齐，撤销在最左，和伊捷风暴的底栏同一种排法 */
 .cabbage-footer {
-  display: grid;
-  grid-template-columns: 1fr auto 1fr;
+  display: flex;
+  justify-content: space-between;
   align-items: center;
-}
-
-.cabbage-footer .text-button:last-child {
-  justify-self: end;
-}
-
-.cabbage-footer-center {
-  justify-self: center;
 }
 
 .cabbage-footer .text-button {
