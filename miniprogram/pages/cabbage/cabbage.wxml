@@ -37,10 +37,10 @@
           </block>
         </view>
         <view class="cabbage-token-ctrls">
-          <view class="cabbage-ctrl" aria-role="button" aria-label="删减（优先横置）" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageRemoveToken">−</view>
-          <view wx:if="{{item.showTap}}" class="cabbage-ctrl" aria-role="button" aria-label="横置" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageTapToken">横置</view>
+          <view class="cabbage-ctrl cabbage-ctrl-minus" aria-role="button" aria-label="删减（优先横置）" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageRemoveToken">−</view>
+          <view wx:if="{{item.showTap}}" class="cabbage-ctrl cabbage-ctrl-tap" aria-role="button" aria-label="横置" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageTapToken">横置</view>
           <view wx:else class="cabbage-ctrl-slot"></view>
-          <view class="cabbage-ctrl" aria-role="button" aria-label="增加" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageAddToken">+</view>
+          <view class="cabbage-ctrl cabbage-ctrl-plus" aria-role="button" aria-label="增加" data-key="{{item.key}}" hover-class="pressable-active" hover-stay-time="120" bindtap="cabbageAddToken">+</view>
         </view>
       </view>
     </view>

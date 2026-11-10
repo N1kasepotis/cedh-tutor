@@ -78,11 +78,18 @@ Page({
     });
   },
 
-  // 和伊捷风暴同一套：每次改动衍生物之前存一份快照，底部的“撤销”退一步。引擎开关不进历史。
-  // 状态里只有每种衍生物的 u / t 两个数，按值复制一份，不依赖 utils 是否原地改。
-  pushCabbageHistory() {
-    this.cabbageHistory.push(JSON.parse(JSON.stringify(this.cabbageState)));
-    if (this.cabbageHistory.length > 50) this.cabbageHistory.shift();
+  // 和伊捷风暴同一套：改衍生物的操作都经 commitCabbage 落地，底部的“撤销”退一步。引擎开关不进历史。
+  // 只有状态按值真的变了才进历史：只剩 1 个食品时点「横置 2 个食品」、计数已是 0 时点 − 这类无效点击
+  // 不占撤销位，连点多少次也挤不掉之前的真实操作。快照在调用 utils 之前按值取，不依赖 utils 是否原地改。
+  commitCabbage(change) {
+    const before = JSON.stringify(this.cabbageState);
+    const next = change(this.cabbageState);
+    if (JSON.stringify(next) !== before) {
+      this.cabbageHistory.push(JSON.parse(before));
+      if (this.cabbageHistory.length > 50) this.cabbageHistory.shift();
+    }
+    this.cabbageState = next;
+    this.syncCabbage();
   },
 
   toggleCabbageEngine(event) {
@@ -92,45 +99,34 @@ Page({
   },
 
   cabbageCast() {
-    this.pushCabbageHistory();
-    this.cabbageState = castTokens(this.cabbageState, this.cabbageEngines);
-    this.syncCabbage();
+    this.commitCabbage((state) => castTokens(state, this.cabbageEngines));
   },
 
   cabbageAddToken(event) {
-    this.pushCabbageHistory();
-    this.cabbageState = addToken(this.cabbageState, event.currentTarget.dataset.key);
-    this.syncCabbage();
+    const key = event.currentTarget.dataset.key;
+    this.commitCabbage((state) => addToken(state, key));
   },
 
   cabbageTapToken(event) {
-    this.pushCabbageHistory();
-    this.cabbageState = tapToken(this.cabbageState, event.currentTarget.dataset.key, this.cabbageEngines);
-    this.syncCabbage();
+    const key = event.currentTarget.dataset.key;
+    this.commitCabbage((state) => tapToken(state, key, this.cabbageEngines));
   },
 
   cabbageRemoveToken(event) {
-    this.pushCabbageHistory();
-    this.cabbageState = removeToken(this.cabbageState, event.currentTarget.dataset.key);
-    this.syncCabbage();
+    const key = event.currentTarget.dataset.key;
+    this.commitCabbage((state) => removeToken(state, key));
   },
 
   cabbageActivate() {
-    this.pushCabbageHistory();
-    this.cabbageState = cabbageActivate(this.cabbageState);
-    this.syncCabbage();
+    this.commitCabbage((state) => cabbageActivate(state));
   },
 
   cabbageUntapAll() {
-    this.pushCabbageHistory();
-    this.cabbageState = untapAll(this.cabbageState);
-    this.syncCabbage();
+    this.commitCabbage((state) => untapAll(state));
   },
 
   cabbageUntapOneFood() {
-    this.pushCabbageHistory();
-    this.cabbageState = untapOneFood(this.cabbageState);
-    this.syncCabbage();
+    this.commitCabbage((state) => untapOneFood(state));
   },
 
   cabbageUndo() {
@@ -140,8 +136,6 @@ Page({
   },
 
   cabbageReset() {
-    this.pushCabbageHistory();
-    this.cabbageState = createCabbageState();
-    this.syncCabbage();
+    this.commitCabbage(() => createCabbageState());
   },
 });

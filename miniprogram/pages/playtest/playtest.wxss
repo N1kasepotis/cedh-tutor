@@ -152,8 +152,12 @@
   min-height: 56rpx;
 }
 
-/* 手牌数与血量是读数，不能被按钮挤窄 */
+/* 手牌数与血量是读数，不能被按钮挤窄。
+   z-index 1 给热区定先后：手牌到两位数且「撤销」出现时，按钮区整块折到第二行，正好落在生命 ± 下面，
+   按钮热区往上伸会盖住生命按钮的下沿。读数区叠在上层，它覆盖的范围里点按只归生命 ±。 */
 .board-left {
+  position: relative;
+  z-index: 1;
   display: flex;
   flex-shrink: 0;
   align-items: center;
@@ -186,15 +190,26 @@
   line-height: 1;
 }
 
-/* 热区与外观解耦（ux-goals G）：圆按钮画 56rpx，摸起来 88rpx。做法同战情室的改/删：
-   一个看不见的伪元素向四周各伸 16rpx。左右邻居是「手牌 7」「生命 40」这些读数，不会抢到。 */
+/* 热区与外观解耦（ux-goals G）：圆按钮画 56rpx，热区按两侧的空地分，互不相碰。
+   上边伸 24rpx 到页面顶（试玩页上内边距 space-4）；下边伸 12rpx 到战场（板面 gap space-2），
+   按钮区折行时到第二行也是 row-gap space-2。+ 的右边不伸：五颗按钮时它和「撤销」只隔约 9rpx，这段空隙还随字体变。
+   所以 −、+ 之间那 64rpx（56rpx 的生命读数加两个 4rpx 间距）多分给 +：− 28、+ 36，两颗在 375 宽取整后都过 44px。
+   − 的左边伸 16rpx，到「手牌」读数为止。以上都从边框外沿量起，所以 CSS 偏移再加 1rpx 边框。 */
 .life-btn::after {
   content: "";
   position: absolute;
-  top: -16rpx;
-  right: -16rpx;
-  bottom: -16rpx;
-  left: -16rpx;
+  top: -25rpx;
+  bottom: -13rpx;
+}
+
+.life-btn-minus::after {
+  right: -29rpx;
+  left: -17rpx;
+}
+
+.life-btn-plus::after {
+  right: -1rpx;
+  left: -37rpx;
 }
 
 .life-val {
@@ -239,6 +254,23 @@
   border-radius: var(--cedh-radius-control-sm);
   font-size: var(--cedh-text-12);
   line-height: 1;
+}
+
+/* 顶栏按钮画 44rpx 高，热区按空地伸。上边 30rpx 到页面顶：行高 56 比按钮高 12，上下各 6，再加上内边距 24。
+   下边 18rpx 到战场：6 加板面 gap 12。左右各 4rpx，是 space-1 间距的一半。
+   「重置」总在最右，右边 24rpx 的页面内边距整段给它。按钮区折到第二行时，伸进第一行的部分被叠在
+   上层的读数区挡住（见 .board-left）。CSS 偏移比上述数值多 1rpx 边框。 */
+.board-action::after {
+  content: "";
+  position: absolute;
+  top: -31rpx;
+  right: -5rpx;
+  bottom: -19rpx;
+  left: -5rpx;
+}
+
+.board-action-end::after {
+  right: -25rpx;
 }
 
 .token-action {
@@ -529,18 +561,7 @@
   line-height: 1;
 }
 
-/* 顶栏五颗 22px 高的小按钮：画面不动，热区上下各伸 22rpx 到 88rpx；左右只伸 4rpx，
-   正好接到 space-1 间距的一半，不越过邻居。 */
-.board-action::after {
-  content: "";
-  position: absolute;
-  top: -22rpx;
-  right: -4rpx;
-  bottom: -22rpx;
-  left: -4rpx;
-}
-
-/* 对局中最高频的点按之一：44rpx 是法术力栏纵向空间内能给到的最大目标 */
+/* 对局中最高频的点按之一：画 48rpx，热区见下面的 ::after */
 .mana-ctrl {
   position: relative;
   display: flex;
@@ -555,15 +576,25 @@
   line-height: 1;
 }
 
-/* ± 的热区补到 88rpx：左右各伸 20rpx（每格横向有 102rpx，邻格够不到），纵向一半伸向面板
-   内边距、一半伸进中间的色标圆——色标不可点，所以 + 和 − 的热区互不相碰。 */
+/* ± 的热区按空地分，互不相碰。左右各伸 27rpx：相邻两格的按钮之间空 54rpx（格宽 96 减按钮 48，加格距 6），
+   一边一半。+ 往上伸 25rpx 到战场（面板上内边距 12、边框 1、板面 gap 12）；法术力栏排在战场之后，
+   热区伸进战场就会抢走战场的点按，所以必须停在边界。− 往下伸 19rpx 到区域条（下内边距 6、边框 1、gap 12）。
+   中间 68rpx（色标 60 加两个 4）分给 + 31、− 37，两个热区一样高。CSS 偏移比上述数值多 1rpx 边框。 */
 .mana-ctrl::after {
   content: "";
   position: absolute;
-  top: -20rpx;
-  right: -20rpx;
+  right: -28rpx;
+  left: -28rpx;
+}
+
+.mana-ctrl-plus::after {
+  top: -26rpx;
+  bottom: -32rpx;
+}
+
+.mana-ctrl-minus::after {
+  top: -38rpx;
   bottom: -20rpx;
-  left: -20rpx;
 }
 
 .mana-ctrl-plus {
@@ -614,14 +645,15 @@
   border-left: var(--cedh-hairline);
 }
 
-/* 总量格只有 60rpx 宽：热区向左伸进分隔线前的间距、向右伸到面板内边距，补到 88rpx */
+/* 总量格画 60rpx 宽，高度随面板拉满。左边伸 7rpx：它和无色格 ± 之间空 34rpx（半格 24、格距 6、外边距 4），
+   ± 已占 27。右边伸 37rpx 到屏幕边（面板右内边距 12、边框 1、页面内边距 24）。左侧有 1rpx 边框，CSS 偏移加 1。 */
 .mana-total::after {
   content: "";
   position: absolute;
   top: 0;
-  right: -16rpx;
+  right: -37rpx;
   bottom: 0;
-  left: -12rpx;
+  left: -8rpx;
 }
 
 .mana-total-num {

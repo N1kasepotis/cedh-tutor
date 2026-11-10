@@ -2269,3 +2269,67 @@ test('长尾组合技收敛成一条证据，并应用工具的保守 B3 内容�
     'Oracle + Consultation 已在手工库，不该再由长尾报一次');
   assert.ok((curated.evidence || []).some((item) => item.code === 'COMBO_FAMILY_THORACLE'));
 });
+
+// 2026-11-10 代码审查：清空原先不看本机存储删没删成功，界面照样清空，下次进页又读回旧牌表。
+// 现在和套牌试玩的「清除现套牌」一样：删成功才清界面，失败就提示、界面原样。
+test('强度分级清空：本机牌表删掉了才清界面，删失败就提示、界面原样', () => {
+  const originalPage = global.Page;
+  const originalWx = global.wx;
+  let definition = null;
+  const toasts = [];
+  const store = new Map();
+  let removeFails = true;
+  let confirm = true;
+  global.Page = (config) => { definition = config; };
+  global.wx = {
+    showModal: ({ success }) => success({ confirm }),
+    showToast: (options) => toasts.push(options.title),
+    showShareMenu: () => {},
+    getStorageSync: (key) => (store.has(key) ? store.get(key) : ''),
+    setStorageSync: (key, value) => store.set(key, value),
+    removeStorageSync: (key) => {
+      if (removeFails) throw new Error('storage busy');
+      store.delete(key);
+    },
+  };
+  const modulePath = require.resolve('../miniprogram/pages/bracket/bracket.js');
+  delete require.cache[modulePath];
+  try {
+    require(modulePath);
+  } finally {
+    global.Page = originalPage;
+  }
+  try {
+    const result = { verdict: 'B3' };
+    const page = Object.assign(Object.create(definition), {
+      data: { ...JSON.parse(JSON.stringify(definition.data)), deckText: '1 Sol Ring', canAnalyze: true, result },
+      analysisRequestId: 3,
+      setData(patch) { Object.assign(this.data, patch); },
+    });
+    store.set('bracketDeckText', 'saved deck');
+
+    confirm = false;
+    page.clearDeck();
+    assert.equal(page.data.deckText, '1 Sol Ring', '取消就什么都不动');
+    assert.deepEqual(toasts, []);
+
+    confirm = true;
+    page.clearDeck();
+    assert.equal(page.data.deckText, '1 Sol Ring', '本机没删掉，输入框不能先清空');
+    assert.equal(page.data.result, result);
+    assert.equal(page.analysisRequestId, 3, '没清空就不作废进行中的分析');
+    assert.equal(store.get('bracketDeckText'), 'saved deck');
+    assert.deepEqual(toasts, ['牌表清空失败']);
+
+    removeFails = false;
+    page.clearDeck();
+    assert.equal(page.data.deckText, '');
+    assert.equal(page.data.canAnalyze, false);
+    assert.equal(page.data.result, null);
+    assert.equal(page.analysisRequestId, 4, '清空后丢弃进行中的分析结果');
+    assert.equal(store.has('bracketDeckText'), false);
+    assert.deepEqual(toasts, ['牌表清空失败'], '成功时不再提示');
+  } finally {
+    global.wx = originalWx;
+  }
+});

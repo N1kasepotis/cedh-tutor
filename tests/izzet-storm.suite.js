@@ -136,3 +136,85 @@ test('伊捷风暴是 Ral 专用全屏页，蓝色 accent + 红色自伤/输并�
   assert.match(js, /wx\.setKeepScreenOn/);
   assert.match(js, /onLoad\(\)\s*{[\s\S]*?izzetStormConfig\.defaultEngines/);
 });
+
+function openIzzetPage() {
+  const originalPage = global.Page;
+  const originalWx = global.wx;
+  let definition = null;
+  const toasts = [];
+  global.Page = (config) => { definition = config; };
+  global.wx = { showShareMenu: () => {}, setKeepScreenOn: () => {}, showToast: (options) => toasts.push(options.title) };
+  const modulePath = require.resolve('../miniprogram/pages/izzet/izzet.js');
+  delete require.cache[modulePath];
+  try {
+    require(modulePath);
+  } finally {
+    global.Page = originalPage;
+  }
+  const page = Object.assign(Object.create(definition), {
+    data: JSON.parse(JSON.stringify(definition.data)),
+    setData(patch) { Object.assign(this.data, patch); },
+  });
+  page.onLoad();
+  return { page, toasts, restore: () => { global.wx = originalWx; } };
+}
+
+const adjust = (field, delta) => ({ currentTarget: { dataset: { field, delta: String(delta) } } });
+
+// 2026-11-10 代码审查：和卷心菜同一个毛病，计数已是 0 时点 −、开局点「新回合」也会进历史，撤销要多按才退到真实操作
+test('伊捷撤销：只记真实改动，计数为 0 时的 − 与开局的新回合不占撤销位', () => {
+  const { page, restore } = openIzzetPage();
+  try {
+    page.stormReset();
+    assert.equal(page.stormHistory.length, 0, '开局点新回合不进历史');
+    page.stormCastOther();
+    assert.equal(page.data.storm.storm, 1);
+    for (let i = 0; i < 60; i += 1) page.stormAdjust(adjust('spells', -1));
+    page.stormAdjust(adjust('selfDamage', -1));
+    assert.equal(page.stormHistory.length, 1, '计数为 0 时的 − 不改状态');
+    page.stormUndo();
+    assert.equal(page.data.storm.storm, 0, '撤销退掉的是那次施法');
+
+    const steps = [
+      ['stormCastOther'],
+      ['stormAdjust', adjust('spells', 1)],
+      ['stormAdjust', adjust('spells', -1)],
+      ['stormCastSpell'],
+      ['stormAdjust', adjust('selfDamage', 1)],
+      ['stormReset'],
+    ];
+    const seen = [JSON.stringify(page.stormState)];
+    steps.forEach(([name, event]) => {
+      page[name](event);
+      const now = JSON.stringify(page.stormState);
+      assert.notEqual(now, seen[seen.length - 1], `${name} 在这一步应当改了状态`);
+      seen.push(now);
+    });
+    for (let i = steps.length - 1; i >= 0; i -= 1) {
+      page.stormUndo();
+      assert.equal(JSON.stringify(page.stormState), seen[i], `撤销 ${steps[i][0]} 后回到上一步`);
+      assert.equal(JSON.stringify(page.data.storm), seen[i], '界面跟着回退');
+    }
+  } finally {
+    restore();
+  }
+});
+
+test('伊捷施法：开大提示拿改动前的快照比，第 6 张赢币的瞬间法术提示一次', () => {
+  const { page, toasts, restore } = openIzzetPage();
+  const originalRandom = Math.random;
+  Math.random = () => 0; // 0 < 0.5，次次正面
+  try {
+    page.toggleIzzetEngine({ currentTarget: { dataset: { key: 'ralMonsoon' } } });
+    for (let i = 0; i < 5; i += 1) page.stormCastSpell();
+    assert.deepEqual(toasts, [], '前 5 张不到开大条件');
+    page.stormCastSpell();
+    assert.deepEqual(toasts, ['转化可开大']);
+    assert.equal(page.data.storm.wins, 6);
+    page.stormUndo();
+    assert.equal(page.data.storm.spells, 5, '施法也能撤销');
+  } finally {
+    Math.random = originalRandom;
+    restore();
+  }
+});

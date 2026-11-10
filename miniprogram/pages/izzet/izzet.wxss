@@ -137,14 +137,24 @@
   line-height: 1;
 }
 
-/* 热区与外观解耦（ux-goals G），与卷心菜对账同一套数：画 68rpx，摸 88rpx */
+/* 热区与外观解耦（ux-goals G），和卷心菜对账同一套分法：上下各伸 12rpx，是行距 space-4 的一半；
+   − 和 + 之间的列距 12rpx 一边 6；− 往左伸 40rpx 进数值列右侧的空白，+ 往右伸 40rpx 到屏幕边。
+   CSS 偏移再加 1rpx 边框。 */
 .izzet-ctrl::after {
   content: "";
   position: absolute;
-  top: -10rpx;
-  right: -8rpx;
-  bottom: -10rpx;
-  left: -8rpx;
+  top: -13rpx;
+  bottom: -13rpx;
+}
+
+.izzet-ctrl-minus::after {
+  right: -7rpx;
+  left: -41rpx;
+}
+
+.izzet-ctrl-plus::after {
+  right: -41rpx;
+  left: -7rpx;
 }
 
 .izzet-flips {
@@ -167,12 +177,13 @@
   font-size: var(--cedh-text-14);
 }
 
-/* 撤销 / 新回合只有一行字高：热区上下各伸 26rpx。上方是掷硬币的读数，不可点。 */
+/* 撤销 / 新回合只有一行字高，没有边框。上边伸 30rpx，上方是掷硬币读数，不可点；下边伸 44rpx 进页面下内边距；
+   左右各伸 30rpx。 */
 .izzet-footer .text-button::after {
   content: "";
   position: absolute;
-  top: -26rpx;
-  right: -16rpx;
-  bottom: -26rpx;
-  left: -16rpx;
+  top: -30rpx;
+  right: -30rpx;
+  bottom: -44rpx;
+  left: -30rpx;
 }

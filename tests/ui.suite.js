@@ -1387,10 +1387,15 @@ test('second visual sweep: quiet tracker actions, official card names, one paste
   }
 });
 
-// 2026-11-10 全页美学自检（docs/ux-goals.md 末尾）。小控件的热区与外观解耦（ux-goals G：触控热区不小于
-// 44×44 CSS px）：控件本身 position: relative，一个 content:"" 的 ::after 向外伸出看不见的热区，做法同战情室的改/删。
-// 这里按每条 ::after 的上下伸出量加上控件自身高度，核对纵向够不够 88rpx（375 宽即 44px）。
-test('试玩、卷心菜、伊捷的小控件有伸到 88rpx 的隐形热区，关键按钮有 44px 下限', () => {
+// 2026-11-10 全页美学自检（docs/ux-goals.md 末尾），同日按代码审查重做。小控件的热区与外观解耦
+// （ux-goals G：触控热区不小于 44×44 CSS px）：控件本身 position: relative，一个 content:"" 的 ::after
+// 向外伸出看不见的热区。这里核两件事。
+// 一、互不相碰：每一侧伸出边框外沿的量，不超过版式留给它的空地；相邻两个热区合用一段间距时，两边加起来不超过它。
+//     空地按 tokens 和各页 CSS 推出来，按 rpx 精确算。取整会让共用的边错开 1px 左右，那时由绘制顺序决定归谁。
+// 二、真实尺寸：按 375 和 320 两种屏宽、横纵两个方向换成 px，和 44px 比。换算照基础库的规则：每个 rpx 长度
+//     单独乘屏宽 / 750 后向下取整，不足 1px 的非零长度按 1px（Android）或 0.5px（iOS），两种都算、取小的。
+//     达不到 44px 的列在 expectedShortfalls 里。版式或热区一改，这张表要跟着改，差在哪一目了然。
+test('小控件热区：互不相碰，按 375 和 320 宽逐个核横纵 px 尺寸', () => {
   const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
   const css = (rel) => read(rel).replace(/\/\*[\s\S]*?\*\//g, '');
   const rule = (sheet, selector) => {
@@ -1399,43 +1404,273 @@ test('试玩、卷心菜、伊捷的小控件有伸到 88rpx 的隐形热区，�
     assert.ok(match, `缺少规则 ${selector}`);
     return match[1];
   };
-  const rpx = (block, prop) => {
-    const match = block.match(new RegExp(`(?:^|[\\s;])${prop}:\\s*(-?\\d+)rpx`));
-    return match ? Number(match[1]) : null;
+  const prop = (block, name) => {
+    const match = block.match(new RegExp(`(?:^|[\\s;{])${name}:\\s*([^;]+);`));
+    return match ? match[1].trim() : null;
   };
-  const cases = [
-    ['miniprogram/pages/playtest/playtest.wxss', '.life-btn', '.life-btn::after', 56],
-    ['miniprogram/pages/playtest/playtest.wxss', '.board-action', '.board-action::after', 44],
-    ['miniprogram/pages/playtest/playtest.wxss', '.mana-ctrl', '.mana-ctrl::after', 48],
-    ['miniprogram/pages/cabbage/cabbage.wxss', '.cabbage-ctrl', '.cabbage-ctrl::after', 68],
-    // 文字按钮没有写死的高度：14px 字一行约 36rpx，上下各伸 26rpx 才够
-    ['miniprogram/pages/cabbage/cabbage.wxss', '.cabbage-footer .text-button', '.cabbage-footer .text-button::after', 36],
-    ['miniprogram/pages/izzet/izzet.wxss', '.izzet-ctrl', '.izzet-ctrl::after', 68],
-    ['miniprogram/pages/izzet/izzet.wxss', '.izzet-footer .text-button', '.izzet-footer .text-button::after', 36],
-  ];
-  for (const [file, base, after, ownHeight] of cases) {
-    const sheet = css(file);
+  const tokens = css('miniprogram/styles/tokens.wxss');
+  const tok = (name) => {
+    const match = tokens.match(new RegExp(`--cedh-${name}:\\s*(\\d+)rpx`));
+    assert.ok(match, `tokens 缺 --cedh-${name}`);
+    return Number(match[1]);
+  };
+  const len = (value) => {
+    const direct = String(value).trim().match(/^(-?\d+)rpx$/);
+    if (direct) return Number(direct[1]);
+    const ref = String(value).trim().match(/^var\(--cedh-([a-z0-9-]+)\)$/);
+    assert.ok(ref, `读不懂长度 ${value}`);
+    return tok(ref[1]);
+  };
+  const sizeOf = (sheet, selector, name) => len(prop(rule(sheet, selector), name));
+  const columns = (sheet, selector) => prop(rule(sheet, selector), 'grid-template-columns').split(/\s+/).map(len);
+
+  const PT = css('miniprogram/pages/playtest/playtest.wxss');
+  const CB = css('miniprogram/pages/cabbage/cabbage.wxss');
+  const IZ = css('miniprogram/pages/izzet/izzet.wxss');
+  const HAIR = 1; // --cedh-hairline: 1rpx
+  assert.match(tokens, /--cedh-hairline:\s*1rpx solid/);
+
+  // ::after 的四个偏移（rpx，正数 = 往外伸），基础规则加修饰规则
+  const zone = (sheet, base, modifier) => {
+    const baseBlock = rule(sheet, `${base}::after`);
+    assert.match(baseBlock, /content:\s*"";/, `${base}::after 要有 content`);
+    assert.match(baseBlock, /position:\s*absolute/, `${base}::after 要绝对定位`);
     assert.match(rule(sheet, base), /position:\s*relative/, `${base} 要做 ::after 的定位参照`);
-    const zone = rule(sheet, after);
-    assert.match(zone, /content:\s*"";/, `${after} 要有 content`);
-    const top = rpx(zone, 'top');
-    const bottom = rpx(zone, 'bottom');
-    assert.ok(top !== null && bottom !== null && top < 0 && bottom < 0, `${after} 要向上下伸出`);
-    const reach = ownHeight - top - bottom;
-    assert.ok(reach >= 88, `${after} 纵向只到 ${reach}rpx，不足 88rpx`);
-  }
-  // 法术力 ± 左右也要伸：每格横向有 102rpx，伸 20rpx 邻格够不到；总量格只有 60rpx 宽，靠左右伸出补足
-  const playtest = css('miniprogram/pages/playtest/playtest.wxss');
-  assert.match(rule(playtest, '.mana-ctrl::after'), /position:\s*absolute[\s\S]*left:\s*-20rpx/);
-  assert.match(rule(playtest, '.mana-total::after'), /content:\s*"";[\s\S]*left:\s*-\d+rpx/);
+    const off = {};
+    [baseBlock, modifier ? rule(sheet, `${modifier}::after`) : ''].forEach((block) => {
+      ['top', 'right', 'bottom', 'left'].forEach((side) => {
+        const value = prop(block, side);
+        if (value !== null) off[side] = value === '0' ? 0 : -len(value);
+      });
+    });
+    ['top', 'right', 'bottom', 'left'].forEach((side) => assert.ok(Number.isFinite(off[side]), `${modifier || base}::after 缺 ${side}`));
+    return off;
+  };
+
+  // 文字宽：中文一个字一个字号；英文和空格按 0.53em 估（模拟器实测「Token」五个字母 32px，字号 12px）
+  const toPx = (value, width, tiny) => {
+    if (value === 0) return 0;
+    const px = Math.floor((value * width) / 750 + 1e-4);
+    return px === 0 ? tiny : px;
+  };
+  const textPx = (label, fontRpx, width, tiny) => {
+    const font = toPx(fontRpx, width, tiny);
+    return [...label].reduce((sum, ch) => sum + (/[一-鿿]/.test(ch) ? font : font * 0.53), 0);
+  };
+  const border = (t, r, b, l) => ({ top: t, right: r, bottom: b, left: l });
+  const ring = border(HAIR, HAIR, HAIR, HAIR);
+  const none = border(0, 0, 0, 0);
+
+  // —— 试玩 ——
+  const lifeSize = sizeOf(PT, '.life-btn', 'width');
+  assert.equal(sizeOf(PT, '.life-btn', 'height'), lifeSize);
+  const actionBlock = rule(PT, '.board-action');
+  const actionMinW = len(prop(actionBlock, 'min-width'));
+  const actionMinH = len(prop(actionBlock, 'min-height'));
+  const actionPadX = len(prop(actionBlock, 'padding').split(/\s+/)[1]);
+  const actionFont = len(prop(actionBlock, 'font-size'));
+  const actionBox = (label) => (width, tiny) => Math.max(
+    toPx(actionMinW, width, tiny),
+    textPx(label, actionFont, width, tiny) + 2 * toPx(actionPadX, width, tiny) + 2 * toPx(HAIR, width, tiny),
+  );
+  const manaSize = sizeOf(PT, '.mana-ctrl', 'width');
+  const symbolSize = sizeOf(PT, '.mana-symbol', 'height');
+  const cellGap = sizeOf(PT, '.mana-cell', 'gap');
+  const totalMinW = sizeOf(PT, '.mana-total', 'min-width');
+  const manaColumn = 2 * manaSize + symbolSize + 2 * cellGap; // 一格从 + 顶到 − 底，总量格被拉到同高
+
+  // —— 卷心菜、伊捷 ——
+  const [cabMinusW, cabTapW, cabPlusW] = columns(CB, '.cabbage-token-ctrls');
+  const cabH = sizeOf(CB, '.cabbage-ctrl', 'height');
+  const [izzMinusW, izzPlusW] = columns(IZ, '.izzet-stat-ctrls');
+  const izzH = sizeOf(IZ, '.izzet-ctrl', 'height');
+  const footerFont = sizeOf(CB, '.cabbage-footer .text-button', 'font-size');
+  assert.equal(sizeOf(IZ, '.izzet-footer .text-button', 'font-size'), footerFont);
+  // 文字按钮没有写死高度：一行字的行高按 1.3 倍字号算下限（模拟器实测 1.36）
+  const lineBox = (width, tiny) => toPx(footerFont, width, tiny) * 1.3;
+  const footerBox = (label) => (width, tiny) => textPx(label, footerFont, width, tiny);
+
+  const controls = {
+    lifeMinus: { name: '试玩 生命 −', w: lifeSize, h: lifeSize, border: ring, off: zone(PT, '.life-btn', '.life-btn-minus') },
+    lifePlus: { name: '试玩 生命 +', w: lifeSize, h: lifeSize, border: ring, off: zone(PT, '.life-btn', '.life-btn-plus') },
+    undo: { name: '试玩 顶栏「撤销」', w: actionBox('撤销'), h: actionMinH, border: ring, off: zone(PT, '.board-action') },
+    token: { name: '试玩 顶栏「Token」', w: actionBox('Token'), h: actionMinH, border: ring, off: zone(PT, '.board-action') },
+    discard: { name: '试玩 顶栏「随机弃」', w: actionBox('随机弃'), h: actionMinH, border: ring, off: zone(PT, '.board-action') },
+    restart: { name: '试玩 顶栏「刷新」', w: actionBox('刷新'), h: actionMinH, border: ring, off: zone(PT, '.board-action') },
+    reset: { name: '试玩 顶栏「重置」', w: actionBox('重置'), h: actionMinH, border: ring, off: zone(PT, '.board-action', '.board-action-end') },
+    manaPlus: { name: '试玩 法术力 +', w: manaSize, h: manaSize, border: ring, off: zone(PT, '.mana-ctrl', '.mana-ctrl-plus') },
+    manaMinus: { name: '试玩 法术力 −', w: manaSize, h: manaSize, border: ring, off: zone(PT, '.mana-ctrl', '.mana-ctrl-minus') },
+    manaTotal: { name: '试玩 法术力总量', w: totalMinW, h: manaColumn, border: border(0, 0, 0, HAIR), off: zone(PT, '.mana-total') },
+    cabMinus: { name: '卷心菜 −', w: cabMinusW, h: cabH, border: ring, off: zone(CB, '.cabbage-ctrl', '.cabbage-ctrl-minus') },
+    cabTap: { name: '卷心菜 横置', w: cabTapW, h: cabH, border: ring, off: zone(CB, '.cabbage-ctrl', '.cabbage-ctrl-tap') },
+    cabPlus: { name: '卷心菜 +', w: cabPlusW, h: cabH, border: ring, off: zone(CB, '.cabbage-ctrl', '.cabbage-ctrl-plus') },
+    cabUndo: { name: '卷心菜 底栏「撤销」', w: footerBox('撤销'), h: lineBox, border: none, off: zone(CB, '.cabbage-footer .text-button') },
+    cabClear: { name: '卷心菜 底栏「清空」', w: footerBox('清空'), h: lineBox, border: none, off: zone(CB, '.cabbage-footer .text-button') },
+    izzMinus: { name: '伊捷 −', w: izzMinusW, h: izzH, border: ring, off: zone(IZ, '.izzet-ctrl', '.izzet-ctrl-minus') },
+    izzPlus: { name: '伊捷 +', w: izzPlusW, h: izzH, border: ring, off: zone(IZ, '.izzet-ctrl', '.izzet-ctrl-plus') },
+    izzUndo: { name: '伊捷 底栏「撤销」', w: footerBox('撤销'), h: lineBox, border: none, off: zone(IZ, '.izzet-footer .text-button') },
+  };
+  const ext = (key, side) => controls[key].off[side] - controls[key].border[side];
+  Object.keys(controls).forEach((key) => ['top', 'right', 'bottom', 'left'].forEach((side) => {
+    assert.ok(ext(key, side) >= 0, `${controls[key].name} 的热区在 ${side} 侧缩进了按钮里`);
+  }));
+
+  // 修饰类挂在对的元素上：− / + 换了位置，热区就伸错方向
+  const ptWxml = read('miniprogram/pages/playtest/playtest.wxml');
+  assert.match(ptWxml, /class="life-btn life-btn-minus"[^>]*bindtap="lifeDown"/);
+  assert.match(ptWxml, /class="life-btn life-btn-plus"[^>]*bindtap="lifeUp"/);
+  assert.match(ptWxml, /class="text-button board-action board-action-end"[^>]*bindtap="resetBoard">重置</);
+  assert.equal((ptWxml.match(/board-action-end/g) || []).length, 1, '只有总在最右的「重置」往页面内边距里伸');
+  const cbWxml = read('miniprogram/pages/cabbage/cabbage.wxml');
+  assert.match(cbWxml, /class="cabbage-ctrl cabbage-ctrl-minus"[^>]*bindtap="cabbageRemoveToken"/);
+  assert.match(cbWxml, /class="cabbage-ctrl cabbage-ctrl-tap"[^>]*bindtap="cabbageTapToken"/);
+  assert.match(cbWxml, /class="cabbage-ctrl cabbage-ctrl-plus"[^>]*bindtap="cabbageAddToken"/);
+  const izWxml = read('miniprogram/pages/izzet/izzet.wxml');
+  assert.equal((izWxml.match(/class="izzet-ctrl izzet-ctrl-minus"[^>]*data-delta="-1"/g) || []).length, 3);
+  assert.equal((izWxml.match(/class="izzet-ctrl izzet-ctrl-plus"[^>]*data-delta="1"/g) || []).length, 3);
+  assert.doesNotMatch(izWxml, /class="izzet-ctrl"/, '每颗伊捷 ± 都要带方向修饰类');
+
+  // —— 一、互不相碰（rpx）——
+  const S1 = tok('space-1'); const S2 = tok('space-2'); const S3 = tok('space-3'); const S4 = tok('space-4');
+  const S5 = tok('space-5'); const S7 = tok('space-7'); const PAGE_X = tok('page-x');
+  assert.match(prop(rule(PT, '.playtest'), 'padding'), /^calc\(env\(safe-area-inset-top\) \+ var\(--cedh-space-4\)\) var\(--cedh-space-4\) /, '试玩页上、左右内边距都是 space-4');
+  assert.equal(sizeOf(PT, '.playtest-board', 'gap'), S2);
+  assert.equal(sizeOf(PT, '.board-top', 'row-gap'), S2);
+  assert.equal(sizeOf(PT, '.board-left', 'gap'), S3);
+  assert.equal(sizeOf(PT, '.board-actions', 'gap'), S1);
+  assert.equal(sizeOf(PT, '.board-top', 'min-height'), lifeSize, '顶栏行高等于生命按钮高');
+  const lifeGap = sizeOf(PT, '.life-counter', 'gap');
+  const lifeVal = sizeOf(PT, '.life-val', 'min-width');
+  const rail = rule(PT, '.mana-rail');
+  const [railPadTop, railPadX, railPadBottom] = prop(rail, 'padding').split(/\s+/).map(len);
+  const railGap = len(prop(rail, 'gap'));
+  const totalMargin = sizeOf(PT, '.mana-total', 'margin-left');
+  const railInner = 750 - 2 * S4 - 2 * HAIR - 2 * railPadX;
+  const cellW = (railInner - totalMinW - totalMargin - 6 * railGap) / 6; // 六格平分，七个子项之间六个间距
+  // 文字按钮两端对齐：四颗按钮宽度之和以外的空地平分成三段
+  const footerRow = 750 - 2 * PAGE_X;
+  const footerLabels = ['撤销', '全部重置', '重置 1 个食品', '清空'];
+  const footerTextRpx = footerLabels.reduce((sum, label) => sum + [...label].reduce((s, ch) => s + (/[一-鿿]/.test(ch) ? footerFont : footerFont * 0.53), 0), 0);
+  const footerGap = (footerRow - footerTextRpx) / (footerLabels.length - 1);
+  // 卷心菜计数列（1fr）右侧的空白：两位数计数加「/」加两位数，约 120rpx
+  const cabCountCol = footerRow - len(prop(rule(CB, '.cabbage-token-row'), 'grid-template-columns').split(/\s+/)[0]) - 2 * sizeOf(CB, '.cabbage-token-row', 'gap') - (cabMinusW + cabTapW + cabPlusW + 2 * sizeOf(CB, '.cabbage-token-ctrls', 'gap'));
+  const izzValueCol = footerRow - len(prop(rule(IZ, '.izzet-stat'), 'grid-template-columns').split(/\s+/)[0]) - 2 * sizeOf(IZ, '.izzet-stat', 'gap') - (izzMinusW + izzPlusW + sizeOf(IZ, '.izzet-stat-ctrls', 'gap'));
+  const budgets = [
+    ['生命 − 与 + 之间：生命读数加两侧间距', ext('lifeMinus', 'right') + ext('lifePlus', 'left'), 2 * lifeGap + lifeVal],
+    ['生命 − 左侧到「手牌」读数', ext('lifeMinus', 'left'), S3],
+    ['生命 + 右侧：和顶栏按钮之间的空隙没有下限', ext('lifePlus', 'right'), 0],
+    ['生命 ± 上方到页面顶', Math.max(ext('lifeMinus', 'top'), ext('lifePlus', 'top')), S4],
+    ['生命 ± 下方到战场，折行时到第二行', Math.max(ext('lifeMinus', 'bottom'), ext('lifePlus', 'bottom')), S2],
+    ['顶栏相邻按钮之间', ext('restart', 'right') + ext('reset', 'left'), S1],
+    ['顶栏按钮上方到页面顶', ext('token', 'top'), S4 + (lifeSize - actionMinH) / 2],
+    ['顶栏按钮下方到战场', ext('token', 'bottom'), (lifeSize - actionMinH) / 2 + S2],
+    ['「重置」右侧到屏幕边', ext('reset', 'right'), S4],
+    ['相邻两格法术力 ± 之间', ext('manaPlus', 'right') + ext('manaPlus', 'left'), cellW - manaSize + railGap],
+    ['法术力 + 上方到战场：法术力栏在战场之后，伸进去就抢战场的点按', ext('manaPlus', 'top'), railPadTop + HAIR + S2],
+    ['法术力 + 与 − 之间：色标加两个格内间距', ext('manaPlus', 'bottom') + ext('manaMinus', 'top'), symbolSize + 2 * cellGap],
+    ['法术力 − 下方到区域条', ext('manaMinus', 'bottom'), railPadBottom + HAIR + S2],
+    ['无色格 ± 与总量格之间', ext('manaPlus', 'right') + ext('manaTotal', 'left'), (cellW - manaSize) / 2 + railGap + totalMargin],
+    ['总量格右侧到屏幕边', ext('manaTotal', 'right'), railPadX + HAIR + S4],
+    ['卷心菜 − 与横置之间', ext('cabMinus', 'right') + ext('cabTap', 'left'), sizeOf(CB, '.cabbage-token-ctrls', 'gap')],
+    ['卷心菜 横置与 + 之间', ext('cabTap', 'right') + ext('cabPlus', 'left'), sizeOf(CB, '.cabbage-token-ctrls', 'gap')],
+    ['卷心菜 − 左侧伸进计数列的空白', ext('cabMinus', 'left'), sizeOf(CB, '.cabbage-token-row', 'gap') + cabCountCol - 120],
+    ['卷心菜 + 右侧到屏幕边', ext('cabPlus', 'right'), PAGE_X],
+    ['卷心菜 上下两行之间', ext('cabMinus', 'bottom') + ext('cabMinus', 'top'), sizeOf(CB, '.cabbage-tokens', 'gap')],
+    ['卷心菜 末行到「横置 2 个食品」', ext('cabMinus', 'bottom'), S5],
+    ['卷心菜 底栏到上方「横置 2 个食品」', ext('cabUndo', 'top'), S5],
+    ['卷心菜 底栏下方到页面底', ext('cabUndo', 'bottom'), S7],
+    ['卷心菜 底栏相邻按钮之间', ext('cabUndo', 'right') + ext('cabClear', 'left'), footerGap],
+    ['卷心菜 底栏两端到屏幕边', Math.max(ext('cabUndo', 'left'), ext('cabClear', 'right')), PAGE_X],
+    ['伊捷 − 与 + 之间', ext('izzMinus', 'right') + ext('izzPlus', 'left'), sizeOf(IZ, '.izzet-stat-ctrls', 'gap')],
+    ['伊捷 − 左侧伸进数值列的空白', ext('izzMinus', 'left'), sizeOf(IZ, '.izzet-stat', 'gap') + izzValueCol - 120],
+    ['伊捷 + 右侧到屏幕边', ext('izzPlus', 'right'), PAGE_X],
+    ['伊捷 上下两行之间', ext('izzMinus', 'bottom') + ext('izzMinus', 'top'), sizeOf(IZ, '.izzet-stats', 'gap')],
+    ['伊捷 首行到上方施法按钮', ext('izzMinus', 'top'), S5],
+    ['伊捷 底栏下方到页面底', ext('izzUndo', 'bottom'), S7],
+  ];
+  assert.equal(sizeOf(CB, '.tool-shell', 'gap'), S5);
+  assert.equal(sizeOf(IZ, '.tool-shell', 'gap'), S5);
+  budgets.forEach(([label, used, room]) => assert.ok(used <= room, `${label}：伸出 ${used}rpx，只有 ${room}rpx`));
+
+  // 按钮区折到第二行时，按钮热区往上伸会盖到生命 ±：读数区叠在上层，点按归生命 ±
+  const boardLeft = rule(PT, '.board-left');
+  assert.match(boardLeft, /position:\s*relative/);
+  assert.match(boardLeft, /z-index:\s*1;/);
+  assert.doesNotMatch(rule(PT, '.board-actions'), /z-index/);
+  assert.doesNotMatch(rule(PT, '.board-action'), /z-index/);
+
+  // —— 二、真实尺寸（px）——
+  const measure = (control, width) => {
+    const sizes = [0.5, 1].map((tiny) => {
+      const px = (value) => (typeof value === 'function' ? value(width, tiny) : toPx(value, width, tiny));
+      const b = (side) => toPx(control.border[side], width, tiny);
+      const o = (side) => toPx(control.off[side], width, tiny);
+      return {
+        w: px(control.w) - b('left') - b('right') + o('left') + o('right'),
+        h: px(control.h) - b('top') - b('bottom') + o('top') + o('bottom'),
+      };
+    });
+    return { w: Math.min(...sizes.map((s) => s.w)), h: Math.min(...sizes.map((s) => s.h)) };
+  };
+  const shortfalls = [];
+  [375, 320].forEach((width) => Object.values(controls).forEach((control) => {
+    const size = measure(control, width);
+    if (size.w < 44) shortfalls.push(`${width} ${control.name} 宽 ${Math.round(size.w * 10) / 10}`);
+    if (size.h < 44) shortfalls.push(`${width} ${control.name} 高 ${Math.round(size.h * 10) / 10}`);
+  }));
+  const expectedShortfalls = [
+    // 375 宽：两个字的顶栏按钮彼此只隔 space-1，左右各伸 4rpx 已到头，按钮中心距 80rpx 就是 40px。
+    // 要过 44px 只能改版式，见 docs/ux-goals.md 末尾，等用户定。
+    '375 试玩 顶栏「撤销」 宽 40',
+    '375 试玩 顶栏「刷新」 宽 40',
+    // 320 宽：间距和行高都按 rpx 缩放，热区再怎么分也超不过按钮中心距。顶栏一行 56rpx，上到页面顶 24、
+    // 下到战场 12，纵向最多 92rpx（约 39px，取整后 36 到 37px）；生命 + 右侧和按钮区之间没有保证的空地；
+    // 法术力相邻两格中心距 102rpx；卷心菜、伊捷上下两行中心距 92rpx。
+    '320 试玩 生命 − 宽 40',
+    '320 试玩 生命 − 高 36',
+    '320 试玩 生命 + 宽 37',
+    '320 试玩 生命 + 高 36',
+    '320 试玩 顶栏「撤销」 宽 34',
+    '320 试玩 顶栏「撤销」 高 37',
+    '320 试玩 顶栏「Token」 宽 40.5',
+    '320 试玩 顶栏「Token」 高 37',
+    '320 试玩 顶栏「随机弃」 高 37',
+    '320 试玩 顶栏「刷新」 宽 34',
+    '320 试玩 顶栏「刷新」 高 37',
+    '320 试玩 顶栏「重置」 宽 42',
+    '320 试玩 顶栏「重置」 高 37',
+    '320 试玩 法术力 + 宽 40',
+    '320 试玩 法术力 + 高 42',
+    '320 试玩 法术力 − 宽 40',
+    '320 试玩 法术力 − 高 42',
+    '320 试玩 法术力总量 宽 42',
+    '320 卷心菜 − 高 37',
+    '320 卷心菜 横置 高 37',
+    '320 卷心菜 + 高 37',
+    '320 伊捷 − 高 37',
+    '320 伊捷 + 高 37',
+  ];
+  assert.deepEqual(shortfalls, expectedShortfalls);
+});
+
+// 同一轮美学自检的其余几项：关键按钮的 px 下限、牌库面板的按压反馈、加载文案的省略号
+test('关键按钮有 44px 下限，牌库面板每个可点元素有按压反馈，加载文案以省略号收尾', () => {
+  const read = (rel) => fs.readFileSync(path.join(root, rel), 'utf8');
+  const css = (rel) => read(rel).replace(/\/\*[\s\S]*?\*\//g, '');
+  const rule = (sheet, selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const match = sheet.match(new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`));
+    assert.ok(match, `缺少规则 ${selector}`);
+    return match[1];
+  };
   // 关键按钮的 px 下限：rpx 在 320 宽的机型上缩到 32 到 35px
   const tracker = css('miniprogram/pages/tracker/tracker.wxss');
   assert.match(rule(tracker, '.add-match-button'), /min-height:\s*max\(44px, 82rpx\)/);
   assert.match(rule(tracker, '.add-deck-button'), /min-height:\s*max\(44px, 84rpx\)/);
   // 牌库面板里的每个可点元素都要有按压反馈（D 反馈），和全站其余可点控件一样
   const panel = read('miniprogram/pages/playtest/playtest.wxml');
-  const zone = panel.slice(panel.indexOf('class="zone-panel '), panel.indexOf('</scroll-view>', panel.indexOf('class="zone-panel ')));
-  const tappables = zone.match(/<view\b[^>]*bindtap="[^"]+"[^>]*>/g) || [];
+  const zonePanel = panel.slice(panel.indexOf('class="zone-panel '), panel.indexOf('</scroll-view>', panel.indexOf('class="zone-panel ')));
+  const tappables = zonePanel.match(/<view\b[^>]*bindtap="[^"]+"[^>]*>/g) || [];
   assert.ok(tappables.length >= 9, `牌库面板应有至少 9 个可点元素，找到 ${tappables.length}`);
   tappables.forEach((tag) => assert.match(tag, /hover-class="pressable-active"/, `缺按压反馈：${tag.slice(0, 80)}`));
   // 加载中的文案以省略号收尾，和全站其余加载文案一致

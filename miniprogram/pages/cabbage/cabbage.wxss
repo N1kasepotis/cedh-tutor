@@ -165,15 +165,29 @@
   line-height: 1;
 }
 
-/* 热区与外观解耦（ux-goals G）：按钮画 68rpx 高，摸起来 88rpx。左右各伸 8rpx，
-   正好接到 space-2 列距的一半；上下各伸 10rpx，行与行之间刚好不相碰。 */
+/* 热区与外观解耦（ux-goals G）：按钮画 68rpx，热区按空地分，互不相碰。上下各伸 12rpx，是行距 space-4 的一半。
+   列距 space-2 只有 12rpx，整段让给中间的「横置」；− 往左伸 40rpx 进计数列右侧的空白，
+   + 往右伸 40rpx 到屏幕边（页面内边距 40）。以上从边框外沿量起，CSS 偏移再加 1rpx 边框。 */
 .cabbage-ctrl::after {
   content: "";
   position: absolute;
-  top: -10rpx;
-  right: -8rpx;
-  bottom: -10rpx;
-  left: -8rpx;
+  top: -13rpx;
+  bottom: -13rpx;
+}
+
+.cabbage-ctrl-minus::after {
+  right: -1rpx;
+  left: -41rpx;
+}
+
+.cabbage-ctrl-tap::after {
+  right: -13rpx;
+  left: -13rpx;
+}
+
+.cabbage-ctrl-plus::after {
+  right: -41rpx;
+  left: -1rpx;
 }
 
 .cabbage-activate {
@@ -208,13 +222,13 @@
   font-size: var(--cedh-text-14);
 }
 
-/* 底部三个文字按钮只有一行字高：热区上下各伸 26rpx 到 88rpx 以上。
-   上方到「横置 2 个食品」按钮隔着 space-4，伸不进去。 */
+/* 底栏文字按钮只有一行字高，没有边框。上边伸 30rpx：上方「横置 2 个食品」至少隔 space-5（32rpx），伸不到。
+   下边伸 44rpx 进页面下内边距（space-7）。左右各伸 30rpx，四颗按钮两端对齐后彼此至少隔 80rpx。 */
 .cabbage-footer .text-button::after {
   content: "";
   position: absolute;
-  top: -26rpx;
-  right: -16rpx;
-  bottom: -26rpx;
-  left: -16rpx;
+  top: -30rpx;
+  right: -30rpx;
+  bottom: -44rpx;
+  left: -30rpx;
 }

@@ -31,24 +31,24 @@
         <text class="izzet-stat-label">本回合咒语</text>
         <text class="izzet-stat-value mono">{{storm.storm}}</text>
         <view class="izzet-stat-ctrls">
-          <view class="izzet-ctrl" aria-role="button" aria-label="风暴减一" data-field="storm" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
-          <view class="izzet-ctrl" aria-role="button" aria-label="补记其他玩家施放的咒语" data-field="storm" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
+          <view class="izzet-ctrl izzet-ctrl-minus" aria-role="button" aria-label="风暴减一" data-field="storm" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
+          <view class="izzet-ctrl izzet-ctrl-plus" aria-role="button" aria-label="补记其他玩家施放的咒语" data-field="storm" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
         </view>
       </view>
       <view class="izzet-stat">
         <text class="izzet-stat-label">我的瞬间/法术</text>
         <text class="izzet-stat-value mono">{{storm.spells}}</text>
         <view class="izzet-stat-ctrls">
-          <view class="izzet-ctrl" aria-role="button" aria-label="瞬间法术减一" data-field="spells" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
-          <view class="izzet-ctrl" aria-role="button" aria-label="瞬间法术加一" data-field="spells" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
+          <view class="izzet-ctrl izzet-ctrl-minus" aria-role="button" aria-label="瞬间法术减一" data-field="spells" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
+          <view class="izzet-ctrl izzet-ctrl-plus" aria-role="button" aria-label="瞬间法术加一" data-field="spells" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
         </view>
       </view>
       <view class="izzet-stat izzet-stat-dmg">
         <text class="izzet-stat-label">拉尔自伤</text>
         <text class="izzet-stat-value mono">{{storm.selfDamage}}</text>
         <view class="izzet-stat-ctrls">
-          <view class="izzet-ctrl" aria-role="button" aria-label="自伤减一" data-field="selfDamage" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
-          <view class="izzet-ctrl" aria-role="button" aria-label="自伤加一" data-field="selfDamage" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
+          <view class="izzet-ctrl izzet-ctrl-minus" aria-role="button" aria-label="自伤减一" data-field="selfDamage" data-delta="-1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">−</view>
+          <view class="izzet-ctrl izzet-ctrl-plus" aria-role="button" aria-label="自伤加一" data-field="selfDamage" data-delta="1" hover-class="pressable-active" hover-stay-time="120" bindtap="stormAdjust">+</view>
         </view>
       </view>
     </view>

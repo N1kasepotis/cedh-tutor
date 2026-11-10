@@ -161,15 +161,13 @@ test('卷心菜对账是独立全屏页，绿/白文本分色、常亮、切出�
   assert.match(wxml, /bindtap="cabbageUntapOneFood"[^>]*>重置 1 个食品/);
   assert.ok(wxml.indexOf('bindtap="cabbageUndo"') < wxml.indexOf('bindtap="cabbageUntapAll"'), '撤销排在底栏最左，和伊捷风暴一样');
   // 2026-11-10 用户拍板：清空没有撤销而伊捷风暴有，是同类操作不同确认强度（ux-goals B、E）。
-  // 每个改衍生物的处理器都先存快照，撤销退一步；引擎开关不进历史，和伊捷一致。
+  // 撤销的行为由下面「卷心菜撤销」那条测试驱动页面对象核对，这里只看每个改衍生物的处理器都走同一个入口。
   const pageJs = fs.readFileSync(path.join(root2, 'cabbage.js'), 'utf8');
   ['cabbageCast', 'cabbageAddToken', 'cabbageTapToken', 'cabbageRemoveToken', 'cabbageActivate', 'cabbageUntapAll', 'cabbageUntapOneFood', 'cabbageReset']
     .forEach((name) => {
-      assert.match(pageJs, new RegExp(`${name}\\((?:event)?\\)\\s*{\\s*this\\.pushCabbageHistory\\(\\);`), `${name} 改状态前要先存快照`);
+      assert.match(pageJs, new RegExp(`\\n  ${name}\\((?:event)?\\)\\s*{[^}]*this\\.commitCabbage\\(`), `${name} 要经 commitCabbage 落地`);
     });
-  assert.doesNotMatch(pageJs, /toggleCabbageEngine\(event\)\s*{\s*this\.pushCabbageHistory/, '引擎开关不进撤销历史');
-  assert.match(pageJs, /cabbageUndo\(\)\s*{\s*if \(!this\.cabbageHistory\.length\) return;\s*this\.cabbageState = this\.cabbageHistory\.pop\(\);/);
-  assert.match(pageJs, /if \(this\.cabbageHistory\.length > 50\) this\.cabbageHistory\.shift\(\);/, '历史封顶 50 步');
+  assert.doesNotMatch(pageJs, /this\.cabbageState = (?!next;|this\.cabbageHistory\.pop\(\);|createCabbageState\(\);)/, '除了 commitCabbage 与撤销，别处不直接改状态');
   assert.match(wxml, /wx:for="\{\{cabbageEngineList\}\}"/);
   assert.doesNotMatch(wxml, /征募抵泛用|产出三倍|每 token → 绿/);
   // 绿法术力 = 绿色 accent 文本；泛用 = 白；页根将 accent 覆盖为绿
@@ -183,4 +181,106 @@ test('卷心菜对账是独立全屏页，绿/白文本分色、常亮、切出�
   // 常亮 + 每次进入重置引擎（切出自动 deselect）
   assert.match(js, /wx\.setKeepScreenOn/);
   assert.match(js, /onLoad\(\)\s*{[\s\S]*?cabbageConfig\.defaultEngines/);
+});
+
+// 驱动真实页面对象：stub 掉 Page 与 wx，按用户的点按顺序调处理器
+function openCabbagePage() {
+  const originalPage = global.Page;
+  const originalWx = global.wx;
+  let definition = null;
+  global.Page = (config) => { definition = config; };
+  global.wx = { showShareMenu: () => {}, setKeepScreenOn: () => {} };
+  const modulePath = require.resolve('../miniprogram/pages/cabbage/cabbage.js');
+  delete require.cache[modulePath];
+  try {
+    require(modulePath);
+  } finally {
+    global.Page = originalPage;
+  }
+  const page = Object.assign(Object.create(definition), {
+    data: JSON.parse(JSON.stringify(definition.data)),
+    setData(patch) { Object.assign(this.data, patch); },
+  });
+  page.onLoad();
+  return { page, restore: () => { global.wx = originalWx; } };
+}
+
+const tokenTap = (key) => ({ currentTarget: { dataset: { key } } });
+
+// 2026-11-10 代码审查：每个处理器原先先存快照、再算状态，无效点击也进历史。加 1 个食品、点一次
+// 「横置 2 个食品」（只有 1 个，不生效）、再撤销，食品还是 1 个；连点 50 次无效横置还会把真实操作挤出历史。
+test('卷心菜撤销：只记真实改动，无效点击不占撤销位、挤不掉之前的操作', () => {
+  const { page, restore } = openCabbagePage();
+  try {
+    const food = () => page.data.cabbageTokens.find((token) => token.key === 'food');
+    page.cabbageAddToken(tokenTap('food'));
+    assert.equal(food().u, 1);
+    page.cabbageActivate();
+    assert.equal(food().u, 1, '只有 1 个未横置的食品，横置 2 个不生效');
+    page.cabbageUndo();
+    assert.equal(food().u, 0, '撤销退掉的是加食品，不是那次无效横置');
+
+    page.cabbageAddToken(tokenTap('food'));
+    for (let i = 0; i < 60; i += 1) page.cabbageActivate();
+    // 其余几种无效点击：计数已是 0 时删减、没开贾希拉时横置线索、没有横置的食品时重置 1 个、
+    // 引擎全关时对手施法、什么都没横置时全部重置
+    page.cabbageRemoveToken(tokenTap('clue'));
+    page.cabbageTapToken(tokenTap('clue'));
+    page.cabbageUntapOneFood();
+    page.cabbageCast();
+    page.cabbageUntapAll();
+    assert.equal(page.cabbageHistory.length, 1, '这些都没改状态，历史里只有加食品那一步');
+    page.cabbageUndo();
+    assert.equal(food().u, 0, '连点 60 次无效横置后，撤销仍退回加食品之前');
+
+    page.cabbageReset();
+    assert.equal(page.cabbageHistory.length, 0, '全空时点清空不进历史');
+  } finally {
+    restore();
+  }
+});
+
+test('卷心菜撤销：每种真实操作都能逐步退回，引擎开关不进历史，历史封顶 50 步', () => {
+  const { page, restore } = openCabbagePage();
+  try {
+    page.toggleCabbageEngine(tokenTap('cabbage'));
+    const steps = [
+      ['cabbageAddToken', tokenTap('food')],
+      ['cabbageAddToken', tokenTap('food')],
+      ['cabbageAddToken', tokenTap('food')],
+      ['cabbageActivate'],
+      ['cabbageUntapOneFood'],
+      ['cabbageTapToken', tokenTap('food')],
+      ['cabbageUntapAll'],
+      ['cabbageRemoveToken', tokenTap('food')],
+      ['cabbageCast'],
+      ['cabbageReset'],
+    ];
+    const seen = [JSON.stringify(page.cabbageState)];
+    steps.forEach(([name, event]) => {
+      page[name](event);
+      const now = JSON.stringify(page.cabbageState);
+      assert.notEqual(now, seen[seen.length - 1], `${name} 在这一步应当改了状态`);
+      seen.push(now);
+    });
+    for (let i = steps.length - 1; i >= 0; i -= 1) {
+      page.cabbageUndo();
+      assert.equal(JSON.stringify(page.cabbageState), seen[i], `撤销 ${steps[i][0]} 后回到上一步`);
+    }
+    page.cabbageUndo();
+    assert.equal(JSON.stringify(page.cabbageState), seen[0], '历史空了，撤销什么都不做');
+    assert.equal(page.cabbageEngines.cabbage, true, '撤销不动引擎开关');
+
+    page.cabbageAddToken(tokenTap('food'));
+    page.toggleCabbageEngine(tokenTap('jaheira'));
+    page.cabbageUndo();
+    assert.equal(page.cabbageState.food.u, 0);
+    assert.equal(page.cabbageEngines.jaheira, true, '引擎开关不进历史');
+
+    for (let i = 0; i < 55; i += 1) page.cabbageAddToken(tokenTap('treasure'));
+    for (let i = 0; i < 60; i += 1) page.cabbageUndo();
+    assert.equal(page.cabbageState.treasure.u, 5, '只保留最近 50 步');
+  } finally {
+    restore();
+  }
 });

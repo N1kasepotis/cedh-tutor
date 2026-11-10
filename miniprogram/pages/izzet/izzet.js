@@ -61,9 +61,18 @@ Page({
     });
   },
 
-  pushStormHistory() {
-    this.stormHistory.push({ ...this.stormState });
-    if (this.stormHistory.length > 50) this.stormHistory.shift();
+  // 和卷心菜同一套：只有状态按值真的变了才进历史。计数已是 0 时点 −、开局点「新回合」这类无效点击
+  // 不占撤销位，连点也挤不掉之前的真实操作。返回改动前的快照，施法后的开大提示要拿它和新状态比。
+  commitStorm(change) {
+    const before = JSON.stringify(this.stormState);
+    const next = change(this.stormState);
+    if (JSON.stringify(next) !== before) {
+      this.stormHistory.push(JSON.parse(before));
+      if (this.stormHistory.length > 50) this.stormHistory.shift();
+    }
+    this.stormState = next;
+    this.syncStorm();
+    return JSON.parse(before);
   },
 
   toggleIzzetEngine(event) {
@@ -73,26 +82,19 @@ Page({
   },
 
   stormCastSpell() {
-    this.pushStormHistory();
-    const previousState = this.stormState;
-    this.stormState = castInstantSorcery(this.stormState, this.izzetEngines, Math.random);
-    this.syncStorm();
+    const previousState = this.commitStorm((state) => castInstantSorcery(state, this.izzetEngines, Math.random));
     if (shouldPromptRalUltimate(previousState, this.stormState)) {
       wx.showToast({ title: '转化可开大', icon: 'none' });
     }
   },
 
   stormCastOther() {
-    this.pushStormHistory();
-    this.stormState = castOtherSpell(this.stormState);
-    this.syncStorm();
+    this.commitStorm((state) => castOtherSpell(state));
   },
 
   stormAdjust(event) {
     const { field, delta } = event.currentTarget.dataset;
-    this.pushStormHistory();
-    this.stormState = adjustCounter(this.stormState, field, Number(delta));
-    this.syncStorm();
+    this.commitStorm((state) => adjustCounter(state, field, Number(delta)));
   },
 
   stormUndo() {
@@ -102,8 +104,6 @@ Page({
   },
 
   stormReset() {
-    this.pushStormHistory();
-    this.stormState = createStormState();
-    this.syncStorm();
+    this.commitStorm(() => createStormState());
   },
 });
