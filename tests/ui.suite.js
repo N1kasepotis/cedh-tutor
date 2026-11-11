@@ -372,7 +372,7 @@ test('home pixel font subset covers every static text glyph on the home page', (
   assert.deepEqual(labelMissing, [], `月报更新日期缺字：${labelMissing.join('')}`);
 });
 
-// 月报入口的更新日期：电光蓝色块、黑字，贴在“环境梯度”后面，斜切加双色硬阴影。读不到就整块不显示，不留空位
+// 月报入口的更新日期：电光蓝色块、黑字，贴在“环境梯度”后面，斜切加一层黑色硬阴影。读不到就整块不显示，不留空位
 test('首页月报入口显示电光蓝的更新日期，读不到就不显示', async () => {
   const vm = require('node:vm');
   const { createRequire } = require('node:module');
@@ -406,32 +406,30 @@ test('首页月报入口显示电光蓝的更新日期，读不到就不显示',
   assert.match(badge, /margin:\s*0 auto 0 \d+rpx/, '右边距 auto 把它贴在中文后面，英文副标题照旧靠右');
   assert.match(face, /font-size:\s*10px/, '点阵字在 10px 原尺寸最清楚');
 
-  // 斜化走 skewX：本页禁斜体。阴影是两层没有模糊的实色块：本页禁阴影属性
+  // 斜化走 skewX：本页禁斜体。阴影是一层没有模糊的黑色实色块：本页禁阴影属性
   const slant = Number(badge.match(/transform:\s*skewX\(-(\d+)deg\)/)[1]);
   assert.ok(slant >= 8 && slant <= 15, `斜切 ${slant} 度，太小看不出，太大点阵字会糊`);
   assert.match(badge, /position:\s*relative/);
-  const far = rule('.home-meta-updated::before');
-  const near = rule('.home-meta-updated::after');
-  [far, near].forEach((layer) => assert.match(layer, /content:\s*""[\s\S]*position:\s*absolute[\s\S]*top:\s*0[\s\S]*right:\s*0[\s\S]*bottom:\s*0[\s\S]*left:\s*0/));
-  assert.match(far, /background:\s*#FFFFFF/);
-  assert.match(near, /background:\s*#0A0A0A/);
-  const offset = (block) => Number(block.match(/translate\((\d+)px,\s*\1px\)/)[1]);
-  assert.ok(offset(far) > offset(near) && offset(near) > 0, '两层阴影要错开，远的一层更远');
-  assert.match(face, /position:\s*relative[\s\S]*z-index:\s*1/, '色块要压在两层阴影上面');
+  const shadow = rule('.home-meta-updated::after');
+  assert.match(shadow, /content:\s*""[\s\S]*position:\s*absolute[\s\S]*top:\s*0[\s\S]*right:\s*0[\s\S]*bottom:\s*0[\s\S]*left:\s*0/);
+  assert.match(shadow, /background:\s*#0A0A0A/);
+  // 2026-11-10 用户要求从双色改成单层黑色：只有一层，任何行状态都不换色
+  assert.doesNotMatch(wxss, /\.home-meta-updated::before/, '阴影只有一层');
+  assert.equal((wxss.match(/\.home-meta-updated::after/g) || []).length, 1, '阴影在故障行和按下时也是黑色，不单独换色');
+  const offset = Number(shadow.match(/translate\((\d+)px,\s*\1px\)/)[1]);
+  assert.ok(offset > 0, '阴影要错开色块才看得见');
+  assert.match(face, /position:\s*relative[\s\S]*z-index:\s*1/, '色块要压在阴影上面');
   // 这一行的文字容器会裁掉溢出：色块加错位的总高不能超过中文的行高
   assert.match(badge, /align-self:\s*flex-start/);
   const zhSize = Number(rule('.home-button-zh').match(/font-size:\s*(\d+)px/)[1]);
   const padding = Number(face.match(/padding:\s*(\d+)px/)[1]);
-  assert.ok(10 + padding * 2 + offset(far) <= zhSize, '阴影的下缘会被这一行裁掉');
+  assert.ok(10 + padding * 2 + offset <= zhSize, '阴影的下缘会被这一行裁掉');
 
-  // 故障行整行变电光蓝，色块和阴影都要换色；按下时整行反黑，近的一层换白
+  // 故障行整行变电光蓝，色块反成黑底蓝字；按下时整行反黑，色块保持电光蓝
   const glitchFace = rule('.home-button.is-glitch .home-meta-face');
   assert.match(glitchFace, /color:\s*#00B3FF/);
   assert.match(glitchFace, /background:\s*#0A0A0A/);
-  assert.match(rule('.home-button.is-glitch .home-meta-updated::after'), /background:\s*#FFFFFF/);
-  assert.match(rule('.home-button.is-glitch .home-meta-updated::before'), /background:\s*#0A0A0A/);
   assert.match(rule('.home-button.home-index-active .home-meta-face'), /background:\s*#00B3FF/);
-  assert.match(rule('.home-button.home-index-active .home-meta-updated::after'), /background:\s*#FFFFFF/);
   assert.ok(wxss.indexOf('.home-button.home-index-active .home-meta-face') > wxss.indexOf('.home-button.is-glitch .home-meta-face'),
     '按下写在故障之后，两者同时成立时按下胜出');
 

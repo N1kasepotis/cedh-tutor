@@ -301,10 +301,10 @@ page {
   background: #00B3FF;
 }
 
-/* 月报入口的更新日期：电光蓝色块、黑字，整块斜切，后面错开两层实色块当双色硬阴影。
-   本页不用斜体也不用阴影属性，斜化走 skewX，阴影就是两层没有模糊的色块，和首页别处一样硬。
+/* 月报入口的更新日期：电光蓝色块、黑字，整块斜切，后面错开一层黑色实色块当硬阴影。
+   本页不用斜体也不用阴影属性，斜化走 skewX，阴影就是一层没有模糊的色块，和首页别处一样硬。
    电光蓝的字直接压在荧光黄上对比度不到 2:1，所以字放在色块上。
-   顶端对齐中文：色块 16px 加 4px 错位正好是中文的 20px 行高，不会被这一行裁掉。
+   顶端对齐中文：色块 16px 加 2px 错位，在中文的 20px 行高以内，不会被这一行裁掉。
    右边距 auto 把它贴在中文后面，英文副标题照旧靠右。点阵字在 10px 原尺寸最清楚。 */
 .home-meta-updated {
   position: relative;
@@ -315,18 +315,7 @@ page {
   transform: skewX(-12deg);
 }
 
-/* 远的一层白，近的一层黑，色块压在最上面 */
-.home-meta-updated::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  right: 0;
-  bottom: 0;
-  left: 0;
-  background: #FFFFFF;
-  transform: translate(4px, 4px);
-}
-
+/* 阴影只有这一层，任何状态都是黑色；色块压在上面 */
 .home-meta-updated::after {
   content: "";
   position: absolute;
@@ -350,17 +339,9 @@ page {
   line-height: 1;
 }
 
-/* 故障行整行变电光蓝：色块反成黑底蓝字，近的一层换白，远的一层换黑 */
+/* 故障行整行变电光蓝：色块反成黑底蓝字 */
 .home-button.is-glitch .home-meta-face {
   color: #00B3FF;
-  background: #0A0A0A;
-}
-
-.home-button.is-glitch .home-meta-updated::after {
-  background: #FFFFFF;
-}
-
-.home-button.is-glitch .home-meta-updated::before {
   background: #0A0A0A;
 }
 
@@ -374,18 +355,9 @@ page {
   background: #0A0A0A;
 }
 
-/* 按下时整行反黑：色块保持电光蓝，近的一层换白、远的一层换电光蓝才看得见。
-   写在故障规则之后，两者同时成立时按下胜出 */
+/* 按下时整行反黑：色块保持电光蓝。写在故障规则之后，两者同时成立时按下胜出 */
 .home-button.home-index-active .home-meta-face {
   color: #0A0A0A;
-  background: #00B3FF;
-}
-
-.home-button.home-index-active .home-meta-updated::after {
-  background: #FFFFFF;
-}
-
-.home-button.home-index-active .home-meta-updated::before {
   background: #00B3FF;
 }
 
