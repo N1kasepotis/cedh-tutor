@@ -38,7 +38,9 @@ function getHomeNavClearancePx() {
 const HOME_ACTION_COUNT = 8;
 // 审查黑条：每次进首页随机涂黑注释墙里的一整行——直接把那一行自己的文字盒染成实心黑，
 // 因此黑条与文字天然等宽等高、必定盖住，不做任何像素定位（字体回退/屏高断点都不会错位）。
+// 涂黑是一笔一笔写上去的（CSS 笔画动画，只播一次）；-1 表示这一刻哪行都没涂。
 const REDACTION_LINE_COUNT = 9;
+const NO_REDACTION = -1;
 
 Page({
   goCommunity() { wx.navigateTo({ url: '/community/pages/hub/index' }); },
@@ -46,7 +48,8 @@ Page({
     homeNavClearancePx: 96,
     // 事故色 glitch 行：每次进首页随机让一个功能入口"故障"成电光蓝，制造不可预测的粗野破坏感
     glitchIndex: 0,
-    redactionLine: 3,
+    // 首帧哪行都不涂，等 onShow 挑出一行再写上去，第一次进页也能看到笔画
+    redactionLine: NO_REDACTION,
     // 月报入口的“X月X日更新”，读不到时为空，整块不显示
     metaUpdatedLabel: '',
     // 整页背景 Voronoi 线场：构建期算好的静态几何，进页面推一次就不再动数据。
@@ -80,10 +83,14 @@ Page({
 
   onShow() {
     const latest = monthlyLatest.readLatest();
+    // 先把涂黑的那一行清掉，渲染完再挑一行涂上。is-redacted 摘掉又挂上，笔画动画才会重新开始；
+    // 只设一次的话，连着两次抽中同一行时 class 没变，那次进页就看不到笔画。
     this.setData({
       glitchIndex: Math.floor(Math.random() * HOME_ACTION_COUNT),
-      redactionLine: Math.floor(Math.random() * REDACTION_LINE_COUNT),
+      redactionLine: NO_REDACTION,
       metaUpdatedLabel: monthlyLatest.updatedLabel(latest && latest.publishedAt),
+    }, () => {
+      this.setData({ redactionLine: Math.floor(Math.random() * REDACTION_LINE_COUNT) });
     });
     this.refreshMetaUpdated();
   },

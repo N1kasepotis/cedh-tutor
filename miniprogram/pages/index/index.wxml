@@ -37,7 +37,10 @@
 
       <view class="home-title-block">
         <text class="home-title-brand">cEDH Tutor</text>
-        <text class="home-title-zh">竞技指挥官导师</text>
+        <view class="home-title-zh-line">
+          <text class="home-title-zh">竞技指挥官导师</text>
+          <view class="home-title-zh home-cursor" aria-hidden="true"></view>
+        </view>
       </view>
     </view>
 

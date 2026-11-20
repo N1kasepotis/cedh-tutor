@@ -148,12 +148,42 @@ page {
 
 /* 审查/遮挡：每次进页随机涂黑一整行——把那一行自己的文字盒染成实心黑、字色同底而隐去。
    黑条即文字盒本身，故与文字天然等宽等高、必定盖住；不做像素定位，字体回退与屏高断点
-   都不会让它悬空。左右各外扩 6rpx 作马克笔涂抹感，用负 margin 抵消保持左缘对齐。 */
+   都不会让它悬空。左右各外扩 6rpx 作马克笔涂抹感，用负 margin 抵消保持左缘对齐。
+
+   2026-11-20 起涂黑是「写」上去的：进页 0.3s 后，一条黑条从左往右分八下涂过这一行，
+   一共 0.4s，只播一次。黑条是这个文字盒的 ::after，贴着盒子四边，同样不做像素定位。
+   文字盒自己的底色等笔画走完的那一刻才跳成黑色：哪个渲染器不给文字组件画伪元素，
+   这一行照样会被涂黑，只是看不到笔画。这条规则本身就是终态，减弱动态效果时直接停在这里。
+   每次进页都重播，靠的是 onShow 先清掉涂黑的行、渲染完再挑一行（见 index.js）。 */
 .home-format-note.is-redacted {
+  position: relative;
   padding: 0 6rpx;
   margin-left: -6rpx;
   color: #0A0A0A;
   background: #0A0A0A;
+  animation: home-redact-fill 0.4s step-end 0.3s both;
+}
+
+.home-format-note.is-redacted::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: #0A0A0A;
+  transform-origin: left center;
+  animation: home-redact-stroke 0.4s steps(8, end) 0.3s both;
+}
+
+@keyframes home-redact-stroke {
+  from { transform: scaleX(0); }
+  to { transform: scaleX(1); }
+}
+
+@keyframes home-redact-fill {
+  from { background: transparent; }
+  to { background: #0A0A0A; }
 }
 
 .home-title-block {
@@ -193,6 +223,28 @@ page {
   font-size: 18px;
   letter-spacing: 5px;
   line-height: 1;
+}
+
+/* 中文副标题后面跟一个终端光标，整行读起来像一条等着输入的命令提示 */
+.home-title-zh-line {
+  display: flex;
+  align-items: flex-start;
+}
+
+/* 终端光标：黑色实心块，每秒闪一次（亮半秒、灭半秒，硬切，不渐隐）。
+   它和副标题共用 .home-title-zh，字号和上边距跟着各个屏幕断点一起变，
+   所以「宽半个字、高一个字」在每个断点都成立。副标题的字距在最后一个字后面也留了一点空，
+   正好当光标前的间隔。 */
+.home-cursor {
+  width: 0.5em;
+  height: 1em;
+  background: #0A0A0A;
+  animation: home-cursor-blink 1s step-end infinite;
+}
+
+@keyframes home-cursor-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
 }
 
 .home-actions {
@@ -498,6 +550,13 @@ page {
 
   /* 线场停在完整段的起点，图形本身仍在，只是不再流动 */
   .home-field-drift {
+    animation: none;
+  }
+
+  /* 光标常亮不闪；涂黑直接是终态，没有笔画 */
+  .home-cursor,
+  .home-format-note.is-redacted,
+  .home-format-note.is-redacted::after {
     animation: none;
   }
 }

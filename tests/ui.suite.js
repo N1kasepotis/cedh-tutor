@@ -1350,6 +1350,107 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   assert.doesNotMatch(js, /HOME_VORONOI_NODES|fieldNodes/);
 });
 
+// 2026-11-20 用户挑的两条：副标题后面加终端光标；注释墙涂黑的那一行改成一笔一笔写上去
+test('首页终端光标每秒闪一次，涂黑的那一行每次进页都写一遍', () => {
+  const vm = require('node:vm');
+  const { createRequire } = require('node:module');
+  const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
+  const wxss = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxss'), 'utf8');
+  const filename = path.join(root, 'miniprogram/pages/index/index.js');
+  const rule = (selector) => {
+    const escaped = selector.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const found = wxss.match(new RegExp(`(?:^|\\n)${escaped}\\s*\\{([^}]*)\\}`));
+    assert.ok(found, `找不到 ${selector}`);
+    return found[1];
+  };
+  const keyframes = (name) => {
+    const start = wxss.indexOf(`@keyframes ${name}`);
+    assert.notEqual(start, -1, `找不到 @keyframes ${name}`);
+    return wxss.slice(start, wxss.indexOf('\n}', start) + 2);
+  };
+
+  // 光标紧跟副标题、同一行；借 .home-title-zh 的字号和上边距，跟着各个屏幕断点一起缩放
+  assert.match(wxml, /<view class="home-title-zh-line">\s*<text class="home-title-zh">竞技指挥官导师<\/text>\s*<view class="home-title-zh home-cursor" aria-hidden="true"><\/view>\s*<\/view>/);
+  assert.match(rule('.home-title-zh-line'), /display:\s*flex/);
+  const cursor = rule('.home-cursor');
+  assert.match(cursor, /width:\s*0\.5em/, '宽半个字');
+  assert.match(cursor, /height:\s*1em/, '高一个字');
+  assert.match(cursor, /background:\s*#0A0A0A/, '用户要的是黑色方块');
+  // 每秒闪一次，硬切：亮半秒、灭半秒，不渐隐
+  const blink = cursor.match(/animation:\s*home-cursor-blink ([\d.]+)s step-end infinite/);
+  assert.ok(blink, '光标用 step-end 硬切，一直闪');
+  assert.equal(Number(blink[1]), 1, '每秒闪一次');
+  const blinkFrames = keyframes('home-cursor-blink');
+  assert.match(blinkFrames, /0%, 100% \{ opacity: 1; \}/);
+  assert.match(blinkFrames, /50% \{ opacity: 0; \}/);
+
+  // 涂黑：规则本身是终态（黑底黑字）；笔画是贴着文字盒四边的 ::after，从左往右分几下涂满，只播一次
+  const box = rule('.home-format-note.is-redacted');
+  assert.match(box, /position:\s*relative/);
+  assert.match(box, /color:\s*#0A0A0A[\s\S]*background:\s*#0A0A0A/);
+  const stroke = rule('.home-format-note.is-redacted::after');
+  assert.match(stroke, /content:\s*""[\s\S]*position:\s*absolute[\s\S]*top:\s*0[\s\S]*right:\s*0[\s\S]*bottom:\s*0[\s\S]*left:\s*0/,
+    '黑条贴着文字盒四边，不做像素定位');
+  assert.match(stroke, /background:\s*#0A0A0A/);
+  assert.match(stroke, /transform-origin:\s*left center/, '从左往右涂');
+  const strokeAnim = stroke.match(/animation:\s*home-redact-stroke ([\d.]+)s steps\((\d+), end\) ([\d.]+)s both/);
+  assert.ok(strokeAnim, '笔画分段走（steps），只播一次，播完停在涂满');
+  const strokeSeconds = Number(strokeAnim[1]);
+  const strokeSteps = Number(strokeAnim[2]);
+  const strokeDelay = Number(strokeAnim[3]);
+  assert.ok(strokeSeconds >= 0.3 && strokeSeconds <= 0.5, `笔画 ${strokeSeconds}s，用户要的是 0.4 秒左右`);
+  assert.ok(strokeSteps >= 5 && strokeSteps <= 12, '要看得出一顿一顿，又不能顿成两三大块');
+  assert.doesNotMatch(stroke, /infinite/, '只播一次');
+  const strokeFrames = keyframes('home-redact-stroke');
+  assert.match(strokeFrames, /from \{ transform: scaleX\(0\); \}/);
+  assert.match(strokeFrames, /to \{ transform: scaleX\(1\); \}/);
+  // 文字盒自己的黑底在笔画走完的那一刻才出现：渲染器不画伪元素时，这一行照样被涂黑
+  const fillAnim = box.match(/animation:\s*home-redact-fill ([\d.]+)s step-end ([\d.]+)s both/);
+  assert.ok(fillAnim, '黑底用 step-end，最后一刻才跳过去');
+  assert.equal(Number(fillAnim[1]) + Number(fillAnim[2]), strokeSeconds + strokeDelay, '黑底要和笔画同一刻到位');
+  const fillFrames = keyframes('home-redact-fill');
+  assert.match(fillFrames, /from \{ background: transparent; \}/);
+  assert.match(fillFrames, /to \{ background: #0A0A0A; \}/);
+
+  // 减弱动态效果：光标常亮，涂黑直接是终态
+  const reduced = wxss.slice(wxss.indexOf('@media (prefers-reduced-motion: reduce)'));
+  assert.match(reduced, /\.home-cursor,\s*\.home-format-note\.is-redacted,\s*\.home-format-note\.is-redacted::after\s*\{\s*animation:\s*none;/);
+
+  // 行为：每次 onShow 先清掉涂黑，渲染完再挑一行。连着两次抽中同一行，class 也摘过一次，笔画照样重播
+  const store = new Map();
+  const fakeWx = {
+    getStorageSync: (key) => (store.has(key) ? store.get(key) : ''),
+    setStorageSync: (key, value) => store.set(key, value),
+    cloud: { init() {}, callFunction: () => new Promise(() => {}) },
+  };
+  const previous = global.wx;
+  global.wx = fakeWx;
+  try {
+    let definition;
+    vm.runInNewContext(fs.readFileSync(filename, 'utf8'), {
+      Page: (value) => { definition = value; },
+      require: createRequire(filename),
+      wx: fakeWx,
+      Math: Object.assign(Object.create(Math), { random: () => 0.4 }),
+    }, { filename });
+    const writes = [];
+    const page = Object.assign(Object.create(definition), {
+      data: structuredClone(definition.data),
+      setData(patch, callback) {
+        Object.assign(this.data, patch);
+        if ('redactionLine' in patch) writes.push(patch.redactionLine);
+        if (callback) callback();
+      },
+    });
+    assert.equal(page.data.redactionLine, -1, '首帧哪行都不涂，第一次进页也要看到笔画');
+    page.onShow();
+    page.onShow();
+    assert.deepEqual(writes, [-1, 3, -1, 3], '每次进页都先清掉再涂，同一行也重播');
+  } finally {
+    global.wx = previous;
+  }
+});
+
 // 2026-09-18 第二次全页视觉审查：用户拍板三件（战情室少用操作、官方简中牌名、两页粘贴区统一），另修三处明显毛病
 test('second visual sweep: quiet tracker actions, official card names, one paste bar and small fixes', () => {
   const read = (file) => fs.readFileSync(path.join(root, file), 'utf8');
