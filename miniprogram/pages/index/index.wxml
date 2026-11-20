@@ -1,12 +1,23 @@
 <view class="page home">
   <view class="home-field" aria-hidden="true">
     <view class="home-field-drift">
-      <view
-        class="home-field-line"
-        wx:for="{{fieldLines}}"
-        wx:key="k"
-        style="left: {{item.x}}vw; top: {{item.y}}vw; width: {{item.len}}vw; transform: rotate({{item.deg}}deg);"
-      ></view>
+      <!-- 同一份周期几何摆两遍，第二遍下移一个周期，拼成连续的线场 -->
+      <view class="home-field-tile">
+        <view
+          class="home-field-line"
+          wx:for="{{fieldLines}}"
+          wx:key="k"
+          style="left: {{item.x}}vw; top: {{item.y}}vw; width: {{item.len}}vw; transform: rotate({{item.deg}}deg);"
+        ></view>
+      </view>
+      <view class="home-field-tile home-field-tile-next">
+        <view
+          class="home-field-line"
+          wx:for="{{fieldLines}}"
+          wx:key="k"
+          style="left: {{item.x}}vw; top: {{item.y}}vw; width: {{item.len}}vw; transform: rotate({{item.deg}}deg);"
+        ></view>
+      </view>
     </view>
   </view>
 

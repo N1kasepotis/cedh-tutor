@@ -108,15 +108,25 @@ test('life tracker supports two and three player modes with adaptive layout', ()
   const duel = createLifeTrackerState({ rng: () => 0.25, playerCount: 2 });
   assert.equal(duel.playerCount, 2);
   assert.equal(duel.players.length, 2);
-  assert.deepEqual(duel.players.map((player) => player.life), [40, 40], '标准 Commander 两人局也从 40 点开始');
+  // 两人模式默认 20 点（Duel Commander 这类赛制），3 到 5 人 40 点；2026-11-20 用户决定
+  assert.deepEqual(duel.players.map((player) => player.life), [20, 20], '两人模式从 20 点开始');
+  assert.deepEqual(
+    lifeTracker.resetLifeTrackerState(duel, () => 0.5).players.map((player) => player.life),
+    [20, 20],
+    '两人局重置后仍是 20 点',
+  );
   assert.equal(new Set(duel.players.map((player) => player.colorKey)).size, 2);
   assert.ok(isLifeTrackerState(duel));
 
   const trio = setLifeTrackerPlayerCount(duel, 3, () => 0.5);
   assert.equal(trio.playerCount, 3);
-  assert.deepEqual(trio.players.map((player) => player.life), [40, 40, 40], '多人模式保持 40 点');
+  assert.deepEqual(trio.players.map((player) => player.life), [40, 40, 40], '从两人切到三人回到 40 点');
+  [4, 5].forEach((count) => {
+    const table = setLifeTrackerPlayerCount(duel, count, () => 0.5);
+    assert.ok(table.players.every((player) => player.life === 40), `从两人切到 ${count} 人回到 40 点`);
+  });
   const backToDuel = setLifeTrackerPlayerCount(trio, 2, () => 0.5);
-  assert.deepEqual(backToDuel.players.map((player) => player.life), [40, 40], '切回两人保持 Commander 的起始生命');
+  assert.deepEqual(backToDuel.players.map((player) => player.life), [20, 20], '切回两人又是 20 点');
   assert.deepEqual(
     trio.players.slice(0, 2).map((player) => player.name),
     duel.players.map((player) => player.name),

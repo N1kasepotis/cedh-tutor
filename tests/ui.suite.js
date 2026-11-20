@@ -1220,10 +1220,15 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
     ['x', 'y', 'len', 'deg'].forEach((key) => assert.equal(typeof edge[key], 'number'));
   });
 
-  // 铺的是整页，不是某一屏区域：纵向必须画到 2.1 倍屏宽以下，
-  // 否则长屏手机的下半页会空着（390×844 的可见高度约 216vw）
-  const lowest = Math.max(...HOME_VORONOI_EDGES.map((e) => e.y));
-  assert.ok(lowest > 210, `线段最低只到 ${lowest.toFixed(0)}vw，长屏手机下半页会空`);
+  // 线场在纵向上周期重复，才能一直往一个方向流又看不到接缝。周期必须比最长的屏（240vw）还长，
+  // 否则一屏之内会看到同一块图案出现两次；每条边的代表都在一个周期带里（中点落在 [0, 周期)），
+  // 页面摆两份数据时才能首尾相接
+  const { computeGeometry, PERIOD, SCREEN_MAX, MIN_DIST } = require('../scripts/build-home-voronoi');
+  assert.ok(PERIOD > SCREEN_MAX, `周期 ${PERIOD}vw 不比最长的屏 ${SCREEN_MAX}vw 长，一屏里会看到重复`);
+  HOME_VORONOI_EDGES.forEach((e) => {
+    const mid = e.y + (e.len * Math.sin((e.deg * Math.PI) / 180)) / 2;
+    assert.ok(mid > -0.5 && mid < PERIOD + 0.5, `线段中点 ${mid.toFixed(1)}vw 不在周期带里`);
+  });
 
   // 不规则性要能被验证：线段长度必须显著参差，否则就成了规则网格
   const lens = HOME_VORONOI_EDGES.map((e) => e.len);
@@ -1233,16 +1238,29 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   // 胞元必须闭合。Voronoi 的内部顶点度数恒为 3，出现 2 度顶点就说明有边被丢掉了，
   // 那个交汇处在真机上看着就是空的——之前按「太短就是碎屑」丢边，丢的全是真实的短边。
   // 直接跑生成器算未补长的原始几何来判，不去反推已补长的坐标（那要靠容差聚类，不可靠）。
-  const { computeGeometry } = require('../scripts/build-home-voronoi');
+  // 生成器的顶点表已经把上下相邻周期拼进来，接缝上的顶点也按完整的邻边计数。
   const geometry = computeGeometry();
   assert.equal(geometry.emptyCells, 0, '有种子的胞元被裁空了，那一片会整块缺失');
+  // 泊松盘的间距要按纵向环绕算：接缝两侧的种子也得隔开，否则每流过一个周期就有一簇小胞元
+  const closest = Math.min(...geometry.seeds.flatMap((a, i) => geometry.seeds.slice(i + 1).map((b) => {
+    const dy = Math.abs(a.y - b.y);
+    return Math.hypot(a.x - b.x, Math.min(dy, PERIOD - dy));
+  })));
+  assert.ok(closest >= MIN_DIST, `接缝两侧有两颗种子只隔 ${closest.toFixed(1)}vw，那里会挤出一簇小胞元`);
   const openJunctions = [];
   geometry.vertices.forEach((arms, k) => {
     const [x, y] = k.split(',').map(Number);
-    if (x < 2 || x > 98 || y < 2 || y > 214) return; // 只看 390×844 的可见区，避开裁剪边缘
+    if (x < 2 || x > 98 || y < 0 || y >= PERIOD) return; // 屏幕宽度以内的一整个周期，接缝也在里面
     if (arms.length !== 3) openJunctions.push(`(${x}, ${y}) ${arms.length}度`);
   });
   assert.deepEqual(openJunctions, [], `顶点度数不是 3，胞元没闭合：${openJunctions.slice(0, 3).join(' / ')}`);
+  // 接缝两侧不能把同一条边画两遍：叠两层半透明黑，接缝那一带会比别处深
+  const drawn = new Set();
+  [0, PERIOD].forEach((offset) => geometry.segments.forEach((s) => {
+    const key = [s.p, s.q].map((pt) => `${pt.x},${Math.round((pt.y + offset) * 100) / 100}`).sort().join('|');
+    assert.ok(!drawn.has(key), `接缝处有一条边画了两遍：${key}`);
+    drawn.add(key);
+  }));
 
   // 仓库里的 config 必须就是当前脚本的产物：漏跑生成器或手改过都会在这里断
   assert.deepEqual(HOME_VORONOI_EDGES, geometry.edges,
@@ -1257,58 +1275,53 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   assert.doesNotMatch(js, /fieldLines:\s*\[\s*\]/);
   assert.match(js, /fieldLines: HOME_VORONOI_EDGES\.map/);
 
-  // 只动 transform，不碰布局属性。用 indexOf 切块而不是拼正则，避免转义在写入路径上被吃掉。
-  ['home-field-turn', 'home-field-drift'].forEach((name) => {
-    const start = wxss.indexOf(`@keyframes ${name}`);
-    assert.notEqual(start, -1, `找不到 @keyframes ${name}`);
-    const frames = wxss.slice(start, wxss.indexOf('\n}', start) + 2);
-    assert.match(frames, /transform:/);
-    assert.doesNotMatch(frames, /\b(width|height|top|left|margin|padding)\s*:/,
-      `${name} 不得动布局属性`);
-  });
-
-  // 动效必须真的看得见。这是真机上翻过车的地方：往返式 ease-in-out 在两端速度归零，
-  // 而开屏正好停在起点，最该被看到的头十几秒恰恰最慢，肉眼读不出任何位移。
-  // 所以直接按关键帧算出实际线速度，卡在「看得见但不抢戏」的区间里。
-  const declaration = (name) => {
-    const line = wxss.split('\n').find((row) => row.includes(`animation: ${name} `));
-    assert.ok(line, `找不到 ${name} 的 animation 声明`);
-    return line;
-  };
-  const driftDecl = declaration('home-field-drift');
-  const driftPeriod = Number(driftDecl.match(/ (\d+)s/)[1]);
-
+  // 只有一条动画，只动 transform，不碰布局属性。2026-11-20 用户要单一方向的流动，旋转那层撤了。
+  assert.doesNotMatch(wxss, /home-field-turn/, '线场只沿一个方向流，不再叠旋转');
   const driftStart = wxss.indexOf('@keyframes home-field-drift');
-  const driftFrames = wxss.slice(driftStart, wxss.indexOf('\n}', driftStart));
-  const stops = [...driftFrames.matchAll(/translate3d\(\s*(-?[\d.]+)vw,\s*(-?[\d.]+)vw/g)]
+  assert.notEqual(driftStart, -1, '找不到 @keyframes home-field-drift');
+  const driftFrames = wxss.slice(driftStart, wxss.indexOf('\n}', driftStart) + 2);
+  assert.match(driftFrames, /transform:/);
+  assert.doesNotMatch(driftFrames, /\b(width|height|top|left|margin|padding)\s*:/, 'home-field-drift 不得动布局属性');
+
+  const driftDecl = wxss.split('\n').find((row) => row.includes('animation: home-field-drift '));
+  assert.ok(driftDecl, '找不到 home-field-drift 的 animation 声明');
+  // 不能用 alternate：往返到端点速度归零；也不能用缓动：关键帧附近会减速。都是看不见的死区
+  assert.doesNotMatch(driftDecl, /alternate/, '往返式动画在两端会出现看不见的死区');
+  assert.match(driftDecl, /linear/, '缓动会在关键帧附近造出减速死区');
+  assert.match(driftDecl, /infinite/, '线场要一直流下去');
+  const driftSeconds = Number(driftDecl.match(/ (\d+)s/)[1]);
+
+  // 单一方向：只有纵向位移，而且正好走一个周期，跳回起点时画面完全一样
+  const stops = [...driftFrames.matchAll(/translate3d\(\s*(-?[\d.]+)(?:vw)?,\s*(-?[\d.]+)vw/g)]
     .map((m) => [Number(m[1]), Number(m[2])]);
-  assert.ok(stops.length >= 4, 'drift 只有两个关键帧就是一条往返直线，正是看不出在动的那种');
-  let pathVw = 0;
-  for (let i = 1; i < stops.length; i += 1) {
-    pathVw += Math.hypot(stops[i][0] - stops[i - 1][0], stops[i][1] - stops[i - 1][1]);
-  }
-  const vwPerSecond = pathVw / driftPeriod;
-  // 0.35–1.2 vw/s ≈ 390 宽机型上的 1.4–4.7 px/s：下限保证十秒内能看出位移，上限保证不晃眼
-  assert.ok(vwPerSecond > 0.35,
-    `线场只有 ${(vwPerSecond * 3.9).toFixed(2)}px/s，真机上看不出在动`);
-  assert.ok(vwPerSecond < 1.2,
-    `线场 ${(vwPerSecond * 3.9).toFixed(2)}px/s 太快，背景会抢注意力`);
+  assert.equal(stops.length, 2, '一条直线流动只要起点和终点两个关键帧');
+  assert.ok(stops.every(([x]) => x === 0), '线场只沿纵向流，横向不得有位移');
+  const travel = Math.abs(stops[1][1] - stops[0][1]);
+  assert.equal(travel, PERIOD, `动画走了 ${travel}vw，不等于周期 ${PERIOD}vw，循环时会跳一下`);
 
-  // 主运动不能用 alternate：往返到端点速度归零，开屏那一刻恰好停在最慢处
-  assert.doesNotMatch(driftDecl, /alternate/, 'drift 是主运动，用 alternate 会在两端出现看不见的死区');
-  assert.match(driftDecl, /linear/, 'drift 用缓动会在每个关键帧附近造出减速死区');
+  // 速度要一眼看得出在流动，又不抢正文。上一版是 0.6vw/s 的小回路（390 宽约 2.4px/s），
+  // 真机上读不出在动，用户以为动画已经撤了；这里卡在 1.5–4vw/s（约 6–16px/s）
+  const vwPerSecond = PERIOD / driftSeconds;
+  assert.ok(vwPerSecond >= 1.5, `线场只有 ${(vwPerSecond * 3.9).toFixed(1)}px/s，真机上看不出在流动`);
+  assert.ok(vwPerSecond <= 4, `线场 ${(vwPerSecond * 3.9).toFixed(1)}px/s 太快，背景会抢正文`);
 
-  // 两层周期互质，合成轨迹一次使用里走不完一轮（alternate 的实际周期要翻倍）
-  const effective = (name) => {
-    const line = declaration(name);
-    return Number(line.match(/ (\d+)s/)[1]) * (/alternate/.test(line) ? 2 : 1);
-  };
-  const gcd = (a, b) => (b ? gcd(b, a % b) : a);
-  const turnEff = effective('home-field-turn');
-  const driftEff = effective('home-field-drift');
-  const combined = (turnEff * driftEff) / gcd(turnEff, driftEff);
-  assert.ok(combined > 3600,
-    `两层合成周期只有 ${(combined / 60).toFixed(0)} 分钟，会看出重复；实际周期 ${turnEff}s 与 ${driftEff}s 需互质`);
+  // 取景框始终落在两份数据拼出来的完整段里：顶不能高过接缝余量，最长的屏底也不能低过完整段
+  const frameTop = Math.min(-stops[0][1], -stops[1][1]);
+  assert.ok(frameTop >= geometry.margin,
+    `起点 ${frameTop}vw 小于接缝余量 ${geometry.margin.toFixed(1)}vw，顶上会缺边`);
+  assert.ok(frameTop + PERIOD + SCREEN_MAX <= 2 * PERIOD - geometry.margin,
+    `取景框最低到 ${frameTop + PERIOD + SCREEN_MAX}vw，超出完整段 ${(2 * PERIOD - geometry.margin).toFixed(1)}vw，长屏底部会缺边`);
+  // 不动的时候（减弱动态效果）也停在完整段的起点
+  const driftRule = wxss.match(/\.home-field-drift\s*\{[^}]*\}/)[0];
+  assert.ok(driftRule.includes(`transform: translate3d(0, -${frameTop}vw, 0)`), '不动的时候也要停在完整段里');
+
+  // 同一份数据摆两遍，第二遍正好下移一个周期
+  assert.equal((wxml.match(/class="home-field-tile[ "]/g) || []).length, 2, '周期几何要摆两遍才能首尾相接');
+  assert.equal(wxml.split('wx:for="{{fieldLines}}"').length - 1, 2, '两份用的是同一份数据');
+  const tileRule = wxss.match(/\.home-field-tile\s*\{[^}]*\}/)[0];
+  assert.ok(tileRule.includes(`height: ${PERIOD}vw`), '每份的高度就是一个周期');
+  const nextRule = wxss.match(/\.home-field-tile-next\s*\{[^}]*\}/)[0];
+  assert.ok(nextRule.includes(`top: ${PERIOD}vw`), '第二份要正好下移一个周期');
 
   // 减弱动态效果时停下
   assert.match(wxss, /@media \(prefers-reduced-motion: reduce\)[\s\S]*\.home-field[\s\S]*animation:\s*none/);

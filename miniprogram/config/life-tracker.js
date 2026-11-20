@@ -2,9 +2,10 @@ const lifeTrackerConfig = {
   storageKey: 'fourPlayerLifeTracker',
   schemaVersion: 1,
   initialLife: 40,
-  // 标准 Commander 在两人局也从 40 点开始（CR 903.7）。
-  // Duel Commander 是另一个赛制，不能仅凭玩家人数自动切换。
-  initialLifeByPlayerCount: {},
+  // 两人模式默认 20 点：两个人开一局，打的基本都是 Duel Commander（法禁）这类 20 点的赛制
+  // （2026-11-20 用户决定）。这是产品默认，不是规则结论：标准 Commander 两人局按 CR 903.7
+  // 仍从 40 点开始，真打那种就手动加。切换人数等于按新人数重开一局，切回 3 到 5 人自然回到 40。
+  initialLifeByPlayerCount: { 2: 20 },
   minLife: -999,
   maxLife: 999,
   playerCount: 4,
