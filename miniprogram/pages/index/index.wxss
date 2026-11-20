@@ -225,20 +225,22 @@ page {
   line-height: 1;
 }
 
-/* 中文副标题后面跟一个终端光标，整行读起来像一条等着输入的命令提示 */
+/* 中文副标题后面跟一个闪烁的输入光标，像这行字还在往下打 */
 .home-title-zh-line {
   display: flex;
   align-items: flex-start;
 }
 
-/* 终端光标：黑色实心块，每秒闪一次（亮半秒、灭半秒，硬切，不渐隐）。
-   它和副标题共用 .home-title-zh，字号和上边距跟着各个屏幕断点一起变，
-   所以「宽半个字、高一个字」在每个断点都成立。副标题的字距在最后一个字后面也留了一点空，
-   正好当光标前的间隔。 */
+/* 输入光标：白色 I 型竖线，和副标题同一个白，每秒闪一次（亮半秒、灭半秒，硬切，不渐隐）。
+   尺寸照着这套点阵字体自己的竖线「|」：字体一个 em 分 10 格，一格 0.1em；
+   「|」宽一格、高九格、贴着行底，汉字也是高九格、贴着行底，所以光标和字一样高，宽正好一笔。
+   它和副标题共用 .home-title-zh，字号和上边距跟着各个屏幕断点一起变，这些比例在每个断点都成立。
+   副标题的字距在最后一个字后面也留了一点空，光标就落在下一个字该开始的地方。 */
 .home-cursor {
-  width: 0.5em;
-  height: 1em;
-  background: #0A0A0A;
+  align-self: flex-end;
+  width: 0.1em;
+  height: 0.9em;
+  background: #FFFFFF;
   animation: home-cursor-blink 1s step-end infinite;
 }
 

@@ -1350,8 +1350,9 @@ test('首页背景线场：构建期几何、纯 CSS 动效、不新增色板', 
   assert.doesNotMatch(js, /HOME_VORONOI_NODES|fieldNodes/);
 });
 
-// 2026-11-20 用户挑的两条：副标题后面加终端光标；注释墙涂黑的那一行改成一笔一笔写上去
-test('首页终端光标每秒闪一次，涂黑的那一行每次进页都写一遍', () => {
+// 2026-11-20 用户挑的两条：副标题后面加光标；注释墙涂黑的那一行改成一笔一笔写上去
+// 光标同一天先做成黑色方块，用户嫌黑色闪烁不合适，换成白色 I 型竖线
+test('首页光标是白色 I 型竖线、每秒闪一次，涂黑的那一行每次进页都写一遍', () => {
   const vm = require('node:vm');
   const { createRequire } = require('node:module');
   const wxml = fs.readFileSync(path.join(root, 'miniprogram/pages/index/index.wxml'), 'utf8');
@@ -1373,9 +1374,15 @@ test('首页终端光标每秒闪一次，涂黑的那一行每次进页都写�
   assert.match(wxml, /<view class="home-title-zh-line">\s*<text class="home-title-zh">竞技指挥官导师<\/text>\s*<view class="home-title-zh home-cursor" aria-hidden="true"><\/view>\s*<\/view>/);
   assert.match(rule('.home-title-zh-line'), /display:\s*flex/);
   const cursor = rule('.home-cursor');
-  assert.match(cursor, /width:\s*0\.5em/, '宽半个字');
-  assert.match(cursor, /height:\s*1em/, '高一个字');
-  assert.match(cursor, /background:\s*#0A0A0A/, '用户要的是黑色方块');
+  // 尺寸照着点阵字体自己的「|」：一个 em 分 10 格，「|」宽一格、高九格、贴着行底（字体里是 x 200..300、y -100..800，
+  // em 1000、ascender 900），汉字同样是 y -100..800。所以竖线宽 0.1em、高 0.9em、靠下对齐，和字一样高
+  assert.match(cursor, /width:\s*0\.1em/, '宽一格，正好一笔');
+  assert.match(cursor, /height:\s*0\.9em/, '高九格，和字一样高');
+  assert.match(cursor, /align-self:\s*flex-end/, '贴着行底，顶端和字的顶端对齐');
+  const subtitleColor = wxss.match(/\n\.home-title-zh\s*\{[^}]*color:\s*(#[0-9A-F]{6})/);
+  assert.ok(subtitleColor, '找不到副标题的颜色');
+  assert.equal(subtitleColor[1], '#FFFFFF');
+  assert.match(cursor, new RegExp(`background:\\s*${subtitleColor[1]}`), '光标和副标题同一个白，用户不要黑色');
   // 每秒闪一次，硬切：亮半秒、灭半秒，不渐隐
   const blink = cursor.match(/animation:\s*home-cursor-blink ([\d.]+)s step-end infinite/);
   assert.ok(blink, '光标用 step-end 硬切，一直闪');
